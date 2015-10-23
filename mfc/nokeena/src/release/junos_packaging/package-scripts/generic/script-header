@@ -1,0 +1,2346 @@
+#!/bin/sh
+#
+# $Id$
+#
+# Copyright (c) 1999-2008, Juniper Networks, Inc.
+# All rights reserved.
+#
+# Package requirement review and installation script (base form)
+#
+# This script is run after the tar file has been unpacked into the /var
+# sandbox area but before anything has actually been moved to the final
+# location upon installation, and also once again upon deinstallation.
+#
+# When it is called for installation via REQUIRE, it's called with
+# the second argument set to "INSTALL", upon deinstallation "DEINSTALL".
+# When it's called for installation via INSTALL, it's called with
+# "PRE-INSTALL" and "POST-INSTALL". We leave it to the derived script
+# to deal with these conditions; we just record them in $instance.
+#
+# The model is that each package's REQUIRE script defines a set of
+# variables that represent the facilities (and internal version
+# number of those facilities) offered or required by that package.
+# The functions in this file get those variables and compare them
+# to see if the services required match those offered. Other scripts
+# allow the user to check whether a set of packages will work together
+# or if a reboot is (or will be) required after upgrade.
+# 
+# $PKG_* variables are set by the "package" script
+#
+
+#
+# If we're only after variable-setup, we don't want _anything_
+# out of this file. The closing 'fi' for the following 'if' is
+# the last thing in this file. Think of this as '#ifndef foo/#define foo'
+# lines from a C header file....
+#
+if [ -z "$PKG_SETUP_VARIABLES_ONLY" ]; then
+# The closing 'fi' is at the bottom of the file.
+
+pkg_LCK=/tmp/.pkg.LCK
+pkg_db_dir=/etc/db/pkg
+pkg_tag=
+fail=0
+sw_pkgdir=/var/sw/pkg
+opt_pkgdir=/opt/sdk/pkg
+pkg_unsup=/etc/notices/unsupported.txt
+pkg_supported_ltrs=BRSWX
+
+# cookie to allow us to keep user under control...
+junos_reboot_pending=/var/run/pkg-reboot-pending
+
+# UI variable settings
+mgd=/usr/sbin/mgd
+mgd_last=$mgd.last
+config_database=/var/run/db/juniper.db
+# handle compressed configs
+for config_file in /config/juniper.conf.gz /config/juniper.conf
+do
+    [ -f $config_file ] && break
+done
+config_changes=/var/db/config/juniper.conf.pre-install
+
+jkernel_require=/var/run/jkernel.require
+
+jkernel_require_is_not_old() {
+    local uname cur
+    uname=`uname -v | awk '{print $2}'`
+    cur=`awk -F= '/^current_release/ { print $2 }' < $jkernel_require`
+    [ "$uname" = "$cur" ]
+}
+
+#
+# dot_jkernel_require
+#
+# At boot time, the currently installed jkernel's +REQUIRE
+# script's variables are tucked into /var/run/jkernel.require
+# so we can know information about the running kernel.
+dot_jkernel_require() {
+    if [ -r $jkernel_require ]; then
+	if jkernel_require_is_not_old ; then
+	    trace Sourcing jkernel.require ...
+	    . $jkernel_require
+	fi
+    fi
+}
+
+# dot_run_require
+#
+# Generic form of dot_jkernel_require
+# Currently used for jbase.
+dot_run_require() {
+    local run_require
+
+    run_require=/var/run/$1.require
+    if [ -r $run_require ]; then
+        trace Sourcing $1.require ...
+	. $run_require
+    fi
+}
+
+# rm_symlinks <package-name>
+#
+# If the file $pkgdir/$package.symlinks exists
+# we remove the links that are not marked no_unlink
+# This should only be called for non-core packages and when
+# $PKG_FORCE is set.
+#
+rm_symlinks() {
+    DebugOn rm_symlinks
+    local old_symlinks
+    local target_dir prefix
+
+    old_symlinks=${1:-$pkgdir/$package.symlinks}
+
+    if [ -s $old_symlinks ]; then
+        while read src target flags
+	do
+	    case "$flags" in
+	    *no_unlink*) continue;;
+	    esac
+	    /bin/rm -f $DESTDIR$target
+	    target_dir=`dirname $DESTDIR$target`
+            prefix=${target_dir%$DESTDIR$SYMLINKDIR}
+	done < $old_symlinks
+ # Assuming that all targets yield the same prefix, use the last one
+        [ -n "$prefix" ] && [ -n "$SYMLINKDIR" ] && \
+            [ -d "$prefix$SYMLINKDIR" ] && \
+            rm -rf $prefix$SYMLINKDIR >/dev/null 2>&1
+    fi
+    DebugOff rm_symlinks
+}
+
+# compatability routines for transition...
+symlink_package() {
+   make_symlinks
+}
+
+rm_symlink_package() {
+    case "$package" in
+    jbase|jbase-ex|jroute|jroute-ex|jkernel|jkernel-ex|jpfe*|jdocs)
+        [ "$PKG_FORCE" ] || return
+        ;;
+    esac
+    rm_symlinks
+}
+
+register_unsupported_package() {
+    local signer
+    # Only do this for non-release builds
+    # Also avoid it for sdk-produced packages from third parties
+    # (tricky because jservices-* look a lot like sdk packages...)
+    signer=`sed -ne '1s,/.*CN=\([^/][^/]*\).*,\1,p' $pkgdir/$pkgfile.sig 2>/dev/null`
+    case %RELEASE_CATEGORY%,$signer in
+    [$pkg_supported_ltrs],*) ;;
+    ?,Package*)
+	echo Registering $package as unsupported
+	ln -sf $pkg_unsup $pkg_db_dir/$package
+	;;
+    *)  ;;	# not for SDK built packages
+
+    esac
+}
+
+# code that shouldn't be replicated in each +[DE]INSTALL
+package_pre_install() {
+    DebugOn package_pre_install
+    run_hooks package_pre_install_hooks
+    replace_package_mount
+
+    [ -d /usr/share/help/syslog-modules ] ||
+        (umask 022; /bin/mkdir -p /usr/share/help/syslog-modules)
+    DebugOff package_pre_install
+}
+
+package_post_install() {
+    local old_destdir
+    DebugOn package_post_install
+    run_hooks package_post_install_hooks
+    if [ ! -s $pkgdir/$pkgfile ]; then
+        # it was marked @ignore_inst
+        trace installing $pkgdir/$pkgfile
+        for f in $pkgfile $pkgfile.md5 $pkgfile.sha1 $pkgfile.sig $pkgfile.certs; do
+           [ -f .$base_pkgdir/$f ] && cp -p .$base_pkgdir/$f $pkgdir && chflags schg $pkgdir/$f
+        done
+    fi
+    old_destdir=${DESTDIR}
+    DESTDIR=${DESTDIR:-$PKG_PREFIX}
+    make_symlinks
+    if [ -s ./$package.symlinks ]; then
+        # will need these later
+        trace installing $pkgdir/$package.symlinks
+        cp -p ./$package.symlinks $pkgdir/$package.symlinks
+        # modify the symlinks to have the proper package prefix path
+        [ "$old_destdir" != "$DESTDIR" ] && sed -i '' "s, , $DESTDIR," $pkgdir/$package.symlinks
+    fi
+    DESTDIR=$old_destdir
+    if [ -z "$PKG_BOOTSTRAP" ] ; then
+        # even if we plan to reboot, we need to mount the packages
+        # in case the user delays rebooting and wants to install
+        # something else.
+        case `mount | grep "$pkgfile "` in
+	"") trace mounting $pkgfile
+	    if [ -n "$base_mountpkg" ]; then 
+		/bin/sh $base_mountpkg
+	    else
+		/bin/sh $mountpkg
+	    fi
+	    ;;
+	esac
+    fi
+    [ -d /var/db/help ] ||
+        (umask 022; /bin/mkdir -p /var/db/help )
+    [ -s /usr/share/help/syslog-modules/$package.help.tgz ] &&
+        /bin/rm -f /var/db/help/syslog.help.tgz
+    if [ -z "$PKG_BOOTSTRAP" ]; then
+	if ! need_to_reboot; then
+	    # for non-core packages only...
+	    if [ "$HasDaemons" ]; then
+		kick_off_daemons $HasDaemons
+	    else
+		[ "$HasDDL" ] && restart_mgd
+		[ "$HasOtherDaemons" ] && kick_off_other_daemons $HasOtherDaemons
+	    fi
+	fi
+    fi
+
+    register_unsupported_package
+
+    DebugOff package_post_install
+}
+
+# common deinstall functionality
+package_deinstall() {
+    DebugOn package_deinstall
+    run_hooks package_deinstall_hooks
+    case "$package" in
+    jbase|jbase-ex|jroute|jroute-ex|jkernel|jkernel-ex|jpfe*|jdocs)
+        [ "$PKG_FORCE" ] || { DebugOff package_deinstall; return; }
+        ;;
+    esac
+    if [ -n "$base_mountdir" ]; then
+	/bin/rm -df $base_mountdir
+    fi
+    /bin/rm -f $mountpkg $base_mountpkg
+    rm_symlink_package
+    DebugOff package_deinstall
+}
+
+package_post_deinstall() {
+    DebugOn package_post_deinstall
+    run_hooks package_post_deinstall_hooks
+    case "$package" in
+    jbase|jbase-ex|jroute|jroute-ex|jkernel|jkernel-ex|jpfe*|jdocs)
+        [ "$PKG_FORCE" ] || { DebugOff package_post_deinstall; return; }
+        ;;
+    esac
+    case "$package" in
+    jkernel|jkernel-ex)
+        /bin/rm -f $base_umountpkg
+        ;;
+    *)
+        [ -s $umountpkg ] && /bin/sh ${umountpkg} 2>/dev/null
+        if [ -n "$base_umountpkg" ]; then
+	    /bin/rm -f $base_umountpkg
+	fi
+        /bin/df | /usr/bin/grep -q "$mountdir"
+        if [ $? = 1 ] ; then
+    	    /bin/rm -f $umountpkg
+	    /bin/rm -df $mountdir
+        fi
+        ;;
+    esac
+    # will still be there if marked @ignore_inst
+    chflags noschg $pkgdir/$pkgfile $pkgdir/$pkgfile.md5 $pkgdir/$pkgfile.sha1 $pkgdir/$pkgfile.sig $pkgdir/$pkgfile.certs >/dev/null 2>&1
+    /bin/rm -f $pkgdir/$pkgfile $pkgdir/$pkgfile.md5 $pkgdir/$pkgfile.sha1 $pkgdir/$pkgfile.sig $pkgdir/$pkgfile.certs $pkgdir/$package $pkgdir/$package.symlinks $base_pkgdir/$package
+    if [ -z "$PKG_UPGRADE" ]; then
+	if ! need_to_reboot; then
+	    [ "$HasDDL" ] && restart_mgd
+	    [ "$HasKillDaemons" ] && kick_off_other_daemons $HasKillDaemons
+	fi
+    fi
+    DebugOff package_post_deinstall
+}
+
+# Function to perform name checks for JUNOS SDK packages
+sdk_check_symlinks () {
+    local target="$1"
+
+    case "$target" in
+    "/opt/lib/dd/lib$PKG_PROVIDER_NAME"*"-dd.so" | \
+    "/opt/lib/render/lib$PKG_PROVIDER_NAME"*"-render.so" | \
+    "/opt/lib/dd/$PKG_PROVIDER_NAME"*".dml" | \
+    "/var/db/scripts/op/$PKG_PROVIDER_NAME"* | \
+    "/var/db/scripts/event/$PKG_PROVIDER_NAME"* | \
+    "/var/db/scripts/commit/$PKG_PROVIDER_NAME"*) ;;
+    *"lib"*"dd.so" | *"lib"*"render.so" | *".dml" | \
+    "/var/db/scripts/"*)
+        error "$target does not have $PKG_PROVIDER_NAME";;
+    *) ;;
+    esac
+}
+
+package_sdk_post_install() {
+    DebugOn package_sdk_post_install
+    mkdir -p /var/packages
+    rm -f $base_mountpkg /var/packages/mount.$package
+    ln -s $base_pkgdir/mount.$pkgfile /var/packages/mount.$package
+    ln -s /var/packages/mount.$package $base_mountpkg
+    DebugOff package_sdk_post_install
+}
+
+package_sdk_deinstall() {
+    DebugOn package_sdk_deinstall
+    rm -f /var/packages/mount.$package
+    DebugOff package_sdk_deinstall
+}
+
+package_sdk_post_deinstall() {
+    DebugOn package_sdk_post_deinstall
+    cleanup_package $package /dev/null
+    if [ "$clean_pkg_list" -a -s /sbin/cleanup-pkgs ]; then
+	if ! need_to_reboot; then
+	    trace Spawning cleanup-pkgs
+	    /bin/sh /sbin/cleanup-pkgs >> /var/log/cleanup-pkgs 2>&1 < /dev/null &
+	fi
+    fi
+    DebugOff package_sdk_post_deinstall
+}
+
+package_sdk_subpkg_type() {
+    DebugOn package_sdk_subpkg_type
+    if tar -tz --fast-read -f $subpkg_path +CONTENTS >/dev/null 2>&1; then
+	pkg_info -oq $instmp/$subpkg_name
+    elif tar -tz --fast-read -f $subpkg_path +junos-package.xml >/dev/null 2>&1; then
+	tar -zxO --fast-read -f "$subpkg_path" +junos-package.xml | sed -n -e '/<type>/s,.*<type>\([^<]*\)</type>.*,\1,p' 2>/dev/null
+    fi
+    DebugOff package_sdk_subpkg_type
+}
+
+package_sdk_bundle_post_install() {
+    DebugOn package_sdk_bundle_post_install
+    for subpkg in %SDK_SUBPKGS% ; do
+        subpkg_path=`Exists $instmp/$subpkg-*%RELEASE%*.tgz`
+        if [ ! -f "$subpkg_path" ]; then 
+            echo "Can't find $subpkg"; 
+            fail=1; 
+            continue;
+        fi
+        subpkg_name=`basename $subpkg_path`
+        subpkg_type=`package_sdk_subpkg_type`
+        case $subpkg_type in
+        SDK_PKG_RE|SDK_PKG_VE|SDK_PKG_CNTR)
+            pkg_info -e $subpkg && { \
+                echo "Auto-deleting old $subpkg ...";
+                pkg_delete $subpkg || \
+                { fail=1; continue; }
+            }
+            echo "Installing new $subpkg ..."
+            export PKG_VERIFIED=
+            pkg_add $PKG_FORCE $subpkg_path || \
+            { fail=1; continue; }
+
+            ;;
+        *)
+            echo "Package type $subpkg_type is not supported"
+            fail=1;
+            continue;
+            ;;
+        esac
+    done
+    DebugOff package_sdk_bundle_post_install
+}
+
+package_sdk_cntr_post_install() {
+    DebugOn package_sdk_cntr_post_install
+    sdk_pkgdir=/opt/sdk/service-packages/%PKG%
+    if [ ! -d $sw_pkgdir ]; then
+        echo "Creating $sw_pkgdir ... "
+        mkdir -p $sw_pkgdir || { fail=1; break; }
+    fi
+    if [ -d $sdk_pkgdir ]; then
+        echo "Cleaning $sdk_pkgdir ..."
+        rm -rf $sdk_pkgdir
+    else
+        echo "Creating $sdk_pkgdir ..."
+    fi
+    mkdir -p $sdk_pkgdir || { fail=1; break; }
+    for subpkg in %SDK_SUBPKGS% ; do
+        subpkg_path=`Exists $instmp/$subpkg-*%RELEASE%*.tgz`
+        if [ ! -f "$subpkg_path" ]; then 
+            echo "Can't find $subpkg"; 
+            fail=1; 
+            continue; 
+        fi
+        subpkg_name=`basename $subpkg_path`
+        subpkg_type=`package_sdk_subpkg_type`
+        case $subpkg_type in
+        SDK_PKG_PIC)
+            echo "Storing $subpkg_name in $sw_pkgdir ..."
+            cp $subpkg_path $sw_pkgdir || { fail=1; continue; }
+
+            echo "Link: $sdk_pkgdir/$subpkg -> $sw_pkgdir/$subpkg_name..."
+            ln -sf $sw_pkgdir/$subpkg_name $sdk_pkgdir/$subpkg || \
+            { fail=1; continue; }
+            ;;
+        *)
+            echo "Package type $subpkg_type is not supported"
+            fail=1;
+            continue;
+            ;;
+        esac
+    done
+    if [ -z "$PKG_BOOTSTRAP" ] ; then
+	echo "Notifying mspd ..."
+	daemon_send_signal HUP mspd
+    fi
+    DebugOff package_sdk_cntr_post_install
+}
+
+package_sdk_cntr_deinstall() {
+    DebugOn package_sdk_cntr_deinstall
+    sdk_pkgdir=/opt/sdk/service-packages/%PKG%
+    echo "Removing $sdk_pkgdir ..."
+    rm -rf $sdk_pkgdir
+    for subpkg in %SDK_SUBPKGS% ; do
+        subpkg_path=`Exists $sw_pkgdir/$subpkg-*%RELEASE%*.tgz`
+        if [ -f "$subpkg_path" ]; then
+            subpkg_name=`basename $subpkg_path`
+            echo "Removing $subpkg_name from $sw_pkgdir ..."
+            rm -f $subpkg_path
+        fi
+    done
+    echo "Notifying mspd ..."
+    daemon_send_signal HUP mspd
+    DebugOff package_sdk_cntr_deinstall
+}
+
+package_sdk_ve_post_install() {
+    DebugOn package_sdk_ve_post_install
+    package_sdk_post_install
+    if [ -z "$PKG_BOOTSTRAP" ] ; then
+        echo "Notifying svmmd ..."
+        daemon_send_signal HUP svmmd
+    fi
+    DebugOff package_sdk_ve_post_install
+}
+
+package_sdk_ve_deinstall() {
+    DebugOn package_sdk_ve_deinstall
+    package_sdk_deinstall
+    echo "Notifying svmmd ..."
+    daemon_send_signal HUP svmmd
+    DebugOff package_sdk_ve_deinstall
+}
+
+junos_boot_from_iso () {
+    local isover
+    isover=`read_link $1 | sed -e 's,junos-,,' -e 's,-domestic,,' -e 's,-export,,' -e 's,-fips,,'`
+
+    ls /var/sw/pkg/junos-boot-*-$isover.tgz 2> /dev/null
+}
+
+# Kill anyone keeping an fs busy
+# called from cleanup_package
+package_restart_daemons() {
+    DebugOn package_restart_daemons
+
+    if [ -d ${1:-/dev/null} ]; then
+	e=
+	for x in "$@"
+	do
+	    e="${e:+$e|}${x#/}"
+	done
+	fstat | egrep "/($e)" |
+	while read user cmd pid rest
+	do
+	    case $pid in
+	    ""|1) continue;;
+	    esac
+	    case $cmd in
+	    cli|mgd) continue;;
+	    esac
+	    echo "Restarting $cmd ..."
+	    kill -TERM $pid
+	done
+    fi
+    DebugOff package_restart_daemons
+}
+
+
+# cleanup_package <package> <ignore>
+#
+# this routine cleans up the previously mounted versions of
+# <package>, being careful to ignore <ignore> (usually pkgfile)
+# incase we are installing the same version of the package.
+# 
+cleanup_package() {
+    DebugOn cleanup_package
+    local package ignore backup needclean mounted pkg pkgpath
+
+    package=$1
+    ignore=${2:-$pkgfile}
+    backup=${3:-/dev/null}
+    trace cleanup_package $package $ignore
+
+    case $package in
+    jpfe) pkgmatch="jpfe-[^c]";;
+    *)    pkgmatch="$package-[0-9]";;
+    esac
+    needclean=/tmp/.cln$$
+    mounted=/tmp/.cln$$.m
+    > $needclean
+    > $mounted
+
+    if isFIPSimage; then
+        # fips package installed, remove all non-fips packages from /cf/packages
+        for f in /cf/packages/j*
+        do
+            case $f in
+            */junos*) continue;;
+            */jpfe*) continue;;
+            *\*) continue;;
+            esac
+            chflags noschg $f
+            rm -f $f
+        done
+    fi
+
+    #
+    # note that this will never match jbase - that only gets
+    # unmounted at reboot time
+    #
+    # don't include anything that's a memfs or a devfs here, that's
+    # a submount for a mounted package
+    #
+    # Also ignore '/jail/var' - that is an important nullfs mount for J-Web
+    #
+    mount | sed -n -e "/ufs,/d" -e "/devfs,/d" -e "/\/jail\/var/d" -e "/mnt\/$pkgmatch/s,mnt/,mnt ,p" |
+    while read mddev j1 j2 mounted_package j3
+    do
+	# this helps debug issues...
+	: mddev=$mddev mounted_package="$mounted_package" ignore="$ignore"
+	echo ${mounted_package##*/} >> $mounted
+        case "$mounted_package" in
+	$ignore) trace skipping $ignore
+            continue
+            ;;
+	$backup) trace skipping $backup
+            continue
+            ;;
+	esac
+        trace cleaning up $mounted_package
+        [ -d $pkgdir_mnt/$mounted_package ] || continue
+        # try to unmount it
+        if umount $pkgdir_mnt/$mounted_package 2>/dev/null; then
+            mdconfig -d -u ${mddev##*md} >/dev/null 2>&1
+	    rm -f $base_pkgdir/umount.$mounted_package
+	else
+	    # communicating to the parent of a redirected
+	    # loop can be a pain...
+	    echo $pkgdir_mnt/$mounted_package >> $needclean
+	fi
+        if [ -s $base_pkgdir/mount.$mounted_package ]; then
+            # see if it can tell us where the pkgfile is
+            eval `grep pkgpath= $base_pkgdir/mount.$mounted_package; :`
+        fi
+        pkgpath=${pkgpath:-$pkgdir/$mounted_package}
+        rm -f $base_pkgdir/mount.$mounted_package
+        rm -df $pkgdir_mnt/$mounted_package 2>/dev/null
+        chflags noschg $pkgpath $pkgpath.md5 $pkgpath.sha1 >/dev/null 2>&1
+        rm -f $pkgpath $pkgpath.md5 $pkgpath.sha1
+    done
+    if [ -s $needclean ]; then
+	clean_pkg_list="$clean_pkg_list $package"
+	case "$MYNAME" in
+	cleanup-pkgs)
+	    # This is only safe to call from cleanup-pkgs
+	    # since we don't want to hose ourselves during an upgrade.
+	    if [ ${loop_count:-0} -gt 20 ]; then
+		# we have been trying for a while
+		package_restart_daemons `cat $needclean`
+	    fi
+	    ;;
+	esac
+    fi
+    /bin/rm -f $needclean
+    (cd $pkgdir
+    for old_package in ${pkgmatch}*
+    do
+        case "$old_package" in
+	$ignore|$ignore.*) trace skipping $old_package
+            continue
+            ;;
+	$backup|$backup.*) trace skipping $backup
+            continue
+            ;;
+	*\*) break;;		# there are none?
+	esac
+        trace cleaning up $old_package
+        rm -df $pkgdir_mnt/$old_package 2>/dev/null
+        chflags noschg $old_package $old_package.md5 $old_package.sha1 >/dev/null 2>&1
+        rm -f `junos_boot_from_iso $old_package`
+        rm -f $base_pkgdir/*mount.$old_package $old_package $old_package.md5 $old_package.sha1
+    done
+    # real dregs...
+    cd $base_pkgdir
+    for old_package in *mount.${pkgmatch}*
+    do
+	case "$old_package" in
+	*.$ignore) trace skipping $ignore
+            continue
+	    ;;
+	*.$backup) trace skipping $backup
+            continue
+            ;;
+	*\*) break;;		# there are none?
+	esac
+	trace cleaning up $old_package
+	rm -f $old_package
+    done
+
+    # on system like SRX its possible to not have the package mount point
+    # so we do the following only if the mount point is available
+
+    if [ -d $pkgdir_mnt ]; then 
+	cd $pkgdir_mnt
+	mounted=`cat $mounted; rm -f $mounted`
+	for old_mnt in ${pkgmatch}*
+	do
+	    case "$old_mnt" in
+		$ignore) trace skipping $ignore
+		continue
+		;;
+		$backup) trace skipping $backup
+		continue
+		;;
+		*\*) break;;		# there are none?
+	    esac
+	    case " $mounted " in
+		*" $old_mnt "*) continue;;
+	    esac
+	    trace cleaning up old mountdir $old_mnt
+	    rmdir $old_mnt 2>/dev/null || trace $old_mnt still busy
+	done
+    fi
+
+    )
+    trace cleanup_package finished.
+    DebugOff cleanup_package
+}
+
+# Don't assume that pkg_delete did anything but
+# remove the record of the package being installed.
+# 
+replace_package_mount() {
+    DebugOn replace_package_mount
+    trace replacing mount for $package $pkgfile
+
+    cleanup_package $package $pkgfile
+
+    # we don't get called for jbase, but just in case...
+    if [ "$package" != jbase ]; then
+        create_mount_package $pkgdir/$pkgfile $mountdir > $mountpkg
+        create_umount_package $pkgdir/$pkgfile $mountdir > $umountpkg
+        make_package_links
+	if [ -z "$PKG_BOOTSTRAP" -a "$clean_pkg_list" -a -s /sbin/cleanup-pkgs ]; then
+	    if ! need_to_reboot; then
+		trace Spawning cleanup-pkgs
+		/bin/sh /sbin/cleanup-pkgs >> /var/log/cleanup-pkgs 2>&1 < /dev/null &
+	    fi
+	fi
+    fi
+    DebugOff replace_package_mount
+}
+
+# Generic place for notices that should only be displayed once
+#
+issue_notices () {
+    # In +REQUIRE, $instance will be INSTALL
+    # During jbundle +INSTALL, PKG_JBUNDLE will be set
+    case "$instance,$PKG_VALIDATING,$PKG_JBUNDLE" in
+    INSTALL,,) ;;
+    *) return ;;
+    esac
+
+    # Only do this for non-release builds (and not customer-built sdk packages)
+    case %RELEASE_CATEGORY%,$PKG_PROVIDER_NAME in
+    [$pkg_supported_ltrs],*) ;;
+    *,?*)    ;;
+    *)
+	warn
+	warn "    The software that is being installed has limited support."
+	warn "    Run 'file show /etc/notices/unsupported.txt' for details."
+	warn
+	;;
+    esac
+    NOTICES_ISSUED=:
+    export NOTICES_ISSUED
+}
+
+#
+# initialize <package-name> <pass-name>
+#
+# Initialize the environment
+#
+initialize() {
+    DebugOn initialize $1 $2 $1:$2
+    if [ ! -z "$PKG_TRACE_SHELL" ]; then
+	set -x
+	set # Show current variable settings
+    fi
+    if [ ! -w /etc -a -d /etc/db/pkg/junos ]; then
+	# some things must be skipped and others done...
+	PKG_NOT_JUNOS=:
+	PKG_IS_JUNOS=
+    else
+	PKG_NOT_JUNOS=
+	PKG_IS_JUNOS=:
+    fi
+
+    trace Initializing $0 package $1 for operation $2 in `pwd`
+
+    # Package name
+    package=$1
+
+    # instance will be INSTALL/DEINSTALL/PRE-INSTALL/POST-INSTALL
+    instance=$2
+
+    # Fix the path to a known good value
+    PATH=/bin:/sbin:/usr/bin:/usr/sbin:${PATH}
+    export PATH
+
+    # We have (probably) just extracted the entire package into
+    # the current directory ($instmp)
+    instmp=`pwd`
+
+    if [ -z $PKG_BOOTSTRAP ] ; then
+        dot_jkernel_require
+    fi
+    #
+    # The various mount/umount scripts
+    # Some wrinkles due to the fact that we have jpfe-*
+    # which we want registered as jpfe.
+    # Thus we no longer assume that pkgfile=$package-%RELEASE%.
+    # base_* are the canonical locations - known to /etc/rc et al
+    # the distinction between base_pkgdir and pkgdir is that for
+    # packages like jdiag and jtools pkgdir may be set to
+    # /var/packages so that the .iso will be kept off the flash.
+    pkgfile=%PKGFILE%
+    base_pkgdir=/packages
+    pkgdir=${pkgdir:-$base_pkgdir}
+    pkgdir_mnt=$base_pkgdir/mnt
+    if [ "$pkgfile" != "$package" ]; then
+	base_mountdir=$pkgdir_mnt/$package
+	base_mountpkg=$base_pkgdir/mount.$package
+	base_umountpkg=$base_pkgdir/umount.$package
+    fi
+    finish_install=$base_pkgdir/finish-install.$package
+    finish_deinstall=$base_pkgdir/finish-deinstall.$package
+
+    mountdir=$pkgdir_mnt/$pkgfile
+    mountpkg=$base_pkgdir/mount.$pkgfile
+    umountpkg=$base_pkgdir/umount.$pkgfile
+
+    if [ -z $PKG_BOOTSTRAP ] ; then
+        [ -d $pkgdir ] || /bin/mkdir -p $pkgdir
+    fi
+    clean_pkg_list=
+
+    # jbundle and/or package.sh set this to a file, so that
+    # we can detect across packages that a reboot is needed.
+    PKG_NEED_TO_REBOOT=${PKG_NEED_TO_REBOOT:-/dev/null}
+    if [ -s $PKG_NEED_TO_REBOOT ]; then
+        . $PKG_NEED_TO_REBOOT
+    fi
+    pkg_origin=`sed -n '/^@comment.*ORIGIN:/ { s,.*ORIGIN:[[:space:]]*,,p;q; }' +CONTENTS 2> /dev/null`
+
+    $NOTICES_ISSUED issue_notices
+    DebugOff initialize
+}
+
+#
+# dire_warn <message> ...
+#
+# Warns with a fist
+#
+dire_warn() {
+    local reason=
+    case "$1" in
+    -r) reason=$2; shift 2;;
+    esac
+    warn "$@"
+    # we ignore -force in some cases
+    case ",${PKG_NEVER_FORCE:-noforce}," in
+    *,"$reason",*) warn_abort $reason;;
+    esac
+    # PKG_FORCEABLE is set when -force is given, even if
+    # PKG_FORCE is suppressed (on some platforms).
+    # Thus if our $reason is in $PKG_FORCEABLE we should not abort.
+    # Otherwise we consider PKG_FORCE...
+    case ",${PKG_FORCEABLE:-nothing}," in
+    *,$reason,*) ;;
+    *)
+        if [ -z "$PKG_FORCE" ]; then
+            warn_abort $reason
+        fi
+        ;;
+    esac
+}
+
+
+#
+# warn_abort
+#
+# When something is wrong, bail. When something is very wrong, bail faster.
+#
+warn_abort() {
+    warn
+    warn "This installation attempt will be aborted."
+    # There are some things we never allow to be forced (on some platforms).
+    # So we don't want to recommend -force for those.
+    case ",${PKG_NEVER_FORCE:-noforce}," in
+    *,"$1",*) ;;
+    *)
+        warn "If you wish to force the installation despite these warnings"
+        warn "you may use the 'force' option on the command line."
+        ;;
+    esac
+    Exit 1
+}
+
+
+# platform_check, a number of packages need this now...
+# platform_check jseries|juniper|jsr
+platform_check() {
+    DebugOn platform_check
+
+    product_model=`sysctl -n hw.product.model`
+    re_model=`sysctl -n hw.re.model`
+    case "$1:$product_model:$re_model" in
+    *:olive) ;;			# ok
+    jseries:j[1-9][0-9][0-9][0-9]:*) ;; # ok
+
+    # Don't accept JSR image to load on pepsi class boxes , i.e
+    # j2300, j4300, j6300. however we do accept it for in house
+    # development.
+    jsr:jsr[1-9][0-9]00:*|jsr:j[1-9][0-9]00:*)
+        perms=$(expr $(smbc -o 0x30 0x57 1 | tail -1) : '.*\([0-9a-f]\)$')
+        case $perms in
+        2) 
+        ;; # ok
+        *)
+        Error "Unsupported platform $product_model for JUNOS JS," \
+              "use a jseries package"
+        ;;
+        esac
+        ;;
+
+    jseries:jsr[1-9][0-9][0-9][0-9]:*) ;; # ok
+    jsr:jsr[1-9][0-9][0-9][0-9]:*) ;; # ok
+    # check to accept JSR Image on Dr.Pepper Hardware
+    jsr:j[1-9][0-9][0-9][0-9]:*) ;; # ok
+
+    vjx:vjx[1-9][0-9][0-9][0-9]:*) ;; # ok
+    
+    jinstall_srx5000:srx5[0-9]00:*) ;; # jinstall_srx5000 on srx5*00 is ok
+    srx5000:srx5[0-9]00:*) ;; # install srx5000 on srx5*00 is ok 
+    srx5000:a20:*) ;;
+    srx5000:a40:*) ;;
+    # a20/a40 are legacy names of srx5600/srx5800, we support them // <<For backward compatability>>
+    srx3000:srx3[0-9]00:*) ;; # install srx3000 on srx3*00 is ok
+    srx3000:a2:*) ;;
+    srx3000:a10:*) ;;
+    # a2/a10 are legacy names of srx3000 platforms, we support them 
+    srx1k3k:srx[1-3][0-9]00:*) ;; # install srx1k3k on srx1*00 and srx3*00 is ok
+    srx1k3k:a1:*) ;;
+    srx1k3k:a2:*) ;;
+    srx1k3k:a10:*) ;;
+    # a1/a2/a10 are legacy names of srx1k3k platforms, we support them 
+
+    srx5000:*) # install srx5000 on other platform are not ok
+	Error "Unsupported platform $product_model, use a non-srx5000 package"
+	;;
+    *:srx5[0-9]00:*) # install non jssg on srx5*00 is not ok
+	Error "Unsupported package $1 for platform $product_model, use a srx5000 package"
+        ;;
+    srx3000:*) # install srx3000 on other platform are not ok
+        Error "Unsupported platform $product_model, use a non-srx3000 packge"
+        ;;
+    *:srx3[0-9]00:*) # install non srx3000 on srx3*00 is not ok
+        Error "Unsupported package $1 for platform $product_model, use a srx3000 package"
+	;;
+    srx1k3k:*) # install srx1k3k on other platform are not ok
+        Error "Unsupported platform $product_model, use a non-srx1k3k packge"
+        ;;
+    *:srx[1-3][0-9]00:*) # install non srx1k3k on srk1*00 or srx3*00 is not ok
+        Error "Unsupported package $1 for platform $product_model, use a srx1k3k package"
+	;;
+    jseries:*)
+	Error "Unsupported platform $product_model, use a non-jseries package"
+	;;
+    *:j[1-9][0-9][0-9][0-9]:*)
+	Error  "Unsupported platform $product_model, use a jseries package"
+	;;
+
+    # installing srxsme package on SRX 1xx 2xx is ok
+    # allow product name to be both srx* and jsrx* to allow installation on
+    # boxes which have older packages installed (product name jsrx*).
+    srxsme:srx[12][0-9][0-9]*:*)
+        ;;
+    srxsme:jsrx[12][0-9][0-9]*:*)
+        ;;
+
+    # installing srxsme package on SRX 6xx is ok
+    srxsme:srx6[0-9][0-9]*:*)
+        ;;
+    # installing srxsme package on other platforms is not ok
+    srxsme:*:*)
+        Error "Unsupported platform $product_model, use a non-srxsme package"
+        ;;
+    # installing non-srxsme package on SRX 1xx 2xx is not ok
+    *:srx[12][0-9][0-9]*:*)
+        Error "Unsupported package $1 for platform $product_model, use a srxsme package"
+        ;;
+    # installing non-srxsme package on SRX 6xx is not ok
+    *:srx6[0-9][0-9]*:*)
+        Error "Unsupported package $1 for platform $product_model, use a srxsme package"
+        ;;
+
+    # installing LN/ESR package on LN/ESR* is ok
+    {ln|esr}:{ln|esr}*:*)
+        ;;
+    # installing LN/ESR package on other platforms is not ok
+    {ln|esr}:*:*)
+        Error "Unsupported platform $product_model, use a non-LN package"
+        ;;
+    # installing non-LN/ESR package on LN/ESR is not ok
+    *:{ln|esr}*:*)
+        Error "Unsupported package $1 for platform $product_model, use a LN package"
+        ;;
+    esac
+    DebugOff platform_check
+}
+
+# Support for sort till 3 levels of version numbers i.e. x.y.z
+version_max() {
+    for _v in "$@"; do echo $_v; done | sort -t "."  +0 -1 -n +1 -2 -n +2 -3 -n | tail -1
+}
+
+version_lt() {
+    m=`version_max "$@"`
+    test $m = $2 -a $m != $1
+}
+
+version_ge() {
+    m=`version_max "$@"`
+    test $m = $1
+}
+
+#
+# version_check
+#
+# Check package against base OS.
+#
+version_check() {
+    DebugOn version_check
+
+    if [ -n "$PKG_VERSION_CHECK_DISABLED" ]; then
+	return
+    fi
+
+    local current=`sed 's,.*\[\([1-9][0-9.]*\).*,\1,' /etc/db/pkg/junos/+COMMENT`
+    local min_release=${1:-%RELEASE_MAJOR%.%RELEASE_MINOR%}
+    
+    if version_lt ${current:-0.0} $min_release; then
+	run_hooks version_check_fail_hooks
+	warn
+	warn "This base version of JUNOS will not properly"
+	warn "support this package.  Please install base OS"
+	warn "JUNOS $min_release or newer first.  You can do this via"
+	warn "a jinstall package or install-media."
+	case "./$package" in
+	*/jbundle*) # nothing removed yet, so no need to rollback.
+	    ;;
+	*)  # previous package has likely been removed so be helpful.
+	    warn
+	    warn "Or use the command:"
+	    warn
+	    warn "	'request system software rollback'"
+	    warn
+	    warn "to attempt to restore the previous software set."
+	    ;;
+	esac
+	warn
+	warn "This installation attempt will be aborted."
+	warn
+	Exit 1
+    fi
+    DebugOff version_check
+}
+
+#
+# storage_check
+#
+# Check to make sure we've got enough space.
+#
+storage_check() {
+    DebugOn storage_check
+    local minfree=${1:-2048}
+    local filesys=${2:-/packages}
+    local file=${3:-$instmp}
+
+    if [ -z "$PKG_STORAGE_CHECK_DISABLED" ]; then
+	# get space available - and where it is.
+	eval `df -k $filesys | ( read h; read d s u a c o; echo available=$a on=$o )`
+	suggested=`du -ks $file | ( read one two; echo $one )`
+
+	# make sure root always has $minfree mb to spare
+	suggested=`expr $suggested + $minfree`
+
+	inform "Available space: $available require: $suggested"
+
+	if [ $suggested -ge $available ] ; then
+	    warn
+	    case ${on:-/} in
+	    /junos/cf) on=/cf;;
+	    /) on=root;;
+	    *) on=$filesys;;	
+	    esac
+	    warn "The $on filesystem is low on free disk space."
+	    warn "This package requires ${suggested}k free, but there"
+	    warn "is only ${available}k available."
+
+	    run_hooks storage_check_fail_hooks
+
+	    warn_abort space
+	fi
+    else
+	trace Storage check is disabled
+    fi
+    DebugOff storage_check
+}
+
+# system_memory_check()
+# Upgradation of JUNOS 9.3 or higher versions on all
+# routers require RAM greater than 256MB.
+#
+# Display error messages if the routers have less than or
+# equal to 256 MB RAM and trying to upgrade to versions 9.3 and higher.
+#
+system_memory_check() {
+    # For upgradation to this package(JUNOS 9.3 and above)
+    # minumum recommended memory size in MB.
+    recommended_memsize=512
+
+    # Lowest threshold memory size: equal or below 256MB size is not allowed.
+    min_memsize=268435456
+
+    # calculate the system memory size
+    memsize=`/sbin/sysctl -n hw.physmem 2>/dev/null`
+    if [ $? -ne 0 ]; then
+        warn "Unable to determine physical memory size."
+        warn_abort
+    fi
+
+    # Check if RAM is less than or equal to 256 MB, if so, error and abort the installation.
+    if [ $memsize -le $min_memsize ]; then
+            error_more "This package can't be installed with `expr $memsize / 1024 / 1024` MB of RAM."
+            error_more "For JUNOS 9.0 and higher, at least $recommended_memsize MB of RAM is recommended."
+            Error "Upgrade the RAM to $recommended_memsize MB or more and try installing again."
+    fi
+}
+
+sd_version_checkat_rsd() {
+    # checking at RSD system.
+    sd_version=%SD_VERSION%
+    sysctl hw.re.sd_my_sd_version > /dev/null 2>&1 || return
+
+    # hw.re.sd_my_sd_version is to get the SD_MSG_VERSION at current system.
+    rsd=`sysctl -n hw.re.sd_my_sd_version`
+
+    # hw.re.sd_psd_versions is used at RSD to get all PSD's versions.
+    psds="`sysctl -n hw.re.sd_psd_versions`"
+    loopc=0
+    incomp=0
+    if [ "$rsd" -a "$rsd" -ne 0 ]
+    then 
+        for i in $psds
+        do
+            if [ $i -ne 0 ]
+            then 
+                if [ $i -ne $sd_version ]
+                then
+                    warn
+                    warn "PSD $loopc will not be able to communicate with RSD after this installation"
+                    incomp=1
+                fi
+            fi    
+            loopc=`expr $loopc + 1`
+        done    
+        if [ $incomp -eq 1 ]
+        then
+            warn 
+            warn "The PSD's listed above will not be able to communicate with RSD after this"
+            warn "installation."
+            warn_abort
+        fi    
+    fi    
+}
+
+sd_version_checkat_psd() {
+    # checking at PSD system.
+    # hw.re.sd_my_sd_version is to get the SD_MSG_VERSION at current system.
+    psd_version=%SD_VERSION%
+    sysctl hw.re.sd_my_sd_version > /dev/null 2>&1 || return
+
+    # hw.re.sd_rsd_version is used at PSD to get RSD version.
+    rsd_version=`sysctl -n hw.re.sd_rsd_version`
+
+    if [ "$rsd_version" -a "$rsd_version" -ne 0 ]
+    then 
+        if [ $psd_version -ne $rsd_version ]
+        then
+            warn
+            warn "The new installation message version is incompatible with the version"
+            warn "at RSD. PSD wont be able to communicate with RSD if you proceed."
+            warn "Please contact RSD admin."
+            warn_abort
+        else
+            inform "The new installation SD message version at PSD is compatible with the version at RSD."
+            inform "This PSD's message version is $psd_version and RSD's message version is $rsd_version." 
+        fi
+    fi
+}
+
+sd_msg_version_check() {
+    sysctl hw.re.sd_mode > /dev/null 2>&1 || return
+
+    if [ -z "$PKG_FORCE" ]
+    then
+        product_model=`sysctl -n hw.product.model`
+        case "$product_model" in
+        t640 | t320)
+            is_rsd=`sysctl -n hw.re.sd_mode`
+            if [ $is_rsd -eq 2 ]
+            then
+                sd_version_checkat_rsd
+            elif [ $is_rsd -eq 1 ]
+            then
+                sd_version_checkat_psd
+            fi
+            ;;
+        *)
+            ;;
+        esac
+    fi
+}
+
+unpack_pkgtools() {
+    if [ -s $instmp/pkgtools.tgz -a ! -s $instmp/pkg/manifest ]; then
+	    (cd $instmp && tar zxf pkgtools.tgz)
+	    # if veriexec is present, we probably need to use it
+	    veriexec_check && /sbin/veriexec -C $instmp $instmp/pkg/manifest
+    fi
+}
+
+#
+# pic combination check
+#
+# Certain pic combinations in a pic are not allowed
+#
+pic_combination_check() {
+    unpack_pkgtools
+    if [ -x $instmp/bin/checkpic ]; then
+	$instmp/bin/checkpic || dire_warn -r pic
+    fi
+}
+
+#
+# dot_file <package-name> [quietly]
+#
+# Dot (source) a package REQUIRE script, to pick up variable settings
+#
+dot_file() {
+    local dot_path
+
+    PKG_SETUP_VARIABLES_ONLY=TRUE
+
+    dot_path="$pkg_db_dir/$1$pkg_tag/+REQUIRE"
+    trace Dotting file $dot_path ...
+
+    if [ "$1$pkg_tag" = "$package" ]; then
+	trace Dot file $dot_path is us
+	if [ -r ./+REQUIRE ]; then
+	    . ./+REQUIRE
+	else
+	    warn "Local requirements file for package $1 not found"
+	fi
+    elif [ ! -r $dot_path ]; then
+	trace Dot file $dot_path does not exist
+	if [ -z "$2" ]; then
+	    warn "Could not open requirements file for $1$pkg_tag: $dot_path"
+	fi
+    elif grep -sq PKG_SETUP_VARIABLES_ONLY $dot_path; then
+	. $dot_path
+    else
+	if [ -z "$2" ]; then
+	    warn "Package '$1' is not compatible with package '$package':"
+	    warn "    $1 does not support requirements tests (fatal)"
+	    fail=1
+	fi
+    fi
+}
+
+#
+# var_test <my-value> <test> <their-value>
+#
+var_test() {
+    trace testing: "$@"
+
+    # deal with simple [in]equality
+    case "$2" in
+    -ne|!=|-eq|=)
+	case "$2" in
+	-ne) _op="!=";;
+	-eq) _op="=";;
+	*) _op="$2";;
+	esac
+	test "$1" "$_op" "$3" > /dev/null
+	return $?
+	;;
+    esac
+
+    # more complex checks
+    m=`version_max "$1" "$3"`
+    case "$2" in
+    -gt|\>) test $m = $1 -a $m != $3;;
+    -lt|\<) test $m = $3 -a $m != $1;;
+    -ge|\>=|=\>) test $m = $1;;
+    -le|\<=|=\<) test $m = $3;;
+    *) test "$@" > /dev/null;;
+    esac
+}
+
+
+#
+# var_warn <my-name> <my-value> <test> <their-name> <their-value> <message>
+#
+# Warn (and bail) if the variables don't match
+#
+var_warn() {
+    trace testing: "$@"
+
+    if var_test "$2" "$3" "$5"; then
+        warn "Package '$1' is not compatible with package '$4':"
+        warn "    $6"
+        warn "    ($1:$2 $_op $4:$5)"
+        fail=1
+    fi
+}
+
+#
+# package_exists <package-name>
+#
+# return true if the package exists. Use this function for juniper packages
+#
+package_exists() {
+    trace package_exists tests $1 `ls -ld /etc/db/pkg/$1$pkg_tag 2>/dev/null`
+    if [ -d /etc/db/pkg/$1$pkg_tag ]; then
+	trace package_exists: "$1" is installed
+	true
+    elif [ "$1$pkg_tag" = "$package" ]; then
+	trace package_exists: "$1" is us
+	true
+    else
+	trace package_exists: fails for "$1"
+	false
+    fi
+}
+
+#
+# package_installed <package-name>
+#
+# return true if the package exists. Use this function for non-juniper
+# packages.
+#
+package_installed() {
+    trace package_installed tests $1 `ls -ld /etc/db/pkg/$1 2>/dev/null`
+    if [ -d /etc/db/pkg/$1 ]; then
+	trace package_installed: "$1" is installed
+	true
+    elif [ "$1" = "$package" ]; then
+	trace package_installed: "$1" is us
+	true
+    else
+	trace package_installed: fails for "$1"
+	false
+    fi
+}
+
+#
+# package_does_not_exist <package-name>
+#
+package_does_not_exist() {
+    if package_exists "$1" ; then
+	false
+    else
+	true
+    fi
+}
+
+daemon_restart_warn() {
+    echo "WARNING: Daemons could not be restarted:" "$*"
+}
+
+#
+# daemon_restart_other <daemon-name>
+#
+# Restart a daemon by means other than rpdc
+#
+daemon_get_pid() {
+    if [ -r /var/run/$1.pid ]; then
+	cat /var/run/$1.pid
+    else	
+	ps gax | grep "/$1 -N" | grep -v grep | awk '{ print $1 }' 2>/dev/null
+    fi
+}
+
+# make minimal assumptions
+other_get_pid() {
+    if [ -r /var/run/$1.pid ]; then
+        cat /var/run/$1.pid
+    else
+	ps axc | sed -n "/ $1\$/ { s,^ *,,;s, .*,,p; }"
+    fi
+}
+
+daemon_send_signal()
+{
+    if [ -z "$PKG_BOOTSTRAP" ] ; then
+	local daemon_pid=`daemon_get_pid "$2"`
+	daemon_pid=${daemon_pid:-`other_get_pid "$2"`}
+	if [ ! -z "$daemon_pid" ]; then
+	    kill -$1 "$daemon_pid"
+	fi
+    fi
+}
+
+daemon_restart_other() {
+    echo "Restarting $1 ..."
+    daemon_send_signal TERM "$1"
+}
+
+#
+# daemon_restart <daemon-name>
+#
+# restart a daemon by whatever means available; normally, this means that
+# we kill it (using rpdc is possible) and init restarts it
+#
+daemon_kill() {
+    local rc
+    if [ -x /usr/sbin/rpdc ]; then
+	rpdc -q -D$1 stop
+	rc=$?
+    else
+        rc=2		# unavailable(ENOENT)
+    fi
+    if [ $rc = 2 ]; then
+        daemon_send_signal TERM "$1"
+    fi
+}
+
+daemon_restart() {
+    echo "Restarting $1 ..."
+    daemon_kill "$@"
+}
+
+#
+# daemon_is_running <daemon-name>
+#
+daemon_is_running() {
+    if [ -x /usr/sbin/rpdc ]; then
+	rpdc -q -D$1 running && return 0
+    fi
+    false
+}
+
+
+# record the fact that a package wants to reboot
+package_wants_to_reboot() {
+    DebugOn package_wants_to_reboot
+    case "${need_to_reboot_rc:-false}" in
+    false)
+        warn "Package $1 wants to reboot${2:+: $2}"
+        need_to_reboot_rc=true
+        echo need_to_reboot_rc=true >> ${PKG_NEED_TO_REBOOT:-/dev/null}
+        ;;
+    esac
+    DebugOff package_wants_to_reboot
+}
+
+#
+# need_to_reboot
+#
+# Determine if we need to reboot after software install
+#
+need_to_reboot() {
+    need_to_reboot_rc=${need_to_reboot_rc:-false}
+
+    if [ "$need_to_reboot_rc" = true ]; then
+        # we've been here before and already made up our mind
+        return 0
+    fi
+
+    # someone else may have already decided...
+    if [ -s ${PKG_NEED_TO_REBOOT:-/dev/null} ]; then
+	. $PKG_NEED_TO_REBOOT
+    fi
+
+    #
+    # If the running kernel has no +REQUIRE script variables,
+    # it's an oldie and we definitely want to reboot.
+    #
+    dot_jkernel_require
+    if [ ! -r $jkernel_require ]; then
+        need_to_reboot_rc=true
+    fi
+    
+    if package_exists jkernel ; then
+	if [ -z "$jkernel_works" ]; then
+	    dot_file jkernel quietly
+	fi
+	if [ ! -z "$jkernel_works" ]; then
+	    if jkernel_needs_to_reboot ; then
+		need_to_reboot_rc=true
+	    fi
+	fi
+    fi
+    
+    if package_exists jkernel-ex ; then
+	if [ -z "$jkernel_ex_works" ]; then
+	    dot_file jkernel_ex quietly
+	fi
+	if [ ! -z "$jkernel_ex_works" ]; then
+	    if jkernel_ex_needs_to_reboot ; then
+		need_to_reboot_rc=true
+	    fi
+	fi
+    fi	
+    
+    if package_exists jbase ; then
+	if [ -z "$jkernel_works" ]; then
+	    dot_file jkernel quietly
+	fi
+	if [ ! -z "$jkernel_works" ]; then
+	    if jkernel_needs_to_reboot ; then
+		need_to_reboot_rc=true
+	    fi
+	fi
+    fi
+
+    if package_exists jbase-ex ; then
+        if [ -z "$jkernel_ex_works" ]; then
+            dot_file jkernel_ex quietly
+        fi
+        if [ ! -z "$jkernel_ex_works" ]; then
+            if jkernel_ex_needs_to_reboot ; then
+                need_to_reboot_rc=true
+            fi
+        fi
+    fi
+    
+    if package_exists jroute ; then
+	if [ -z "$jroute_works" ]; then
+	    dot_file jroute quietly
+	fi
+	if [ ! -z "$jroute_works" ]; then
+	    if jroute_needs_to_reboot ; then
+		need_to_reboot_rc=true
+	    fi
+	fi
+    fi
+
+    if package_exists jroute-ex ; then
+        if [ -z "$jroute-ex_works" ]; then
+            dot_file jroute-ex quietly
+        fi
+        if [ ! -z "$jroute_ex_works" ]; then
+            if jroute_ex_needs_to_reboot ; then
+                need_to_reboot_rc=true
+            fi
+        fi
+    fi
+    
+    if package_exists jpfe ; then
+	if [ -z "$jpfe_works" ]; then
+	    dot_file jpfe quietly
+	fi
+	if [ ! -z "$jpfe_works" ]; then
+	    if jpfe_needs_to_reboot ; then
+		need_to_reboot_rc=true
+	    fi
+	fi
+    fi
+
+    if package_exists jcrypto ; then
+	if [ -z "$jcrypto_works" ]; then
+	    dot_file jcrypto quietly
+	fi
+	if [ ! -z "$jcrypto_works" ]; then
+	    if jcrypto_needs_to_reboot ; then
+		need_to_reboot_rc=true
+	    fi
+	fi
+    fi
+
+    if [ "$need_to_reboot_rc" = true ]; then
+        echo need_to_reboot_rc=true >> $PKG_NEED_TO_REBOOT
+    fi
+    $need_to_reboot_rc
+}
+
+#
+# user_wants_reboot
+#
+# Does the user intend on rebooting after we exit? If so, there's no
+# need to restart/rebuild/retool anything.
+#
+user_wants_reboot() {
+    trace user_wants_reboot: $PKG_USER_WILL_REBOOT
+    [ ! -z "$PKG_USER_WILL_REBOOT" ];
+}
+
+#
+# user_wants_to_delay
+#
+# Does the user want to delay? This may be by choice, and may be
+# because the software is not being installed into the running system.
+#
+user_wants_to_delay() {
+    trace user_wants_to_delay: $PKG_USER_WANTS_TO_DELAY
+    [ ! -z "$PKG_USER_WANTS_TO_DELAY" ];
+}
+
+#
+# save_current_configuration
+#
+# If the database exists, we try to save it in ascii form using the
+# previous package's mgd (mgd.last from POST-INSTALL). If the saved
+# version if different that the last committed version, or if there
+# is no committed version, let the user know where the save file is.
+#
+save_current_configuration() {
+    DebugOn save_current_configuration
+    local saving_mgd
+
+    trace save_current_configuration
+
+    if [ "x$PKG_SAVE_CURRENT_CONFIGURATION" != x ]; then
+	# we've been here before.
+	return
+    fi
+    if [ -f $mgd ]; then
+	saving_mgd=$mgd
+    else
+	saving_mgd=$mgd_last
+    fi
+
+    if [ -f $config_database -a -x $saving_mgd ] ; then
+	$saving_mgd -e $config_changes > /dev/null 2>&1
+	if [ -f $config_changes ] ; then
+	    if [ -f $config_file ] ; then
+                case $config_file in
+		*.gz) gunzip < $config_file | diff -q $config_changes - > /dev/null;;
+		*) diff -q $config_file $config_changes > /dev/null;;
+		esac
+		if [ $? != 0 ]; then
+		    notice "uncommitted changes have been saved in $config_changes"
+		fi
+	    else
+		notice "uncommitted database has been saved in $config_changes"
+	    fi
+	fi
+	# avoid doing this more than once
+	echo PKG_SAVE_CURRENT_CONFIGURATION=: >> $PKG_NEED_TO_REBOOT
+    fi
+    DebugOff save_current_configuration
+}
+
+#
+# restart_mgd
+#
+# We need to restart the management daemon, if possible. This involves
+# rebuilding the schema, since the incoming package should have dd.so
+# shared libraries that affect it. This operation implicitly reloads
+# the configuration database. We then run a commit, to make the
+# configuration really happen. Then we restart the mgd daemon itself.
+#
+restart_mgd() {
+    local rc mgd_running
+    trace restart_mgd
+
+    [ $package = jroute -o -d $pkg_db_dir/jroute -o -z "$PKG_IS_JUNOS" ] ||  { 
+	trace no jroute package
+	return
+    }
+    [ -x $mgd ] || { trace $mgd not available; return; }
+
+    # Save the old config binary database. If there is a committed
+    # version, reload it. I don't reload the uncommitted changes.
+    if [ -f $config_database ] ; then
+	mv $config_database $config_database.old
+    fi
+
+    rc=false
+    daemon_is_running mgd
+    mgd_running=$?
+
+    if [ -f $config_file ] ; then
+	cp -p $config_file /var/db/$config_file.post-install
+	echo "Reloading $config_file ..."
+	$mgd build-schema
+	if [ $? -ne 0 ]; then
+	    warn "Errors found while loading configuration."
+            if ${SafeModeCommit:-false} ; then
+                #
+                # We sometimes need mgd to commit the existing configuration
+                # even if it has some errors. Particularly for situations
+                # of upgrade/downgrade of subset packages with their own
+                # configurations.  This, in concert with having to restart
+                # daemons like fwdd/flowd can cause the system to become
+                # unreachable (interfaces don't get initialized) unless
+                # other parts of valid configurations are allowed to occur.
+                #
+                # Here, we expect mgd to commit configurations that are
+                # valid, ignore blocks for which the schema does not exist,
+                # and rely on daemons to handle linkages carefully.  (for
+                # example, fwdd/flowd will silently ignore app-accel
+                # directives if that package has been removed).
+                #
+                warn "Activating Partial Configuration in $config_file.  Correct as needed"
+                $mgd -I -ZO -Zs
+            else
+	        warn "Correct the errors and commit the configuration."
+	        rc=true
+            fi
+	else 
+	    echo "Activating $config_file ..."
+	    $mgd activate
+	    if [ $? -ne 0 ]; then
+		rc=true
+	    fi
+	fi
+    fi
+
+    # mgd should be running already; stop it and init will restart it
+    # If it wasn't running, kicking init should have started it for us.
+    if [ $mgd_running = 0 ]; then
+	daemon_restart mgd
+    fi
+    kill -HUP 1
+
+    $rc
+}
+
+#
+# restart_watchdog
+# 
+# Restart watchdog daemon
+#
+restart_watchdog () {
+    local pid
+
+    echo "Restarting watchdog ..."
+    pid=`ps gax | grep "$1 -d" | grep -v grep \
+	 | awk '{ print \$1 }' 2>/dev/null`
+    if [ ! -z "$pid" ]; then
+	kill -TERM "$pid"
+    else
+	warn "restart_watchdog: Watchdog process not found"
+    fi
+    #
+    # HUP init for good measure
+    kill -HUP 1
+}
+
+#
+# all_packages_exist [quietly]
+#
+# Determine if we have a complete set of software
+#
+all_packages_exist() {
+    local all_packages_exists_rc
+    all_packages_exists_rc=true
+
+    all_packages_exist_test jkernel $1
+    all_packages_exist_test jroute $1
+    all_packages_exist_test jpfe $1
+    all_packages_exist_test jpfe-common $1
+    $all_packages_exists_rc
+}
+
+all_packages_exist_test() {
+    if package_does_not_exist "$1" ; then
+	trace all_packages_exist: package_does_not_exist "$1"
+	if [ -z "$2" ]; then
+	    warn "Package "$1" is not installed"
+	fi
+	all_packages_exists_rc=false
+    fi
+}
+
+warn_of_reboot() {
+    if [ -z "$PKG_USER_WILL_REBOOT" ]; then
+	# after we've been through here once, PKG_WARN_DELAY
+	# will be ':' and so these lines will be commented out.
+	$PKG_WARN_DELAY warn "A reboot is required to load this software correctly"
+	# jbundle calls us with an arg of jboot if he needs to update
+	# it, when this happens all_packages_exist will do the wrong thing
+	# since we've not removed anything yet, so we skip it.
+	if [ "$1" != jboot ] && all_packages_exist quietly ; then
+	    $PKG_WARN_DELAY warn "    Use the 'request system reboot' command immediately"
+	else
+	    $PKG_WARN_DELAY warn "    Use the 'request system reboot' command"
+	    $PKG_WARN_DELAY warn "        when software installation is complete"
+	fi
+    fi
+    $PKG_WARN_DELAY echo PKG_WARN_DELAY=: >> $PKG_NEED_TO_REBOOT
+    PKG_WARN_DELAY=:
+}
+
+#
+# check_delay
+#
+#
+check_delay() {
+    if user_wants_reboot ; then
+	trace check_delay: user_wants_reboot
+	# hold your tongue
+	true
+    elif user_wants_to_delay ; then
+	trace check_delay: user_wants_to_delay
+	warn "Daemons will be restarted at a later time"
+	true
+    elif need_to_reboot ; then
+	trace check_delay: need_to_reboot
+        warn_of_reboot
+	true
+    else
+	false
+    fi
+}
+
+#
+# kick_off_other_daemons <daemon-name> ...
+#
+# Restart whatever non-conformant daemons
+#
+kick_off_other_daemons() {
+    local kick_list restart_list daemon
+
+    if check_delay ; then
+	trace kick_off_other_daemons: delaying
+	# hold your tongue
+	true
+    else 
+	restart_list="$*"
+	trace kick_off_other_daemons: get to work
+	# Restart daemons by stopping them and letting init restart them
+	for daemon in $restart_list ; do
+	    trace kick_off_other_daemons: restarting $daemon
+	    daemon_restart_other $daemon
+	done
+
+	# HUP init once more just to be safe....
+	kill -HUP 1
+
+	false
+    fi
+}
+
+#
+# kick_off_daemons <daemon-name> ...
+#
+# Restart whatever daemons are required to get this thing cooking
+#
+kick_off_daemons() {
+    local kick_list restart_list daemon
+
+    if check_delay ; then
+	trace kick_off_daemons: delaying
+	# hold your tongue
+	true
+    elif package_does_not_exist jroute && [ -z "$PKG_NOT_JUNOS" ]; then
+	trace kick_off_daemons: no jroute
+	# after we've been through here once, PKG_WARN_RESTART_JROUTE
+	# will be ':' and so these lines will be commented out.
+	$PKG_WARN_RESTART_JROUTE warn "Daemons will be restarted when the jroute package is installed"
+	$PKG_WARN_RESTART_JROUTE echo PKG_WARN_RESTART_JROUTE=: >> $PKG_NEED_TO_REBOOT
+	PKG_WARN_RESTART_JROUTE=:
+	false
+    else 
+	kick_list="$*"
+	trace kick_off_daemons: get to work
+	restart_list=""
+	for daemon in $kick_list ; do
+	    if [ "$daemon" = "mgd" ]; then
+		# skip mgd
+	    else
+		daemon_is_running $daemon
+		if [ $? -eq 0 ]; then
+		    restart_list="$restart_list $daemon"
+		fi
+	    fi
+	done
+
+	if restart_mgd $kick_list; then
+	    trace kick_off_daemons: restart_mgd failed
+	    # Restarting mgd failed. We need to decide whether we
+	    # can restart our daemons
+	    # Don't do anything for now....
+	    false
+	else
+
+	    # MGD should have just HUPped init
+	    # kill -HUP 1
+
+	    # Restart daemons by stopping them and letting init restart them
+	    for daemon in $restart_list ; do
+		trace kick_off_daemons: restarting $daemon
+		daemon_restart $daemon
+	    done
+
+	    # HUP init once more just to be safe....
+	    kill -HUP 1
+
+	    false
+	fi
+    fi
+}
+
+#
+# md5_cksum_value <file>
+#
+# Get the MD5 checksum value for a file 
+#
+md5_cksum_value() {
+    md5 < "$1" 2>/dev/null
+}
+
+#
+# what_filesystem <file>
+#
+# Determine which filesystem a given file is mounted on, if any
+#
+what_filesystem () {
+    df $1 | grep -v Filesystem | awk '{print $1}' 2>/dev/null
+}
+
+#
+# which <cmd-file>
+#
+# We don't ship /usr/bin/which, so we have to fake one
+#
+which() {
+    local which_found
+    which_found=""
+    for dir in /sbin /usr/sbin /bin /usr/bin /usr/libexec ; do
+	if [ -x "$dir/$1" -a -z "$which_found" ]; then
+	    echo "$dir/$1"
+	    which_found="done"
+	fi
+    done
+}
+
+#
+# daemon_needs_restarted <daemon-name>
+#
+# Determine if the daemon needs to be restarted based on the md5 checksum
+# of the running image and it's disk file
+# Note that with packages mounted in ISO filesystems now, we could have
+# the same file with matching MD5s but in two different filesystems - we
+# to make sure we report true in this case
+#
+daemon_needs_restarted() {
+    local pid daemon_md5 binary_file binary_md5 daemon_fs binary_fs
+
+    if [ -r /var/run/$1.pid ]; then
+	pid=`cat /var/run/$1.pid`
+	if [ -r /proc/$pid/file ]; then
+	    daemon_md5=`md5_cksum_value /proc/$pid/file`
+	    binary_file=`which $1`
+	    if [ -z "$binary_file" ]; then
+	        trace "daemon_needs_restarted: no binary for $1"
+		false
+	    else
+		binary_md5=`md5_cksum_value $binary_file`
+		#
+		# Ok, if their MD5s are the same, they could still be on
+		# different filesystems, so let's check that as well
+		if [ "$daemon_md5" = "$binary_md5" ]; then
+ 		    daemon_fs=`what_filesystem /proc/$pid/file`
+		    binary_fs=`what_filesystem $binary_file`
+		    [ "$daemon_fs" != "$binary_fs" ]
+		else
+		    true
+		fi
+	    fi
+	else
+	    #
+	    # There was a pid file but we found no process with that pid...
+	    # this is a race condition and init has restarted the daemon.
+	    # We'll ask for a restart anyway.
+	    #
+	    trace "daemon_needs_restarted: pidfile but no process for $1"
+	    true
+	fi
+    else
+	trace "daemon_needs_restarted: no pidfile for $1"
+	true
+    fi
+}
+
+#
+# consider_kicking_daemons <daemon-name> ...
+#
+# Consider each of the daemons given as arguments; if the running version
+# is not the version on disk, restart it.
+#
+consider_kicking_daemons() {
+    local kick_list daemon
+
+    if user_wants_reboot ; then
+	trace consider_kicking_daemons: user_wants_reboot
+    elif user_wants_to_delay ; then
+	trace consider_kicking_daemons: user_wants_to_delay
+    elif need_to_reboot ; then
+	trace consider_kicking_daemons: need_to_reboot
+    elif [ ! -x $mgd ]; then
+	trace consider_kicking_daemons: no mgd
+    else 
+	kick_list="$*"
+	trace consider_kicking_daemons: get to work
+
+	# Restart daemons by stopping them and letting init restart them
+	for daemon in $kick_list ; do
+	    trace consider_kicking_daemons: considering $daemon
+	    if [ "$daemon" = "mgd" ]; then
+		# skip mgd
+	    elif daemon_needs_restarted $daemon; then
+		trace consider_kicking_daemons: restarting $daemon
+		daemon_restart $daemon
+	    else
+		rpdc -D$daemon reconfig
+	    fi
+	done
+    fi
+}
+
+#
+# create_mount_package
+#   Create script to mount specified package
+#
+# args
+# $1  - package-path to mount
+# $2  - mount point for package
+
+create_mount_package () {
+    DebugOn create_mount_package
+    local pkgpath mountpoint
+ 
+    pkgpath=$1
+    mountpoint=$2
+
+    # We create a mount script that will stand being run twice during
+    # boot. The first time, core packages should be mounted, but
+    # optional ones - that have their .iso's on /var should silently
+    # give up if the pkgpath isn't available.
+    #
+    # During the second pass - after /var is mounted, we don't want
+    # to bleat about being already mounted, but we do want to complain
+    # about any missing pkgpaths.
+    # 
+cat <<EOF
+:
+case "\$1" in
+optional)
+    core=:; optional=echo;;
+*)  core=;  optional=:;;
+esac
+# for the benefit of cleanup-pkgs
+pkgpath=$pkgpath
+if [ ! -s $pkgpath ]; then
+    pkgdir=`dirname $pkgpath`
+    # if pkgdir is not present, we'll pick it up in second round
+    # so keep quiet now
+    if [ -d \$pkgdir ]; then
+	echo $pkgpath not present.
+    else
+        \$optional echo \$pkgdir not present.
+    fi
+    exit 66			# EX_NOINPUT
+fi
+mounted=\`/sbin/mount | /usr/bin/grep " $mountpoint "\`
+case "\$mounted" in
+*/*) \$core echo $pkgpath already mounted; exit 0;;
+esac
+
+EOF
+    if [ ! -x /sbin/mount_iso ]; then
+	error "Cannot find /sbin/mount_iso!"
+    fi
+    echo "exec /sbin/mount_iso --force $pkgpath $mountpoint $package"
+    
+    DebugOff create_mount_package
+}
+
+#
+# Create script to unmount specified package
+#
+# $1 - mount point
+
+create_umount_package () {
+    DebugOn create_umount_package
+    local pkgpath mountpoint
+
+    pkgpath=$1
+    mountpoint=$2
+
+    if [ ! -x /sbin/umount_iso ]; then
+	error "Cannot find /sbin/umount_iso!"
+    fi
+    echo "exec /sbin/umount_iso $pkgpath $mountpoint $package"
+
+    DebugOff create_umount_package
+}
+
+#
+# Create links for package related scripts/mounts
+#
+make_package_links () {
+    DebugOn make_package_links
+    /bin/mkdir -p $mountdir
+    if [ -n "$base_mountdir" ]; then
+	/bin/rm -df $base_mountdir
+	make_symlink ${mountdir##*/} $base_mountdir
+    fi
+    if [ $base_pkgdir = $pkgdir ]; then
+	make_symlink $pkgfile $base_pkgdir/$package
+    else
+	make_symlink $pkgdir/$pkgfile $base_pkgdir/$package
+    fi
+    if [ -s $mountpkg ]; then
+	if [ -n "$base_mountpkg" ]; then
+	   make_symlink ${mountpkg##*/} $base_mountpkg
+	   make_symlink ${umountpkg##*/} $base_umountpkg 
+	fi
+	/bin/chmod 0755 $mountpkg
+	/bin/chmod 0755 $umountpkg
+    fi
+    DebugOff make_package_links
+}
+
+#
+# check_installed
+#
+# Check to see if this exact version of this package is already installed
+#
+check_installed () {
+    local pkglink
+
+    if [ -d /etc/db/pkg/$package -a -f $pkgdir/$pkgfile -a -d $mountdir ]; then
+        if [ -z "$base_mountdir" ]; then
+	    warn "$package is already installed on this system"
+	    return 0
+        fi
+	case `/bin/ls -l $base_mountdir` in
+	*"> $mountdir")
+	    warn "This version of $package is already installed on this system"
+	    return 0
+            ;;
+	esac
+    fi
+    false
+}
+
+check_junos_reboot_pending() {
+    if [ -s $junos_reboot_pending ]; then
+        error_more "There is already an install pending."
+        error_more "    Use the 'request system reboot' command to complete the install,"
+        error "    or the 'request system software rollback' command to back it out."
+    fi
+}    
+
+
+#
+# get_lock [lock] [iflocked]
+# Implements mutual exclusion based on content of "lock"
+# If we return from here then we have the mutex.
+# If iflocked is "waitfor" we will wait for the current locker to exit
+# and retry rather than simply exit with $iflocked as status (default 1).
+#
+get_lock() {
+	lock=${1:-$pkg_LCK}
+	iflocked=${2:-1}
+	tlock=$lock.$$
+	ltty=`expr ${CLI_TTY:-__} : '.*\(..\)$'`
+	case $ltty in
+	__) ltty=unknown;;
+	esac
+	ldate=`date "+%Y-%m-%d %H:%M %Z"`
+
+	while :
+	do
+		lpid=
+		echo "lpid=$$ ldesc=\"user ${CLI_USER:-unknown} terminal $ltty, process $$, started at $ldate\"" > $tlock
+		ln $tlock $lock > /dev/null 2>&1 && break
+		rm -f $tlock	# avoid mess
+		# 
+		# we are going to eval the content of the lock
+		# but _not_ if it contains anything other than what we expect
+		#
+		xl=`test -s $lock && grep -i '^lpid=[0-9][0-9]* ldesc="[a-z][a-z0-9:, -]*"$' $lock`
+		case "$xl" in
+		lpid=*)	eval $xl;;
+		esac
+		case "$lpid" in
+		"")	# an empty or invalid lock file should never happen
+			rm -f $lock; test -f $lock || continue
+			error "cannot remove empty lock '$lock'"
+			;;
+		esac
+		# we can't simply use return code, as permission denied means
+		# locker is alive... watch out for internationalization!
+		psts=`LANG=C LC_ALL=C kill -0 $lpid 2>&1`
+		case "$psts" in
+		*:*such*p*)
+			rm -f $lock; test -f $lock || continue
+			error "cannot remove old lock '$lock' held by $ldesc"
+			;;	    
+		esac
+		# ok a valid lock exists, and it isn't us
+		case "${iflocked:-1}" in
+		waitfor)
+		    # we want to wait for the lock, as long as it takes...
+		    while :
+		    do
+			psts=`LANG=C LC_ALL=C kill -0 $lpid 2>&1`
+			case "$psts" in
+			*:*such*p*) rm -f $lock; break;;
+			esac
+			sleep 8
+		    done
+		    continue
+		    ;;
+		0)  # go quietly
+		    Exit 0
+		    ;;
+		[1-9]*)
+		    echo "ERROR: Another package installation in progress:"
+		    echo $ldesc
+		    Exit ${iflocked:-1}
+		    ;;
+		esac
+	done
+	rm -f $tlock
+}
+
+check_sdk_version()
+{
+	if [ -z "$current_sdk_version_major" ]; then
+		dot_run_require jbase
+		dot_run_require junos
+		current_sdk_version_major=${current_junos_sdk_version_major:-$current_jbase_sdk_version_major}
+		current_sdk_version_minor=${current_junos_sdk_version_minor:-$current_jbase_sdk_version_minor}
+		current_major=${current_junos_major:-current_jbase_major}
+		current_minor=${current_junos_minor:-current_jbase_minor}
+		current_sdk_compat=${current_junos_sdk_compat:-$current_jbase_sdk_compat}
+	fi
+ 
+	if [ ${current_sdk_version_major:-0} != %JUNOS_SDK_VERSION_MAJOR% ] || [ ${current_sdk_version_minor:-0} -lt %JUNOS_SDK_VERSION_MINOR% ]; then
+		error "JUNOS version incompatible - source compatibility supported from ${current_sdk_compat:-0.0} - ${current_major:-0}.${current_minor:-0}"
+	fi
+}
+
+check_jvae_version() {
+    # content TBD
+}
+
+check_arch_compatibility()
+{
+    re_name=`/sbin/sysctl -n hw.re.name 2>/dev/null`
+    if [ -z "$re_name" ]; then
+        Error "hw.re.name sysctl not supported."
+    fi
+
+    case "$re_name" in
+    RE-TXP-LCC|RE-DUO-1800|RE-DUO-2600|RE-JCS1200-1x2330)
+        machine_compat_list="i386 amd64"
+        ;;
+    RE-S-1800x2|RE-S-1800x4|RE-A-1800x2)
+        if [ "$1" = "jdiag" ]; then
+            machine_compat_list="i386 amd64"
+        else
+            machine_compat_list="amd64"
+        fi
+
+        # Allow 32 bit packages to be installed with a warning when force
+        # option is specified
+        if [ "x$PKG_FORCE" != x ]; then
+            warn_flag=true;
+        fi
+        ;;
+    *)
+        machine_compat_list=`/sbin/sysctl -n hw.machine_arch 2>/dev/null`
+        machine_compat_list=${machine_compat_list:-`uname -m`}
+        if [ -z "$machine_compat_list" ]; then
+            Error "machine architecture unknown."
+        fi
+        ;;
+    esac
+
+    case " $machine_compat_list " in
+    *" %MACHINE_COMPAT% "*) ;;
+    *) if [ "$warn_flag" = true ]; then
+           warn "Package $1 is not compatible - %MACHINE_COMPAT% vs {$machine_compat_list}"
+       else
+           Error "Package $1 is not compatible - %MACHINE_COMPAT% vs {$machine_compat_list}"
+       fi
+       ;;
+    esac
+}
+
+check_cores_access()
+{
+    # Take parameters from %PKG%-header
+    # access and sharing mask for CPU cores: 
+    # 1=ctrl 2=data 4=user
+    pkg_cores_access=${cores_access:-0}
+    pkg_cores_sharing=${cores_sharing:-7}
+
+    # Default cores access and sharing
+    tot_cores_access=0
+    tot_cores_sharing=7
+ 
+    # Remove traces of our own, if exist
+    if [ -r $opt_pkgdir/%PKG%.access ]; then 
+        echo "Removing old $opt_pkgdir/%PKG%.access"
+        rm $opt_pkgdir/%PKG%.access
+    fi
+
+
+    # Include other packages cores access file
+    # to summarize total cores access and sharing
+    for f in $opt_pkgdir/*.access; do
+        if [ -r $f ]; then 
+            . $f
+            tot_cores_access=$((tot_cores_access | cores_access));
+            tot_cores_sharing=$((tot_cores_sharing & cores_sharing));
+        fi
+    done
+
+    # Check for sharing violation
+    if [ $tot_cores_access -ne 0 ]; then
+        if  [ $((tot_cores_access & pkg_cores_sharing)) -eq 0 ]; then
+            echo "Package %PKG% can not be installed: sharing violation."
+            echo "    %PKG% cores sharing mask is $pkg_cores_sharing"
+            echo "    Other packages cumulative access mask is $pkg_cores_sharing"
+            return 13; # EACCESS
+        fi
+    fi
+
+    if [ $pkg_cores_access -ne 0 ]; then
+        if [ $((tot_cores_sharing & pkg_cores_access)) -eq 0 ]; then
+            echo "Package %PKG% can not be installed: sharing violation."
+            echo "    %PKG% cores access mask is $pkg_cores_access"
+            echo "    Other package's cumulative cores sharing mask is $tot_cores_sharing"
+            return 13; # EACCESS
+        fi
+    fi
+
+    # Record cores access and sharing for this package
+    mkdir -p $opt_pkgdir
+    cat << EOF > $opt_pkgdir/%PKG%.access
+cores_access=$pkg_cores_access
+cores_sharing=$pkg_cores_sharing
+EOF
+    
+    return 0
+}
+
+#
+# selective_update_version_check
+#
+# Check selective-update package against base OS
+#
+selective_update_version_check() {
+    local current=`sed 's,.*\[\([1-9][0-9.R|S|X|I]*\).*,\1,' /etc/db/pkg/junos/+COMMENT`
+
+    if [ "$current" = "$1" ]; then
+	return 0
+    else
+	echo "Package %PKG% can not be installed: Incompatible base version";
+    fi
+
+    return 1
+}
+
+#
+# selective_update_need_reboot
+#
+# Fail selective-update package installation if reboot is needed
+#
+selective_update_needs_reboot() {
+    if [ -z "$PKG_USER_WILL_REBOOT" ]; then
+
+	warn
+	warn "    This pkg needs reboot option. Use the 'reboot' option"
+	warn "    with 'request system software add' command to proceed"
+	warn "    with the installation."
+	warn
+
+	return 1
+    fi
+
+    return 0
+}
+
+#
+# selective_update_request_reboot
+#
+# Warn the user to reboot the system once selective-update package delete
+# is complete
+#
+selective_update_request_reboot() {
+
+    warn
+    warn "    A REBOOT IS REQUIRED TO UNLOAD THIS SOFTWARE CORRECTLY. Use the"
+    warn "    'request system reboot' command when software deletion is"
+    warn "    complete."
+    warn
+   
+    return
+}
+
+fi # Close the 'if' from the top of the file (PKG_SETUP_VARIABLES_ONLY)

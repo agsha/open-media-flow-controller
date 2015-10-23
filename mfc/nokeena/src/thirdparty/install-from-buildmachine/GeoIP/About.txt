@@ -1,0 +1,44 @@
+The GeoIP library must be installed in order to compile geodbd.
+
+The source came from: http://geolite.maxmind.com/download/geoip/api/c/GeoIP-1.4.8.tar.gz
+It is in the MFC source tree as: dist/build-machine/build-machine-src/GeoIP/GeoIP-1.4.8.tar.gz
+It is archived at: /data/archive/thirdparty/build-machine-src/GeoIP/GeoIP-1.4.8.tar.gz
+
+For more info go to: http://www.maxmind.com/app/c
+
+Extract this tar file in a new temp directory and configure, build and install it.
+The MFC build must pick up the shared library (.so) put it in the MFC package.
+
+Note: The license is LGPL, so we do NOT want to use the static libs, so we remove those.
+
+cd /tmp
+tar xvf /data/archive/thirdparty/build-machine-src/GeoIP/GeoIP-1.4.8.tar.gz
+cd GeoIP-1.4.8
+./configure
+make
+make check
+make install
+rm -f /usr/local/lib/libGeoIP.a
+rm -f /usr/local/lib/libGeoIPUpdate.a
+
+"make install" installs:
+
+/usr/local/bin/geoiplookup
+/usr/local/bin/geoiplookup6
+/usr/local/bin/geoipupdate
+/usr/local/etc/GeoIP.conf
+/usr/local/etc/GeoIP.conf.default
+/usr/local/include/GeoIPCity.h
+/usr/local/include/GeoIP.h
+/usr/local/include/GeoIPUpdate.h
+/usr/local/lib/libGeoIP.a (deleted)
+/usr/local/lib/libGeoIP.la
+/usr/local/lib/libGeoIP.so -> libGeoIP.so.1.4.8
+/usr/local/lib/libGeoIP.so.1 -> libGeoIP.so.1.4.8
+/usr/local/lib/libGeoIP.so.1.4.8
+/usr/local/lib/libGeoIPUpdate.a (deleted)
+/usr/local/lib/libGeoIPUpdate.la
+/usr/local/lib/libGeoIPUpdate.so -> libGeoIPUpdate.so.0.0.0
+/usr/local/lib/libGeoIPUpdate.so.0 -> libGeoIPUpdate.so.0.0.0
+/usr/local/lib/libGeoIPUpdate.so.0.0.0
+

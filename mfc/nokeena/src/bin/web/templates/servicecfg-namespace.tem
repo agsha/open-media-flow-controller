@@ -1,0 +1,149 @@
+<?
+#
+# Filename:  servicecfg-namespace.tem,v $
+# Date:      2009/02/06 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Namespace">
+<TMS-MENU "servicecfg">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SERVICECFG-MENU "namespace"></TMS-SERVICECFG-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Namespace Configuration">
+<script type="text/javascript">
+function popup(mylink, windowname)
+{
+if (! window.focus)return true;
+var href;
+if (typeof(mylink) == 'string')
+   href=mylink;
+else
+   href=mylink.href;
+window.open(href, windowname,'resizable=yes,scrollbars=yes');
+return false;
+}
+</script>
+
+<CFG-FORM -action "config-form-list-action" -div_id "addnm">
+  <h2>Add Namespace</h2>
+  <TMS-TABLE -div_id "nm_table_1">
+    <TMS-TABLE-ENTRY "Namespace">
+      <CFG-TEXTBOX -id "namespace" -errname "namespace" -caps "set_basic"
+                -type "string" -span_id "add_namespace" -required "true" >
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+  <input type="hidden" name="f_list_others" value="_2">
+  <input type="hidden" name="f_list_root" value="/nkn/nvsd/namespace">
+  <input type="hidden" name="f_list_index" value="namespace">
+  <input type="hidden" name="f_list_children" value="">
+  <input type="hidden" name="f_list_root_2" value="/nkn/nvsd/origin_fetch/config">
+  <input type="hidden" name="f_list_index_2" value="namespace">
+  <input type="hidden" name="f_list_children_2" value="">
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "namespace_add">
+</CFG-FORM>
+
+<h2> Configuration List </h2>
+  <CFG-FORM -action "config-form-list-action" -div_id "ntp_2">
+
+  <?
+    set cur_line 0
+    set nm_prefix "/nkn/nvsd/namespace"
+    set nm_ids [tms::iterate-config $nm_prefix]
+
+  ?>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+     <td></td>
+      <td>
+        Namespace</td>
+      <td>
+        Active</td>
+      <td>
+        Configure</td>
+      <td>
+        Show</td>
+    </tr>
+
+    <FOREACH nm_id $nm_ids>
+    <?
+    set prefix_len [string length "$nm_prefix/"]
+    set nm_name [string range $nm_id $prefix_len end]
+    if { [string equal $nm_name "mfc_probe"] } {
+      continue
+    }
+    set nm_enable [tms::get-config "$nm_id/status/active" "yes"]
+    ?>
+
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                         -value "$nm_id" -span_id "nm_cbox_2"></td>
+      <td>
+        <?=$nm_name?></td>
+      <td>
+        <?=$nm_enable?></td>
+      <td>
+        <a href="/admin/launch?script=rh&amp;template=servicecfg-nsconfig&amp;nmname=<?=$nm_name?>" onClick="return popup(this, 'notes')">Configure </a>
+      <td>
+        <a href="/admin/launch?script=rh&amp;template=servicecfg-shownm&amp;nmname=<?=$nm_name?>" onClick="return popup(this, 'notes')">Show </a>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Namespace.
+      <SET priv DISABLED_set_basic>
+    <ELSE>
+      <SET priv set_basic>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <input type="hidden" name="f_list_custom_buttons" value="enable,disable">
+  <input type="hidden" name="f_list_button_enable_action" value="set">
+  <input type="hidden" name="f_list_button_enable_child_name" value="status/active">
+  <input type="hidden" name="f_list_button_enable_child_value" value="true">
+  <input type="hidden" name="f_list_button_disable_action" value="set">
+  <input type="hidden" name="f_list_button_disable_child_name" value="status/active">
+  <input type="hidden" name="f_list_button_disable_child_value" value="false">
+<!--
+  <CFG-BUTTON -type "remove" -text "Remove Selected Server"
+              -caps "set_basic" -span_id "nm_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+-->
+
+  <CFG-BUTTON -type "enable" -text "Activate" -caps "set_basic"
+              -span_id "nm_enable_1">
+  <img src="/images/em.gif" width="10" height="1">
+
+  <CFG-BUTTON -type "disable" -text "Deactivate" -caps "set_basic"
+              -span_id "nm_disable_1">
+
+  <CFG-BUTTON -type "remove" -text "Remove" -caps "set_basic"
+              -span_id "nm_disable_1">
+  </p></td></CFG-FORM></tr></table>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

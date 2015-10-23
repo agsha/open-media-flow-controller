@@ -1,0 +1,256 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE Menu: Standard boot images
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+### Adding from /home2/tftpboot/Standard/cfg.tail
+LABEL Ubuntu-14.04.1-server-VIN
+ MENU LABEL Ubuntu-14.04.1-server-VIN
+ KERNEL /Standard/ubuntu/ubuntu-14.04.1-server-amd64/install/netboot/ubuntu-installer/amd64/linux
+ APPEND root=/dev/nfs boot=oneric netboot=nfs initrd=/Standard/ubuntu/ubuntu-14.04.1-server-amd64/install/netboot/ubuntu-installer/amd64/initrd.gz ramdisk=6878 nfsroot=10.87.129.3:/home2/tftpboot/Standard/ubuntu/ubuntu-14.04.1-server-amd64/ locale=en_US auto=true, console-setup/layoutcode=us console-setup/ask_detect=false  priority=critical console-keymaps-at/keymap=us  auto  url=http://10.87.129.3/pxe/Standard/ubuntu/ubuntu-14.04.1-server-amd64/preseed/preseed.cfg console=ttyS0,9600 ip=dhcp
+
+
+LABEL Ubuntu-14.04-server-VIN
+ MENU LABEL Ubuntu-14.04-server-VIN
+ KERNEL /Standard/ubuntu/ubuntu-14.04-server-amd64/install/netboot/ubuntu-installer/amd64/linux
+ APPEND root=/dev/nfs boot=oneric netboot=nfs initrd=/Standard/ubuntu/ubuntu-14.04-server-amd64/install/netboot/ubuntu-installer/amd64/initrd.gz ramdisk=6878 nfsroot=10.87.129.3:/home2/tftpboot/Standard/ubuntu/ubuntu-14.04-server-amd64/ locale=en_US auto=true, console-setup/layoutcode=us console-setup/ask_detect=false  priority=critical console-keymaps-at/keymap=us  auto  url=http://10.87.129.3/pxe/Standard/ubuntu/ubuntu-14.04-server-amd64/preseed/preseed.cfg console=ttyS0,9600 ip=dhcp
+
+
+LABEL Ubuntu12.04-VIN
+ MENU LABEL Ubuntu12.04-server-VIN
+ KERNEL /Standard/ubuntu/ubuntu-12.04.3-vin/install/netboot/ubuntu-installer/amd64/linux
+ APPEND root=/dev/nfs boot=oneric netboot=nfs initrd=/Standard/ubuntu/ubuntu-12.04.3-vin/install/netboot/ubuntu-installer/amd64/initrd.gz ramdisk=6878 nfsroot=10.87.129.3:/home2/tftpboot/Standard/ubuntu/ubuntu-12.04.3-vin/ locale=en_US auto=true, console-setup/layoutcode=us console-setup/ask_detect=false  priority=critical console-keymaps-at/keymap=us  auto  url=http://10.87.129.3/pxe/Standard/ubuntu/ubuntu-12.04.3-vin/preseed/preseed.cfg console=ttyS0,9600 ip=dhcp
+
+LABEL Ubuntu12.04-VIN2
+ MENU LABEL Ubuntu12.04-server-VIN2
+ KERNEL /Standard/ubuntu/ubuntu-12.04.3-vin2/install/netboot/ubuntu-installer/amd64/linux
+ APPEND root=/dev/nfs boot=oneric netboot=nfs initrd=/Standard/ubuntu/ubuntu-12.04.3-vin2/install/netboot/ubuntu-installer/amd64/initrd.gz ramdisk=6878 nfsroot=10.87.129.3:/home2/tftpboot/Standard/ubuntu/ubuntu-12.04.3-vin2/ locale=en_US auto=true, console-setup/layoutcode=us console-setup/ask_detect=false  priority=critical console-keymaps-at/keymap=us  auto  url=http://10.87.129.3/pxe/Standard/ubuntu/ubuntu-12.04.3-vin2/preseed/preseed.cfg console=ttyS0,9600 ip=dhcp
+
+LABEL Ubuntu12.04-VIN2-AUTOMATION
+ MENU LABEL Ubuntu12.04-server-VIN2-AUTOMATION
+ KERNEL /Standard/ubuntu/ubuntu-12.04.3-vin2/install/netboot/ubuntu-installer/amd64/linux
+ APPEND root=/dev/nfs boot=oneric netboot=nfs initrd=/Standard/ubuntu/ubuntu-12.04.3-vin2/install/netboot/ubuntu-installer/amd64/initrd.gz ramdisk=6878 nfsroot=10.87.129.3:/home2/tftpboot/Standard/ubuntu/ubuntu-12.04.3-vin2/ locale=en_US auto=true, console-setup/layoutcode=us console-setup/ask_detect=false  priority=critical console-keymaps-at/keymap=us  auto console=ttyS0,9600 ip=dhcp
+
+LABEL Ubuntu12.04-Senthil
+ MENU LABEL Ubuntu12.04-Senthil
+ KERNEL /Standard/ubuntu/ubuntu-12.04.3-vin2/install/netboot/ubuntu-installer/amd64/linux
+ APPEND initrd=/Standard/ubuntu/ubuntu-12.04.3-vin2/install/netboot/ubuntu-installer/amd64/initrd.gz locale=en_US sshd=1 console-setup/layoutcode=us console=tty0 nousb locale=en_US domain=englab.juniper.net console-setup/ask_detect=false priority=critical url=http://10.87.129.3/pxe/Standard/ubuntu/ubuntu-12.04.3-vin2/preseed/ubuntu_prod.seed auto=true interface=auto suite=precise
+
+LABEL CentOS-6.6
+ MENU LABEL CentOS 6.6 x86_64
+ KERNEL /Standard/cent-os/CentOS-6.6-x86_64/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/CentOS-6.6-x86_64/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/CentOS-6.6-x86_64/ console=ttyS0,9600 ip=dhcp             
+
+LABEL scl-6.5
+ MENU LABEL scl-6.5-x86_64
+ KERNEL /Standard/cent-os/scl-6.5/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/scl-6.5/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/scl-6.5/ console=ttyS0,9600 ip=dhcp
+
+LABEL rhel-server-7.0
+ MENU LABEL rhel-server-7.0 x86_64
+ KERNEL /Standard/rhel/rhel-server-7.0-x86_64/isolinux/vmlinuz
+ APPEND initrd=/Standard/rhel/rhel-server-7.0-x86_64/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/rhel/rhel-server-7.0-x86_64/ console=ttyS0,9600 ip=dhcp
+
+LABEL ubuntu-12.04.3-alternate-amd64
+ MENU LABEL ubuntu-12.04.3-alternate-amd64
+ KERNEL /Standard/ubuntu/ubuntu-12.04.3-alternate-amd64/install/netboot/ubuntu-installer/amd64/linux
+ APPEND root=/dev/nfs boot=oneric netboot=nfs nfsroot=10.87.129.3:/home2/tftpboot/Standard/ubuntu/ubuntu-12.04.3-alternate-amd64/ initrd=/Standard/ubuntu/ubuntu-12.04.3-alternate-amd64/install/netboot/ubuntu-installer/amd64/initrd.gz  quiet ramdisk=16432  console=ttyS0,9600   ip=dhcp
+
+
+LABEL scl-6.6
+ MENU LABEL scl-6.6-x86_64
+ KERNEL /Standard/cent-os/scl-6.6/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/scl-6.6/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/scl-6.6/ console=ttyS0,9600 ip=dhcp
+
+
+
+LABEL Contrail-Ceph-Devel-CentOS-6.4
+ MENU LABEL Ceph-Contrail-devel
+ KERNEL /Standard/cont/Centos6.4-contrail/isolinux/vmlinuz
+ APPEND initrd=/Standard/cont/Centos6.4-contrail/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3/home2/tftpboot/Standard/cont/Centos6.4-contrail/ console=ttyS0,9600 ip=dhcp
+
+
+LABEL Centos-Ceph-1.0.4
+ MENU LABEL Centos-Ceph-1.0.4-ipmi
+ KERNEL /Standard/Ceph/centos-ceph-1.0.4/isolinux/vmlinuz
+ APPEND initrd=/Standard/Ceph/centos-ceph-1.0.4/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/Ceph/centos-ceph-1.0.4/ ip=dhcp
+
+LABEL Centos-Ceph-1.0.4
+ MENU LABEL Centos-Ceph-1.0.4
+ KERNEL /Standard/Ceph/centos-ceph-1.0.4/isolinux/vmlinuz
+ APPEND initrd=/Standard/Ceph/centos-ceph-1.0.4/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/Ceph/centos-ceph-1.0.4/ console=ttyS0,9600 ip=dhcp
+
+LABEL miken-Contrail-Ceph-Fedora
+ MENU LABEL miken-Ceph-Fedora
+ KERNEL /Standard/fedora-ceph-all/isolinux/vmlinuz
+ APPEND initrd=/Standard/fedora-ceph-all/isolinux/initrd.img ramdisk=6878 method=http://10.87.129.3/pxe/Standard/fedora-ceph-all/ console=ttyS0,9600 ip=dhcp
+
+
+LABEL Ceph-Contrail-test
+ MENU LABEL Ceph-Contrail-test
+ KERNEL /Standard/cont/ceph_devel_builder/isolinux/vmlinuz
+ APPEND initrd=/Standard/cont/ceph_devel_builder/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cont/ceph_devel_builder/ console=ttyS0,9600 ip=dhcp
+
+LABEL CentOS-7.0-1406
+ MENU LABEL CentOS-7.0-1406-x86_64
+ KERNEL /Standard/cent-os/CentOS-7.0-1406-x86_64/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/CentOS-7.0-1406-x86_64/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/CentOS-7.0-1406-x86_64/ console=ttyS0,9600 ip=dhcp
+
+LABEL Contrail-CentOS-6.4-x86_64
+ MENU LABEL Contrail-CentOS-6.4-x86_64
+ KERNEL /Standard/cent-os/Contrail-CentOS-6.4-x86_64/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/Contrail-CentOS-6.4-x86_64/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/Contrail-CentOS-6.4-x86_64/ console=ttyS0,9600 ip=dhcp
+
+
+LABEL JVAE-CentOS-6.3
+ MENU LABEL JVAE CentOS 6.3 x86_64
+ KERNEL /Standard/cent-os/jvae-centos6.3-x86_64/isolinux/vmlinuz
+ APPEND ks=http://10.87.129.3/pxe/Standard/cent-os/jvae-centos6.3-x86_64/ks/ks.cfg initrd=/Standard/cent-os/jvae-centos6.3-x86_64/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/jvae-centos6.3-x86_64/ console=ttyS0,9600 ip=dhcp
+
+LABEL JVAE-CentOS-6.3-HTTP
+ MENU LABEL JVAE CentOS 6.3 x86_64-HTTP
+ KERNEL /Standard/cent-os/jvae-centos6.3-x86_64/isolinux/vmlinuz
+ APPEND ks=http://10.87.129.3/pxe/Standard/cent-os/jvae-centos6.3-x86_64/ks/ks.cfg initrd=/Standard/cent-os/jvae-centos6.3-x86_64/isolinux/initrd.img ramdisk=6878 method=http://10.87.129.3/pxe/Standard/cent-os/jvae-centos6.3-x86_64/ console=ttyS0,9600 ip=dhcp
+
+label freebsdinstall
+  menu label FreeBSD Install
+  pxe /Standard/freebsd/freebsd9_2/boot/pxeboot
+
+LABEL CentOS-6.4
+ MENU LABEL CentOS 6.4 x86_64
+ KERNEL /Standard/cent-os/centos6.4-x86_64/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/centos6.4-x86_64/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/centos6.4-x86_64/ console=ttyS0,9600 ip=dhcp
+
+LABEL CentOS-6.4-cs
+ MENU LABEL CentOS 6.4 x86_64-cs
+ KERNEL /Standard/cent-os/centos6.4-x86_64-cs/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/centos6.4-x86_64-cs/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/centos6.4-x86_64/ console=tty0 ip=dhcp keymap=uk lang=en_GB ks=http://10.87.129.3/pxe/Standard/cent-os/centos6.4-x86_64-cs/ks.cfg network ksdevice=eth0
+
+LABEL CentOS-6.5-x86_64
+ MENU LABEL CentOS-6.5-x86_64
+ KERNEL /Standard/cent-os/centos6.5-x86_64/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/centos6.5-x86_64/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/centos6.5-x86_64/ console=ttyS0,9600 ip=dhcp
+
+
+
+LABEL xenserver62
+  MENU LABEL XenServer62
+  KERNEL /Standard/xen/Xenserver-6.2.0/boot/isolinux/mboot.c32
+  APPEND /Standard/xen/Xenserver-6.2.0/boot/xen.gz dom0_max_vcpus=2 dom0_mem=752M,max:725M  --- /Standard/xen/Xenserver-6.2.0/boot/vmlinuz console=ttyS0,115200n8 console=tty0 answerfile_device=eth0 answerfile=http://10.87.129.3/pxe/Standard/xen/Xenserver-6.2.0/xenhost install --- /Standard/xen/Xenserver-6.2.0/install.img
+
+LABEL CentOS-6.3
+ MENU LABEL CentOS 6.3 x86_64
+ KERNEL /Standard/cent-os/centos6.3-x86_64/isolinux/vmlinuz 
+ APPEND initrd=/Standard/cent-os/centos6.3-x86_64/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/centos6.3-x86_64/ console=ttyS0,9600 ip=dhcp
+
+LABEL CentOS-6.2
+ MENU LABEL CentOS 6.2 x86_64
+ KERNEL /Standard/cent-os/centos6.2-x86_64/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/centos6.2-x86_64/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/centos6.2-x86_64/ console=ttyS0,9600 ip=dhcp
+
+LABEL CentOS-5.5
+ MENU LABEL CentOS 5.5 CD image
+ KERNEL /Standard/cent-os/isolinux.5.5/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/isolinux.5.5/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/ console=ttyS0,9600 ip=dhcp
+
+LABEL CentOS-5.4
+ MENU LABEL CentOS CD image
+ KERNEL /Standard/cent-os/isolinux/vmlinuz
+ APPEND initrd=/Standard/cent-os/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/ console=ttyS0,9600 ip=dhcp
+
+LABEL Fedora-14
+ MENU LABEL Fedora14 CD image
+ KERNEL /Standard/fedora/isolinux/vmlinuz0
+ APPEND initrd=/Standard/fedora/isolinux/initrd0.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cent-os/ console=ttyS0,9600 ip=dhcp
+
+LABEL xenserver
+  MENU LABEL XenServer
+  KERNEL /Standard/xenserver/mboot.c32
+  APPEND /Standard/xenserver/xen.gz dom0_mem=752M com1=115200,8n1 console=com1,tty --- /tftpboot/Standard/xenserver/vmlinuz xencons=hvc console=hvc0 console=tty0 --- /tftpboot/Standard/xenserver/install.img
+
+
+LABEL mfc-netboot
+  MENU LABEL MFC-Netboot-Test
+  KERNEL Standard/mfc-netboot/vmlinuz-smp
+  APPEND ro root=/dev/sda5   img_id=1 quiet loglevel=4 panic=10 console=tty0 console=ttyS0,9600n8
+
+LABEL adaptecfw
+  MENU LABEL AdaptecFW
+  KERNEL /Standard/adaptec-pxe/memdisk
+  APPEND initrd=/Standard/adaptec-pxe/adaptec.ima.gz floppy c=40 h=8 s=36 console=ttyS0,9600
+
+LABEL mfc-pacifica
+  MENU LABEL mfc-pacifica-LiveOS
+  KERNEL /Standard/mfc-pacifica/vmlinuz0
+  APPEND initrd=/Standard/mfc-pacifica/initrd.img ro root=/LiveOS/ext3fs.img console=ttyS0,9600n8 img_id=1 live_ram mfcrootfs=/var/db/ext/juniper/mfc/images/IMAGE_VERSION/mfcrootfs.img model_code=pacifica method=tftp://10.87.129.3:69/Standard/mfc-pacifica/mfcrootfs.img eshell
+
+
+LABEL Fedora-14-x86_64
+ MENU LABEL Fedora 14 x86_64
+ KERNEL /Standard/fedora/Fedora-14-x86_64-DVD/isolinux/vmlinuz
+ APPEND initrd=/Standard/fedora/Fedora-14-x86_64-DVD/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/fedora/Fedora-14-x86_64-DVD/ console=ttyS0,9600 ip=dhcp
+
+ LABEL ubuntu-11.10-server-amd64
+ MENU LABEL  ubuntu-11.10-server-amd64
+ KERNEL /Standard/ubuntu/ubuntu-11.10-server-amd64/install/vmlinuz
+ APPEND initrd=/Standard/ubuntu/ubuntu-11.10-server-amd64/install/initrd.gz ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/ubuntu/ubuntu-11.10-server-amd64/ console=ttyS0,9600 ip=dhcp
+
+LABEL Ubuntu Alternate-11.10
+MENU Ubuntu-Alternate-11.10 
+KERNEL /Standard/ubuntu/ubuntu-11.10-alternate/install/vmlinuz 
+APPEND root=/dev/nfs boot=oneric netboot=nfs nfsroot=10.87.129.3:/home2/tftpboot/Standard/ubuntu/ubuntu-11.10-alternate initrd=/Standard/ubuntu/ubuntu-11.10-alternate/install/initrd.gz quiet splash -- console=ttyS0,9600 ip=dhcp
+
+
+LABEL esxi5.1
+ KERNEL /Standard/esx/esx5.1/mboot.c32
+ APPEND -c /Standard/esx/esx5.1/boot.cfg ks=http://10.87.129.3/pxe/Standard/esx/esx5.1/ks1.cfg
+ MENU LABEL ESXi-5.1.0
+
+LABEL Cont-build-201
+ MENU LABEL Cont Build201 x86_64
+ KERNEL /Standard/cont/build-201/isolinux/vmlinuz
+ APPEND initrd=/Standard/cont/build-201/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/Standard/cont/build-201/ console=ttyS0,9600 ip=dhcp
+
+LABEL Cont-build-201-http
+ MENU LABEL Cont Build201 x86_64-http
+ KERNEL /Standard/cont/build-201/isolinux/vmlinuz
+ APPEND initrd=/Standard/cont/build-201/isolinux/initrd.img ramdisk=6878 method=http://10.87.129.3/pxe/Standard/cont/build-201/ console=ttyS0,9600 ip=dhcp
+
+LABEL contrail-ceph-test 
+ MENU LABEL Cont ceph x86_64 
+ KERNEL /Standard/contrail-ceph-test/isolinux/vmlinuz
+ APPEND initrd=/Standard/contrail-ceph-test/isolinux/initrd.img ramdisk=6878 method=http://10.87.129.3/pxe/Standard/contrail-ceph-test/ console=ttyS0,9600 ip=dhcp
+
+LABEL contrail-fedora-ceph-test 
+ MENU LABEL Cont fedora ceph x86_64 
+ KERNEL /Standard/contrail-fedora-ceph-test/isolinux/vmlinuz
+ APPEND initrd=/Standard/contrail-fedora-ceph-test/isolinux/initrd.img ramdisk=6878 method=http://10.87.129.3/pxe/Standard/contrail-fedora-ceph-test/ console=ttyS0,9600 ip=dhcp
+
+LABEL centos-6.5-stack 
+ MENU LABEL centos 6.5 stack
+ KERNEL /Standard/centos-6.5-stack/isolinux/vmlinuz
+ APPEND initrd=/Standard/centos-6.5-stack/isolinux/initrd.img ramdisk=6878 method=http://10.87.129.3/pxe/Standard/centos-6.5-stack/ console=ttyS0,9600 ip=dhcp
+
+LABEL ubuntu-12.04.3-server-amd64
+ MENU LABEL ubuntu-12.04.3-server-amd64
+ KERNEL /Standard/ubuntu-test/install/vmlinuz
+ APPEND root=/dev/nfs boot=oneric netboot=nfs nfsroot=10.87.129.3:/home2/tftpboot/Standard/ubuntu-test/ initrd=/Standard/ubuntu-test/install/initrd.gz  quiet ramdisk=16432  console=ttyS0,9600   ip=dhcp
+
+LABEL isci_test
+ set initiator-iqn iqn.2014-11.c08.esbu.com:storage.sys.cli0
+ sanboot iscsi:10.87.129.23:::0:iqn.2014-11.c01.esbu-mflab-lnx:storage.sys.lun0
+### Thu Jul 30 07:47:06 PDT 2015

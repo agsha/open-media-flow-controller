@@ -1,0 +1,21 @@
+Source location in MFC SVN:
+  dist/thirdparty-src/dmidecode 
+Source location on cmbu-storage01.juniper.net:
+  /data/archive/thirdparty/src/dmidecode
+
+
+
+Refer the the file /data/archive/thirdparty/src/dmidecode/About.txt
+We have NOT modified the source.
+The 64-bit version was built by hand from the source with this command:
+   make
+The resulting executable file "dmidecode" was then checked in here.
+The dmidecode build on CentOS 6.3 (Samara Ginkgo) is checked into the subdir "6".
+
+
+The source code uses the GPL and is copyright 2000-2002 Alan Cox and 2002-2010 Jean Delvare.
+
+Ultimate source: http://www.nongnu.org/dmidecode/
+Source mirror:   http://download.savannah.gnu.org/releases/dmidecode/
+Latest version as of 2013-02-07:
+   dmidecode-2.11.tar.gz 19-Jan-2011 65K	 

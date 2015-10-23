@@ -1,0 +1,93 @@
+forwardproxy.enable = 1
+ip_spoofing.enable = 1
+#User space L3 Proxy
+# Enable MFC to fwd streams when nvsd is down
+# and re-direct the streams of interest back to nvsd
+# when nvsd is UP.
+user_space_l3_pxy = 0
+debug_fd_trace = 0
+pmapper_disable = 0
+nm_handle_send_and_receive = 1
+bind_socket_with_interface.enable = 1
+
+# OM request delay parameters
+om.req_collison_delay_msecs = 100
+om.req_behind_delay_msecs = 10
+om.req_ahead_delay_msecs = 100
+
+# Buffer pages per task for cache-miss case in t-proxy.
+# Minimum buffer pages per task is 1
+# Maximum buffer pages per task is 4
+om.tproxy_buffer_pages_per_task = 2
+
+adns.enable = 1
+adns.cache-timeout = 2047
+
+bm.discardenable = 1
+bm.dynscaleenable = 1
+bm.cr_req_queue_timeout = 0
+bm.cr_req_queue_maxreq = 0
+bm.valgrind = 0
+
+#AM/Ingest related config
+am.byte_serve_hotness_enable = 0
+am.byte_serve_hotness_threshold = 2097152
+
+#Push ingest config
+mm.push_ingest_enabled = 1
+mm.push_ingest_buffer_ratio = 10
+mm.push_ingest_buffer_hold_timeout = 60
+mm.push_ingest_no_parallel_first_put = 1
+
+# Enable support: 0 disable, 1 enable
+rtsp.enable = 1
+rtsp_relay_only.enable = 0
+rtsp_tproxy.enable = 0
+video_ankeena_fmt.enable = 1
+rtsched.enable = 1
+pe_url_category_lookup.enable = 0
+pe_url_cat_failover_bypass.enable = 0
+ingest.failure.log.enable = 0
+
+#
+# Notes:
+# command to Create testing SSL certifiate
+#     % openssl req -x509 -nodes -days 365 -newkey rsa:1024 -keyout key.pem -out key.pem
+#
+# ssl server port. 0: disable ssl, use port 4433 for now
+ssl.port = 443
+#
+# trusted root certificate list
+ssl.ca_list = /config/nkn/cert/root.pem
+#
+# private key & certificate file
+ssl.key.pem = /config/nkn/cert/key.pem
+#
+# enable client sutheticaion. 0: disable, 1: enable
+ssl.enable_cllient_authentication = 0
+#
+# force to use these chipers through SSL handshake, empty supports all.
+ssl.use_ciphers =
+#
+# force to enable these parameters, empty means no forcement.
+ssl.enable_DH_file =
+
+max_virtual_memory = 0
+
+vfs.dm2.enable = 1
+
+fuse.enable = 1
+
+nfs.numthreads = 100
+
+http.include_orig_key = "1dsd98yhvs09igv9"
+
+#Number of preread threads per disk
+dm2.num_preread_disk_threads = 3
+
+#Option to enable/disable write throttling
+dm2.throttle_writes = 0
+
+#Config variables to control small writes
+dm2.small_write_enable = 0
+dm2.small_write_min_size = 262144

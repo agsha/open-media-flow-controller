@@ -1,0 +1,20 @@
+#
+# Unit test notes.
+# All unit tests contained libnet_test.c
+
+# Build unit test binary
+MAKE -f Makefile-other
+
+# Start unit test binary
+./libnet_test
+
+# From remote host, send HTTP request
+curl -v http://<host>:9090/a/b/c.html
+
+# Expected HTTP result
+HTTP/1.1 302 Found
+Connection: Close
+Content-Length: 0
+Date:<Current Date/Time>
+Location: http://MyRedirectHost:4040/a/b/c.html
+Via: 1.1 <host>:9090

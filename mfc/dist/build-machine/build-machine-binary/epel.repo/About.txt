@@ -1,0 +1,64 @@
+Instructions for putting epel.repo in the YUM repo list.
+
+NOTE: epel-release-6-8.noarch.rpm and gpg key file have been already downloaded to
+   /data/archive/thirdparty/build-machine-binary/epel.repo/
+
+1. Add /etc/yum.repos.d/epel.repo if it is not there. Type "yum repolist" to see if it is there. If not do the following:
+(Instructions from http://www.thegeekstuff.com/2012/06/enable-epel-repository/)
+
+2. Download epel rpm.
+For CentOS 6, download the rpm file from http://download.fedoraproject.org/pub/epel/6/i386/repoview/epel-release.html
+For Example if it is http://epel.mirror.constant.com/6/i386/epel-release-6-8.noarch.rpm then do:
+
+cd /tmp
+wget http://epel.mirror.constant.com/6/i386/epel-release-6-8.noarch.rpm
+
+or
+
+cd /tmp/
+cp /data/archive/thirdparty/build-machine-binary/epel.repo/epel-release-6-8.noarch.rpm .
+
+3. - Find out the GPG key value needed by the epel package you just downloaded using the --test option. E.g.
+
+ rpm -ivh epel-release-6-8.noarch.rpm --test
+
+That prints out warning: epel-release-6-8.noarch.rpm: Header V3 RSA/SHA256 Signature, key ID 0608b895: NOKEY
+
+4. - Get the key file that has that key ID and install it using rpm. Download the key file, or use a local copy:
+
+wget --no-check-certificate https://www.fedoraproject.org/static/0608B895.txt
+
+mv 0608B895.txt /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+
+or
+
+cp /data/archive/thirdparty/build-machine-binary/epel.repo/0608B895.txt /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+
+Now install it
+
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+
+5. - Verify that the key got installed successfully:
+
+rpm -qa gpg-*
+
+This should print out for example: gpg-pubkey-0608b895-4bd22942
+
+6. - Now install the epel rpm which will enable the EPEL repository for use by yum. (http://fedoraproject.org/wiki/EPEL)
+
+rpm -ivh epel-release-6-8.noarch.rpm
+
+7. You might need to edit the two /etc/yum.repos.d/epel*.repo files.
+
+    If the command yum repolist prints out and error, then:
+        edit /etc/yum.repos.d/epel*.repo to switch from using mirrorlist to baseurl. 
+
+Also note that any reference to "download.fedora.redhat.com" in any /etc/yum.repos.d/* files must be replaced with "dl.fedoraproject.org".
+See http://lists.fedoraproject.org/pipermail/announce/2012-February/003040.html) 8. - Verify that the EPEL repository is enabled.
+
+yum repolist
+
+9. Then run "yum clean all" to make it use the new settings.
+
+yum clean all
+

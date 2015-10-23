@@ -1,0 +1,167 @@
+<?
+# (C) Copyright 2015 Juniper Networks
+# All rights reserved.
+?>
+
+<TAG MON-SUMMARY-BODY>
+<?
+  set datetime [tms::get-config "/time/now/datetime"]
+  set hostname [tms-utils::get-hostname]
+  set uptime [tms::get-uptime]
+  set version [tms::get-version]
+
+  set mem_used [tms::get-config "/system/memory/physical/used"]
+  if {[string length $mem_used] == 0} {
+    set mem_used "UNKNOWN"
+  } else {
+    set mem_used [expr $mem_used / 1024]
+  }
+
+
+  set mem_total [tms::get-config "/system/memory/physical/total"]
+  if {[string length $mem_total] == 0} {
+    set mem_total "UNKNOWN"
+  } else {
+    set mem_total [expr $mem_total / 1024]
+  }
+
+  set mem_free [expr $mem_total - $mem_used]
+  
+  set cpu_list [tms::iterate-config "/system/cpu/indiv"]
+  set num_cores [llength $cpu_list]
+  set num_cpus [tms::get-config "/stat/nkn/cpucores"]
+
+  set cpu_util_1 [tms::get-config "/system/load/1"]
+  if {[string length $cpu_util_1] > 0} {
+    set cpu_util_1 [format "%1.2f" [expr $cpu_util_1 / 100.0]]
+  }
+  set cpu_util_5 [tms::get-config "/system/load/5"]
+  if {[string length $cpu_util_5] > 0} {
+    set cpu_util_5 [format "%1.2f" [expr $cpu_util_5 / 100.0]]
+  }
+  set cpu_util_15 [tms::get-config "/system/load/15"]
+  if {[string length $cpu_util_15] > 0} {
+    set cpu_util_15 [format "%1.2f" [expr $cpu_util_15 / 100.0]]
+  }
+  set interface_ids [tms::iterate-config "/net/interface/state"]
+  set prefix_len [string length "/net/interface/state/"]
+  set cache_size [tms::get-config "/nkn/nvsd/buffermgr/monitor/cachesize"]
+
+?>
+
+<table class="tms_mon">
+  <tr>
+    <td width="20"></td>
+    <td class="label">Date and Time</td>
+    <td width="5"></td>
+    <td><?=$datetime?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Hostname</td>
+    <td></td>
+    <td><?=$hostname?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Uptime</td>
+    <td></td>
+    <td><?=$uptime?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Version</td>
+    <td></td>
+    <td><?= [tms::get-config "/system/version/composite"] ?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Partitioning</td>
+    <td></td>
+    <td><?= [tms::get-config "/system/model"] ?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Hardware</td>
+    <td></td>
+    <td><?= [tms::get-config "/system/jnprinfo"] ?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Host ID</td>
+    <td></td>
+    <td><?= [tms::get-config "/system/hostid"] ?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">System&nbsp;memory</td>
+    <td></td>
+    <td>
+      <?= $mem_used ?> MB used /
+      <?= $mem_free ?> MB free / 
+      <?= $mem_total ?> MB total
+    </td>
+  </tr>
+  <tr>
+    <td></td>
+    <td class="label">Ram&nbsp;Cache&nbsp;Size</td>
+    <td></td>
+    <td>
+      <?= $cache_size ?> MB
+    </td>
+  </tr>
+
+
+  <tr>
+    <td></td>
+    <td class="label">Number&nbsp;of&nbsp;CPUs/Cores</td>
+    <td></td>
+    <td><?= $num_cpus ?> / <?= $num_cores ?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">CPU&nbsp;load&nbsp;averages</td>
+    <td></td>
+    <td><?= $cpu_util_1 ?> / <?= $cpu_util_5 ?> / <?= $cpu_util_15 ?></td>
+  </tr>
+</table>
+
+<h3>Interface Statistics </h3>
+<table class="tms_mon">
+
+  <tr>
+    <td width=150><b>Interface</b></td>
+    <td width=150><b>TX in MB</b></td> 
+    <td width=150><b>RX in MB</b></td>
+  </tr>
+
+  <FOREACH iface_bn $interface_ids>
+  <?
+    set iface [string range $iface_bn $prefix_len end]
+    if {[string compare $iface "lo"] == 0} {
+       continue
+    }
+
+    set eth_tx_bytes [tms::get-config "/net/interface/state/$iface/stats/tx/bytes"]
+    set eth_tx_mbytes [format "%d" [expr $eth_tx_bytes / 1048576]]
+
+    set eth_rx_bytes [tms::get-config "/net/interface/state/$iface/stats/rx/bytes"]
+    set eth_rx_mbytes [format "%d" [expr $eth_rx_bytes / 1048576]]
+  ?>
+  <tr>
+    <td class="center"><?= $iface ?></td>
+    <td><?= $eth_tx_mbytes ?> MB</td>
+    <td><?= $eth_rx_mbytes ?> MB</td>
+  </tr>
+
+  </FOREACH>
+</table>
+</TAG>

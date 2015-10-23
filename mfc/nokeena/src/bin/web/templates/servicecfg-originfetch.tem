@@ -1,0 +1,94 @@
+<?
+#
+# Filename:  servicecfg-originfetch.tem,v $
+# Date:      2009/06/20
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Origin Fetch">
+<TMS-MENU "servicecfg">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SERVICECFG-MENU "originfetch"></TMS-SERVICECFG-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Origin Fetch Configuration">
+
+<CFG-FORM -action "config-form-list-action" -div_id "namespace_config_1">
+  <h2> Origin Fetch Configuration </h2>
+  <?
+    set nm_prefix "/nkn/nvsd/origin_fetch/config"
+    set nm_ids [tms::iterate-config $nm_prefix]
+    set namespace_list {}
+    foreach nm_id $nm_ids {
+       set prefix_len [string length "$nm_prefix/"]
+       set nm_name [string range $nm_id $prefix_len end]
+       lappend namespace_list "$nm_name $nm_name"
+    }
+
+  ?>
+  <TMS-TABLE -div_id "namespace_table_1">
+    <TMS-TABLE-ENTRY "Namespace Name">
+      <CFG-DROPDOWN -id "name" -errname "name" 
+                   -caps "set_basic" -required "true"
+                   -options $namespace_list
+                   -type "string" -span_id "set_name">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Cache Age Default">
+      <CFG-TEXTBOX -id "cache-age/default" -errname "Cache Age" 
+                   -caps "set_basic" -required "false"
+                   -type "uint32" -span_id "set_cache_age">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Cache Re-Validation Permit">
+      <CFG-CHECKBOX -id "cache-revalidate" -errname "Cache Revalidation" 
+                   -caps "set_basic"
+                   -type "bool" -span_id "set_cache_reval">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Date Header Modify Enable">
+      <CFG-CHECKBOX -id "date-header/modify" -errname "Date Header" 
+                   -caps "set_basic"
+                   -type "bool" -span_id "set_datehdr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Cache Directive">
+      <CFG-DROPDOWN -id "cache-directive/no-cache" -errname "Cache Directive" 
+                   -caps "set_basic" 
+                   -type "string" -span_id "set_status" -options 
+                    { {"follow" "follow"}
+                      {"override" "override" }}>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Content Store Media Cache Age Threshold">
+      <CFG-TEXTBOX -id "content-store/media/cache-age-threshold" 
+                   -errname "content store" -required "false"
+                   -caps "set_basic"
+                   -type "uint32" -span_id "set_cntstore">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Offline Fetch File Size">
+      <CFG-TEXTBOX -id "offline/fetch/size" -errname "filesize" 
+                   -caps "set_basic" -required "false"
+                   -type "uint32" -span_id "set_status">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/nkn/nvsd/origin_fetch/config">
+  <input type="hidden" name="f_list_index" value="name">
+  <input type="hidden" name="f_list_children" value="cache-age/default,cache-revalidate,date-header/modify,cache-directive/no-cache,content-store/media/cache-age-threshold,offline/fetch/size">
+
+  <CFG-BUTTON -type "add" -text "Apply" -caps "set_basic"
+              -span_id "vp_apply_1">
+</CFG-FORM>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

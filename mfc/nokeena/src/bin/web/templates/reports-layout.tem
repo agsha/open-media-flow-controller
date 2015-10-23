@@ -1,0 +1,34 @@
+<?
+#
+# Filename:  reports_layout.tem
+# Date:      2009/04/22
+# Author:    Chitra Devi R
+#
+# Nokeena Networks Inc
+#
+?>
+
+<INCLUDE "tms-defines">
+<INCLUDE "tms-utils">
+<INCLUDE "tms-layout">
+<TAG MFD-REPORTS-MENU selected {arg ""} {arg_value ""}>
+  <?
+    set reports_options {
+        {intf Interface}
+        {intfhr &nbsp;&nbsp;&nbsp;&nbsp;Hourly&nbsp;Stats}
+        {intfday &nbsp;&nbsp;&nbsp;&nbsp;Daily&nbsp;Stats}
+        {bandwidth Bandwidth}
+    }
+    lappend options $reports_options
+       # {analytics Analytics}
+  ?>
+  <div id="mfd_reports_menu">
+    <TMS-SIDEBAR-MENU $selected $options reports- $arg $arg_value>
+    </TMS-SIDEBAR-MENU>
+  </div> <!-- mfd_reports_menu -->
+</TAG>
+
+<TAGEND MFD-REPORTS-MENU>
+    <!-- /MFD-REPORTS-MENU is deprecated -->
+</TAGEND>
+

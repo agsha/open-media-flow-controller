@@ -1,0 +1,125 @@
+#!/bin/bash
+
+usage() { echo "Usage: $0 -f <filter-map-name> -d <download-directory> -l <file-name> -t {url|iwf|calea} -r {0|1} -v {0-...} [ -c crypto-key]" 1>&2; exit 1; }
+
+while getopts ":f:d:l:t:c:r:v:" o; do
+    case "${o}" in
+        r)
+            REFRESH_FORCE=${OPTARG}
+	    CONFIG=${REFRESH_FORCE}
+            ;;
+        t)
+            TYPE=${OPTARG}
+            ;;
+	f)
+            FILTER_NAME=${OPTARG}
+            ;;
+	d)
+            DOWNLOAD_DIR=${OPTARG}
+            ;;
+	l)
+            DOWNLOAD_FILE=${OPTARG}
+            ;;
+	c)
+            CRYPTO_KEY=${OPTARG}
+            ;;
+	v)
+            VERSION=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+DOWNLOAD_DIR_WGET=`echo ${DOWNLOAD_DIR}`
+DOWNLOAD_FILE_WGET=`echo ${DOWNLOAD_FILE}`
+#echo "filter name = $FILTER_NAME"
+#echo "download dir = $DOWNLOAD_DIR"
+#echo "download file = $DOWNLOAD_FILE_WGET"
+#echo "type = $TYPE"
+#echo "config = $CONFIG"
+#echo "version = $VERSION"
+#echo "crypto-key = $CRYPTO_KEY"
+LOCAL_NAME=${DOWNLOAD_FILE}.new
+MKDIR="mkdir -p"
+TARGET_DIR=/nkn/tmp/uf/${FILTER_NAME}
+FINAL_FILE="${TARGET_DIR}/${DOWNLOAD_FILE_WGET}.bin"
+
+# Attempt to download the file. --progress=dot:mega is used to prevent
+# WGET_OUTPUT from getting too long.
+# check if target local directory exists. If not ceate it before downloading
+if [ ! -d ${TARGET_DIR} ]
+then
+    $MKDIR ${TARGET_DIR}
+fi
+
+cd ${TARGET_DIR}
+
+for num_try in 1 2 3 
+do
+OUTPUT=$(2>&1 /opt/nkn/bin/wget -t 3 --timeout 30 --timestamping --progress=dot:mega \
+    "$DOWNLOAD_DIR_WGET/$DOWNLOAD_FILE_WGET")
+
+
+# Make sure the download went okay.
+if [ $? -ne 0 ]
+then
+    # wget had problems.
+#    echo 1>&2 $0: "$WGET_OUTPUT"
+    echo "RETURN=1"
+    echo "ERROR=${OUTPUT}"
+    WGET_OUTPUT="\n======== ${FILTER_NAME} == try = ${num_try} ======= \n ${OUTPUT} \n======="
+    echo "${WGET_OUTPUT}" >> /var/tmp/uf-log-file
+    # if failed 3 times, then exit.
+    if [ ${num_try} -eq 3 ]
+    then
+	exit 1
+    fi
+    # wait for 5 seconds before trying again.
+    sleep 5;
+else
+    break
+fi
+done
+
+
+# Copy the file to the new name if necessary.
+if echo "$WGET_OUTPUT" | fgrep 'saved' &> /dev/null
+then
+    # change seen and new file downloaded. Change from local file name to
+    # actual file name
+    cp -f "${DOWNLOAD_FILE}" "${LOCAL_NAME}"
+    OUTPUT=$(2>&1 /opt/nkn/bin/MapURL -i "${TARGET_DIR}/${DOWNLOAD_FILE}" -o "${TARGET_DIR}/${DOWNLOAD_FILE}.bin" -t  "${TYPE}" -k "${CRYPTO_KEY}")
+    if [ $? -ne 0 ]
+    then
+	echo "RETURN=3; "
+	rm "${TARGET_DIR}/${DOWNLOAD_FILE}"
+	echo "ERROR=${OUTPUT}"
+        exit 3
+    else
+        echo "RETURN=0"
+        exit 0
+    fi
+else
+    if [ $CONFIG -eq 1 ]
+    then
+        OUTPUT=$(2>&1 /opt/nkn/bin/MapURL -i "${TARGET_DIR}/${DOWNLOAD_FILE}" -o "${TARGET_DIR}/${DOWNLOAD_FILE}.bin" -t "${TYPE}" -k "${CRYPTO_KEY}")
+        if [ $? -ne 0 ]
+        then
+            echo "RETURN=3; "
+	    rm "${TARGET_DIR}/${DOWNLOAD_FILE}"
+	    echo "ERROR=${OUTPUT}"
+            exit 3
+        else
+            echo "RETURN=0"
+            exit 0
+        fi
+    else
+        # no change in file.. so nothing downloaded
+        echo "RETURN=2"
+        exit 2
+    fi
+fi
+

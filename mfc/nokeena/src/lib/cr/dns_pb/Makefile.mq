@@ -1,0 +1,31 @@
+# Filename: lib/cr/dns_pb/Makefile.mq
+
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+topdir = ./
+includedir = -I$(PROD_CUSTOMER_ROOT)/nokeena/src/include\
+-I$(PROD_CUSTOMER_ROOT)/nokeena/src/include/cr\
+-I$(PROD_CUSTOMER_ROOT)/nokeena/src/include/cr/dns_pb\
+-I/usr/include/glib-2.0/ -I/usr/lib64/glib-2.0/include
+output = cr_dnspb_ut
+
+SRCS =  \
+	dns_parser.c\
+	dns_builder.c\
+	dns_multq_gen.c
+
+CFLAGS = -Wall -Werror -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE\
+-U_USE_NKN_VFS -g `xml2-config --cflags` -DFREE_LIST_UT
+
+LDFLAGS = -L/usr/lib64 -lm -lvirt -lcprops -lssl -lxml2 -lglib-2.0 `xml2-config --libs`\
+${PROD_OUTPUT_ROOT}/product-nokeena-x86_64/build/image/custlib/nvsd/libnkn_memalloc.so.1.0.0\
+${PROD_BUILD_OUTPUT_DIR}/${INSTALL_TREE}/${CUST_LIB_DIR}/lf/liblf_connector.a \
+${PROD_BUILD_OUTPUT_DIR}/${INSTALL_TREE}/${CUST_LIB_DIR}/lf/liblf_common.a \
+
+driver: $(SRCS)
+	$(CC) $(SRCS) $(CFLAGS) $(includedir) $(LDFLAGS) -o $(output)
+
+clean:
+	rm -f *.o $(outputdir)/$(output)
+
+include ${PROD_TREE_ROOT}/src/mk/prog.mk

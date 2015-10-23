@@ -1,0 +1,86 @@
+== Python setuptools/distribute
+
+    CentOS now uses "distribute" instead of "setuptools". 
+
+Download the source tarball, uncompress it, then run the install command:
+
+    Source: https://pypi.python.org/packages/source/d/distribute/distribute-0.6.49.tar.gz
+    Saved locally: /data/archive/thirdparty/build-machine-src/python-utilities/distribute-0.6.49.tar.gz 
+
+cd /tmp
+mkdir distribute-tmp
+cd distribute-tmp
+tar -xzvf /data/archive/thirdparty/build-machine-src/python-utilities/distribute-0.6.49.tar.gz
+cd distribute-0.6.49
+find /usr/bin /usr/lib | sort > LIST.before.txt
+python2.7 setup.py install
+find /usr/bin /usr/lib | sort > LIST.after.txt
+
+This installs 132 files:
+
+    /usr/bin/easy_install
+    /usr/bin/easy_install-2.7
+    /usr/lib/python2.7/site-packages/distribute-0.6.49-py2.7.egg/*
+    /usr/lib/python2.7/site-packages/easy-install.pth
+    /usr/lib/python2.7/site-packages/setuptools-0.6c11-py2.7.egg-info
+    /usr/lib/python2.7/site-packages/setuptools.pth 
+
+== Python pip
+
+http://www.pip-installer.org/en/latest/installing.html
+
+    Download https://raw.github.com/pypa/pip/master/contrib/get-pip.py
+    This is saved locally: /data/archive/thirdparty/build-machine-src/python-utilities/get-pip.py
+    Execute: 
+
+cd /tmp
+mkdir pip-tmp
+cd pip-tmp
+find /usr/bin /usr/lib | sort > LIST.before.txt
+python2.7 /data/archive/thirdparty/build-machine-src/python-utilities/get-pip.py
+find /usr/bin /usr/lib | sort > LIST.after.txt
+
+This installs:
+
+    /usr/bin/pip
+    /usr/bin/pip2
+    /usr/bin/pip2.7
+    /usr/lib/python2.7/site-packages/pip/* 
+
+== Install Python virtualenv
+
+Download the source tarball, uncompress it, then run the install command:
+
+    Source: https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz
+    Saved locally: /data/archive/thirdparty/build-machine-src/python-utilities/virtualenv-1.9.1.tar.gz 
+
+cd /tmp
+mkdir virtualenv-tmp
+cd virtualenv-tmp
+tar -xzvf /data/archive/thirdparty/build-machine-src/python-utilities/virtualenv-1.9.1.tar.gz
+cd virtualenv-1.9.1
+find /usr/bin /usr/lib | sort > LIST.before.txt
+python2.7 setup.py install
+find /usr/bin /usr/lib | sort > LIST.after.txt
+
+This installs:
+
+    /usr/bin/virtualenv
+    /usr/bin/virtualenv-2.7
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/PKG-INFO
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/SOURCES.txt
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/dependency_links.txt
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/entry_points.txt
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/not-zip-safe
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/top_level.txt
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv.py
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv.pyc
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support/__init__.py
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support/__init__.pyc
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support/distribute-0.6.34.tar.gz
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support/pip-1.3.1.tar.gz
+    /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support/setuptools-0.6c11-py2.7.egg 
+

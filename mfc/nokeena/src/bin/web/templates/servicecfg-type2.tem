@@ -1,0 +1,129 @@
+<?
+#
+# Filename:  servicecfg-type2.tem,v $
+# Date:      2009/05/20 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Virtual Player">
+<?
+    
+    set config_type [tms::get-param query "type"]
+    if {[string length $config_type] == 0} {
+      set config_type "ratemap"
+    }
+
+?>
+   <?
+      set vp_name_posted [tms::get-param query "vpname"]
+      set vp_prefix "/nkn/nvsd/virtual_player/config"
+      set vp_ids [tms::iterate-config $vp_prefix]
+      set vp_list {}
+      foreach vp_id $vp_ids {
+        set prefix_len [string length "$vp_prefix/"]
+        set vp_name [string range $vp_id $prefix_len end]
+        set type [tms::get-config "$vp_id/type"]
+        if { $type == 2 } {
+          if {[string length $vp_name_posted] == 0 } {
+              set vp_name_posted $vp_name
+          }
+          lappend vp_list "$vp_name $vp_name"
+        }
+      }
+  ?>
+
+<TMS-BODY>
+<TMS-PAGE-CONTENT "Virtual Player Type qss-streamlet Configuration Page ">
+<h2 align="center"> Virtual Player Name : <?=$vp_name_posted?> </h2>
+
+<CFG-FORM -action "config-form-list" -div_id "virplayer_param_8">
+  <TMS-TABLE -div_id "virplayer_8">
+    <SECTION-HEADER "Rate Map Configuration">
+
+    <TMS-TABLE-ENTRY "Active">
+      <CFG-CHECKBOX -id "rate_map/active" -errname "rm_active" 
+                   -caps "set_basic" 
+                   -type "bool" -span_id "set_active"
+          -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/rate_map/active">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Match String">
+      <CFG-TEXTBOX -id "rate_map/match" -errname "Match String" 
+                   -caps "set_basic"
+                   -type "string" -span_id "configure_rm_match_str">
+    </TMS-TABLE-ENTRY>
+<!--
+    <TMS-TABLE-ENTRY "Query String Param">
+      <CFG-TEXTBOX -id "query_string" 
+                   -errname "RM query String" 
+                   -caps "set_basic" -required "false"
+                   -type "string" -span_id "configure_rm_query_str">
+    </TMS-TABLE-ENTRY>
+-->
+    <TMS-TABLE-ENTRY "Rate">
+      <CFG-TEXTBOX -id "rate" 
+                   -errname "RM Rate" 
+                   -caps "set_basic" -required "false"
+                   -type "uint32" -span_id "configure_rm_rate">
+    </TMS-TABLE-ENTRY>
+    <!--
+    <TMS-TABLE-ENTRY "UOL Length">
+      <CFG-TEXTBOX -id "uol/length" 
+                   -errname "RM UOL Length" 
+                   -caps "set_basic" -required "false"
+                   -type "uint32" -span_id "configure_rm_uollength">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "UOL Offset">
+      <CFG-TEXTBOX -id "uol/offset" 
+                   -errname "RM UOL Offset" 
+                   -caps "set_basic" -required "false"
+                   -type "uint32" -span_id "configure_rm_uoloffset">
+    </TMS-TABLE-ENTRY>
+    -->
+    <tr>
+    <!--
+    <SECTION-HEADER "Connection Bandwidth Configuration">
+    <TMS-TABLE-ENTRY "Max Session Rate (kbps)">
+      <CFG-TEXTBOX -id "max_session_rate" -errname "max_sess_rate" 
+                   -caps "set_basic"
+                   -type "uint32" -span_id "configure_sess_rate"
+		   -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/max_session_rate">
+    </TMS-TABLE-ENTRY>
+    -->
+    <tr><td height="4"></td></tr>
+      <td height="8">
+  </TMS-TABLE>
+  <input type="hidden" name="f_list_root" value="/nkn/nvsd/virtual_player/config/$vp_name_posted/rate_map/match">
+  <input type="hidden" name="f_list_index" value="rate_map/match">
+  <input type="hidden" name="f_list_children" value="rate">
+
+  <CFG-BUTTON -type "add" -text "Add/Update" -caps "set_basic"
+              -span_id "vp_apply_8">
+
+</CFG-FORM>
+<CFG-FORM -div_id "vp_type4_4">
+  <TMS-TABLE -div_id "virplayer_8">
+    <SECTION-HEADER "Connection Bandwidth Configuration">
+    <TMS-TABLE-ENTRY "Max Session Rate (kbps)">
+      <CFG-TEXTBOX -id "max_session_rate" -errname "max_sess_rate" 
+                   -caps "set_basic"
+                   -type "uint32" -span_id "configure_sess_rate"
+		   -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/max_session_rate">
+    </TMS-TABLE-ENTRY>
+    <tr><td height="4"></td></tr>
+      <td height="8">
+  </TMS-TABLE>
+  <CFG-BUTTON -type "add" -text "Add/Update" -caps "set_basic"
+              -span_id "vp_apply_8">
+
+</CFG-FORM>
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

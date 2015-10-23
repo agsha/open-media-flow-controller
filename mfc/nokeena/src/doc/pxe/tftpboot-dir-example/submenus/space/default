@@ -1,0 +1,61 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE Menu: Space boot images
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+### Adding from /home2/tftpboot/space/cfg.tail
+LABEL space-12.3P4.262742
+ MENU LABEL space-12.3P4.262742
+ KERNEL        /space/space-12.3P4.262742/isolinux/vmlinuz
+ APPEND initrd=/space/space-12.3P4.262742/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/space/space-12.3P4.262742/ ks=http://10.87.129.3/pxe/space/space-12.3P4.262742/ks-rit.php console=ttyS0,9600 ip=dhcp
+
+LABEL Space12.3R1.3-HTTP
+ MENU LABEL Space 12.3 R1.3-HTTP
+ KERNEL        /space/space-12.3R1.3/isolinux/vmlinuz
+ APPEND initrd=/space/space-12.3R1.3/isolinux/initrd.img ramdisk=6878 method=http://10.87.129.3/pxe/space/space-12.3R1.3/  console=ttyS0,9600 ip=dhcp
+
+LABEL Space12.3R1.3 
+ MENU LABEL Space 12.3 R1.3 
+ KERNEL        /space/space-12.3R1.3/isolinux/vmlinuz
+ APPEND initrd=/space/space-12.3R1.3/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/space/ ks=http://10.87.129.3/ks-rit.php console=ttyS0,9600 ip=dhcp
+
+LABEL Space12.2R1.3 
+ MENU LABEL Space 12.2 R1.3 
+ KERNEL        /space/space-12.2R1.3/isolinux/vmlinuz
+ APPEND initrd=/space/space-12.2R1.3/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/space/ ks=http://10.87.129.3/ks-rit.php console=ttyS0,9600 ip=dhcp
+
+LABEL Space12.1R1.8 
+ MENU LABEL Space 12.1 R1.8 
+ KERNEL        /space/space-12.1R1.8/isolinux/vmlinuz
+ APPEND initrd=/space/space-12.1R1.8/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/space/ ks=http://10.87.129.3/ks-rit.php console=ttyS0,9600 ip=dhcp
+
+LABEL Space11.4R1.5
+ MENU LABEL Space 11.4 R1.5
+ KERNEL        /space/space-11.4R1.5/isolinux/vmlinuz
+ APPEND initrd=/space/space-11.4R1.5/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/space/ ks=http://10.87.129.3/ks-rit.php console=ttyS0,9600 ip=dhcp
+
+LABEL Space11.2R1.4
+ MENU LABEL Space 11.2 R1.4
+ KERNEL        /space/space-11.2R1.4/isolinux/vmlinuz
+ APPEND initrd=/space/space-11.2R1.4/isolinux/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/space/ console=ttyS0,9600 ip=dhcp
+
+LABEL Space11.2R1.2
+ MENU LABEL Space 11.2 R1.2 2011-06-16
+ KERNEL        /space/space-11.2R1.2/images/pxeboot/vmlinuz
+ APPEND initrd=/space/space-11.2R1.2/images/pxeboot/initrd.img ramdisk=6878 method=nfs:10.87.129.3:/home2/tftpboot/space/space-11.2R1.2 console=ttyS0,9600 ip=dhcp
+
+### Thu Jul 30 07:47:06 PDT 2015

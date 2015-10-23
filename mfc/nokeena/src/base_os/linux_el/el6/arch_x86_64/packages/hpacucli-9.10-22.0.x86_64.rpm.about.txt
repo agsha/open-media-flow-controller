@@ -1,0 +1,17 @@
+BinaryFile: hpacucli-9.10-22.0.x86_64.rpm
+Description:"Array Configuration Utility CLI" is a commandline-based disk configuration program for HP Smart Array Controllers and RAID Array Controllers.
+From: HP
+Compiled from source: no
+Modified: no
+Copyright:  HP
+LicenseType: Hewlett-Packard End User License Agreement
+LicenseURL: ftp://ftp.hp.com/pub/softlib2/software1/doc/p2057331991/v33194/hpeula-en.html
+BinaryDownloadedFrom: http://h20000.www2.hp.com/bizsupport/TechSupport/Home.jsp
+BinaryLocalCopy: svn: nokeena/src/base_os/linux_el/el6/arch_x86_64/packages/hpacucli-9.10-22.0.x86_64.rpm
+SourceDownloadedFrom: None
+SourceLocalCopy: None
+# http://h20000.www2.hp.com/bizsupport/TechSupport/SoftwareDescription.jsp?lang=en&cc=us&prodTypeId=18964&prodSeriesId=5193417&prodNameId=5194887&swEnvOID=2078&swLang=8&mode=2&taskId=135&swItem=MTX-bb75f18abff04534afd617ff8a
+# MD5 Checksum values:
+# 8fa2a689e156075f50bfc83cf742c45a 	hpacucli-9.10-22.0.x86_64.rpm
+# fe05299d21fc72c1f361937305ab8d2f 	hpacucli-9.10-22.0.x86_64.txt
+

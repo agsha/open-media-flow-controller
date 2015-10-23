@@ -1,0 +1,43 @@
+# Makefile to build the static disp lib and its test program
+CC = gcc
+CFLAGS = -g -Wall -Werror
+INDIR = -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include
+LDLIB = -L/lib64
+LDFLAG = -pthread
+DEFIN =
+#DEFIN = -DUSER_MALLOC -DUSER_CALLOC
+# if USER_MALLOC/CALLOC are defined. Then USER_MALLOC_FN/USER_CALLOC_FN
+# have to be defined by the app using the lib. For our unit test, dist_test.c
+# has to define it. 
+
+all: disp_test
+
+disp_test: displib disp_test.c 
+	$(CC) $(CFLAGS) $(DEFIN) $(INDIR) $(LDFLAG) -lgthread-2.0 -lglib-2.0 \
+		disp_test.c -o disp_test \
+		-L. -ldispman
+
+fd_state: fd_state.c fd_state.h
+	$(CC) $(CFLAGS) -c fd_state.c -o fd_state.o 
+
+entity_context: entity_context.c entity_context.h
+	$(CC) $(CFLAGS) -c entity_context.c
+
+displib_conf: displib_conf.c displib_conf.h
+	$(CC) $(CFLAGS) -c displib_conf.c 
+
+dispatcher: dispatcher.c dispatcher.h
+	$(CC) $(CFLAGS) $(INDIR) $(LDLIB) $(LDFLAG) -c dispatcher.c
+
+dispatcher_manager: dispatcher_manager.c dispatcher_manager.h
+	$(CC) $(CFLAGS) $(INDIR) $(LDLIB) $(LDFLAG) \
+		-c dispatcher_manager.c
+
+displib: fd_state entity_context displib_conf dispatcher dispatcher_manager
+	ar -cvq libdispman.a fd_state.o entity_context.o dispatcher.o \
+		displib_conf.o dispatcher_manager.o
+	rm -rf *.o
+
+clean:
+	rm -rf *.o disp_test libdispman.a
+

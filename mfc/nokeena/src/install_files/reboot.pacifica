@@ -1,0 +1,69 @@
+#!/usr/bin/python
+import sys, select
+import subprocess
+import ConfigParser, os
+import paramiko
+import time
+
+def local(arg):
+    ret = subprocess.Popen('%s' %(arg), shell=True,
+                            stdout=subprocess.PIPE).stdout.read()
+    ret = ret[:(len(ret) - 1)]
+    return ret
+
+try:
+    # Find the fpc id
+    mac_address = local('/sbin/ifconfig eth0 | /bin/grep eth0 | /usr/bin/awk \'{print $5}\'')
+    fpc_id = int(mac_address.split(':')[5], 16)
+
+    if os.path.isfile("/opt/tms/bin/mddbreq"):
+        router_ip = '128.0.0.1'
+        router_username = local('/opt/tms/bin/mddbreq -v /config/db/initial query get - /nkn/junos-re/auth/username')
+        router_password = local('/opt/tms/bin/mddbreq -v /config/db/initial query get - /nkn/junos-re/auth/password')
+    else:
+        config = ConfigParser.ConfigParser()
+        config.readfp(open('/etc/mx.conf'))
+        router_ip = config.get('global', 'router-ip')
+        router_username = config.get('global', 'router-username')
+        router_password = config.get('global', 'router-password')
+
+    # Connect to router
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(router_ip, username=router_username,
+                password=router_password)
+
+    halt = 0
+    for str in sys.argv:
+        if str.find('halt') != -1 or str.find('-p') != -1:
+            halt = 1
+
+    # Send the command (non-blocking)
+    if halt == 1:
+        stdin, stdout, stderr = \
+                ssh.exec_command('cli -c "request chassis fpc slot %d offline"'
+                                %(fpc_id))
+    else:
+        stdin, stdout, stderr = \
+                ssh.exec_command('cli -c "request chassis fpc slot %d restart"'
+                                %(fpc_id))
+
+    # Wait for the command to terminate
+    while not stdout.channel.exit_status_ready():
+        # Only print data if there is data to read in the channel
+        if stdout.channel.recv_ready():
+            rl, wl, xl = select.select([stdout.channel], [], [], 0.0)
+            if len(rl) > 0:
+                # Print data from stdout
+                print stdout.channel.recv(1024)
+    ssh.close()
+
+except:
+    if os.path.isfile("/opt/tms/bin/mdreq"):
+        print "Not able to connect to the router for a reboot"
+        print "Please set junos-re configuration with CLI"
+    else:
+        print "Not able to connect to the router for a reboot"
+        print "Please check /etc/mx.conf"
+    shell = None
+

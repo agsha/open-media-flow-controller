@@ -1,0 +1,27 @@
+<?
+#
+# Filename:  show_documents.tem
+# Date:      2010/02/05 
+# Author:    Sasmita
+#
+# (C) Copyright 2008 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<TMS-PAGE "Documents">
+<TMS-MENU "documents">
+<TMS-BODY>
+<TMS-PAGE-CONTENT "Documents:">
+<ul type="square">
+ <li><a href="../MFD_Quick_start.pdf">Quick Start Guide</a></li>
+ <li><a href="../MFD_Installation.pdf">Admin Guide</a></li>
+ <li><a href="../MFD_Glossary.pdf">Glossary</a></li>
+</ul>  
+
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

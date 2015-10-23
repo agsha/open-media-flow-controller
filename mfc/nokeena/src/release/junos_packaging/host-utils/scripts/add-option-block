@@ -1,0 +1,44 @@
+#! /bin/sh
+#set -x
+# Adds an option block to the specified package file; if --replace-options
+# is specified, the options replace any existing option block in the
+# file, otherwise the options are added to the existing option block. 
+#
+# These options are used by pkgd; most often they are used to specify the
+# type of package file (the filesystem in use and whether or not it has been
+# compressed with gzipvn).
+
+if [ "$#" -lt 2 ] ; then
+    echo "Usage: $0 [--replace-options] optionlist packagefile"
+    exit 1
+fi
+
+if [ "$#" = 3 -a "$1" = "--replace-options" ] ; then
+    replaceoptions=1;
+    shift;
+fi
+
+size=`wc -c < $2`
+offset=$size
+
+if [ "$size" -ge 512 ] ; then
+    try=`expr $size - 10 `
+    dd if=$2 bs=1 skip=$try 2>/dev/null | grep 'sigver001' > /dev/null 2>&1
+    if [ $? =  0 ] ; then
+	offset=`expr $size - 512`
+	if [ "$replaceoptions" = "" ] ; then
+	    opts=`dd if=$2 bs=1 skip=$offset 2>/dev/null | head -1`
+	    opts="${opts}, "
+	fi
+    fi
+fi    
+	    
+tempf=/tmp/addop$$tmp
+
+Ests=1
+trap "rm -f $tempf ; exit \$Ests" 0 1 2 3 15
+
+echo "$opts$1" | dd bs=502 count=1 conv=sync of=$tempf 2>/dev/null
+echo "sigver001" >> $tempf
+dd if=$tempf of=$2 bs=1 conv=notrunc "seek=$offset" 2>/dev/null
+Ests=$?

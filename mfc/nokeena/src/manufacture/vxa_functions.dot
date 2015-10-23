@@ -1,0 +1,234 @@
+# Functions for VXA checking
+# VXA_Check()
+# EUSB_Check()
+# VXA_Hardware_Check()
+ 
+function VXA_Check()
+{
+  if [ "_${IS_VXA}" = "_no" ] ; then
+    rm -f /etc/vxa_model
+    return
+  fi
+  if [ "_${IS_VXA}" = "_yes" ] ; then
+    return
+  fi
+  SMFG=`dmidecode -s system-manufacturer`
+  SERIAL_NUMBER=`dmidecode -s system-serial-number`
+  case ${SMFG} in
+  Juniper\ *)
+    MODEL_NUMBER=`echo "${SERIAL_NUMBER}" | cut -c1-4`
+    # Note: Model 0305 will be released sometime in 2012.
+    #       Models 0304 and 0306 will be released sometime after #0305.
+    case ${MODEL_NUMBER} in
+    0277|0278|0279|0280|0304|0305|0306)
+      IS_VXA=yes
+      VXA_MODEL=${MODEL_NUMBER}
+      echo VXA_MODEL=${MODEL_NUMBER} > /etc/vxa_model
+      if [ "${MODEL_NUMBER}" = "0305" ] ; then
+         IS_2100_VXA=yes
+      else
+         IS_2100_VXA=no
+      fi
+      ;;
+    esac
+    ;;
+  esac
+}
+
+function EUSB_Check()
+{
+  if [ "_${IS_VXA}" != "_yes" ] ; then
+    FOUND_VXA_EUSB=no
+    EUSB_DEV_NAME=
+    rm -f /tmp/eusb-root-dev.txt
+  fi
+  if [ "_${FOUND_VXA_EUSB}" = "_no" ] ; then
+    # Already determined.
+    EUSB_DEV_NAME=
+    rm -f /tmp/eusb-root-dev.txt
+    return
+  fi
+  if [ "_${FOUND_VXA_EUSB}" = "_yes" ] ; then
+    # Already determined.
+    return
+  fi
+  if [ ! -z "${OPT_EDISK_DEV}" ] ; then
+    # OPT_EDISK_DEV is set in Parse_Manuf_Opt()
+    # This is set by the "eusb-dev=" command line override.
+    EUSB_DEV_NAME=${OPT_EDISK_DEV}
+    echo ${EUSB_DEV_NAME} > /tmp/eusb-root-dev.txt
+    FOUND_VXA_EUSB=yes
+    return
+  fi
+  if [ -f /tmp/eusb-root-dev.txt ] ; then
+    EUSB_DEV_NAME=`cat /tmp/eusb-root-dev.txt`
+    FOUND_VXA_EUSB=yes
+    return
+  fi
+  FOUND_VXA_EUSB=no
+  for disk in /sys/block/sd*
+  do
+    grep eUSB $disk/device/model > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+      FOUND_VXA_EUSB=yes
+      EUSB_DEV_NAME=/dev/`basename $disk`
+      echo ${EUSB_DEV_NAME} > /tmp/eusb-root-dev.txt
+      break
+    fi
+    grep PSH16H0S2 $disk/device/model > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+      FOUND_VXA_EUSB=yes
+      EUSB_DEV_NAME=/dev/`basename $disk`
+      echo ${EUSB_DEV_NAME} > /tmp/eusb-root-dev.txt
+      break
+    fi
+  done
+}
+
+function Get_VXA_Model_Spec()
+{
+  case ${MODEL_NUMBER} in
+  0279)
+    # Model Number = 0279 !!!!THIS MODEL NOT SOLD ANYMORE!!!!
+    # VXA1001 :           !!!!THIS MODEL NOT SOLD ANYMORE!!!!
+    # 1U, Minimum RAM 4GB,
+    # Network interfaces allowed 2x1gbe,
+    # Storage: 1xSATA500GB (Total 500GB), max 4 drives.
+    # 4G eUSB
+    # --> Use disk model with cache on the first disk drive.
+    MODEL_NAME=VXA1001
+    FIRST_DRIVE_CACHE=yes
+    MIN_RAMG=4
+    DRIVES_MAX=4
+    ;;
+  0280)
+    # Model Number = 0280
+    # VXA1002:
+    # 1U, Minimum RAM 8GB, Max 8GB
+    # Network interfaces allowed: 4x1gbe,
+    # Storage: 4xSATA500GB (Total 2TB), max 4 drives.
+    # 4G eUSB
+    # --> Use disk model with cache on the first disk drive.
+    MODEL_NAME=VXA1002
+    FIRST_DRIVE_CACHE=yes
+    MIN_RAMG=8
+    DRIVES_MAX=4
+    ;;
+  0304)
+    # Model Number = 0304
+    # VXA1100:
+    # 1U, Minimum RAM 48GB, Max 144GB
+    # Network interfaces allowed: 4x1gbe or 2x10Gbe
+    # Storage: max 8 drives, any combo
+    # 8G eUSB
+    # --> Use disk model WITHOUT cache on the first disk drive.
+    MODEL_NAME=VXA1100
+    FIRST_DRIVE_CACHE=no
+    MIN_RAMG=48
+    DRIVES_MAX=8
+    ;;
+  0277)
+    # Model Number = 0277
+    # VXA2002:
+    # 2U, Minimum RAM 36GB, Max 144GB
+    # Network interfaces allowed 4x1gbe, 2x10Gbe,
+    # Storage: 4xSAS500GB (Total 2 TB), max 16 drives.
+    # 4G eUSB
+    # --> Use disk model WITHOUT cache on the first disk drive.
+    MODEL_NAME=VXA2002
+    FIRST_DRIVE_CACHE=no
+    MIN_RAMG=36
+    DRIVES_MAX=16
+    ;;
+  0278)
+    # Model Number: 0278
+    # VXA2010:
+    # 2U,Minimum RAM 36GB, Max 144GB
+    # Network interfaces allowed 4x1gbe, 2x10Gbe,
+    # Storage: 14xSAS500GB + 2xSSD64GB (Total of 7.128 TB), max 16 drives.
+    # 4G eUSB
+    # --> Use disk model WITHOUT cache on the first disk drive.
+    MODEL_NAME=VXA2010
+    FIRST_DRIVE_CACHE=no
+    MIN_RAMG=36
+    DRIVES_MAX=16
+    ;;
+  0305)
+    # Model Number = 0305
+    # VXA2100:
+    # 2U, Minimum RAM 48GB, Max 144GB
+    # Network interfaces allowed: 4x1gbe, 2x10Gbe
+    # Storage: 40 drives. Max 16 internal,  any combo, plus mini-SAS port for JBOD
+    # 16G eUSB
+    # --> Use disk model WITHOUT cache on the first disk drive.
+    MODEL_NAME=VXA2100
+    FIRST_DRIVE_CACHE=no
+    MIN_RAMG=48
+    DRIVES_MAX=16
+    ;;
+  0306)
+    # Model Number = 0306
+    # VXA2200:
+    # 2U, Minimum RAM 96GB, Max 144GB
+    # Network interfaces allowed: 4x1gbe, 2x10Gbe
+    # Storage: 40 drives. Max 16 internal,  any combo, plus mini-SAS port for JBOD
+    # 16G eUSB
+    # --> Use disk model WITHOUT cache on the first disk drive.
+    MODEL_NAME=VXA2200
+    FIRST_DRIVE_CACHE=no
+    MIN_RAMG=96
+    DRIVES_MAX=16
+    ;;
+  esac
+}
+
+function VXA_Hardware_Check()
+{
+  [ "_${IS_VXA}" != "_yes" ] && return
+  MODEL_NAME=unknown
+  Get_VXA_Model_Spec
+  # First verify that the hardware is ok to install on.
+
+  rm -f /tmp/model-info.txt
+  echo "MODEL_NAME=${MODEL_NAME}"       >> /tmp/model-info.txt
+  echo "SERIAL_NUMBER=${SERIAL_NUMBER}" >> /tmp/model-info.txt
+  echo "MODEL_NUMBER=${MODEL_NUMBER}"   >> /tmp/model-info.txt
+
+  rm -f /tmp/mfg-test.txt
+  echo "    Model name:    ${MODEL_NAME}"    >> /tmp/mfg-test.txt
+  echo "    Serial number: ${SERIAL_NUMBER}" >> /tmp/mfg-test.txt
+  echo "    Model number:  ${MODEL_NUMBER}"  >> /tmp/mfg-test.txt
+  echo "    RAM:           ${RAM_GB} GB"     >> /tmp/mfg-test.txt
+  echo "Hardware detected:"
+  cat /tmp/mfg-test.txt
+
+  rm -f /tmp/mfg-fail.txt
+  if [ "${MODEL_NAME}" = "unknown" ] ; then
+    # Model 0305  will be released mid 2012.
+    # Models 0304 and 0306 are not currently scheduled for release.
+    echo Installation is not supported on this model number: ${MODEL_NUMBER} > /tmp/mfg-fail.txt
+    cat /tmp/mfg-fail.txt
+    echo Installation is only supported on the following:
+    echo VXA1001 - model number 0279
+    echo VXA1002 - model number 0280
+    #echo VXA1100 - model number 0304
+    echo VXA2002 - model number 0277
+    echo VXA2010 - model number 0278
+    echo VXA2100 - model number 0305
+    #echo VXA2200 - model number 0306
+    echo
+    # Exiting with 10 makes root.profile go to the shell prompt.
+    # It also prints a message before that about using exit and reboot.
+    exit 10
+  fi
+  if [ ${RAM_GB} -lt ${MIN_RAMG} ] ; then
+    echo FAIL: ${RAM_GB} RAM found, minimum allowed ${MIN_RAMG} > /tmp/mfg-fail.txt
+    cat /tmp/mfg-fail.txt >> /tmp/mfg-test.txt
+    cat /tmp/mfg-fail.txt
+    echo Cannot install on this hardware.
+    echo
+    # Exiting with 10 makes root.profile go to the shell prompt.
+    # It also prints a message before that about using exit and reboot.
+    exit 10
+  fi
+}

@@ -1,0 +1,23 @@
+Package: pure-ftpd
+Version : 1.0.21
+License : BSD
+
+
+This directory contains a set of files that are to be considered as
+templates for an actual install. 
+
+Following are the files created and to be targeted to the said locations
+
+
+    What                            Where
+----------------------------------------------------
+pure-ftpd                       /nkn/usr/sbin/
+pure-ftpwho                     /nkn/usr/sbin/
+
+pure-config.pl                  /nkn/usr/sbin/
+
+etc/init.d/pure-ftp             /nkn/etc/init.d/
+etc/pam.d/pure-ftpd             /nkn/etc/pam.d/
+etc/pam.d/pure-ftpwho           /nkn/etc/pam.d/
+etc/pure-ftpd/pure-ftpd.conf    /nkn/etc/pure-ftpd/
+----------------------------------------------------

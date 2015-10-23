@@ -1,0 +1,10 @@
+RELEASE_VER=mfc-15.0.0
+# Note: When changing RELEASE_VER, also change customer.mk PROD_RELEASE setting.
+# For normal builds with build-mine.sh RELEASE_VER is used, but the other
+# setting may be used for some developers building by hand.
+SAMARA_SVN_REV=470
+SAMARA_SVN_BRANCH=current
+SAMARA_NAME=hickoryu0
+CENTOS_VER=6.6
+DMI_PKG=mfc-dmi-adapter-12.3.4-R1
+# NOTE:  Still need to update Samara tree/src/release/freedist/Makefile to use the SCL 6.6

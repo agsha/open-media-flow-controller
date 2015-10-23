@@ -1,0 +1,127 @@
+<?
+#
+# Filename:  reports-intfday.tem,v $
+# Date:      2009/02/06 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "reports-layout">
+<TMS-PAGE "Interface Statistics">
+<TMS-MENU "reports">
+<TMS-BODY>
+<TMS-SIDEBAR><MFD-REPORTS-MENU "intfday"></MFD-REPORTS-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Last 7 Days of Activity">
+<?
+   set cur_line 0
+   set intfname [tms::get-param "query" "intfname"]
+   if {[string length $intfname] == 0} {
+       set intfname eth0
+   }
+
+   set iids [tms::get-if-info]
+   set interface_list {}
+   foreach iid $iids {
+         set id [lindex $iid 0]
+         lappend interface_list "$id $id"
+   }
+?>
+
+<br>
+<form method="get">
+    <input type="hidden" name="script" value="rh">
+    <input type="hidden" name="template" value="reports-intfday">
+
+    <b>Interface Name:</b>
+    <select name="intfname" onchange="this.form.submit();">
+
+   <FOREACH if_name $interface_list>
+      <SET tname [lindex $if_name 0]>
+      <SET tvalue [lindex $if_name 1]>
+      <IF {[string equal $intfname $tvalue] == 1}>
+          <SET selected "selected">
+      <ELSE>
+          <SET selected "">
+      </IF>
+
+      <option value="<?=$tvalue?>" <?=$selected?>><?=$tname?></option>
+   </FOREACH>
+
+    </select>
+  <noscript>
+    <img src="/images/em.gif" width="5" height="1">
+     <input type="submit" id="gsubmit" value="Submit">
+  </noscript>
+</form>
+
+<table border="1" cellspacing="1" cellpadding="5">
+<tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+<td> <b> Date and Time </b> </td>
+<td> <b> Received (MBytes) </b> </td>
+<td> <b> Transmitted (MBytes) </b> </td>
+</tr>
+<?
+  set mb [expr 1024.0 * 1024.0]
+
+  set fexist [file exist "/tmp/intf_daily_report"]
+  if {$fexist == 1} {
+  set fp [open "/tmp/intf_daily_report" r]
+  set data [read $fp]
+  close $fp
+
+  set data [split $data "\n"]
+  foreach line $data {
+
+  set fields [split $line " "]
+  set date [lindex $fields 0]
+  set time [lindex $fields 1]
+  set intf [lindex $fields 2]
+  set rxbytes [lindex $fields 3]
+  set txbytes [lindex $fields 4]
+
+  if {$rxbytes == ""} {
+    set rxbytes 0
+  } elseif {$rxbytes < 0} {
+    set rxbytes 0
+  }
+  if {$txbytes == ""} {
+    set txbytes 0
+  } elseif {$txbytes < 0} {
+    set txbytes 0
+  }
+  set rxValue [format "%2.2f MB" [expr $rxbytes / $mb]]
+  set txValue [format "%2.2f MB" [expr $txbytes / $mb]]
+  
+  if {[string compare $intf $intfname] != 0} {
+      continue 
+  }
+  #lassign $fields date time intf rxbytes txbytes
+?>
+<tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+ <td> <?=$date?> <?=$time?> </td>
+ <td align="right"> <?=$rxValue?> </td>
+ <td align="right"> <?=$txValue?> </td>
+</tr>
+<?
+  incr cur_line
+  }
+  }
+?>
+</table>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

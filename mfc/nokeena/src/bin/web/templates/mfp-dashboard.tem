@@ -1,0 +1,174 @@
+<?
+#
+# Filename:  mfp-dashboard.tem,v $
+# Date:
+# Author:    Dhivyamanohary R
+#
+# (C) Copyright 2010 Juniper Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "mfp-layout">
+<TMS-PAGE "MFP">
+<TMS-MENU "mfp">
+<TMS-BODY>
+<?
+    set refresh_time [tms::get-config "/nkn/nvsd/mfp/status-time"]
+    if {[string length $refresh_time] == 0} {
+      set refresh_time 2
+    }
+    set time_msec [expr $refresh_time * 60 * 1000]
+?>
+<TMS-SIDEBAR><TMS-MFP-MENU "mfp-dashboard"></TMS-MFP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Media Flow Publisher Dashboard">
+<script type="text/javascript">
+function copy(value)
+{
+
+  document.mfp_form.f_mfp.value  =  value;
+}
+
+function pageRefresh(time) {
+	setTimeout(reloadPage, time );
+}
+
+function reloadPage() {
+window.location= '/admin/launch?script=rh&template=mfp-dashboard';
+}
+</script>
+<h2> Session List </h2>
+<CFG-FORM -name "mfp_form"  -action "config-form-action-mfp" -div_id "mfp">
+
+<input type="hidden" name="f_mfp" value="">
+  <?
+    set cur_line 0
+    set stream_prefix "/nkn/nvsd/mfp/config"
+    set stream_ids [tms::iterate-config $stream_prefix]
+  ?>
+
+
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head"> 
+     <td></td>
+      <td> <b>Session Name</b> </td>
+      <td> <b>Media Source Type</b> </td>
+      <td> <b>Media Encapsulation Type</b> </td>
+      <td> <b>Current Status</b> </td>
+      <td> <b>Stop Stream </b> </td>
+      <td> <b>Session Restart</b></td>
+      <td> <b>Session Remove</b></td>
+    </tr>
+    <FOREACH stream_id $stream_ids>
+    <?
+    set prefix_len [string length "$stream_prefix/"]
+    set stream_name [string range $stream_id $prefix_len end]
+    set encap_type [tms::get-config "/nkn/nvsd/mfp/config/$stream_name/media-encap"]
+    set media_type [tms::get-config "/nkn/nvsd/mfp/config/$stream_name/media-type"]
+    set pub_status [tms::get-config "/nkn/nvsd/mfp/config/$stream_name/status"]
+    ?>
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+      <td>
+        <?=$stream_name?></td>
+      <td>
+        <?=$media_type?></td>
+      <td>
+	<IF {$encap_type == "file_spts_media_profile" || $encap_type == "live_spts_media_profile"}>
+      	    <IF {$encap_type == "file_spts_media_profile"}>
+        	 Multi Rate MPEG-2 TS (H.264/AAC) Package
+       	    <ELSE>
+                 H.264/AAC - MPEG-2 TS/UDP (SPTS)
+            </IF>
+	<ELSEIF {$encap_type == "file_mp4"}>
+		MP4 Package
+        <ELSE>
+		Smooth Streaming Package
+        </IF>
+      </td>	
+      <td> <?=$pub_status?></td>
+      <td>
+      <IF {$pub_status == "NEW" || $pub_status == "STOPPED" || $pub_status == "EEXIST"}>
+          <CFG-BUTTON -type "stop" -text "Stop"  -caps "set_basic"
+	  -id "$stream_name"  -span_id "$stream_name" -disabled "true" -onclick "copy(this.id);">
+      <ELSE>
+          <CFG-BUTTON -type "stop" -text "Stop"  -caps "set_basic"
+	  -id "$stream_name"  -span_id "$stream_name" -onclick "copy(this.id);">
+      </IF>
+      </td>
+      <td>
+      <IF {$pub_status == "STOPPED" || $pub_status == "EEXIST"}>
+      <CFG-BUTTON -type "mfprestart" -text "Restart" -caps "set_basic"
+      -id "$stream_name" -span_id "stream_name" -onclick "copy(this.id);">
+      </td>
+      <ELSE>
+      <CFG-BUTTON -type "mfprestart" -text "Restart" -caps "set_basic"
+      -id "$stream_name" -span_id "stream_name" -disabled "true" -onclick "copy(this.id);">
+      </IF>
+      <td>
+      <IF {$pub_status == "EEXIST"}>
+	 <CFG-BUTTON -type "mfpremove" -text "Remove" -caps "set_basic"
+      	-id "$stream_name" -span_id "stream_name" -disabled "true" -onclick "copy(this.id);">
+      <ELSE>	
+	 <CFG-BUTTON -type "mfpremove" -text "Remove" -caps "set_basic"
+      	-id "$stream_name" -span_id "stream_name" -onclick "copy(this.id);">
+      </IF>
+       </td>
+      <td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Streams
+      <SET priv DISABLED_set_basic>
+    <ELSE>
+      <SET priv set_basic>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  </p></td></CFG-FORM>
+  <script>
+    pageRefresh(<?=$time_msec?>);
+    </script>
+ <CFG-FORM -div_id "refreshtimer" >
+ <TMS-TABLE -div_id "timer_table_1">
+    <TMS-TABLE-ENTRY "Status Refresh Interval">
+    	<CFG-TEXTBOX -id "status-time" -errname "time_status" 
+	-caps "set_basic" -type "uint32" -span_id "time_status"
+	-name "/nkn/nvsd/mfp/status-time">Minutes
+  </TMS-TABLE-ENTRY>
+  </TMS-TABLE>
+	<CFG-BUTTON -type "add" -text "Update" -caps "set_basic"
+		-span_id "vp_apply_4">
+
+  </br></br>
+  <b>EEXIST</b> - session does not exist in the publisher session
+table </br>
+  <b>NEW</b> - session created but not yet publishing </br>
+  <b>PUBLISH</b> - session published and initializing </br>
+  <b>SYNC</b> - relevant for live publishing only. the published session is trying to
+establish time stamp sync across profiles</br>
+  <b>RUNNING</b> - published session is running succesfully</br>
+  <b>STOPPED</b> - session stopped either via dashboard or when
+session reaches an unrecoverable state (maximum number of continuous
+re-syncs reached etc) </br>
+  </CFG-FORM>
+  </tr></table>
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

@@ -1,0 +1,25 @@
+
+CFLAGS=-I${PROD_CUSTOMER_ROOT}/nokeena/src/include/ -g
+
+LIB_PTRIE=$(PROD_OUTPUT_ROOT)/product-nokeena-x86_64/build/image/custlib/ptrie/libptrie.a
+
+PTRIE_TEST_LDFLAGS=-L/usr/local/lib ${LIB_PTRIE} -lcprops -lssl -lpthread -lrt
+DUMP_PTCKPT_LDFLAGS=-lc
+
+all:	ptrie_test dump_ptckpt
+
+ptrie_test:        ptrie_testcases.o
+	cc -o ptrie_test ptrie_testcases.o ${PTRIE_TEST_LDFLAGS}
+
+ptrie_testcases.o:	ptrie_testcases.c
+	cc ${CFLAGS} -c ptrie_testcases.c
+
+dump_ptckpt:	dump_ptrie_ckpt.o
+	cc -o dump_ptckpt dump_ptrie_ckpt.o ${DUMP_PTCKPT_LDFLAGS}
+
+dump_ptrie_ckpt.o:	dump_ptrie_ckpt.c
+	cc ${CFLAGS} -c dump_ptrie_ckpt.c
+
+clean:
+	rm -rf ptrie_test ptrie_testcases.o
+	rm -rf dump_ptckpt dump_ptrie_ckpt.o

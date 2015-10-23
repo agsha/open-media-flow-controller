@@ -1,0 +1,353 @@
+#!/bin/bash -x 
+#
+# Author: Dhruva Narasimhan
+# 
+# Copyright (C) 2008, 2009 Nokeena Networks Inc.
+# All rights reserved.
+#
+# This script runs under a cron job to scan user directories for
+# files that need to be ingested.
+#
+
+
+##########################################################################
+# Define this to 1 to enable debug messages
+##########################################################################
+debug=0
+
+##########################################################################
+# User name - This is passed as argument to this script
+##########################################################################
+USER=$1
+NAMESPACE=$2
+##########################################################################
+# Tools that we need to do our work.
+##########################################################################
+NKNFQUEUE="/opt/nkn/bin/nknfqueue "
+CACHE_LS="/opt/nkn/bin/cache_ls.sh"
+CACHEDEL="/opt/nkn/bin/cache_del.sh"
+CACHE_LS_OPTS=" -1 -p"
+RM="rm -f"
+MV=mv
+CP=cp
+MKDIR="mkdir -p"
+TOUCH=touch
+MDREQ="/opt/tms/bin/mdreq"
+CACHEMNT="/nkn/mnt"
+#########################################################################
+# Favourite paths, files and directories
+#########################################################################
+TMP_MEDIA_DIR=$HOME
+LOG="/var/log/nkn/ingest-$1.log"
+PRESTAGE_INFO="prestage.info"
+UPLOAD_INFO="upload.info"
+UPLOAD_INFO_TMP="uploadtmp.info"
+
+##########################################################################
+# Pre-run checks
+##########################################################################
+
+##########################################################################
+# Function: log()
+#   uses "logger" to write a debug message into syslog.
+#
+# Args: $1      Message to print
+# Return : 1 for success (always)
+##########################################################################
+log()
+{
+    [ $debug -eq 1 ] && logger -t prestage -- "[$USER] [debug] $1"
+    return 0;
+}
+
+##########################################################################
+# Function: ingest_log()
+#   Uses "logger" to write an ingest log message into syslog.
+#
+# Args: $1      
+#       $2      URI
+# Return: 1 for success
+##########################################################################
+ingest_log()
+{
+    logger -t prestage -- "[$USER] [$1] [$2]"
+    return 0;
+}
+
+
+release_dir_lock()
+{
+    dir=$1;
+    local lock=$dir/dir.lck
+    log "RELEASING $lock";
+    if [ -f $lock ] ; then
+	$RM $lock;
+    fi
+    return 0;
+}
+
+get_dir_lock()
+{
+    dir=$1;
+    local lock=$dir/dir.lck
+    log "LOCKING $lock";
+    #check if the owner of this lock is existing
+    #else delete the lock ,acquire new one and continue
+    if [ -f $lock ] ; then
+	lock_pid=`cat $lock`
+	if [ -d /proc/${lock_pid} ]; then
+	    return 1;
+	else
+	#clean up the old lock and create new one.
+	    echo $mypid > $lock;
+	    return 0;
+	fi
+    else
+	echo $mypid > $lock;
+    fi
+    return 0;
+}
+
+release_ns_lock()
+{
+    local dir=$1;
+    local lock=$dir/ns.lck;
+    if [ -f $lock ] ; then
+	$RM $lock;
+    fi
+    return 0;
+}
+
+get_ns_lock()
+{
+    dir=$1;
+    local lock=$dir/ns.lck
+    if [ -f $lock ] ; then
+    #check if the owner of this lock is existing
+    #else delete the lock, acquire new one and continue
+	lock_pid=`cat $lock`;
+	if [ -d /proc/${lock_pid} ]; then
+	    return 1;
+	else
+	#clean up the old lock and create new one.
+	    echo $mypid > $lock;
+	    ingest_log "TAKING LOCK FORCE-FULLY NEW $mypid, OLD=> $lock_pid";
+	    return 0;
+	fi
+    else
+	echo $mypid > $lock;
+    fi
+    return 0;
+}
+
+get_file_status()
+{
+    #log "finding status for $1";
+    local abs_file=$1;
+
+    if [ ! -f $abs_file ] ; then
+	return 4;
+    fi
+
+    local sub_dir=`dirname $abs_file `
+    local fname=`basename $abs_file`;
+    local pre_stage_file=$sub_dir/$PRESTAGE_INFO;
+    local upload_file=$sub_dir/$UPLOAD_INFO;
+
+    log "subdir = $sub_dir, pre-stage==> $pre_stage_file, upload_info => $upload_file";
+
+    get_dir_lock $sub_dir;
+    if [ $? -ne 0 ] ; then
+        log "unable to lock $sub_dir."
+        return 5;
+    fi
+
+    # if we are here, mean file is not ingested, confirm with upload info
+    if 	[ -f $upload_file ] ; then
+	# check if file is already ingested
+	local ret=`cat $upload_file | awk '{print $4}' | grep -w "$fname" | wc -l`
+	if [ $ret -gt 0 ] 
+	then
+	    # this must be request to ingest it again
+	    log "file $abs_file  INGETSING";
+	    release_dir_lock $sub_dir;
+	    return 2;
+	fi
+    fi
+
+    if 	[ -f $pre_stage_file ] ; then
+	# check if file is already ingested
+	local ret=`cat $pre_stage_file | awk '{print $4}' | grep -w "$fname" | wc -l`
+	if [ ! $ret -eq 0 ] 
+	then
+	    # this must be request to ingest it again
+	    log "file $abs_file ALREADY INGESTED ";
+	    release_dir_lock $sub_dir;
+	    return 0;
+	fi
+    fi
+
+    release_dir_lock $sub_dir;
+
+    return 1;
+}
+
+fetch_file()
+{
+    local ns_name=$2
+    local file=$1
+    local fname=`basename $file`;
+    local req_file=`dirname $file | sed 's/^\.\///' |  awk -v srch="$HOME" -v repl="" '{ sub (srch,repl,$0); print $0 }' `/$fname
+    local _host=`get_host $ns_name`;
+    local uri=$_uri$req_file;
+
+    local fsize=`stat -c%s $file`
+
+    if [ "$_host" == "*" ]
+    then
+	_host="127.0.0.1";
+    fi
+
+    log "START INGESTING => $uri, $ns_name, $status, $fsize, $_host";
+    /opt/nkn/bin/ingest_req -f "$file" -u "$uri" -n "$ns_name" -l "$fsize" -h "$_host" > /dev/null
+    return 0;
+}
+##########################################################################
+# Function: get_media_files()
+#   gets uningested media files.
+# Args: $1
+# Return : 0 on success
+#
+##########################################################################
+get_media_files()
+{
+    log "working on $HOME";
+	local namespace=$NAMESPACE
+	
+    get_ns_lock $HOME;
+    if [ $? -ne 0 ] ; then
+	log "unable to lock $HOME $mypid"
+	return 1;
+    fi
+
+    all_files=`find $HOME -type f  | grep -v '.info$' | grep -v 'bash' | grep -v 'dead' | grep -v 'pureftpd-' | grep -v '.lck$' > $HOME/$UPLOAD_INFO_TMP` ;
+    if [ ! $? -eq 0 ] ; then
+	log "no file found ";
+    	$RM $HOME/$UPLOAD_INFO_TMP;
+    	release_ns_lock $HOME;
+    	return 0 ;
+    fi
+    if [ -f $HOME/$UPLOAD_INFO_TMP ] ; then
+        while read line 
+        do
+	    get_file_status $line;
+	    status=$?
+	    log "for $line, STATUS=> $status";
+	    if  [ $status -gt 4 ] ; then
+		log "file $line ERROR, NOT ABLE TO PROCESS(LOCKED /  ERROR)";
+	    fi
+	    if [ $status -eq 2 ] ; then
+		# file is in the process of ingestion
+		log "INGESTING FILE => $line";
+	    else
+		fetch_file $line $namespace
+	    fi
+	done < $HOME/$UPLOAD_INFO_TMP
+    else
+	log "no file found in $HOME";
+    fi
+    $RM $HOME/$UPLOAD_INFO_TMP;
+    release_ns_lock $HOME;
+    return 0 ;
+}
+
+
+##########################################################################
+# Function: get_host()
+##########################################################################
+get_host()
+{
+    local _host=`$MDREQ -v query get - /nkn/nvsd/namespace/$1/domain/host`
+    echo "$_host"
+    return 0;
+}
+
+
+SATA_PREREAD_DONE=
+SAS_PREREAD_DONE=
+SSD_PREREAD_DONE=
+
+check_if_pre_read_done()
+{
+  # get sata.dm2_preread_done
+  SATA_PREREAD_DONE=`/opt/nkn/bin/nkncnt -s dm2_preread_done -t 0 | grep dm2 | grep SATA | awk '{print $3;}'`
+
+  # get sas.dm2_preread_done
+  SAS_PREREAD_DONE=`/opt/nkn/bin/nkncnt -s dm2_preread_done -t 0 | grep dm2 | grep SAS | awk '{print $3;}'`
+
+  # get sata.dm2_preread_done
+  SSD_PREREAD_DONE=`/opt/nkn/bin/nkncnt -s dm2_preread_done -t 0 | grep dm2 | grep SSD | awk '{print $3;}'`
+
+  if [ "${SATA_PREREAD_DONE}" != "" ]
+  then
+    # SATA present
+    if [ ${SATA_PREREAD_DONE} -eq 1 ]
+    then
+        return 0
+    else
+	logger -t "prestage" -- "SATA pre-read happening, exiting"
+	return 1
+    fi
+  elif [ "${SAS_PREREAD_DONE}" != "" ]
+  then
+    # SAS present
+    if [ ${SAS_PREREAD_DONE} -eq 1 ]
+    then
+        return 0
+    else
+	logger -t "prestage" -- "SAS pre-read happening, exiting"
+	retrun 1
+    fi
+  elif [ "${SSD_PREREAD_DONE}" != "" ] 
+  then
+    # SSD present
+    if [ ${SSD_PREREAD_DONE} -eq 1 ]
+    then
+        return 0
+    else
+	logger -t "prestage" -- "SSD pre-read happening, exiting"
+    	return 1
+    fi
+  else
+    # No disk tiers.. bail
+    return 1
+  fi
+}
+
+
+
+
+# Check for every 15 seconds. The CRON task will respawm 
+# is every 60secs. We MUST get out of here in under 60 seconds
+# or we will have 2 instances of this script spawned by the 
+# CRONd
+mypid=$$;
+
+run_count=4;
+if [ $# == 2 ] ;
+then
+    while [ $run_count != 0 ]; 
+    do
+        log "Starting ingest..";
+	ret=check_if_pre_read_done;
+    	if [ $? -eq 0 ] ; then
+            get_media_files $HOME;
+	fi
+        let run_count--;
+        sleep 10;
+    done
+else
+    log "Running in test mode.";
+    `get_media_files $HOME`;
+    [ $? == 1 ] && log "Exiting.. " && return 0
+fi

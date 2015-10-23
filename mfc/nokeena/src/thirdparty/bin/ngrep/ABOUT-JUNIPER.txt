@@ -1,0 +1,14 @@
+#################################
+#  About this version of ngrep  #
+#################################
+We wanted a version of ngrep modified in order to measure the MFC throughput.
+We started with ngrep-1.45 from sourceforge.net. 
+The modification is made with the patch file "juniper-ngrep.patch" applied to the ngrep-1.45 source.
+The changes are to the two files ngrep.c and ngrep.h
+The original version of these files are kept as ngrep.c.original and ngrep.h.original
+
+For more ngrep info:: http://ngrep.sourceforge.net/
+Source downloaded from
+http://downloads.sourceforge.net/project/ngrep/ngrep/1.45/ngrep-1.45.tar.bz2?r=&ts=1407465208&use_mirror=colocrossing
+Original source archived on the archive server as:
+  /data/archive/thirdparty/src/ngrep/ngrep-1.45.tar.bz2 

@@ -1,0 +1,50 @@
+FFMPEG svn revision 26402, downloaded 2010-07-21
+0: In the archive location /data/archive/thirdparty/src/ffmpeg/
+1: Downloaded the source from the ffmpeg.org Subersion server:
+     svn checkout svn://svn.ffmpeg.org/ffmpeg/trunk .
+   This checked out revision 126402.
+2: Removed the .svn directories and put the downloaded tree into the subdir
+   "ffmpeg-r26402" and create the source archive ffmpeg-r26402.tgz from it.
+3: Copy ffmpeg-r26402.tgz (and the LICENSE and COPYING* files from it) to
+   the MFC SVN repository in dist/thirdparty-src/ffmpeg/
+4: Configured and built on the build machine:
+   ./configure --enable-static --disable-shared --enable-libx264 --enable-gpl --enable-pthreads --disable-indevs --disable-outdevs
+   make
+5: Copy the binary "ffmpeg" to the MFC SVN tree:
+     nokeena/src/thirdparty/binary/ffmpeg/
+6: Copy the "ffpresets/*" files there as well.
+7: The Makefile installs the binary as "/opt/nkn/bin/ffmpeg" and the
+   ffpresets files into the /opt/nkn/bin/ffpresets/ directory.
+
+FFMPEG is under LGPL license.
+It also uses the libx264 library which is GPL.
+Thus we need to provide the source to all customers that want it.
+
+From http://www.ffmpeg.org/legal.html
+------------------------------------------------------------------------------
+  FFmpeg License
+
+    FFmpeg is licensed under the GNU Lesser General Public License (LGPL) version
+    2.1 or later.
+    Here is a short list of things you need to take into consideration when you
+    incorporate FFmpeg into proprietary programs. This list is not exhaustive, it
+    just lists the most common issues we encounter.
+    
+        * Be careful if you enable GPL components.
+        * Provide the license text, the correct version.
+        * Provide FFmpeg sources, the exact version you use.
+          The code must compile and you should note which revision it is and what
+          options you used for* building your binary.
+        * Review your EULA terms. They have to be compatible with the license of FFmpeg.
+          For example, terms forbidding reverse engineering are not acceptable.
+        * Read the LGPL license text, multiple times, and educate yourself about its effects.
+
+  Trademark
+
+    FFmpeg is a trademark of Fabrice Bellard, originator of the FFmpeg project. 
+
+------------------------------------------------------------------------------
+
+Put this in our installation guide:
+   Portions of this product are Copyright © 2001-2008 The FFmpeg Project. All Rights Reserved. See http://www.ffmpeg.org
+

@@ -1,0 +1,8 @@
+Attributions for curl v7.20.1
+-------------------------------------------------------------------------------
+Copyright (c) 1996 - 2009, Daniel Stenberg, <daniel@haxx.se>.
+All rights reserved.
+Permission to use, copy, modify, and distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright
+notice and this permission notice appear in all copies.
+

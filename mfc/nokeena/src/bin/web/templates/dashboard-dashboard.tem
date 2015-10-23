@@ -1,0 +1,71 @@
+<?
+#
+# Filename:  dashboard-dashboard.tem
+# Date:      2009/04/09
+# Author:    Sasmita
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+
+#
+?>
+<INCLUDE "dashboard-layout">
+<TMS-PAGE "Dashboard">
+<TMS-MENU "dashboard">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-DASHBOARD-MENU "dashboard"></TMS-DASHBOARD-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Dashboard">
+
+
+<table border="0" width="100%"><tr><td>
+<table align="left"  border="0" cellpadding="1" id="outer_table"><tr>
+	<td><b>MFC Version: </b></td><td> &nbsp; &nbsp;</td>
+	<td><b><?= [tms::get-config "/system/version/composite"]?></b></td></tr>
+</table>
+</td></tr>
+<tr><td>
+<table align="left" width="950" border="1" cellpadding="1" id="outer_table"><tr>
+    <td valign="_top"><table border="0">
+        <tr><td><iframe src="\" width="225px" height="400" frameborder="0" id="info_fr"></iframe></td></tr>
+        <tr><td align="center"><img class="img_class" src=""
+                alt="Agerage CPU" id="cpu_img" width="200px" height="115px"/></td></tr>
+    </table></td>
+    <td><table border="0">
+        <tr><td><img class="img_class" src=""
+            alt="Open Connection" id="openconnection_img" height="250px" width="350px"/></td></tr>
+        <tr><td><img class="img_class" src=""
+            alt="Media Delivery Bandwidth" id="media_delivery_bd_img" height="250px" width="350px"/></td></tr>
+    </table></td>
+
+    <td><table border="0">
+	<tr><td><img class="img_class" src=""
+            alt="Weekly Bandwidth Savings" id="weekly_bw_savings_img" height="250px" width="350" /></td></tr>
+        <tr><td><img class="img_class" src=""
+	    alt="Cache Tier Throughput" id="cache_tier_throughput_img" height="250px" width="350px"/></td></tr>
+    </table></td></tr>
+</table>
+</td></tr></table>
+
+
+
+<div style={test-align:left;}>
+	<!--put the button here to update the interval -->
+	<input type="text" id="page" name="page" value="dashboard" style="display:none">
+	<br />
+	<span>Refresh Interval:</span>
+	<input type="text"  id="db_refreshinterval" size="6" name="db_refreshinterval" maxlength="4" value="10" />
+	<span>Sec.</span>
+	<input type="button" id="updatebutton" class="ajaxButton" value="Reload" name="updatebutton" onclick="buttoncheck()" />
+</div>
+
+<script type="text/javascript">
+	document.getElementById('db_refreshinterval').value = update_interval;
+	buttoncheck();
+        //startupdate_dashboard();
+
+</script>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

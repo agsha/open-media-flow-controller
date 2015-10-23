@@ -1,0 +1,7 @@
+<!-- OCRP 1.0 DTD, Copyright (c) 2012 by Juniper Networks, Inc -->
+<!ELEMENT OCRP (Entry*)>
+<!ELEMENT Entry (H, K, A*, L)>
+<!ELEMENT H (#PCDATA)>
+<!ELEMENT K (#PCDATA)>
+<!ELEMENT A (#PCDATA)>
+<!ELEMENT L (#PCDATA)>

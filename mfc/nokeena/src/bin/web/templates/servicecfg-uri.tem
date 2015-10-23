@@ -1,0 +1,171 @@
+<?
+#
+# Filename:  servicecfg-uri.tem,v $
+# Date:      2009/05/20
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Uri Configuration">
+<TMS-MENU "servicecfg">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SERVICECFG-MENU "uri"></TMS-SERVICECFG-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Uri Configuration">
+
+<CFG-FORM -action "config-form-nested" -div_id "addnm_1">
+  <h2>URI Configuration</h2>
+  <?
+    set nm_prefix "/nkn/nvsd/namespace"
+    set nm_ids [tms::iterate-config $nm_prefix]
+    set namespace_list {}
+    foreach nm_id $nm_ids {
+       set prefix_len [string length "$nm_prefix/"]
+       set nm_name [string range $nm_id $prefix_len end]
+       lappend namespace_list "$nm_name $nm_name"
+    }
+
+  ?>
+
+  <TMS-TABLE -div_id "nm_table_1">
+    <TMS-TABLE-ENTRY "Namespace">
+      <CFG-DROPDOWN -id "namespace" -errname "namespace" -caps "set_basic"
+                -type "string" -span_id "add_namespace" -required "true"
+                 -options $namespace_list>
+    <td width 4>
+    <td width 4>
+    <td width 4>
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "URI-Prefix">
+      <CFG-TEXTBOX -id "uri-prefix" -errname "uri" -caps "set_basic"
+                   -type "uri" -cols "16" -span_id "add_uri" -required "true">
+    <td width 4>
+    <td width 4>
+    <td width 4>
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Domain">
+      <CFG-TEXTBOX -id "domain/host" -errname "domain host" -caps "set_basic"
+                   -type "string" -cols "16" -span_id "add_domain" -required "false">
+    <td width 4>
+    <td width 4>
+    <td width 4>
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "HTTP Origin HostName">
+<!--
+    <CFG-RADIO -id "omtype" -caps "set_basic"
+                -value "http" -checked "true"
+                -span_id "add_origin">
+    <td width 4>
+        HostName/IP Address
+-->
+      <CFG-TEXTBOX -id "httphostname"
+                   -errname "httphostname" -caps "set_basic" -required "false"
+                   -type "string" -cols "16" -span_id "add_om_httphostname">
+     <td width 1>
+     Port
+      <CFG-TEXTBOX -id "port"
+                   -errname "http port" -caps "set_basic" -required "false"
+                   -type "uint16" -cols "16" 
+                   -span_id "add_om_http_port">
+     <td width 1>
+     Weight
+      <CFG-TEXTBOX -id "weight"
+                   -errname "http weight" -caps "set_basic" -required "false"
+                   -type "uint32" -cols "16" 
+                   -span_id "add_om_http_wt">
+     <td width 1>
+     Keep-Alive
+      <CFG-CHECKBOX -id "keep-alive"
+                   -errname "http keep alive" -caps "set_basic" 
+                   -type "bool" 
+                   -span_id "add_om_http_keep_alive">
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "NFS Origin HostName">
+<!--
+    <CFG-RADIO -id "omtype" -caps "set_basic"
+                -value "nfs" -checked "false"
+                -span_id "add_origin">
+
+    <td width 4>
+        HostName/IP Address
+-->
+      <CFG-TEXTBOX -id "origin-server/nfs/host"
+                   -errname "nfshostname" -caps "set_basic"
+                   -type "string" -cols "16" -required "false"
+                   -span_id "add_om_nfshostname">
+     <td width 1>
+     Port
+      <CFG-TEXTBOX -id "origin-server/nfs/port"
+                   -errname "nfsport" -caps "set_basic" -required "false"
+                   -type "uint16" -cols "16" -span_id "add_om_nfsport">
+     <td width 1>
+     Local Cache
+      <CFG-CHECKBOX -id "origin-server/nfs/local-cache"
+                   -errname "nfsport" -caps "set_basic"
+                   -type "bool" -span_id "add_om_nfsport">
+     <td width 1>
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Delivery Protocol">
+      <CFG-CHECKBOX -id "delivery/proto/http" 
+                   -errname "delivery protocol http" 
+                   -caps "set_basic" -type "bool" 
+                   -span_id "add_delivery_protocol_http">
+      http
+    <td width 1>
+      <CFG-CHECKBOX -id "delivery/proto/rtmp" 
+                   -errname "delivery protocol rtmp" 
+                   -caps "set_basic" -type "bool"  
+                   -span_id "add_delivery_protocol_rtmp">
+      rtmp
+    <td width 1>
+      <CFG-CHECKBOX -id "delivery/proto/rtsp" 
+                   -errname "delivery protocol rtsp" 
+                   -caps "set_basic" -type "bool" 
+                   -span_id "add_delivery_protocol_rtsp">
+      rtsp
+    <td width 1>
+      <CFG-CHECKBOX -id "delivery/proto/rtp" 
+                   -errname "delivery protocol rtp" 
+                   -caps "set_basic" -type "bool"  
+                   -span_id "add_delivery_protocol_rtp">
+      rtp
+    <td width 1>
+    </TMS-TABLE-ENTRY>
+
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+  <input type="hidden" name="f_nested_levels" value="3">
+  <input type="hidden" name="f_nested_root_1" value="/nkn/nvsd/uri/config">
+  <input type="hidden" name="f_nested_index_1" value="namespace">
+  <input type="hidden" name="f_nested_children_1" value="">
+  <input type="hidden" name="f_nested_root_2" value="uri-prefix">
+  <input type="hidden" name="f_nested_index_2" value="uri-prefix">
+  <input type="hidden" name="f_nested_children_2" value="domain/host,delivery/proto/http,delivery/proto/rtmp,delivery/proto/rtsp,delivery/proto/rtp,origin-server/nfs/host,origin-server/nfs/port,origin-server/nfs/local-cache">
+  <input type="hidden" name="f_nested_root_3" value="origin-server/http/host">
+  <input type="hidden" name="f_nested_index_3" value="httphostname">
+  <input type="hidden" name="f_nested_children_3" value="port,weight,keep-alive">
+
+  <CFG-BUTTON -type "add" -text "Add URI" -caps "set_basic"
+              -span_id "namespace_add_1">
+
+</CFG-FORM>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

@@ -1,0 +1,225 @@
+<?
+# (C) Copyright 2015 Juniper Networks
+# All rights reserved.
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "NTP">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "ntp"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "NTP">
+
+  <h2>NTP Setup</h2>
+
+  <CFG-FORM -div_id "ntp_1">
+
+  <TMS-TABLE -div_id "ntp_table_2">
+    <TMS-TABLE-ENTRY "Enable NTP Time Synchronization">
+        <CFG-CHECKBOX -id "enable_ntp" -caps "set_basic"
+                      -name "/ntp/enable" -type "bool"
+                      -span_id "ntp_cbox_1">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+<?
+  set sys_peer_addr [tms::get-config "/ntp/state/system_peer/address"]
+  if {[string length $sys_peer_addr] == 0} {
+    tms::puts "Clock is unsynchronized."
+  } else {
+    set sys_peer_offset_us [tms::get-config "/ntp/state/system_peer/offset"]
+    if {[string length $sys_peer_offset_us] != 0} {
+      set sys_peer_offset [format "%.3f" [expr $sys_peer_offset_us / 1000.0]]
+      tms::puts "Clock is synchronized.  Reference: $sys_peer_addr.  Offset: $sys_peer_offset ms"
+    }
+  }
+?>
+<p>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "ntp_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -span_id ntp_cancel_1">
+
+  </CFG-FORM>
+
+  <h2>NTP Servers</h2>
+
+  <CFG-FORM -action "config-form-ntp" -div_id "ntp_2">
+
+  <?
+    set cur_line 0
+    set server_prefix "/ntp/server/address"
+    set server_ids [tms::iterate-config $server_prefix]
+
+    set version [tms::get-param post "f_version"]
+    if {[string length $version] == 0} {
+        tms::set-param post replace "f_version" "4"
+    }
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head"> 
+      <td></td>
+      <td>
+        Server</td>
+      <td>
+        Status</td>
+      <td>
+        Stratum</td>
+      <td>
+        Offset (ms)</td>
+      <td>
+        Reference Clock</td>
+      <td>
+        Poll Interval (sec.)</td>
+      <td>
+        Last response (sec.)</td>
+      <td>
+        NTP version</td>
+    </tr>
+
+    <FOREACH server_cfg_root $server_ids>
+    <?
+    set prefix_len [string length "$server_prefix/"]
+    set server_name [string range $server_cfg_root $prefix_len end]
+    set server_enable [tms::get-config "$server_cfg_root/enable"]
+    set server_version [tms::get-config "$server_cfg_root/version"]
+    set ntp_enabled [tms::get-config "/ntp/enable"]
+    if {[string compare $ntp_enabled "true"] == 0} {
+      set server_mon_root "/ntp/state/peer/address/$server_name"
+      set server_mon_node [tms::get-config "$server_mon_root"]
+      if {[string compare $server_enable "true"] == 0 &&
+          [string length $server_mon_node] != 0} {
+        set server_status [tms::get-config "$server_mon_root/tally_descr"]
+        set server_stratum [tms::get-config "$server_mon_root/stratum"]
+        set server_offset_us [tms::get-config "$server_mon_root/offset"]
+        set server_offset [format "%.3f" [expr $server_offset_us / 1000.0]]
+        set server_refclock [tms::get-config "$server_mon_root/refid"]
+        set server_poll_interval [tms::get-config "$server_mon_root/poll_interval"]
+        set server_last_response [tms::get-config "$server_mon_root/when_last_packet"]
+        if {[string length $server_last_response] == 0} {
+          set server_last_response "N/A"
+        }
+      } else {
+        set server_status "disabled"
+        set server_stratum ""
+        set server_offset ""
+        set server_refclock ""
+        set server_poll_interval ""
+        set server_last_response ""
+      }
+    } else {
+      if {[string compare $server_enable "true"] == 0} {
+        set server_status "enabled"
+      } else {
+        set server_status "disabled"
+      }
+      set server_stratum ""
+      set server_offset ""
+      set server_refclock ""
+      set server_poll_interval ""
+      set server_last_response ""
+    }
+    ?>
+
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                         -value "$server_cfg_root" -span_id "ntp_cbox_2"></td>
+      <td>
+        <?=$server_name?></td>
+      <td>
+        <?=$server_status?></td>
+      <td>
+        <?=$server_stratum?></td>
+      <td>
+        <?=$server_offset?></td>
+      <td>
+        <?=$server_refclock?></td>
+      <td>
+        <?=$server_poll_interval?></td>
+      <td>
+        <?=$server_last_response?></td>
+      <td>
+        <?=$server_version?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No NTP servers.
+      <SET priv DISABLED_set_basic>
+    <ELSE>
+      <SET priv set_basic>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <input type="hidden" name="f_list_custom_buttons" value="enable,disable">
+  <input type="hidden" name="f_list_button_enable_action" value="set">
+  <input type="hidden" name="f_list_button_enable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_enable_child_value" value="true">
+  <input type="hidden" name="f_list_button_disable_action" value="set">
+  <input type="hidden" name="f_list_button_disable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_disable_child_value" value="false">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected Server" 
+              -caps "set_basic" -span_id "ntp_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+
+  <CFG-BUTTON -type "enable" -text "Enable Server" -caps "set_basic"
+              -span_id "ntp_enable_1"> 
+  <img src="/images/em.gif" width="10" height="1">
+
+  <CFG-BUTTON -type "disable" -text "Disable Server" -caps "set_basic"
+              -span_id "ntp_disable_1"> 
+  </p></td></CFG-FORM></tr></table>
+
+<CFG-FORM -action "config-form-ntp" -div_id "ntp_3">
+  <h2>Add New NTP Server</h2>
+  <TMS-TABLE -div_id "ntp_table_1">
+    <TMS-TABLE-ENTRY "Server IP">
+      <CFG-TEXTBOX -id "address" -errname "IP address" -caps "set_basic"
+                   -span_id "ntp_addr" -type "hostname" -cols "20">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Version">
+      <CFG-DROPDOWN -id "version" -caps "set_basic" -type "uint32"
+                    -options {{3 3} {4 4}} -span_id "ntp_vers">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps "set_basic" -type "bool"
+                    -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "ntp_enable">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/ntp/server/address">
+  <input type="hidden" name="f_list_index" value="address">
+  <input type="hidden" name="f_list_children" value="version,enable">
+
+  <CFG-BUTTON -type "add" -text "Add NTP Server" -caps "set_basic"
+              -span_id "ntp_add_1">
+</CFG-FORM>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

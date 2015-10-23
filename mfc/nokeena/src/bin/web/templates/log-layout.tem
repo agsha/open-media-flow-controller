@@ -1,0 +1,328 @@
+<TAG LOG-SIDEBAR-MENU selected options {arg ""} {arg_value ""}>
+<script type="text/javascript"> 
+
+window.onload=function() 
+{ 
+  var divs=document.getElementsByTagName('DIV'); 
+  for(n=divs.length-1;n>=0;n--) 
+    if (divs[n].className.toUpperCase() =='MENU') 
+    {
+      divs[n].className='menuClosed'; 
+      var openers=divs[n].getElementsByTagName('STRONG'); 
+      openers[0].onclick=toggleMenu; 
+    } 
+} 
+
+function toggleMenu() 
+{ 
+//closes any currently open menu 
+var menus=document.getElementsByTagName('DIV'); 
+//for(n=menus.length-1;n>=0;n--) 
+//if((menus[n].className.toUpperCase()=='MENUOPEN')&& 
+//(menus[n]!=this.parentNode)) 
+//menus[n].className='menuClosed'; 
+
+// toggle menu status 
+var menu=this.parentNode; 
+if (menu.className.toUpperCase()=='MENUCLOSED') 
+menu.className='menuOpen'; 
+else 
+menu.className='menuClosed'; 
+} 
+
+</script> 
+
+<div id="tms_sidebar_menu">
+    <ul class="sidebar_menu">
+
+
+<IF {$options == "logging"}>
+  <?
+      set menutype "menuOpen"
+  ?>
+<ELSE>
+  <?
+      set menutype "menu"
+  ?>
+</IF>
+<div class="<?=$menutype?>"> 
+<strong>System&nbsp;Log</strong> 
+<div class="showtype">
+ 
+    <IF {$selected == "current" && $options == "logging"}>
+      <a href="/admin/launch?script=rh&amp;template=logging&log=current" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Current 
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=logging&log=current" style="text-decoration: none">&nbsp;&nbsp;Current 
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "continuous" && $options == "logging"}>
+      <a href="/admin/launch?script=rh&amp;template=logging&log=continuous" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Continuous
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=logging&log=continuous" style="text-decoration: none">&nbsp;&nbsp;Continuous
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "download" && $options == "logging"}>
+      <a href="/admin/launch?script=rh&amp;template=logging&log=download" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Download
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=logging&log=download" style="text-decoration: none">&nbsp;&nbsp;Download
+    </IF>
+  </a><br> 
+
+</div> 
+</div> 
+
+<IF {$options == "servicelog"}>
+  <?
+      set menutype "menuOpen"
+  ?>
+<ELSE>
+  <?
+      set menutype "menu"
+  ?>
+</IF>
+<div class="<?=$menutype?>"> 
+<strong>Service&nbsp;Log</strong> 
+<div class="showtype">
+ 
+    <IF {$selected == "current" && $options == "servicelog"}>
+      <a href="/admin/launch?script=rh&amp;template=servicelog&log=current" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Current
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=servicelog&log=current" style="text-decoration: none">&nbsp;&nbsp;Current
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "continuous" && $options == "servicelog"}>
+      <a href="/admin/launch?script=rh&amp;template=servicelog&log=continuous" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Continuous
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=servicelog&log=continuous" style="text-decoration: none">&nbsp;&nbsp;Continuous
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "download" && $options == "servicelog"}>
+      <a href="/admin/launch?script=rh&amp;template=servicelog&log=download" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Download
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=servicelog&log=download" style="text-decoration: none">&nbsp;&nbsp;Download
+    </IF>
+  </a><br> 
+
+</div> 
+</div> 
+
+<!--
+<IF {$options == "errorlog"}>
+  <?
+      set menutype "menuOpen"
+  ?>
+<ELSE>
+  <?
+      set menutype "menu"
+  ?>
+</IF>
+<div class="<?=$menutype?>"> 
+<strong>Error&nbsp;Log</strong> 
+<div class="showtype">
+  
+    <IF {$selected == "current" && $options == "errorlog"}>
+      <a href="/admin/launch?script=rh&amp;template=errorlog&log=current" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Current
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=errorlog&log=current" style="text-decoration: none">&nbsp;&nbsp;Current
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "continuous" && $options == "errorlog"}>
+      <a href="/admin/launch?script=rh&amp;template=errorlog&log=continuous" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Continuous
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=errorlog&log=continuous" style="text-decoration: none">&nbsp;&nbsp;Continuous
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "download" && $options == "errorlog"}>
+      <a href="/admin/launch?script=rh&amp;template=errorlog&log=download" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Download
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=errorlog&log=download" style="text-decoration: none">&nbsp;&nbsp;Download
+    </IF>
+  </a><br> 
+
+</div> 
+</div>
+-->
+
+<IF {$options == "cachelog"}>
+  <?
+      set menutype "menuOpen"
+  ?>
+<ELSE>
+  <?
+      set menutype "menu"
+  ?>
+</IF>
+<div class="<?=$menutype?>"> 
+<strong>Cache&nbsp;Log</strong> 
+<div class="showtype">
+
+    <IF {$selected == "current" && $options == "cachelog"}>
+      <a href="/admin/launch?script=rh&amp;template=cachelog&log=current" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Current
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=cachelog&log=current" style="text-decoration: none">&nbsp;&nbsp;Current
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "continuous" && $options == "cachelog"}>
+      <a href="/admin/launch?script=rh&amp;template=cachelog&log=continuous" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Continuous
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=cachelog&log=continuous" style="text-decoration: none">&nbsp;&nbsp;Continuous
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "download" && $options == "cachelog"}>
+      <a href="/admin/launch?script=rh&amp;template=cachelog&log=download" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Download
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=cachelog&log=download" style="text-decoration: none">&nbsp;&nbsp;Download
+    </IF>
+  </a><br> 
+
+</div> 
+</div>
+
+
+<IF {$options == "tracelog"}>
+  <?
+      set menutype "menuOpen"
+  ?>
+<ELSE>
+  <?
+      set menutype "menu"
+  ?>
+</IF>
+<div class="<?=$menutype?>"> 
+<strong>Trace&nbsp;Log</strong> 
+<div class="showtype"> 
+
+    <IF {$selected == "current" && $options == "tracelog"}>
+      <a href="/admin/launch?script=rh&amp;template=tracelog&log=current" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Current
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=tracelog&log=current" style="text-decoration: none">&nbsp;&nbsp;Current
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "continuous" && $options == "tracelog"}>
+      <a href="/admin/launch?script=rh&amp;template=tracelog&log=continuous" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Continuous
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=tracelog&log=continuous" style="text-decoration: none">&nbsp;&nbsp;Continuous
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "download" && $options == "tracelog"}>
+      <a href="/admin/launch?script=rh&amp;template=tracelog&log=download" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Download
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=tracelog&log=download" style="text-decoration: none">&nbsp;&nbsp;Download
+    </IF>
+  </a><br> 
+
+</div> 
+</div>
+ 
+<IF {$options == "streamlog"}>
+  <?
+      set menutype "menuOpen"
+  ?>
+<ELSE>
+  <?
+      set menutype "menu"
+  ?>
+</IF>
+<div class="<?=$menutype?>"> 
+<strong>Stream&nbsp;Log</strong> 
+<div class="showtype"> 
+
+    <IF {$selected == "current" && $options =="streamlog"}>
+      <a href="/admin/launch?script=rh&amp;template=streamlog&log=current" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Current
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=streamlog&log=current" style="text-decoration: none">&nbsp;&nbsp;Current
+    </IF>
+  </a><br>
+
+    <IF {$selected == "continuous" && $options == "streamlog"}>
+      <a href="/admin/launch?script=rh&amp;template=streamlog&log=continuous" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Continuous
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=streamlog&log=continuous" style="text-decoration: none">&nbsp;&nbsp;Continuous
+    </IF>
+  </a><br>
+
+    <IF {$selected == "download" && $options == "streamlog"}>
+      <a href="/admin/launch?script=rh&amp;template=streamlog&log=download" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Download
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=streamlog&log=download" style="text-decoration: none">&nbsp;&nbsp;Download
+    </IF>
+</a><br>
+
+</div> 
+</div>
+
+<IF {$options == "publishlog"}>
+  <?
+      set menutype "menuOpen"
+  ?>
+<ELSE>
+  <?
+      set menutype "menu"
+  ?>
+</IF>
+<div class="<?=$menutype?>"> 
+<strong>Publisher&nbsp;Log</strong> 
+<div class="showtype"> 
+
+    <IF {$selected == "current" && $options == "publishlog"}>
+      <a href="/admin/launch?script=rh&amp;template=publishlog&log=current" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Current
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=publishlog&log=current" style="text-decoration: none">&nbsp;&nbsp;Current
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "continuous" && $options == "publishlog"}>
+      <a href="/admin/launch?script=rh&amp;template=publishlog&log=continuous" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Continuous
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=publishlog&log=continuous" style="text-decoration: none">&nbsp;&nbsp;Continuous
+    </IF>
+  </a><br> 
+
+    <IF {$selected == "download" && $options == "publishlog"}>
+      <a href="/admin/launch?script=rh&amp;template=publishlog&log=download" style="text-decoration: none" class="sidebar_sel">&nbsp;&nbsp;Download
+      &laquo;
+    <ELSE>
+      <a href="/admin/launch?script=rh&amp;template=publishlog&log=download" style="text-decoration: none">&nbsp;&nbsp;Download
+    </IF>
+  </a><br> 
+
+</div> 
+</div>
+ 
+</ul>
+</div>
+
+</TAG> 
+
+<TAGEND LOG-SIDEBAR-MENU>
+</TAGEND>

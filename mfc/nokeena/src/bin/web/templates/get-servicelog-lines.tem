@@ -1,0 +1,38 @@
+<?
+#
+# Filename:  get-servicelog-lines.tem
+# Date:      2008/02/17
+?>
+
+ <?
+#
+# Target for AJAX status update on service log page
+#
+?>
+
+<INCLUDE "tms-utils">
+
+<html>
+<head>
+  <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+  <META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+</head>
+<body>
+
+<?  
+  # XXX/EMT this should be configurable!
+  set log_lines_per_page 100
+
+  set num_log_lines [tms::get-servicelog-line-count]
+  set line_begin [expr {$num_log_lines - $log_lines_per_page} + 1]
+  if { $line_begin < 0 } {
+      set line_begin 1
+  }
+  set log_lines [tms::get-servicelog-lines $line_begin $log_lines_per_page]
+?>
+  <pre>
+  <FOREACH line $log_lines><?= $line ?>
+  </FOREACH></pre>
+
+</body>
+</html>

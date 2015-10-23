@@ -1,0 +1,3979 @@
+Index: bin/web/cgi-bin/dashboard_load.pl
+===================================================================
+--- bin/web/cgi-bin/dashboard_load.pl	(revision 28106)
++++ bin/web/cgi-bin/dashboard_load.pl	(working copy)
+@@ -4,8 +4,8 @@ use File::Basename;
+ my $seed;
+ my $file;
+ 
+-my $path = "/var/nkn/dashboard/";
+-my $filetype = ".png";
++my $path = "/var/nkn/dashboard/data_";
++my $filetype = ".json";
+ my $type;
+ 
+ ##############################################################
+@@ -23,7 +23,7 @@ if (length ($ENV{'QUERY_STRING'}) > 0){
+ $seed = $in{'seed'};
+ if(  $in{'file'} eq '' ) { $file = "nokeena"; }
+ else { $file = $in{'file'}; }
+-if(  $in{'type'} eq '' ) { $type = "png"; $filetype = ".png"; }
++if(  $in{'type'} eq '' ) { $type = "json"; $filetype = ".json"; }
+ else { $type = $in{'type'}; $filetype = "." . $type; }
+ 
+ ##############################################################
+@@ -36,21 +36,15 @@ open (MYFILE, "$filename") or die "Can't
+ flock(MYFILE, 1);
+ 
+ # output the chart
+-if ($filetype eq ".png"){
+-	binmode(STDOUT);
++if ($filetype eq ".json"){
++	#binmode(STDOUT);
+ 	print "Pragma: No-cache\n";
+ 	print "Cache-Control: No-cache\n";
+-	print "Content-type: image/png\n\n";
+-	while (read(MYFILE, $buff, 8*2**10)){
+-		print $buff;
++	print "Content-type: application/json\n\n";
++	while($line = <MYFILE>) {
++		$line =~ s/\x0+$//;
++		chomp($line);
++		print $line;
+ 	}
+ }
+-
+-if ($filetype eq ".html"){
+-
+-        print "Content-type: text/html\n\n";
+-        while (read(MYFILE, $buff, 8*2**10)){
+-                print $buff;
+-        }
+-}
+ close(MYFILE);
+Index: bin/web/content/images/Makefile
+===================================================================
+--- bin/web/content/images/Makefile	(revision 28106)
++++ bin/web/content/images/Makefile	(working copy)
+@@ -30,6 +30,7 @@ FILES= \
+ 	magenda_v.gif \
+ 	green_v.gif \
+ 	la_bg_big.gif \
++	ajax-loader.gif \
+ 
+ 
+ include ${PROD_TREE_ROOT}/src/mk/files.mk
+Index: bin/web/content/dojo/dashboardConfig.json
+===================================================================
+--- bin/web/content/dojo/dashboardConfig.json	(revision 0)
++++ bin/web/content/dojo/dashboardConfig.json	(revision 0)
+@@ -0,0 +1,747 @@
++{
++	"configData":[
++		{	"id" :'stats',"parentContainerId":"dashboardTab",
++			"typeOfVisualization":"htmltext",
++			"refreshInterval" : 24*3600*1000,
++			"url" : "dashboard_load.pl?file=info_GB_CHR_OBJ_del"
++			
++		},
++		{	"id":'openConnectionsChart',"parentContainerId":"dashboardTab",
++			"typeOfVisualization":"chart",
++			"refreshInterval":10000,
++			"url":"dashboard_load.pl?file=open_connections",
++			"startSeed":1,
++			"noOfDataPoints":7,
++			"visualizationConfig":{
++				"titleConfig":{
++					"title": "Open Connections",
++					"titlePos": "top",
++					"titleGap": 10,
++					"titleFont": "bold 10pt Tahoma"
++				},
++				"legendConfig": {
++					"id" : "legendOfOpenConnectionsChartContainer"
++				},
++				"plotConfig" :{
++					"default":{
++						//type of chart
++						"type": "Lines",
++						//show markers at number points?
++						"markers": true,
++						//curve the lines on the plot?
++						//tension: "S",
++						//show lines?
++						"lines": true,
++						//fill in areas?
++						"areas": false,
++						//offset position for label
++						"labelOffset": -30,
++						//add shadows to lines
++						"shadows": { "dx":2, "dy":2, "dw":2 }
++						
++					}
++				},
++				"axisConfig" : {
++					"x" : {
++						"title": "Time",
++						"titleOrientation": "away",
++						"titleFont": "normal normal normal 10pt Arial",
++						"titleGap": 9, 
++						"fixLower": "minor", 
++						"fixUpper": "minor",
++						"natural": true,
++						"rotation": 315,
++						"htmlLabels":true																 
++						
++					},
++					"y" : {
++						"title": "Connections",
++						"titleOrientation": "axis",
++						"titleGap": 2, 
++						"titleFont": "normal normal normal 10pt Arial",
++						"vertical": true, 
++						"majorTickStep": 10, 
++						"minorTickStep": 1
++					}
++				}
++			},
++			"dataConfig":{	
++				"noOfDataPoints":7,
++				"seriesConfig" : [
++					{
++						"data": [],
++						"label": "http connections"
++					},
++					{
++						"data": [],
++						"label": "rtsp connections"
++					},
++					{
++						"data": [],
++						"label": "om connections"
++					}
++				]
++			}
++		},
++		{   "id":'weeklyBandwidthSavingsChart',"parentContainerId":"dashboardTab",
++			"typeOfVisualization":'chart',
++			"refreshInterval":10000,
++			"url":"dashboard_load.pl?file=weekly_bw_savings",
++			"startSeed":1,
++			"noOfDataPoints":7,
++			visualizationConfig:{
++				titleConfig:{
++					title: "Weekly Bandwidth Savings",
++					titlePos: "top",
++					titleGap: 10,
++					"titleFont": "bold 10pt Tahoma"
++				},
++				
++				legendConfig: {
++					id : 'legendOfWeeklyBandwidthSavingsChartContainer'
++				},
++				plotConfig :{
++					"default":{
++						//type of chart
++						type: "StackedColumns",
++						gap: 5
++						
++					}
++				},
++				
++				axisConfig : {
++					"x" : {
++						title: "Days",
++						titleOrientation: "away",
++						titleFont: "normal normal normal 10pt Arial",
++						titleGap: 9,
++						rotation: 315,
++						fixLower: "minor", fixUpper: "minor",
++						natural: true,
++						htmlLabels: true,
++						includeZero:false
++					},
++					"y" : {
++						title: "GBytes",
++						titleOrientation: "axis",
++						titleGap: 2, 
++						titleFont: "normal normal normal 10pt Arial",
++						vertical: true, 
++						min: 0, 
++						max: 100, 
++						majorTickStep: 10, 
++						minorTickStep: 1
++					}
++				}
++				
++									
++			},
++			dataConfig:{	
++				noOfDataPoints:7,
++				seriesConfig : [
++					{
++						data: [],
++						label: "Origin Bandwidth",
++					},
++					{
++						data: [],
++						label: "Saved Bandwidth",
++					}
++				]
++			}
++		},
++		{	"id":'cpuGauge',"parentContainerId":"dashboardTab",
++			"typeOfVisualization":'gauge',
++			"url":"dashboard_load.pl?file=average_cpu",
++			"refreshInterval":10000,
++			visualizationConfig:{
++				background: [255, 255, 255,0],
++				title: 'CPU Utilization',
++				
++				noChange:true,
++				width: 225,
++				height: 225,
++				id:'cpuGauge',
++				textIndicatorColor:'black',
++				majorTicksColor:'black',
++				minorTicksColor:'gray',
++				fill:'#C1C1C1'
++			}
++		},
++		{   "id":'cacheThroughputChart',"parentContainerId":"dashboardTab",
++			"typeOfVisualization":"chart",
++			"refreshInterval":10000,
++			"url":"dashboard_load.pl?file=media_delivery_bandwidth",
++			"startSeed":1,
++			"noOfDataPoints":7,
++			"visualizationConfig":{
++				"titleConfig":{
++					"title": "Cache Throughput",
++					"titlePos": "top",
++					"titleGap": 10,
++					"titleFont": "bold 10pt Tahoma"
++				},
++				"legendConfig": {
++					"id" : "legendOfCacheThroughputChartContainer"
++				},
++				"plotConfig" :{
++					"default":{
++						//type of chart
++						"type": "Lines",
++						//show markers at number points?
++						"markers": true,
++						//curve the lines on the plot?
++						//tension: "S",
++						//show lines?
++						"lines": true,
++						//fill in areas?
++						"areas": false,
++						//offset position for label
++						"labelOffset": -30,
++						//add shadows to lines
++						"shadows": { "dx":2, "dy":2, "dw":2 }
++						
++					},
++					"other":{
++						//type of chart
++						type: "ClusteredColumns",
++						gap: 5
++						
++					}
++				},
++				"axisConfig" : {
++					"x" : {
++						"title": "Time",
++						"titleOrientation": "away",
++						"titleFont": "normal normal normal 10pt Arial",
++						"titleGap": 9, 
++						"fixLower": "minor", 
++						"fixUpper": "minor",
++						"natural": true,
++						"rotation": 315,
++						"htmlLabels":true																 
++						
++					},
++					"y" : {
++						"title": "MBits/sec",
++						"titleOrientation": "axis",
++						"titleGap": 2, 
++						"titleFont": "normal normal normal 10pt Arial",
++						"vertical": true, 
++						"majorTickStep": 10, 
++						"minorTickStep": 1
++					}
++					
++				}
++			},
++			"dataConfig":{	
++				"noOfDataPoints":7,
++				"seriesConfig" : [
++					{
++						"data": [],
++						"label": "Client Delivery BW"
++					},
++					{
++						"data": [],
++						"label": "Total Delivery BW"
++					},
++					{
++						"data": [],
++						"label": "RAM"
++					},
++					{
++						"data": [],
++						"label": "Disk"
++					},
++					{
++						"data": [],
++						"label": "Origin"
++					}
++				]
++			}
++		},
++		{   "id":'cacheTierThroughputChart',"parentContainerId":"dashboardTab",
++			"typeOfVisualization":'chart',
++			"refreshInterval":10000,
++			"url":"dashboard_load.pl?file=cache_tier_throughput",
++			"visualizationConfig":{
++				"titleConfig":{
++					"title": "Cache Tier Throughput",
++					"titlePos": "top",
++					"titleGap": 10,
++					"titleFont": "bold 10pt Tahoma"
++				},
++				
++				"legendConfig": {
++					"id" : 'legendOfCacheTierThroughputChartContainer'
++				},
++				"plotConfig" :{
++					"default":{
++						//type of chart
++						type: "ClusteredColumns",
++						gap: 5
++						
++					}
++				},
++				
++				"axisConfig" : {
++					"x" : {
++						title: "MBits/sec",
++						titleOrientation: "away",
++						titleFont: "normal normal normal 10pt Arial",
++						titleGap: 9,
++						rotation: 315,
++						fixLower: "minor", fixUpper: "minor",
++						min :.5, max:4.5,
++						labelOffset : 0,
++						natural: true,
++						htmlLabels: true,
++						includeZero:false
++						
++					},
++
++					"y" : {
++						title: "Cache Tier",
++						titleOrientation: "axis",
++						titleGap: 2, 
++						titleFont: "normal normal normal 10pt Arial",
++						vertical: true, 
++						min: 0, 
++						max: 100, 
++						majorTickStep: 10, 
++						minorTickStep: 1
++					}
++				}
++				
++									
++			},
++			dataConfig:{	
++				noOfDataPoints:4,
++				seriesConfig : [
++					{
++						data: [],
++						label: "Serve(Read)",
++					},
++					{
++						data: [],
++						label: "Promote (Write)",
++					},
++					{
++						data: [],
++						label: "Evict (Delete)",
++					}
++				]
++			}
++		},
++		{	"id":'diskThroughputChart',"parentContainerId":"diskCacheTab",
++			"typeOfVisualization":'chart',
++			"refreshInterval":10000,
++			"url":"dashboard_load.pl?file=disk_throughput",
++			visualizationConfig:{
++				titleConfig:{
++					title: "Disk Throughput",
++					titlePos: "top",
++					titleGap: 10,
++					"titleFont": "bold 10pt Tahoma"
++				},
++				
++				legendConfig: {
++					id : 'legendOfDiskThroughputChartContainer'
++				},
++				plotConfig :{
++					"default":{
++						//type of chart
++						type: "ClusteredColumns",
++						gap: 5
++						
++					}
++				},
++				
++				axisConfig : {
++					"x" : {
++						title: "MBits/sec",
++						titleOrientation: "away",
++						titleFont: "normal normal normal 10pt Arial",
++						titleGap: 9,
++						rotation: 315,
++						fixLower: "minor", fixUpper: "minor",
++						min :.5, max:3.5,
++						labelOffset : 0,
++						natural: true,
++						htmlLabels: true,
++						includeZero:false
++						
++					},
++
++					"y" : {
++						title: "Disk",
++						titleOrientation: "axis",
++						titleGap: 2, 
++						titleFont: "normal normal normal 10pt Arial",
++						vertical: true, 
++						min: 0, 
++						max: 100, 
++						majorTickStep: 10, 
++						minorTickStep: 1
++					}
++				}
++				
++									
++			},
++			dataConfig:{	
++				noOfDataPoints:4,
++				seriesConfig : [
++					{
++						data: [],
++						label: "Serve(Read)",
++					},
++					{
++						data: [],
++						label: "Promote (Write)",
++					},
++					{
++						data: [],
++						label: "Evict (Delete)",
++					}
++				]
++			}
++		},
++		{	"id":'diskUsageChart',"parentContainerId":"diskCacheTab",
++			"typeOfVisualization":'chart',
++			"refreshInterval":10000,
++			"url":"dashboard_load.pl?file=disk_usage",
++			visualizationConfig:{
++				titleConfig:{
++					title: "Disk Usage",
++					titlePos: "top",
++					titleGap: 10,
++					"titleFont": "bold 10pt Tahoma"
++				},
++				
++				legendConfig: {
++					id : 'legendOfDiskUsageChartContainer'
++				},
++				plotConfig :{
++					"default":{
++						//type of chart
++						type: "StackedColumns",
++						gap: 5
++						
++					}
++				},
++				
++				axisConfig : {
++					"x" : {
++						title: "MBits/sec",
++						titleOrientation: "away",
++						titleFont: "normal normal normal 10pt Arial",
++						titleGap: 9,
++						rotation: 315,
++						fixLower: "minor", fixUpper: "minor",
++						min :.5, max:3.5,
++						labelOffset : 0,
++						natural: true,
++						htmlLabels: true,
++						includeZero:false
++						
++					},
++
++					"y" : {
++						title: "Disk",
++						titleOrientation: "axis",
++						titleGap: 2, 
++						titleFont: "normal normal normal 10pt Arial",
++						vertical: true, 
++						min: 0, 
++						max: 100, 
++						majorTickStep: 10, 
++						minorTickStep: 1
++					}
++				}
++				
++									
++			},
++			dataConfig:{	
++				noOfDataPoints:4,
++				seriesConfig : [
++					{
++						data: [],
++						label: "Free Disk"
++					},
++					{
++						data: [],
++						label: "Used Disk"
++					}
++				]
++			}
++		},
++		{   "id":'globalHourlyCacheHitChart',"parentContainerId":'bandwidthSavingsTab',
++			"typeOfVisualization":'chart',
++			"refreshInterval":3600000,
++			"startSeed":1,
++			"noOfDataPoints":24,
++			"url":"dashboard_load.pl?file=ch_ratio_bw",
++			visualizationConfig:{
++				titleConfig:{
++					title: "Global Hourly Cache Hit",
++					titlePos: "top",
++					titleGap: 10,
++					"titleFont": "bold 10pt Tahoma"
++				},
++				size:{
++					width:800,
++					height:300
++				},
++				legendConfig: {
++					id : 'legendOfGlobalHourlyCacheHitChartContainer'
++				},
++				plotConfig :{
++					"default":{
++						//type of chart
++						"type": "Lines",
++						//show markers at number points?
++						"markers": true,
++						//curve the lines on the plot?
++						//tension: "S",
++						//show lines?
++						"lines": true,
++						//fill in areas?
++						"areas": false,
++						//offset position for label
++						"labelOffset": -30,
++						//add shadows to lines
++						"shadows": { "dx":2, "dy":2, "dw":2 }
++						
++					},
++					"other":{
++						//type of chart
++						type: "StackedColumns",
++						gap: 5
++						
++					}
++				},
++				
++				axisConfig : {
++					"x" : {
++						title: "Hour of the day",
++						titleOrientation: "away",
++						titleFont: "normal normal normal 10pt Arial",
++						titleGap: 9,
++						"fixLower": "minor", 
++						"fixUpper": "minor",
++						"natural": true,
++						"rotation": 315,
++						"htmlLabels":true	
++						
++					},
++
++					"y" : {
++						title: "Bandwidth (GBytes)",
++						titleOrientation: "axis",
++						titleGap: 2, 
++						titleFont: "normal normal normal 10pt Arial",
++						vertical: true, 
++						min: 0, 
++						max: 100, 
++						majorTickStep: 10, 
++						minorTickStep: 1
++					}
++				}
++				
++									
++			},
++			dataConfig:{	
++				noOfDataPoints:4,
++				seriesConfig : [
++					{
++						data: [],
++						label: "Cache Hit Ratio",
++					},
++					{
++						data: [],
++						label: "Origin Bandwidth",
++					},
++					{
++						data: [],
++						label: "Bandwidth Savings",
++					}
++				]
++			}
++		},
++		{	"id":'namespaceHourlyAverageCacheHitChart',"parentContainerId":'bandwidthSavingsTab',
++			"typeOfVisualization":'chart',
++			"refreshInterval":3600000,
++			"startSeed":1,
++			"noOfDataPoints":24,
++			"url":"dashboard_load.pl?file=ns_bandwidth",
++			visualizationConfig:{
++				titleConfig:{
++					title: "Namespace-level Last 24 Hours' Average Cache Hit Ratio",
++					titlePos: "top",
++					titleGap: 10,
++					"titleFont": "bold 10pt Tahoma"
++				},
++				size:{
++					width:800,
++					height:300
++				},
++				legendConfig: {
++					id : 'legendOfNamespaceHourlyAverageCacheHitChartContainer'
++				},
++				plotConfig :{
++					"default":{
++						//type of chart
++						type: "StackedColumns",
++						gap: 5
++						
++					},
++					"other":{
++						//type of chart
++						type: "ClusteredColumns",
++						gap: 5
++						
++					}
++				},
++				
++				axisConfig : {
++					"x" : {
++						title: "Name of the namespace",
++						titleOrientation: "away",
++						titleFont: "normal normal normal 10pt Arial",
++						titleGap: 9,
++						"fixLower": "minor", 
++						"fixUpper": "minor",
++						"natural": true,
++						"rotation": 315,
++						"htmlLabels":true	
++						
++					},
++
++					"y" : {
++						title: "Percentage",
++						titleOrientation: "axis",
++						titleGap: 2, 
++						titleFont: "normal normal normal 10pt Arial",
++						vertical: true, 
++						min: 0, 
++						max: 100, 
++						majorTickStep: 10, 
++						minorTickStep: 1
++					}
++				}
++				
++									
++			},
++			dataConfig:{	
++				noOfDataPoints:4,
++				seriesConfig : [
++					{
++						data: [],
++						label: "Cache Hit Ratio",
++					},
++					{
++						data: [],
++						label: "Origin Bandwidth",
++					},
++					{
++						data: [],
++						label: "Bandwidth Savings",
++					}
++				]
++			}
++		},
++		{	"id":'namespaceHourlyCacheHitChart',"parentContainerId":'bandwidthSavingsTab',
++			"typeOfVisualization":'chart',
++			"refreshInterval":3600000,
++			"startSeed":1,
++			"noOfDataPoints":24,
++			"url":"dashboard_load.pl?file=ns_chr",
++			visualizationConfig:{
++				titleConfig:{
++					title: "Namespace(tp) Hourly Cache Hit",
++					titlePos: "top",
++					titleGap: 10,
++					"titleFont": "bold 10pt Tahoma"
++				},
++				size:{
++					width:800,
++					height:300
++				},
++				legendConfig: {
++					id : 'legendOfNamespaceHourlyCacheHitChartContainer'
++				},
++				plotConfig :{
++					"default":{
++						//type of chart
++						"type": "Lines",
++						//show markers at number points?
++						"markers": true,
++						//curve the lines on the plot?
++						//tension: "S",
++						//show lines?
++						"lines": true,
++						//fill in areas?
++						"areas": false,
++						//offset position for label
++						"labelOffset": -30,
++						//add shadows to lines
++						"shadows": { "dx":2, "dy":2, "dw":2 }
++						
++					},
++					"other":{
++						//type of chart
++						type: "StackedColumns",
++						gap: 5
++						
++					}
++				},
++				
++				axisConfig : {
++					"x" : {
++						title: "Hour of the day",
++						titleOrientation: "away",
++						titleFont: "normal normal normal 10pt Arial",
++						titleGap: 9,
++						"fixLower": "minor", 
++						"fixUpper": "minor",
++						"natural": true,
++						"rotation": 315,
++						"htmlLabels":true	
++						
++					},
++
++					"y" : {
++						title: "Bandwidth (GBytes)",
++						titleOrientation: "axis",
++						titleGap: 2, 
++						titleFont: "normal normal normal 10pt Arial",
++						vertical: true, 
++						min: 0, 
++						max: 100, 
++						majorTickStep: 10, 
++						minorTickStep: 1
++					}
++				}
++				
++									
++			},
++			dataConfig:{	
++				noOfDataPoints:4,
++				seriesConfig : [
++					{
++						data: [],
++						label: "Cache Hit Ratio",
++					},
++					{
++						data: [],
++						label: "Origin Bandwidth",
++					},
++					{
++						data: [],
++						label: "Bandwidth Savings",
++					}
++				]
++			}
++		}
++	]
++}
+\ No newline at end of file
+Index: bin/web/content/dojo/clarochart.css
+===================================================================
+--- bin/web/content/dojo/clarochart.css	(revision 0)
++++ bin/web/content/dojo/clarochart.css	(revision 0)
+@@ -0,0 +1,136 @@
++body, html { height: 98%; }
++div.claro.jnpr{
++	margin:10px;
++	height: 800px;
++	width:98%;
++	overflow:hidden;
++}
++.claro.jnpr .dojoTabPane {
++	padding : 10px 10px 10px 10px;
++	overflow: auto;
++}
++.claro.jnpr #contentarea{
++}
++.claro.jnpr .jnprcontainer {
++	/*position: absolute;
++	top:	0;
++	left:	0;*/
++	width:	400px;
++	height: 300px;
++} 
++.claro.jnpr .bigcontainer {
++	/*position: absolute;
++	top:	0;
++	left:	0;*/
++	width:	800px;
++	height: 300px;
++} 
++.claro.jnpr .loader{
++	width:100%;
++	height:100%;
++	padding-left:75px;
++	padding-top:100px;
++}
++.claro.jnpr #statstable{
++	width:225px;
++}
++
++.claro.jnpr #statscontainer {
++	width:225px;
++	padding:5px;
++	height: 284px;
++	text-align: center;
++	vertical-align:top;
++}	
++.claro.jnpr  #layoutcontainer{
++	width:98%;
++	height:98%;
++	
++}
++.claro.jnpr  .title{
++margin: 0px;
++padding: 0px;
++border-width: 0px;
++font: normal normal bold 10pt Tahoma;
++color: #333;
++padding:0 0 12px 72px;
++}
++.claro.jnpr .title.dashboard{
++	padding: 0px;
++}
++.claro.jnpr  #cpuGaugeContainer{
++	margin-top: 0;
++	
++}
++.claro.jnpr table td {
++	text-align:left;
++	vertical-align:top;
++
++}
++.claro.jnpr table td.column{
++		padding-left: 15px;
++    padding-top: 20px;
++}
++.claro.jnpr  #row1column1{
++	width:24%;
++
++}
++.claro.jnpr #bandwidthSavingsTab #row1column1{
++	width:100%;
++}
++.claro.jnpr #diskCacheTab #row1column1{
++	width:11%;
++}
++.claro.jnpr  #row1column2{
++	width:37%;
++}
++
++.claro.jnpr #row1column3{
++	width:37%;
++}
++.claro.jnpr #row2 td.column{
++	padding-top: 20px;
++}
++.claro.jnpr .hideLoader{
++	display:none;
++}
++.claro.jnpr .legend{
++	margin-bottom:35px;
++	margin-top:10px;
++}
++.claro.jnpr .dojoxLegendNode {
++	border: 1px solid #ccc; 
++	margin-bottom: 4px;
++    margin-top: 7px;
++}
++.claro.jnpr .dojoxLegendText {
++	vertical-align: text-top; 
++	padding-right: 10px
++}
++.claro.jnpr #legendOfOpenConnectionsChartContainer{
++	margin-left:19px;
++}
++.claro.jnpr #legendOfWeeklyBandwidthSavingsChartContainer{
++	margin-left:100px;
++
++}
++.claro.jnpr #legendOfCacheTierThroughputChartContainer{
++	margin-left:60px;
++}
++.claro.jnpr .title.hidden{
++	display:none;
++}
++.claro.jnpr.title{
++	display:block;
++}
++
++.claro.jnpr #cpuGaugeComposite.displayed{
++	width: 225px; 
++	height:284px;
++	padding-top: 14px; 
++	background: #c1c1c1; 
++	border: 1px solid #818181;	
++}	
++.claro.jnpr #statsContainer.displayed{
++	border: 1px solid #818181;
++}
+\ No newline at end of file
+Index: bin/web/content/dojo/dashboardloader.js
+===================================================================
+--- bin/web/content/dojo/dashboardloader.js	(revision 0)
++++ bin/web/content/dojo/dashboardloader.js	(revision 0)
+@@ -0,0 +1,18 @@
++require(["dojo/dom","dojo/_base/connect","dijit/registry","dojo/topic","dijit/layout/ContentPane","dijit/layout/TabContainer", "dojo/parser","dashboard/Dashboard","dojo/ready"],
++function(dom,connect,registry,topic,ContentPane,TabContainer,parser,Dashboard,ready){
++	console.log("Call back of require called");
++	ready(function(){
++		console.log("ready in chart loader called");
++		var thisDashboard = new Dashboard({url:"/js/dashboardConfig.json",dc:true});
++		var mainDashboardTabs=registry.byId("mainDashboardTabs");
++		mainDashboardTabs.watch("selectedChildWidget", function(name, oval, nval){
++			if(oval)ovalid = oval.id;
++			console.log("selected child changed from "+ovalid+ " to "+nval.id);
++			if(oval)topic.publish("onHideOf"+oval.id, [{message:"Your parent tab " + oval.id + " is hidden now"}]);
++			topic.publish("onShowOf"+nval.id, [{message:"Your parent tab " + oval.id + " is shown now"}]);
++		});
++		thisDashboard.load();
++		thisDashboard=null;
++		topic.publish("onShowOfDashboard", [{message:"Your parent tab Dashboard is shown now"}]);
++	});
++});
+\ No newline at end of file
+Index: bin/web/content/dojo/Makefile
+===================================================================
+--- bin/web/content/dojo/Makefile	(revision 0)
++++ bin/web/content/dojo/Makefile	(revision 0)
+@@ -0,0 +1,17 @@
++#  Makefile
++
++include ${PROD_TREE_ROOT}/src/mk/common.mk
++
++FILES_INSTALL_DIR=/lib/web/content/js
++
++FILES= \
++	clarochart.css \
++	dashboardConfig.json \
++	dashboardloader.js \
++	dojoconfiguration.js \
++
++
++SUBDIRS= \
++        custom-dojo-release-0.1 \
++
++include ${PROD_TREE_ROOT}/src/mk/files.mk
+Index: bin/web/content/dojo/custom-dojo-release-0.1/dashboard/Dashlet.js
+===================================================================
+--- bin/web/content/dojo/custom-dojo-release-0.1/dashboard/Dashlet.js	(revision 0)
++++ bin/web/content/dojo/custom-dojo-release-0.1/dashboard/Dashlet.js	(revision 0)
+@@ -0,0 +1,77 @@
++console.log("Loading Dashlet class");
++define("dashboard/Dashlet",["dojo/_base/declare","dojo/dom-class","dojo/topic","dashboard/DashletRenderer"],function(declare,domClass,topic,DashletRenderer){
++	return declare("dashboard.Dashlet",null,{
++		loaderClass:"hideLoader",
++		
++		constructor:function(args){
++			declare.safeMixin(this, args);
++			if(!this.loaderId) this.loaderId = this.id + "Loader";
++			this.dashletRendererRef = new DashletRenderer();
++			this.active = false;
++		},
++		init : function (){
++			this.showLoader();
++			var thisRef = this;
++			topic.subscribe("onRenderCompleteOf"+this.id, function(message){
++				thisRef.scheduleNextUpdate();
++			});
++			if(thisRef.visualizationConfig){
++				var size = thisRef.visualizationConfig.size;
++				var parentId = this.parentContainerId;
++				if(size && parentId){
++					var w = size.width;
++					var h = size.height;
++					if(w && h){
++						thisRef.resizeRequiredOnShow = true;
++					}
++				}
++			}
++			topic.subscribe("onShowOf"+this.parentContainerId,function(message){
++				//console.log(message);
++				if(thisRef.resizeRequiredOnShow && thisRef.myContentRef && thisRef.typeOfVisualization==="chart"){
++					thisRef.myContentRef.resize(w,h);
++				}
++				thisRef.active=true;
++			});
++			topic.subscribe("onHideOf"+this.parentContainerId,function(message){
++				//console.log(message);
++				thisRef.active=false;
++			});
++			this.visualizeData();
++			
++		},
++		showLoader:function(){
++			domClass.remove(this.loaderId, this.loaderClass);
++		},
++		hideLoader:function(){
++			domClass.add(this.loaderId, this.loaderClass);
++		},
++		visualizeData:function(){
++			this.dashletRendererRef.render(this);
++			this.firstTime=false;
++		},
++		scheduleNextUpdate:function(){
++			var thisRef = this;
++			if(this.refreshInterval){
++				setTimeout(function(){
++					if(thisRef.active || this.firstTime){
++						console.log(thisRef.id + " REFRESHED as " + thisRef.parentContainerId + " is active");
++						thisRef.visualizeData();
++						thisRef=null;
++					}else{
++						//console.log(thisRef.id + " NOT REFRESHED as " + thisRef.parentContainerId + " is NOT active");
++						thisRef.scheduleNextUpdate();
++					}
++				},this.refreshInterval);
++			}
++			
++		}
++		
++		
++	});
++
++
++});	
++	
++	
++
+Index: bin/web/content/dojo/custom-dojo-release-0.1/dashboard/Dashboard.js
+===================================================================
+--- bin/web/content/dojo/custom-dojo-release-0.1/dashboard/Dashboard.js	(revision 0)
++++ bin/web/content/dojo/custom-dojo-release-0.1/dashboard/Dashboard.js	(revision 0)
+@@ -0,0 +1,36 @@
++console.log("Loading Dashboard class");
++define("dashboard/Dashboard",["dojo/_base/declare","dojo/_base/xhr","dashboard/Dashlet"],function(declare,xhr,Dashlet){
++	return declare("dashboard.Dashboard",null,{
++		constructor:function(args){
++			declare.safeMixin(this, args);
++		},
++		load:function(){
++			var configUrl = (this.dc?this.url+"?_dc=" + (new Date()).getTime():this.url);
++			xhr.get({
++				dashboard:this,
++				url: configUrl,
++				handleAs:"json",
++				load: function(data) {
++					this.dashboard.render.call(this.dashboard,data);
++					data=null;
++				},
++				error: function() {
++				}
++			});
++		},
++		render:function(data){
++			var configData = data.configData;
++			
++			for(var i=0;i<configData.length;i++){
++				
++				var newDashlet = new Dashlet(configData[i]);
++				newDashlet.init();
++			}
++			configData=null;
++			data=null;
++		}
++	});
++});
++
++
++
+Index: bin/web/content/dojo/custom-dojo-release-0.1/dashboard/JnprGlossyCircularGauge.js
+===================================================================
+--- bin/web/content/dojo/custom-dojo-release-0.1/dashboard/JnprGlossyCircularGauge.js	(revision 0)
++++ bin/web/content/dojo/custom-dojo-release-0.1/dashboard/JnprGlossyCircularGauge.js	(revision 0)
+@@ -0,0 +1,124 @@
++console.log("In JnprGlossyChartGauge");
++define("dashboard/JnprGlossyCircularGauge",["dojo/_base/declare","dojo/_base/Color","dojox/gauges/GlossyCircularGauge"],function(declare, Color, GlossyCircularGauge) {
++
++/*=====
++	JnprGlossyCircularGauge = dashboard.JnprGlossyCircularGauge;
++=====*/
++
++return declare("dashboard.JnprGlossyCircularGauge", [GlossyCircularGauge], {
++	_designWidth : 376.25,
++	_designHeight : 382.5,
++	_designCx : 187.19173,
++	_designCy : 187.81589,
++	_designTextIndicatorX :	187.19173,
++	_designTextIndicatorY :	267.81589,	
++	
++
++	constructor: function(){
++		// summary:
++		//		Creates a new JnprGlossyCircularGauge.
++		this.startAngle= -135;
++		this.endAngle= 135;
++		this.min = 0;
++		this.max = 100;
++	},
++
++	drawBackground: function(group){
++		// summary:
++		//		Draws the background of the gauge.
++		// group: dojox.gfx.Group
++		//		The GFX group where the background must be drawn
++		return;
++	},
++
++	drawForeground: function(group){
++		// summary:
++		//		Draws the foreground of the gauge.
++		// group: dojox.gfx.Group
++		//		The GFX group where the foreground must be drawn
++
++		var scale = Math.min((this.width / this._designWidth), (this.height / this._designHeight));
++		var transform = {
++				xx: scale,
++				xy: 0,
++				yx: 0,
++				yy: scale,
++				dx: (-160) * scale + (this.width - scale * this._designWidth) / 2,
++				dy: (-263.5) * scale + (this.height - scale * this._designHeight) / 2
++		};
++		
++		var lighterColor1 = Color.blendColors(new Color(this.color), new Color('white'), 0.4 );
++		var lighterColor2 = Color.blendColors(new Color(this.color), new Color('white'), 0.8 );		
++				
++		if (this._foreground){
++			this._foreground.setTransform(transform);
++			return;
++		}
++		this._foreground = group.createGroup();
++		this._foreground.setTransform(transform);
++
++		var group1 = this._foreground.createGroup();
++		group1.setTransform({
++			xx: 1.25,
++			xy: 0,
++			yx: 0,
++			yy: -1.25,
++			dx: -43.30358,
++			dy: 1015.57642
++		});
++		group1.createPath({
++			path: "M0 0 C0.004 -12.579 -10.189 -22.779 -22.768 -22.784 C-35.349 -22.788 -45.549 -12.594 -45.553 -0.016 L-45.553 0 C-45.558 12.579 -35.363 22.779 -22.783 22.784 C-10.205 22.788 -0.004 12.594 0 0.015 L0 0 Z"
++		}).setTransform({
++			xx: 1,
++			xy: 0,
++			yx: 0,
++			yy: 1,
++			dx: 336.31049,
++			dy: 451.43359
++		}).setFill(this.color);
++
++		group1.createPath({
++			path: "M333.443 451.434 C333.446 440.438 324.537 431.523 313.541 431.519 C302.546 431.515 293.63 440.425 293.626 451.42 L293.626 451.434 C293.622 462.429 302.532 471.345 313.527 471.349 C324.523 471.353 333.439 462.442 333.443 451.447 L333.443 451.434 Z"
++		}).setFill({
++			type: "linear",
++			x1: 293.62201,
++			y1: 431.51501,
++			x2: 293.62201,
++			y2: 451.43401,
++			colors: [
++			         {offset: 0, color: lighterColor1},
++			         {offset: 1, color: this.color}
++			         ]
++		});
++
++		group1.createPath({
++			path: "M333.438 451.858 C333.215 462.663 324.386 471.353 313.528 471.349 C302.675 471.345 293.854 462.658 293.632 451.858 C299.709 450.222 306.702 453.486 313.799 453.486 C320.895 453.486 327.377 450.221 333.438 451.858"
++		}).setFill({
++			type: "linear",
++			x1: 293.63199,
++			y1: 450.22101,
++			x2: 293.63199,
++			y2: 471.353,
++			colors: [
++			         {offset: 0, color: this.color},
++			         {offset: 1, color: lighterColor2}
++			         ]
++		});
++
++		group1.createPath({
++			path: "M0 0 C-0.223 10.805 -9.052 19.494 -19.909 19.49 C-30.763 19.486 -39.583 10.799 -39.806 0 C-33.729 -1.636 -26.735 1.628 -19.639 1.628 C-12.543 1.628 -6.061 -1.638 0 0"
++		}).setTransform({
++			xx: 1,
++			xy: 0,
++			yx: 0,
++			yy: 1,
++			dx: 333.4375,
++			dy: 451.8584
++		}).setFill([255,255,255,0.12157]);
++
++	}
++
++});
++});
++
++
+Index: bin/web/content/dojo/custom-dojo-release-0.1/dashboard/DashletRenderer.js
+===================================================================
+--- bin/web/content/dojo/custom-dojo-release-0.1/dashboard/DashletRenderer.js	(revision 0)
++++ bin/web/content/dojo/custom-dojo-release-0.1/dashboard/DashletRenderer.js	(revision 0)
+@@ -0,0 +1,220 @@
++console.log("In chart renderer");
++define("dashboard/DashletRenderer",[
++	"dojo/_base/declare",
++	"dojo/dom",
++	"dojo/dom-class",
++	"dojo/_base/xhr",
++	"dojo/_base/lang",
++	"dojo/topic",
++	"dojox/charting/Chart", 
++	"dojox/charting/axis2d/Default",
++	"dojox/charting/plot2d/Lines",
++	"dojox/charting/plot2d/Columns",
++	"dojox/charting/plot2d/StackedColumns",
++	"dojox/charting/plot2d/ClusteredColumns",
++	"dojox/charting/themes/Chris",
++	"dashboard/JnprGlossyCircularGauge",
++	"dojox/charting/widget/Legend",
++	"dojox/charting/action2d/Magnify",
++	"dojox/charting/action2d/Tooltip"
++],function(declare,dom,domClass,xhr,lang,topic,Chart,Default,Lines,Columns,StackedColumns,ClusteredColumns,Chris,JnprGlossyCircularGauge,Legend,Magnify,Tooltip){
++	return declare("dashboard.DashletRenderer",null,{
++		supportedChartTypes:{
++			'htmltext' : {
++				"renderer":function(dashletConfig){
++					xhr.get({
++						rendererRef:this,
++						url: dashletConfig.url,
++						handleAs:"json",
++						load: function(newContent) {
++							html = "<p id=\"dashb_info_ptitle1\">Cumulative since<br>"+newContent["Cumulative since"]+"</p><p id=\"dashb_info_pcontent1\">GB Delivered<br>"+newContent["GB Delivered"]+"</p><p id=\"dashb_info_pcontent1\">Bandwidth Savings<br><table id=\"dashb_info_pcontent2\" width=\"100%\"><tbody><tr><td>Cumulative</td><td align=\"right\">"+ newContent["Bandwidth Savings "]["Bytes(Cumulative)"]+"</td></tr><tr><td>Last 24 Hour</td><td align=\"right\">"+newContent["Bandwidth Savings "]["Bytes(Last 24 Hr)"]+"</td></tr><tr><td>Peak Hour (0AM)</td><td align=\"right\">"+newContent["Bandwidth Savings "]["Peak Hour(0AM)"]+"</td></tr></tbody></table></p><p id=\"dashb_info_pcontent1\">Cache Hit Ratio<br><table id=\"dashb_info_pcontent2\" width=\"100%\"><tbody><tr><td>Bytes (Cumulative)</td><td align=\"right\"> "+newContent["Cache Hit Ratio"]["Bytes(Cumulative)"]+"</td></tr><tr><td>Bytes (Last 24 Hr)</td><td align=\"right\">"+newContent["Cache Hit Ratio"]["Bytes(Last 24 Hr)"]+"</td></tr><tr><td>Objects (Cumulative)</td><td align=\"right\">"+newContent["Cache Hit Ratio"]["Objects(Cumulative)"]+"</td></tr><tr><td>Objects (Last 24 Hr)</td><td align=\"right\">"+newContent["Cache Hit Ratio"]["Objects(Last 24 Hr)"]+"</td></tr></tbody></table></p><p id=\"dashb_info_pcontent1\">Objects Delivered<br>"+newContent["Objects Delivered"]+"</p>";
++							var statsContainerNode = dom.byId(dashletConfig.id + "Container");
++							statsContainerNode.innerHTML = html;
++							domClass.add(statsContainerNode,"displayed");
++							this.rendererRef.onRenderComplete(dashletConfig.id);
++							this.rendererRef=null;
++						},
++						error: function() {
++						}
++					});
++				}
++			},
++			'gauge': {
++				"renderer":function(dashletConfig){
++					xhr.get({
++						rendererRef:this,
++						handleAs:"json",
++						url:dashletConfig.url,
++						load:function(dataForGauge){
++							var renderedGaugeFromCache = dashletConfig.myContentRef;
++							if(!renderedGaugeFromCache){
++								var cpuRanges = [ {low:5, high:10, hover:'5 - 10'},
++									{low:0, high:60, hover:'Low',color:{'type': 'linear', 'colors': [{offset: 0, color:'#80c217'}, {offset: 1, color: '#507D2A'}] }},
++									{low:60, high:80, hover:'Moderate',color: '#FFD700'},
++									{low:80, high:100, hover:'High',color: '#8F0000'},
++									{low:100, high:0,color:{'type': 'linear', 'colors': [{offset: 0, color:'white'}, {offset: 1, color: '#ddd'}] }}
++								];
++								dashletConfig.visualizationConfig.ranges=cpuRanges;
++								dashletConfig.hideLoader();
++								dashletConfig.myContentRef = new JnprGlossyCircularGauge(dashletConfig.visualizationConfig,
++								dom.byId(dashletConfig.id+"Container")); // Create a new Gauge.
++								dashletConfig.myContentRef.startup();
++								var titleNode = dom.byId(dashletConfig.id + "Title");
++								domClass.remove(titleNode,"hidden");
++								var composite = dom.byId(dashletConfig.id + "Composite");
++								domClass.add(composite,"displayed");
++							}
++							var needle = dashletConfig.myContentRef._needle;
++							needle.noChange=false;
++							//{"id":"Average CPU Usage","dataConfig":{"refreshinterval":10,"values":[1.370217]}}
++							needle.update(dataForGauge.dataConfig.values[0]);		
++							needle.noChange=true;
++							this.rendererRef.onRenderComplete(dashletConfig.id);
++							renderedGaugeFromCache=null;
++							this.rendererRef=null;
++							dataForGauge=null;
++							dashletConfig=null;
++						},
++						error:function(){
++						
++						}
++					});
++				}
++			},
++			'chart': {
++				"renderer":function(dashletConfig){
++					var dataurl = dashletConfig.url+ "&_dc=" + (new Date()).getTime();
++					xhr.get({
++						rendererRef:this,
++						handleAs:"json",
++						url:dataurl,
++						load:function(dataForChart){
++							try{
++								var renderedChartFromCache = dashletConfig.myContentRef;
++								if(!renderedChartFromCache){
++									var visualizationConfig = dashletConfig.visualizationConfig;
++									if(!visualizationConfig){
++										console.error("No visualization config defined");
++										return;
++									}
++									//var dataConfig = dashletConfig.dataConfig;
++									var newlyCreatedChart = new Chart(dashletConfig.id + "Container",visualizationConfig.titleConfig);
++									for(var eachPlot in visualizationConfig.plotConfig){
++										var eachPlotConfigData = visualizationConfig.plotConfig[eachPlot];
++										newlyCreatedChart.addPlot(eachPlot,eachPlotConfigData);
++									}
++									newlyCreatedChart.labelArray = [" "];
++									for(var i=0;i<dataForChart.dataConfig.values.length;i++){
++										var aSeries = dataForChart.dataConfig.values[i];
++										if(aSeries){
++											var options = {stroke: {width: 1.5}};
++											var itr=0;
++											var aSeriesData = aSeries.xy;
++											
++											for(itr=0;itr<aSeriesData.length;itr++){
++												//test the x label for isNumeric
++												var xData = aSeriesData[itr].x;
++												if(lang.isString(xData)){
++													newlyCreatedChart.labelArray[itr+1]=xData;
++													aSeriesData[itr].x=itr+1;
++												}else{
++													
++												}
++											}
++											if(aSeries.plot){
++												options.plot=aSeries.plot;
++											}
++											newlyCreatedChart.addSeries(aSeries.label,aSeriesData, options);
++										}
++									}
++									if(newlyCreatedChart.labelArray.length>1){
++										visualizationConfig.axisConfig.x.labelFunc = function(text,value){
++											var label = newlyCreatedChart.labelArray[value];
++											if(!label) return " ";
++											else return label;
++										};
++									}
++									for(var eachAxis in visualizationConfig.axisConfig){
++										var eachAxisConfigData = visualizationConfig.axisConfig[eachAxis];
++										newlyCreatedChart.addAxis(eachAxis,eachAxisConfigData);
++									}
++									dashletConfig.hideLoader();
++									newlyCreatedChart.setTheme(Chris);
++									newlyCreatedChart.render();
++									legendOfThisChart = new Legend({chart: newlyCreatedChart}, visualizationConfig.legendConfig.id);
++									tooltipInThisChart = new Tooltip(newlyCreatedChart, "default", {
++									text : function(o) {
++										return o.y;
++									}
++									});
++									dashletConfig.myContentRef = newlyCreatedChart;
++									
++									if(visualizationConfig.size && visualizationConfig.size.width && visualizationConfig.size.height){
++										newlyCreatedChart.resize(visualizationConfig.size.width,visualizationConfig.size.height);
++									}
++									this.rendererRef.onRenderComplete(dashletConfig.id);
++								}else{
++									//var dataConfig = dashletConfig.dataConfig;
++									renderedChartFromCache.labelArray = [" "];
++									for(var i=0;i<dataForChart.dataConfig.values.length;i++){
++										var aSeries = dataForChart.dataConfig.values[i];
++										if(aSeries){
++											var options = {stroke: {width: 1.5}};
++											var itr=0;
++											var aSeriesData = aSeries.xy;
++											for(itr=0;itr<aSeriesData.length;itr++){
++												//test the x label for isNumeric
++												var xData = aSeriesData[itr].x;
++												if(lang.isString(xData)){
++													renderedChartFromCache.labelArray[itr+1]=xData;
++													aSeriesData[itr].x=itr+1;
++												}else{
++													
++												}
++											}
++											renderedChartFromCache.updateSeries(aSeries.label,aSeriesData , options);
++										}
++									}
++									renderedChartFromCache.render();
++									this.rendererRef.onRenderComplete(dashletConfig.id);
++								}
++								dataForChart=null;
++								this.rendererRef=null;
++								renderedChartFromCache=null;
++								dashletConfig=null;
++							}catch(e){
++								console.log(e);
++							}
++						},
++						error:function(e){
++							console.log(e);
++						}
++					});
++				}
++			}
++
++		},
++		constructor:function(){
++			
++		},
++		render:function(configData){
++			var renderer = this.supportedChartTypes[configData.typeOfVisualization].renderer;
++			if(renderer){
++				renderer.call(this,configData);
++			}
++		},
++		onRenderComplete:function(id){
++			
++			topic.publish("onRenderCompleteOf"+id, [{message:"completed rendering of " + id}]);
++		}
++		
++		
++	});
++
++
++});	
++	
++	
++
++
++
+Index: bin/web/content/dojo/custom-dojo-release-0.1/dashboard/Makefile
+===================================================================
+--- bin/web/content/dojo/custom-dojo-release-0.1/dashboard/Makefile	(revision 0)
++++ bin/web/content/dojo/custom-dojo-release-0.1/dashboard/Makefile	(revision 0)
+@@ -0,0 +1,13 @@
++#  Makefile
++
++include ${PROD_TREE_ROOT}/src/mk/common.mk
++
++FILES_INSTALL_DIR=/lib/web/content/js/custom-dojo-release-0.1/dashboard
++
++FILES=\
++      Dashboard.js \
++      Dashlet.js \
++      DashletRenderer.js \
++      JnprGlossyCircularGauge.js \
++
++include ${PROD_TREE_ROOT}/src/mk/files.mk
+Index: bin/web/content/dojo/custom-dojo-release-0.1/Makefile
+===================================================================
+--- bin/web/content/dojo/custom-dojo-release-0.1/Makefile	(revision 0)
++++ bin/web/content/dojo/custom-dojo-release-0.1/Makefile	(revision 0)
+@@ -0,0 +1,8 @@
++#  Makefile
++
++include ${PROD_TREE_ROOT}/src/mk/common.mk
++
++SUBDIRS= \
++        dashboard \
++
++include ${PROD_TREE_ROOT}/src/mk/subdir.mk
+Index: bin/web/content/dojo/dojoconfiguration.js
+===================================================================
+--- bin/web/content/dojo/dojoconfiguration.js	(revision 0)
++++ bin/web/content/dojo/dojoconfiguration.js	(revision 0)
+@@ -0,0 +1,14 @@
++var dojoVersionFolder = "dojo-release-1.8.0";
++var customDojoVersionFolder = "custom-dojo-release-0.1";
++var dojoConfig = {
++	baseUrl: "/js/",
++	tlmSiblingOfDojo: false,
++	packages: [
++		{ name: "dojo", location: dojoVersionFolder+"/dojo" },
++		{ name: "dijit", location: dojoVersionFolder+"/dijit" },
++		{ name: "dojox", location: dojoVersionFolder+"/dojox" },
++		{ name: "dependencymanager", location: customDojoVersionFolder+"/dependencymanager"},
++		{ name: "customgauges", location: customDojoVersionFolder+"/customgauges"},
++		{ name: "dashboard", location: customDojoVersionFolder+"/dashboard"}
++	]
++};
+\ No newline at end of file
+Index: bin/web/content/Makefile
+===================================================================
+--- bin/web/content/Makefile	(revision 28106)
++++ bin/web/content/Makefile	(working copy)
+@@ -17,5 +17,6 @@ SUBDIRS= \
+ 	mfc_probe \
+ 	mx_probe \
+ 	mfaLogin \
++	dojo
+ 
+ include ${PROD_TREE_ROOT}/src/mk/files.mk
+Index: bin/web/templates/dashboard-dashboard.tem
+===================================================================
+--- bin/web/templates/dashboard-dashboard.tem	(revision 28106)
++++ bin/web/templates/dashboard-dashboard.tem	(working copy)
+@@ -1,69 +1,172 @@
+ <?
+ #
+ # Filename:  dashboard-dashboard.tem
+-# Date:      2009/04/09
+-# Author:    Sasmita
++# Date:      2012/09/12
++# Author:    Ramk
+ #
+-# (C) Copyright 2008-2009 Nokeena Networks, Inc.
++# (C) Copyright 2012-2011 Nokeena Networks, Inc. 
+ # All rights reserved.
+ #
+ 
+ #
+ ?>
+-<INCLUDE "dashboard-layout">
++<INCLUDE "tms-defines">
++<INCLUDE "tms-utils">
++<INCLUDE "tms-layout">
+ <TMS-PAGE "Dashboard">
+-<TMS-MENU "dashboard">
+ <TMS-BODY>
+-<TMS-SIDEBAR><TMS-DASHBOARD-MENU "dashboard"></TMS-DASHBOARD-MENU></TMS-SIDEBAR>
+ <TMS-PAGE-CONTENT "Dashboard">
+-
+-
+-<table border="0" width="100%"><tr><td>
+-<table align="left"  border="0" cellpadding="1" id="outer_table"><tr>
+-	<td><b>MFC Version: </b></td><td> &nbsp; &nbsp;</td>
+-	<td><b><?= [tms::get-config "/system/version/composite"]?></b></td></tr>
+-</table>
+-<table align="left" width="950" border="1" cellpadding="1" id="outer_table"><tr>
+-    <td valign="_top"><table border="0">
+-        <tr><td><iframe src="\" width="225px" height="400" frameborder="0" id="info_fr"></iframe></td></tr>
+-        <tr><td align="center"><img class="img_class" src=""
+-                alt="Agerage CPU" id="cpu_img" width="200px" height="115px"/></td></tr>
+-    </table></td>
+-    <td><table border="0">
+-        <tr><td><img class="img_class" src=""
+-            alt="Open Connection" id="openconnection_img" height="250px" width="350px"/></td></tr>
+-        <tr><td><img class="img_class" src=""
+-            alt="Media Delivery Bandwidth" id="media_delivery_bd_img" height="250px" width="350px"/></td></tr>
+-    </table></td>
+-
+-    <td><table border="0">
+-	<tr><td><img class="img_class" src=""
+-            alt="Weekly Bandwidth Savings" id="weekly_bw_savings_img" height="250px" width="350" /></td></tr>
+-        <tr><td><img class="img_class" src=""
+-	    alt="Cache Tier Throughput" id="cache_tier_throughput_img" height="250px" width="350px"/></td></tr>
+-    </table></td></tr>
+-</table>
+-</td></tr></table>
+-
+-
+-
+-<div style={test-align:left;}>
+-	<!--put the button here to update the interval -->
+-	<input type="text" id="page" name="page" value="dashboard" style="display:none">
+-	<br />
+-	<span>Refresh Interval:</span>
+-	<input type="text"  id="db_refreshinterval" size="6" name="db_refreshinterval" maxlength="4" value="10" />
+-	<span>Sec.</span>
+-	<input type="button" id="updatebutton" class="ajaxButton" value="Reload" name="updatebutton" onclick="buttoncheck()" />
+-</div>
+-
+-<script type="text/javascript">
+-	document.getElementById('db_refreshinterval').value = update_interval;
+-	buttoncheck();
+-        //startupdate_dashboard();
+-
+-</script>
+-
++	<link rel="stylesheet" type="text/css" href="/js/dojo-release-1.8.0/dojo/resources/dojo.css">
++	<link rel="stylesheet" type="text/css" href="/js/dojo-release-1.8.0/dijit/themes/dijit.css">
++	<link rel="stylesheet" type="text/css" href="/js/dojo-release-1.8.0/dijit/themes/claro/claro.css">
++	<link rel="stylesheet" type="text/css" href="/js/dojo-release-1.8.0/dijit/themes/claro/layout/ContentPane.css">
++	<link rel="stylesheet" type="text/css" href="/js/dojo-release-1.8.0/dijit/themes/claro/layout/TabContainer.css">
++	<link rel="stylesheet" type="text/css" href="/tms-default.css">
++	<link rel="stylesheet" type="text/css" href="/js/clarochart.css">
++	<div id="bodyOfDashboard" class="claro jnpr" >
++		<div class="centerPanel" id="mainDashboardTabs" data-dojo-type="dijit.layout.TabContainer" data-dojo-props="tabPosition: 'left-h'" style="width:99%;height:100%;">
++			<div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="title: 'Dashboard'" id="dashboardTab">
++				<div id="contentarea">
++					<div class="dashboard title" style="color:red">FOR DEMO PURPOSES - ALL CHARTS GET DATA UPDATES EVERY 5 SECONDS.Disk Cache & Bandwidth savings graph are work in progress</div>
++					<div class="dashboard title">Dashboard of MFC Version: mfc-12.2.1-qa 16_26776_335</div>
++					<table id="layoutcontainer" border="0">
++						<tr id="row1">
++							<td id="row1column1" class="column">
++								<table id="statstable"><tr><td>
++								<div id="statsContainer">
++									<!--place holder for stats-->
++									<div id="statsLoader" class="loader">
++										<img src='/images/ajax-loader.gif'>
++									</div>
++								</div>
++								</td></tr></table>
++							</td>
++							<td id="row1column2" class="column">
++								<div id="openConnectionsChartContainer" class="jnprcontainer">
++									<!--place holder for chart-->
++									<div id="openConnectionsChartLoader" class="loader">
++										<img src='/images/ajax-loader.gif'>
++									</div>
++								</div>
++								<div id="legendOfOpenConnectionsChartContainer" class="legend"></div>
++							</td>
++							<td id="row1column3" class="column">
++								<div id="weeklyBandwidthSavingsChartContainer" class="jnprcontainer">
++									<!--place holder for chart-->
++									<div id="weeklyBandwidthSavingsChartLoader" class="loader">
++										<img src='/images/ajax-loader.gif'>
++									</div>
++								</div>
++								<div id="legendOfWeeklyBandwidthSavingsChartContainer" class="legend"></div>
++							</td>
++						</tr>
++						<tr id="row2">
++							<td id="row2column1" class="column">
++								<div id="cpuGaugeComposite">
++									<div id="cpuGaugeTitle" class="title hidden">CPU Utilization</div>
++									<div id="cpuGaugeContainer" >
++										<!--place holder for chart-->
++										<div id="cpuGaugeLoader" class="loader">
++											<img src='/images/ajax-loader.gif'>
++										</div>					
++									</div>
++								</div>
++							</td>
++							<td id="row2column2" class="column">
++								
++								<div id="cacheThroughputChartContainer" class="jnprcontainer">
++									<!--place holder for chart-->
++									<div id="cacheThroughputChartLoader" class="loader">
++										<img src='/images/ajax-loader.gif'>
++									</div>
++								</div>
++								<div id="legendOfCacheThroughputChartContainer" class="legend"></div>
++							</td>
++							<td id="row2column3" class="column">
++								<div id="cacheTierThroughputChartContainer" class="jnprcontainer">
++									<!--place holder for chart-->
++									<div id="cacheTierThroughputChartLoader" class="loader">
++										<img src='/images/ajax-loader.gif'>
++									</div>
++								</div>
++								<div id="legendOfCacheTierThroughputChartContainer" class="legend"></div>
++							</td>
++						</tr>
++					</table>
++				</div>
++
++			</div>
++			<div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="title: 'Disk Cache'" id="diskCacheTab">
++				<div class="dashboard title" style="color:red">FOR DEMO PURPOSES - ALL CHARTS GET DATA UPDATES EVERY 5 SECONDS.Disk Cache & Bandwidth savings graph are work in progress</div>
++					<div class="dashboard title"> Disk Cache of MFC Version: mfc-12.2.1-qa 16_26776_335</div>
++					<table id="layoutcontainer" border="0">
++						<tr id="row1">
++							<td id="row1column1" class="column">
++								<div id="diskThroughputChartContainer" class="jnprcontainer">
++									<!--place holder for chart-->
++									<div id="diskThroughputChartLoader" class="loader">
++										<img src='/images/ajax-loader.gif'>
++									</div>
++								</div>
++								<div id="legendOfDiskThroughputChartContainer" class="legend"></div>	
++							</td>
++							<td id="row1column2" class="column">
++								<div id="diskUsageChartContainer" class="jnprcontainer">
++									<!--place holder for chart-->
++									<div id="diskUsageChartLoader" class="loader">
++										<img src='/images/ajax-loader.gif'>
++									</div>
++								</div>
++								<div id="legendOfDiskUsageChartContainer" class="legend"></div>
++							</td>
++						</tr>
++					</table>
++			</div>
++			<div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="title: 'Bandwidth Savings'" id="bandwidthSavingsTab">
++				<div class="dashboard title" style="color:red">FOR DEMO PURPOSES - ALL CHARTS GET DATA UPDATES EVERY 5 SECONDS.Disk Cache & Bandwidth savings graph are work in progress</div>
++					<div class="dashboard title">Bandwidth Savings of MFC Version: mfc-12.2.1-qa 16_26776_335</div>
++					<table id="layoutcontainer" border="0">
++						<tr id="row1">
++							<td id="row1column1" class="column">
++								<div id="globalHourlyCacheHitChartContainer" class="bigcontainer">
++									<!--place holder for chart-->
++									<div id="globalHourlyCacheHitChartLoader" class="loader">
++										<img src='/images/ajax-loader.gif'>
++									</div>
++								</div>
++								<div id="legendOfGlobalHourlyCacheHitChartContainer" class="legend"></div>	
++							</td>
++						</tr>
++						<tr>
++							<td id="row2column1" class="column">
++								<div id="namespaceHourlyAverageCacheHitChartContainer" class="bigcontainer">
++									<!--place holder for chart-->
++									<div id="namespaceHourlyAverageCacheHitChartLoader" class="loader">
++										<img src='/images/ajax-loader.gif'>
++									</div>
++								</div>
++								<div id="legendOfNamespaceHourlyAverageCacheHitChartContainer" class="legend"></div>
++							</td>
++						</tr>
++						<tr>
++							<td id="row3column1" class="column">
++								<div id="namespaceHourlyCacheHitChartContainer" class="bigcontainer">
++									<!--place holder for chart-->
++									<div id="namespaceHourlyCacheHitChartLoader" class="loader">
++										<img src='/images/ajax-loader.gif'>
++									</div>
++								</div>
++								<div id="legendOfNamespaceHourlyCacheHitChartContainer" class="legend"></div>
++							</td>
++						</tr>					
++					</table>
++			</div>
++		</div>
++
++	</div>	
++<script src="/js/dojoconfiguration.js"></script>
++<script src="/js/dojo-release-1.8.0/dojo/dojo.js.uncompressed.js" data-dojo-config="async: true, parseOnLoad:true"></script>
++<script src="/js/dashboardloader.js"></script>
+ </TMS-PAGE-CONTENT>
+ </TMS-BODY>
+ </TMS-PAGE>
+Index: bin/dashboard/sbin/db_jsonutils.c
+===================================================================
+--- bin/dashboard/sbin/db_jsonutils.c	(revision 0)
++++ bin/dashboard/sbin/db_jsonutils.c	(revision 0)
+@@ -0,0 +1,396 @@
++#include <stdio.h>
++#include <errno.h>
++#include <string.h>
++#include "db_jsonutils.h"
++
++FILE *jfopen(const char *path_filename, char *mode)
++{
++    FILE *jfp;
++    jfp = fopen(path_filename, mode);
++    if(jfp == NULL){
++	lc_log_debug(LOG_NOTICE, "%s error in opening jfile:%s ", strerror(errno), path_filename);
++    }
++    else {
++	return jfp;
++    }
++}
++int jfwrite(char *buf, FILE *jfp,int buf_size)
++{
++    int len = 0;
++    len =  fwrite(buf, 1, buf_size, jfp);
++    if(len < 0)
++    {
++	lc_log_debug(LOG_NOTICE, "jfwrite error:%s", strerror(errno));
++    }
++    return len;
++}
++void jfclose(FILE *jfp)
++{
++    int err;
++    err =  fclose(jfp);
++    if(err != 0){
++	lc_log_debug(LOG_NOTICE, "%s error in closing jfile", strerror(errno));
++    }
++}
++//TODO:chk if func name can be included on error
++static int isbufnull(char *buf)
++{
++    int err = 0;
++    if( buf == NULL){
++	err = 1;
++	lc_log_debug(LOG_NOTICE, "buf is null" );
++	return 1;
++    }
++    else {
++	return 0;
++    }
++}
++
++int appendtobuf(char *buf, char *temp)
++{
++    int err = 0;
++    if((MAX_SIZE - strlen(buf)) > strlen(temp)){
++	strncat(buf, temp, strlen(temp));
++    }
++    else{
++	//do some error setting and let the caller know the buf size isn't enough
++	err = 1;
++	lc_log_debug(LOG_NOTICE, "insufficient buf size passed" );
++    }
++    return err;
++}
++#if 0
++Json format
++{"id":"<graph name>","dataconfig":{"<any input to the graph>":<value of the input>,"values":[{"label":"<component of the graph>","xy":[{"x":<x value of the graph,if the value is in sring put in qoutes>,"y":<y value>}.....
++
++Example:
++{"id":"open connections","dataConfig":{"refreshinterval":10,"values":[{"label":"http connections","xy":[{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:22","y":0.000000},{"x":"00:32","y":0.000000}]},{"label":"rtsp_connections","xy":[{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:22","y":0.000000},{"x":"00:32","y":0.000000}]},{"label":"om_connections","xy":[{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:00","y":0.000000},{"x":"00:22","y":0.000000},{"x":"00:32","y":0.000000}]}]}}
++
++general guidance:
++=================
++For evey object add opening and closing flower braces { }
++for every array add opening and closing square braces[ ]
++every name value pair will have { } and each value is separated by ,
++strings are enclosed in double quotes
++
++specific to dashboard
++=====================
++Format remains the same ,but the names used for identification is unique
++
++id -> will be common for all graphs,before writing to the file in json format start with id
++    then comes the graph name here it is open connections
++dataconfig -> input the graph might use say for refresh interval and its value
++values -> the values need to be plot in the graph which is an array so add [ while starting and while closing add ]
++label -> each values might need a name so the label specifies the same
++xy -> will specify that forth coming values are going to be x and y values or array of x and y accordingly add [
++#endif
++/*
++ *This function should be called 1st before sending any values
++ *inorder to comply with the agreed json format
++ *
++ */
++int jopenid(char *buf, int size_of_buf, char *id)
++{
++    int err = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	snprintf(buf, size_of_buf, "{\"id\":\"%s\",", id);
++    }
++bail:
++    return err;
++}
++
++int jcloseid(char *buf)
++{
++    int err = 0;
++    char temp[5] = {0};
++    err = isbufnull(buf);
++    if(!err ){
++	snprintf(temp, 5, "}");
++	err = appendtobuf(buf, temp);
++    }
++    return err;
++}
++
++int jopendataconfig(char *buf, char *datacfg, int datacfg_val)
++{
++    char temp[100] = {0};
++    int err = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	snprintf(temp, 100, "\"dataConfig\":{\"%s\":%d,", datacfg, datacfg_val);
++	err = appendtobuf(buf, temp);
++    }
++    return err;
++}
++
++int jclosedataconfig(char *buf)
++{
++    char temp[5] = {0};
++    int err = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	snprintf(temp, 5, "]}");
++	err = appendtobuf(buf, temp);
++    }
++    return err;
++}
++
++int jopenvalues(char *buf)
++{
++    //TODO this should be called onlyonce..b4 sending label
++    char temp[50] = {0};
++    int err = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	snprintf(temp, 100, "\"values\":[");
++	err = appendtobuf(buf, temp);
++    }
++
++    return err;
++}
++
++int jclosevalues(char *buf)
++{
++    char temp[5] = {0};
++    int err = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	snprintf(temp, 5, "]");
++	err = appendtobuf(buf, temp);
++    }
++
++    return err;
++
++}
++
++int jopenlabel(char *buf, char *label)
++{
++    char temp[100] = {0};
++    int err = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	snprintf(temp, 100, "{\"label\":\"%s\",",label );
++	err = appendtobuf(buf, temp);
++    }
++
++    return err;
++}
++
++int jcloselabel(char *buf)
++{
++    char temp[5] = {0};
++    int err = 0;
++    err = isbufnull(buf);
++    if(!err){
++	snprintf(temp, 5, "}");
++	err = appendtobuf(buf, temp);
++    }
++    return err;
++
++}
++
++int jnamevalue_pair(char *buf, char *name, char* value)
++{
++    char temp[100 ] = {0};
++    int err = 0;
++    err = isbufnull(buf);
++    if(!err){
++	snprintf(temp, 100, "\"%s\":\"%s\"", name, value);
++	err = appendtobuf(buf, temp);
++    }
++    return err;
++}
++
++int jxy(char *buf)
++{
++    char temp[10] = {0};
++    int err = 0 ;
++    err = isbufnull(buf);
++    if(!err ){
++	snprintf(temp, 10, "\"xy\":[");
++	err = appendtobuf(buf, temp);
++    }
++
++    return err;
++}
++
++int jxy_intx_inty(char *buf, int *x_data, int *y_data, int index)
++{
++    char temp[1000] = {0};
++    int err = 0;
++    int i = 0;
++
++    err = isbufnull(buf);
++    if(!err ){
++
++	for(;i <= index-1; i++){
++	    snprintf(temp, 1000, "{\"x\":%d,\"y\":%d},", x_data[i], y_data[i]);
++	    err = appendtobuf(buf, temp);
++	    memset(temp, 0, 1000);
++	}
++	snprintf(temp, 1000, "{\"x\":%d,\"y\":%d}]", x_data[i], y_data[i]);
++	err = appendtobuf(buf, temp);
++    }
++    return err;
++}
++
++int jxy_intx_doubley(char *buf, int *x_data, double *y_data, int index)
++{
++    char temp[1000] = {0};
++    int err = 0;
++    int i = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	for(;i <= index-1; i++){
++	    snprintf(temp, 1000, "{\"x\":%d,\"y\":%f},", x_data[i], y_data[i]);
++	    err = appendtobuf(buf, temp);
++	    memset(temp, 0, 1000);
++	}
++	snprintf(temp, 1000, "{\"x\":%d,\"y\":%f}]", x_data[i], y_data[i]);
++	err = appendtobuf(buf, temp);
++	return err;
++    }
++}
++
++int jxy_intx_stry(char *buf, int *x_data, char **y_data, int index)
++{
++    char temp[1000] = {0};
++    int err = 0;
++    int i = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	for(;i <= index-1; i++){
++	    snprintf(temp, 1000, "{\"x\":%d,\"y\":\"%s\"},", x_data[i], y_data[i]);
++	    err = appendtobuf(buf, temp);
++	    memset(temp, 0, 1000);
++	}
++	snprintf(temp, 1000, "{\"x\":%d,\"y\":\"%s\"}]", x_data[i], y_data[i]);
++	err = appendtobuf(buf, temp);
++    }
++
++    return err;
++}
++
++int jxy_strx_stry(char *buf, char **x_data, char **y_data, int index)
++{
++    char temp[1000] = {0};
++    int err = 0;
++    int i = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	for(;i <= index-1; i++){
++	    snprintf(temp, 1000, "{\"x\":\"%s\",\"y\":\"%s\"},", x_data[i], y_data[i]);
++	    err = appendtobuf(buf, temp);
++	    memset(temp, 0, 1000);
++	}
++	snprintf(temp, 1000, "{\"x\":\"%s\",\"y\":\"%s\"}]", x_data[i], y_data[i]);
++	err = appendtobuf(buf, temp);
++    }
++
++    return err;
++}
++
++int jxy_strx_doubley(char *buf, char **x_data, double *y_data, int index)
++{
++    char temp[1000] = {0};
++    int err = 0;
++    int i = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	for(;i < index-1; i++){
++	    snprintf(temp, 1000, "{\"x\":\"%s\",\"y\":%f},", x_data[i], y_data[i]);
++	    err = appendtobuf(buf, temp);
++	    memset(temp, 0, 1000);
++	}
++	snprintf(temp, 1000, "{\"x\":\"%s\",\"y\":%f}]", x_data[i], y_data[i]);
++
++	err = appendtobuf(buf, temp);
++    }
++
++    return err;
++}
++
++int jxy_strx_inty(char *buf, char **x_data, int *y_data, int index)
++{
++    char temp[1000] = {0};
++    int err = 0;
++    int i = 0;
++    err = isbufnull(buf);
++    if(!err ){
++	for(;i <= index-1; i++){
++	    snprintf(temp, 1000, "{\"x\":\"%s\",\"y\":%d},", x_data[i], y_data[i]);
++	    err = appendtobuf(buf, temp);
++	    memset(temp, 0, 1000);
++	}
++	snprintf(temp, 1000, "{\"x\":\"%s\",\"y\":%d}]", x_data[i], y_data[i]);
++	err = appendtobuf(buf, temp);
++    }
++
++    return err;
++}
++
++
++#if 0
++int jxy_data(char *buf, enum x_datatype x_datatype,
++		enum y_datatype y_datatype, void *x_dataval, void *y_dataval,int index)
++{
++    char temp[1000] = {0};
++    char x[10]= {0};
++    char y[10]= {0};
++    int err = 0;
++    int i = 0;
++
++    if( buf == NULL){
++        err = 1;
++        lc_log_debug(LOG_NOTICE, "buf is null" );
++	return;
++    }
++    if(x_datatype == X_INTEGER){
++	strncpy(x,"%d",sizeof(x));
++	int *x_data = (int *)x_dataval;
++    }
++    else if (x_datatype == X_STRING){
++	strncpy(x,"\"%s\"",sizeof(x));
++	char *x_data = (char *)x_dataval;
++    }
++
++    if(y_datatype == Y_INTEGER){
++	strncpy(y,"%d",sizeof(y));
++	int *y_data = (int *)y_dataval;
++    }
++    else if (y_datatype == Y_DOUBLE){
++	strncpy(y,"%f",sizeof(y));
++	double *y_data = (double *)y_dataval;
++    }
++    else if (y_datatype == Y_STRING){
++	strncpy(y,"\"%s\"",sizeof(y));
++	char *y_data = (char *)y_dataval;
++    }
++    for(;i <= index-1; i++){
++	snprintf(temp, 1000, "{\"x\":%s,\"y\":%s},", x, y,/* x_data[i], y_data[i] */);
++	if((sizeof(buf) - strlen(buf)) > strlen(temp)){
++	    strncat(buf, temp, strlen(temp));
++	    memset(temp, 0, 1000);
++	}
++	else{
++	    //do some error setting and let the caller know the buf size isn't enough
++	    err = 1;
++	    lc_log_debug(LOG_NOTICE, "insufficient buf size passed to jxy_data" );
++	}
++    }
++     snprintf(temp, 1000, "{\"x\":x,\"y\":y}]}", x_data[i], y_data[i]);
++        if((sizeof(buf) - strlen(buf)) > strlen(temp)){
++            strncat(buf, temp, strlen(temp));
++        }
++        else{
++            //do some error setting and let the caller know the buf size isn't enough
++            err = 1;
++            lc_log_debug(LOG_NOTICE, "insufficient buf size passed to jxy_data in last iteration" );
++        }
++
++
++    return err;
++
++}
++#endif
+Index: bin/dashboard/sbin/nkn_dashboard.cc
+===================================================================
+--- bin/dashboard/sbin/nkn_dashboard.cc	(revision 28106)
++++ bin/dashboard/sbin/nkn_dashboard.cc	(working copy)
+@@ -68,7 +68,7 @@ int main(int argc, char * argv[])
+ 	char *shm;
+ 	int runas_daemon=0;
+ 	int ret;
+-	pthread_t pthread1, pthread2;
++	pthread_t pthread1;// pthread2;
+ 	uint64_t NKN_SHMSZ;
+ 
+ 
+@@ -137,10 +137,10 @@ int main(int argc, char * argv[])
+ 	/*
+          * Create another thread to display graph
+ 	 */
+-	pthread_create(&pthread2, NULL, generate_graph, NULL);
++//	pthread_create(&pthread2, NULL, generate_graph, NULL);
+ 
+ 	pthread_join(pthread1, NULL);
+-	pthread_join(pthread2, NULL);
++//	pthread_join(pthread2, NULL);
+ 
+ 	exit(0);
+ }
+Index: bin/dashboard/sbin/nkn_dashboard.h
+===================================================================
+--- bin/dashboard/sbin/nkn_dashboard.h	(revision 28106)
++++ bin/dashboard/sbin/nkn_dashboard.h	(working copy)
+@@ -265,6 +265,21 @@ struct ns_data_t {
+ extern struct ns_data_t ns_data[MAX_NAMESPACE];
+ extern int total_ns_data;
+ 
++typedef struct disk_thput_gr_t{
++        double raw_read_rate;
++        double raw_write_rate;
++        int provider_type;
++        char disk_name[MAX_DISK_NAME_SIZE];
++}disk_thput_gr_t;
++
++typedef struct disk_usage_gr_t{
++        double free_blocks;
++        double free_resv_blocks;
++        double total_blocks;
++        double block_size;
++        int provider_type;
++        char disk_name[MAX_DISK_NAME_SIZE];
++}disk_usage_gr_t;
+ /*
+  * Functions defined in dashboard_datas.cc file
+  */
+@@ -283,7 +298,17 @@ double get_network_data();
+ void update_hourly_network(struct tm* tm);
+ void update_historical_network(struct tm* tm);
+ void update_daily_bw_data(struct tm* tm);
+-
++int OpenConnections_data( );
++int CacheTierThroughtput_data( );
++int CacheHitRatioDaygraph_data ( );
++int WeeklyBandwidthSavings_data();
++int MediaDeliveryBandwidth_data();
++int DiskThroughput_data( );
++int DiskUsage_data( );
++int NamespaceCounterhtml_data( );
++int Namspace_CHR_data( );
++int CPU_usage_data( );
++int Info_data( ); // GB Delivered, Cache hit Ratio, video delivered
+ /*
+  * Functions defined in dashboard_graphs.cpp file
+  */
+Index: bin/dashboard/sbin/db_jsonutils.h
+===================================================================
+--- bin/dashboard/sbin/db_jsonutils.h	(revision 0)
++++ bin/dashboard/sbin/db_jsonutils.h	(revision 0)
+@@ -0,0 +1,59 @@
++
++#include <stdio.h>
++#include <syslog.h>
++#include "common.h"
++#include "customer.h"
++
++#define MAX_SIZE    5000
++
++typedef enum x_datatype{
++X_INTEGER = 1,
++X_STRING
++}x_datatype;
++
++typedef enum y_datatype{
++Y_INTEGER = 1,
++Y_STRING,
++Y_DOUBLE
++}y_datatype;
++
++
++FILE *jfopen(const char* path_filename,char *mode);
++
++void jfclose(FILE *jfp);
++
++int jopenid(char *buf, int size_of_buf, char *id);
++
++int jcloseid(char *buf);
++
++int appendtobuf(char *buf, char *temp);
++
++int jopendataconfig(char *buf, char *datacfg, int datacfg_val);
++
++int jclosedataconfig(char *buf);
++
++int jopenvalues(char *buf);
++
++int jclosevalues(char *buf);
++
++int jopenlabel(char *buf, char *label);
++
++int jcloselabel(char *buf);
++
++int jnamevalue_pair(char *buf, char *name, char* value);
++
++int jxy(char *buf);
++
++int jxy_intx_inty(char *buf, int *x_data, int *y_data, int index);
++
++int jxy_intx_doubley(char *buf, int *x_data, double *y_data, int index);
++
++int jxy_intx_stry(char *buf, int *x_data, char **y_data, int index);
++
++int jxy_strx_stry(char *buf, char **x_data, char **y_data, int index);
++
++int jxy_strx_doubley(char *buf, char **x_data, double *y_data, int index);
++
++int jxy_strx_inty(char *buf, char **x_data, int *y_data, int index);
++
++
+Index: bin/dashboard/sbin/dashboard_datas.cc
+===================================================================
+--- bin/dashboard/sbin/dashboard_datas.cc	(revision 28106)
++++ bin/dashboard/sbin/dashboard_datas.cc	(working copy)
+@@ -2,12 +2,32 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <pthread.h>
++#include <errno.h>
+ #include <math.h>
+ 
+ #include "nkn_dashboard.h"
+ 
++extern "C"{
++#include "db_jsonutils.h"
++};
++
++#define SZ_OF_FILENAME 100
++#define MAX_SIZE    5000
++
++static char imgpath[40] = "/var/nkn/dashboard/";
+ int sleep_time=10;
+ 
++bool show_network_data = false;
++/*
++ * To create graphs:
++ *      data_source.png
++ *      network_bandwidth.png
++ *      memory_usage.png
++ */
++
++bool show_other = false;
++
++
+ double  global_om_connection_data[MAX_DATA_NUMBER];	 // Needed for Avtive session Graph:   Origin manager ipv4 connection 
+ double  global_om_connection_data_ipv6[MAX_DATA_NUMBER];     // Needed for Avtive session Graph:   Origin manager ipv6 connection 
+ double  global_http_con_data[MAX_DATA_NUMBER];		     // Http ipv4 connection
+@@ -90,24 +110,48 @@ static char dm2_free_block_name[MAX_DISK
+ static char dm2_free_resv_block_name[MAX_DISK][30];
+ static char dm2_block_size_name[MAX_DISK][30];
+ 
++static double get_delta(double thishr, double lasthr)
++{
++        if (thishr >= lasthr) return (thishr - lasthr);
++        return thishr;
++}
++
++inline double get_delta_data(double this_hr_data, double last_hr_data)
++{
++        if (this_hr_data >= last_hr_data) {
++                return this_hr_data - last_hr_data;
++        }
++        return this_hr_data; // restarted
++}
++
+ 
+ /////////////////////////////////////////////////////////
+ // Infinite loop to update/ save data
+ ////////////////////////////////////////////////////////////
+ void * generate_data(void * arg)
+ {
+-	//Initialize the data 
++	//Initialize the data
+ 	initialize_data();
+-	
+ 	while(1)
+ 	{
+ 		pthread_mutex_lock( &mutex1 );
+ 		shm_update_all_counters();
+ 		pthread_mutex_unlock( &mutex1 );
+-		
+ 		if( 0 == sleep_time)
+ 			break; // come out after one time
+ 		sleep(sleep_time);
++		//Add the manipulation here to write to json file
++		OpenConnections_data();
++		CacheTierThroughtput_data();
++		CacheHitRatioDaygraph_data( );
++		WeeklyBandwidthSavings_data();
++		MediaDeliveryBandwidth_data();
++		DiskThroughput_data( );
++		DiskUsage_data( );
++		NamespaceCounterhtml_data( );
++		Namspace_CHR_data( );
++		CPU_usage_data( );
++		Info_data( );
+ 	}
+ 	return NULL;
+ }
+@@ -1352,5 +1396,1514 @@ void update_daily_bw_data(struct tm* tm)
+ 	hr_bw_data_2[HOURS-1].total_bw += total_bw;
+ 	hr_bw_data_2[HOURS-1].cache_bw += total_bw - origin_bw;
+ #endif // 0
+-	return;	
++	return;
++}
++
++int OpenConnections_data()
++{
++    FILE *jfp = NULL;
++    char *jimgname = "data_open_connections.json";
++    char *id = "open connections";
++    char *dataconfig = "refreshinterval";
++    char *label_http = "http connections";
++    char *label_rtsp = "rtsp_connections";
++    char *label_om = "om_connections";
++    char jfilename [SZ_OF_FILENAME]= {0};
++    char buf[MAX_SIZE] = {0};
++    double rtsp_data[X_POINTS_10];
++    double http_data[X_POINTS_10];
++    double om_data[X_POINTS_10];
++    char *label[X_POINTS_10];
++    int err = 0, i = 0, j = 0, ret_bytes = 0;
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    err = jopenid(buf, MAX_SIZE, id);
++    bail_error(err);
++    err = jopendataconfig(buf, dataconfig, sleep_time);
++    bail_error(err);
++
++    for (i = 0; i < X_POINTS_10; i++){
++	label[i] = (char *) malloc(6);
++    }
++
++    for (i = 0, j = MAX_DATA_NUMBER - X_POINTS_10; i < X_POINTS_10, j < MAX_DATA_NUMBER; i++, j++){
++	http_data[i] = global_http_con_data[j] + global_http_con_data_ipv6[j];
++	rtsp_data[i] = global_rtsp_con_data[j];
++	om_data[i] = global_om_connection_data[j] + global_om_connection_data_ipv6[j];
++	memcpy(label[i], time_str[j], 5);
++	label[i][5] = 0;
++    }
++    err = jopenvalues(buf);
++    bail_error(err);
++    err = jopenlabel(buf, label_http);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, http_data, X_POINTS_10);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_rtsp);
++    bail_error(err);
++
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, rtsp_data, X_POINTS_10);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_om);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, om_data, X_POINTS_10);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = jclosedataconfig(buf);
++    bail_error(err);
++    err = jcloseid(buf);
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++    if(ret_bytes <= 0){
++	perror(__func__);
++    }
++    bail_error(err);
++    jfclose(jfp);
++
++    for (i = 0; i < X_POINTS_10; i++){
++	free(label[i]);
++    }
++
++bail:
++    return 0;
++}
++
++
++int CacheTierThroughtput_data()
++{
++    FILE *jfp = NULL;
++    char *jimgname = "data_cache_tier_throughput.json";
++    char *id = "Cache Tier Throughput";
++    char *dataconfig = "refreshinterval";
++    char *label_serve = "Serve(Read)";
++    char *label_promote = "Promote(Write)";
++    char *label_evict = "Evict(Delete)";
++    char jfilename [SZ_OF_FILENAME]= {0};
++    char buf[MAX_SIZE] = {0};
++    int err = 0, ret_bytes = 0;
++    int i,j,num_tier;
++    double read_data[MAX_CACHE_TIER + 1];  // Serve/Read data
++    double promote_data[MAX_CACHE_TIER + 1]; // Promote/Write data
++    double evict_data[MAX_CACHE_TIER + 1]; // Evict/delete data
++    char * label[MAX_CACHE_TIER + 1];
++
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    err = jopenid(buf, MAX_SIZE, id);
++    bail_error(err);
++    err = jopendataconfig(buf, dataconfig, sleep_time);
++    bail_error(err);
++
++    //check how many data tiers we have
++    for(i = 0; i < MAX_CACHE_TIER; i++){
++	if(ctdata[i].flag == 1)
++	    num_tier++;
++    }
++    for(i = 0; i < MAX_CACHE_TIER; i++){
++	label[i] = (char *)malloc(10); // 20 bytes should be larger enough
++	memset(label[i], 0, 10);
++    }
++    j = 0;
++    for (i = 0; i < MAX_CACHE_TIER; i++){
++	if(ctdata[i].flag == 1){//copy this data for graph
++	    read_data[j] = ctdata[i].read_rate[MAX_DATA_NUMBER-1];
++	    promote_data[j] = ctdata[i].write_rate[MAX_DATA_NUMBER-1];
++	    evict_data[j] =  ctdata[i].evict_rate[MAX_DATA_NUMBER-1];
++	    switch(i){
++		case 0:
++		    strcpy(label[j], "RAM");
++		    break;
++		case 1:
++		    strcpy(label[j], "SSD");
++		    break;
++		case 5:
++		    strcpy(label[j], "SAS");
++		    break;
++		case 6:
++		    strcpy(label[j], "SATA");
++		    break;
++		default:
++		    strcpy(label[j], "Unknown");
++		    break;
++	    }//end switch
++	    j++;
++	}//end if
++    }//end for
++
++    err = jopenvalues(buf);
++    bail_error(err);
++    err = jopenlabel(buf, label_serve);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, read_data, 4); //Currently only 4 tiers are supported
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_promote);
++    bail_error(err);
++
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, promote_data, 4);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_evict);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, evict_data, 4);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = jclosedataconfig(buf);
++    bail_error(err);
++    err = jcloseid(buf);
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++    if(ret_bytes <= 0){
++	perror(__func__);
++    }
++    bail_error(err);
++    jfclose(jfp);
++
++    for(i = 0; i < MAX_CACHE_TIER; i++){
++	free(label[i]);
++    }
++
++bail:
++    return err;
++
++}
++
++int WeeklyBandwidthSavings_data()
++{
++
++    FILE *jfp = NULL;
++    char *jimgname = "data_weekly_bw_savings.json";
++    char *id = "Weekly Bandwidth Savings";
++    char *dataconfig = "refreshinterval";
++    char *label_originbw = "Origin Bandwidth";
++    char *label_savedbw = "Saved Bandwidth";
++    char jfilename [SZ_OF_FILENAME]= {0};
++    char buf[MAX_SIZE] = {0};
++    int err = 0, ret_bytes = 0;
++    int i,j;
++    double origin_bw[WEEK];
++    double saved_bw[WEEK];
++    char *label[WEEK];
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    err = jopenid(buf, MAX_SIZE, id);
++    bail_error(err);
++    err = jopendataconfig(buf, dataconfig, sleep_time);
++    bail_error(err);
++
++    for (i = 0; i < WEEK; i++){
++	label[i]= (char *)malloc(10);
++	memset(label[i], 0, 10);
++    }
++
++    for(i = 0; i < WEEK; i++){
++	origin_bw[i] = day_bw_data[i].origin_bw + day_bw_data[i].nfs_bw + day_bw_data[i].tunnel_bw;
++	saved_bw[i] = day_bw_data[i].saved_bw;
++	//convert up to 2 decimal points only
++	origin_bw[i] = (double)((long)(origin_bw[i]* 100))/100;
++	saved_bw[i] = (double)((long)(saved_bw[i]* 100))/100;
++	strcpy(label[i], day_bw_data[i].date);
++    }
++
++    err = jopenvalues(buf);
++    bail_error(err);
++    err = jopenlabel(buf, label_originbw);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, origin_bw, WEEK);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_savedbw);
++    bail_error(err);
++
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, saved_bw, WEEK);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = jclosedataconfig(buf);
++    bail_error(err);
++    err = jcloseid(buf);
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++    if(ret_bytes <= 0){
++	perror(__func__);
++    }
++    bail_error(err);
++    jfclose(jfp);
++
++
++bail:
++
++    //free up memory
++    for (i = 0; i < WEEK; i++){
++	free(label[i]);
++    }
++    return err;
++
++}
++
++
++int  MediaDeliveryBandwidth_data()
++{
++    FILE *jfp = NULL;
++    char *jimgname = "data_media_delivery_bandwidth.json";
++    char *id = "Cache Throughput";
++    char *dataconfig = "refreshinterval";
++    char *label_ram = "RAM";
++    char *label_disk = "Disk";
++    char *label_origin = "Origin";
++    char *label_client_delivery_bw = "Client Delivery BW";
++    char *label_total_delivery_bw = "Total Delivery BW";
++    char jfilename [SZ_OF_FILENAME]= {0};
++    char buf[MAX_SIZE] = {0};
++    int err = 0, ret_bytes = 0;
++    double data_cache[X_POINTS_10]; //This graph will graph the last 10 data points
++    double data_disk[X_POINTS_10];
++    double data_origin[X_POINTS_10];
++    double client_delivery_data[X_POINTS_10]; //This is client delivery data
++    double total_delivery_data[X_POINTS_10];
++    char *label[X_POINTS_10];
++    int i, j;
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    err = jopenid(buf, MAX_SIZE, id);
++    bail_error(err);
++    err = jopendataconfig(buf, dataconfig, sleep_time);
++    bail_error(err);
++
++    for (i = 0; i < X_POINTS_10; i++){
++	label[i]= (char *)malloc(6);
++	memset(label[i], 0 ,6);
++    }
++
++    for ( i = MAX_DATA_NUMBER-1, j = X_POINTS_10 -1; i >= MAX_DATA_NUMBER-X_POINTS_10; i--, j--){
++	data_cache[j] = (cache_rate[i] + rtsp_cache_rate[i]) * 8; // convert data from MBytes to Mbits
++	data_disk[j] = disk_rate[i] * 8;
++	data_origin[j] = (origin_rate[i] + nfs_rate[i] + tunnel_rate[i] + rtsp_origin_rate[i]) * 8;
++	client_delivery_data[j] = data_cache[j] + data_disk[j] + data_origin[j];
++	total_delivery_data[j] = data_cache[j] + data_disk[j] + (data_origin[j] * 2); //Data from origin to MFC is added
++	memcpy(label[j], time_str[i],5);
++	label[j][5] = 0;
++    }
++
++    err = jopenvalues(buf);
++    bail_error(err);
++    err = jopenlabel(buf, label_ram);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, data_cache, X_POINTS_10);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_disk);
++    bail_error(err);
++
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, data_disk, X_POINTS_10);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_origin);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, data_origin, X_POINTS_10);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_client_delivery_bw );
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, client_delivery_data, X_POINTS_10);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_total_delivery_bw );
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, total_delivery_data, X_POINTS_10);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = jclosedataconfig(buf);
++    bail_error(err);
++    err = jcloseid(buf);
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++    if(ret_bytes <= 0){
++	perror(__func__);
++    }
++    jfclose(jfp);
++
++
++bail:
++    for (i = 0; i < X_POINTS_10; i++){
++	free(label[i]);
++    }
++    return 0;
++}
++
++int DiskThroughput_data( )
++{
++    FILE *jfp = NULL;
++    char *jimgname = "data_disk_throughput.json";
++    char *id = "Disk Throughput";
++    char *dataconfig = "refreshinterval";
++    char *label_read = "Read";
++    char *label_write = "Write";
++    char jfilename [SZ_OF_FILENAME]= {0};
++    char buf[MAX_SIZE] = {0};
++    int err = 0, ret_bytes = 0;
++    double graph_read_rate[MAX_DISK];
++    double graph_write_rate[MAX_DISK];
++    char *label[MAX_DISK];
++    int i, j;
++    disk_thput_gr_t disk_thput_gr[MAX_DISK];
++    disk_thput_gr_t temp;
++    int valid_disks = 0;
++
++    if (total_num_cache > MAX_DISK)
++	return 1;
++
++    //copy the information into disk_thput_gr
++    j = 0;
++    for(i = 0; i < total_num_cache; i++){
++	if(dm2_data[i].valid_disk){//don't copy the info for invalid disks
++	    disk_thput_gr[j].raw_read_rate =  dm2_data[i].raw_read_rate[MAX_DATA_NUMBER-1];
++	    disk_thput_gr[j].raw_write_rate = dm2_data[i].raw_write_rate[MAX_DATA_NUMBER-1];
++	    disk_thput_gr[j].provider_type = dm2_data[i].provider_type;
++	    strncpy(disk_thput_gr[j].disk_name, dm2_data[i].disk_name, MAX_DISK_NAME_SIZE);
++	    j++;
++	    valid_disks++;
++	}
++    }
++
++    //sort the data according to type
++    if (valid_disks > 1){
++	for (i = 1; i < valid_disks; i++){
++	    for (j = valid_disks-1; j >= i; --j){
++		//compare the adjacent elements
++		if(disk_thput_gr[j-1].provider_type > disk_thput_gr[j].provider_type){
++		    //swap elements
++		    temp.raw_read_rate = disk_thput_gr[j-1].raw_read_rate;
++		    temp.raw_write_rate = disk_thput_gr[j-1].raw_write_rate;
++		    temp.provider_type = disk_thput_gr[j-1].provider_type;
++		    strncpy(temp.disk_name, disk_thput_gr[j-1].disk_name, MAX_DISK_NAME_SIZE);
++
++		    disk_thput_gr[j-1].raw_read_rate = disk_thput_gr[j].raw_read_rate;
++		    disk_thput_gr[j-1].raw_write_rate = disk_thput_gr[j].raw_write_rate;
++		    disk_thput_gr[j-1].provider_type = disk_thput_gr[j].provider_type;
++		    strncpy(disk_thput_gr[j-1].disk_name, disk_thput_gr[j].disk_name, MAX_DISK_NAME_SIZE);
++
++		    disk_thput_gr[j].raw_read_rate = temp.raw_read_rate;
++		    disk_thput_gr[j].raw_write_rate = temp.raw_write_rate;
++		    disk_thput_gr[j].provider_type = temp.provider_type;
++		    strncpy(disk_thput_gr[j].disk_name, temp.disk_name, MAX_DISK_NAME_SIZE);
++		}//if
++	    }//2nd for
++	}//1st for
++    }//if (valid_disks > 1)
++
++    for(i = 0; i < valid_disks; i++){
++	label[i] = (char *)malloc(20); // 20 bytes should be larger enough
++	memset(label[i], 0, 20);
++	if (disk_thput_gr[i].provider_type == 1) { //strcpy(label[i], "Disk\nSSD");
++	    snprintf(label[i], 20, "%s(SSD)", disk_thput_gr[i].disk_name);}
++	else if (disk_thput_gr[i].provider_type == 5) { //strcpy(label[i], "Disk\nSAS");
++	    snprintf(label[i], 20, "%s(SAS)", disk_thput_gr[i].disk_name); }
++	else if (disk_thput_gr[i].provider_type == 6) { //strcpy(label[i], "Disk\nSATA");
++	    snprintf(label[i], 20, "%s(SATA)", disk_thput_gr[i].disk_name); }
++	else { strncpy(label[i], "(Disk Unknown)", 20); }
++
++	graph_read_rate[i] = disk_thput_gr[i].raw_read_rate * 8; // convert to bits
++	graph_write_rate[i] = disk_thput_gr[i].raw_write_rate * 8; // convert to bits
++    }
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    err = jopenid(buf, MAX_SIZE, id);
++    bail_error(err);
++    err = jopendataconfig(buf, dataconfig, sleep_time);
++    bail_error(err);
++
++    err = jopenvalues(buf);
++    bail_error(err);
++    err = jopenlabel(buf, label_read);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, graph_read_rate, valid_disks);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_write);
++    bail_error(err);
++
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, graph_write_rate, valid_disks);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = jclosedataconfig(buf);
++    bail_error(err);
++    err = jcloseid(buf);
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++    if(ret_bytes <= 0){
++	perror(__func__);
++    }
++    jfclose(jfp);
++
++
++bail:
++        //free memory
++        for (i = 0; i < valid_disks; i++) {
++                free(label[i]);
++        }
++
++        return err;
++
++}
++
++int DiskUsage_data( )
++{
++    FILE *jfp = NULL;
++    char *jimgname = "data_disk_usage.json";
++    char *id = "Disk Usage";
++    char *dataconfig = "refreshinterval";
++    char *label_used_disk = "Used Disk";
++    char *label_free_disk = "Free Disk";
++    char jfilename [SZ_OF_FILENAME]= {0};
++    char buf[MAX_SIZE] = {0};
++    int err = 0, ret_bytes = 0;
++    double fr_disk[MAX_DISK];
++    double fr_resv_disk[MAX_DISK];
++    double used_disk[MAX_DISK];
++    double total_disk[MAX_DISK];
++    char *label[MAX_DISK];
++    disk_usage_gr_t disk_usage_gr[MAX_DISK];
++    disk_usage_gr_t temp;
++    int valid_disks = 0;
++    int i, j;
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    err = jopenid(buf, MAX_SIZE, id);
++    bail_error(err);
++    err = jopendataconfig(buf, dataconfig, sleep_time);
++    bail_error(err);
++
++    if (total_num_cache >  MAX_DISK)
++	return 1;
++
++    //copy the dm2 information into disk_usage_gr_t
++    j = 0;
++    for(i = 0; i < total_num_cache; i++){
++	if(dm2_data[i].valid_disk){//don't copy the info for invalid disks
++	    disk_usage_gr[j].free_blocks = dm2_data[i].free_blocks;
++	    disk_usage_gr[j].free_resv_blocks = dm2_data[i].free_resv_blocks;
++	    disk_usage_gr[j].total_blocks =  dm2_data[i].total_blocks;
++	    disk_usage_gr[j].block_size =  dm2_data[i].block_size;
++	    disk_usage_gr[j].provider_type = dm2_data[i].provider_type;
++	    strncpy(disk_usage_gr[j].disk_name, dm2_data[i].disk_name, MAX_DISK_NAME_SIZE);
++	    j++;
++	    valid_disks++;
++	}//if
++    } //end for
++
++    //sort the data according to type
++    if(valid_disks > 1){
++	for (i = 1; i < valid_disks; i++){
++	    for (j = valid_disks-1; j >= i; --j){
++		//compare the adjacent elements
++		if(disk_usage_gr[j-1].provider_type > disk_usage_gr[j].provider_type){
++		    //swap elements
++		    temp.free_blocks = disk_usage_gr[j-1].free_blocks;
++		    temp.free_resv_blocks = disk_usage_gr[j-1].free_resv_blocks;
++		    temp.total_blocks = disk_usage_gr[j-1].total_blocks;
++		    temp.block_size = disk_usage_gr[j-1].block_size;
++		    temp.provider_type = disk_usage_gr[j-1].provider_type;
++		    strncpy(temp.disk_name,  disk_usage_gr[j-1].disk_name, MAX_DISK_NAME_SIZE);
++
++		    disk_usage_gr[j-1].free_blocks = disk_usage_gr[j].free_blocks;
++		    disk_usage_gr[j-1].free_resv_blocks = disk_usage_gr[j].free_resv_blocks;
++		    disk_usage_gr[j-1].total_blocks = disk_usage_gr[j].total_blocks;
++		    disk_usage_gr[j-1].block_size = disk_usage_gr[j].block_size;
++		    disk_usage_gr[j-1].provider_type = disk_usage_gr[j].provider_type;
++		    strncpy(disk_usage_gr[j-1].disk_name, disk_usage_gr[j].disk_name, MAX_DISK_NAME_SIZE);
++
++		    disk_usage_gr[j].free_blocks = temp.free_blocks;
++		    disk_usage_gr[j].free_resv_blocks = temp.free_resv_blocks;
++		    disk_usage_gr[j].total_blocks = temp.total_blocks;
++		    disk_usage_gr[j].block_size = temp.block_size;
++		    disk_usage_gr[j].provider_type = temp.provider_type;
++		    strncpy(disk_usage_gr[j].disk_name, temp.disk_name, MAX_DISK_NAME_SIZE);
++		}//if
++	    }//2nd for
++	}//1st for
++    }//if(valid_disks > 1)
++
++    for(i = 0; i < valid_disks; i++){
++	label[i] = (char *)malloc(20);
++	memset(label[i], 0, 20);
++	if (disk_usage_gr[i].provider_type == 1) { //strcpy(label[i], "Disk\nSSD");
++	    snprintf(label[i], 20, "%s(SSD)", disk_usage_gr[i].disk_name);}
++	else if (disk_usage_gr[i].provider_type == 5) { //strcpy(label[i], "Disk\nSAS");
++	    snprintf(label[i], 20, "%s(SAS)", disk_usage_gr[i].disk_name);}
++	else if (disk_usage_gr[i].provider_type == 6) { //strcpy(label[i], "Disk\nSATA");
++	    snprintf(label[i], 20, "%s(SATA)", disk_usage_gr[i].disk_name); }
++	else { strncpy(label[i], "(DiskUnknown)", 20); }
++
++	/* convert unit to GBytes/Second */
++	fr_disk[i] = disk_usage_gr[i].free_blocks * disk_usage_gr[i].block_size / 1000; //in GBytes
++	fr_resv_disk[i] = disk_usage_gr[i].free_resv_blocks * disk_usage_gr[i].block_size / 1000;
++	total_disk[i] = disk_usage_gr[i].total_blocks *  disk_usage_gr[i].block_size / 1000;
++	used_disk[i] = total_disk[i] - fr_disk[i];
++	/* make two digits after dot */
++	fr_disk[i] = (double)((int)(fr_disk[i] * 100.0)/ 100.0);
++	fr_resv_disk[i] = (double)((int)(fr_resv_disk[i] * 100.0)/ 100.0);
++	total_disk[i] = (double)((int)(total_disk[i] * 100.0)/ 100.0);
++	used_disk[i] = (double)((int)(used_disk[i] * 100.0)/ 100.0);
++
++	if (used_disk[i] < 0.0) { used_disk[i] = 0.0; }
++	if (fr_disk[i] < 0.0) { fr_disk[i] = 0.0; }
++    }
++
++    err = jopenvalues(buf);
++    bail_error(err);
++    err = jopenlabel(buf, label_used_disk);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, used_disk, valid_disks);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_free_disk);
++    bail_error(err);
++
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, fr_disk, valid_disks);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = jclosedataconfig(buf);
++    bail_error(err);
++    err = jcloseid(buf);
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++    if(ret_bytes <= 0){
++	perror(__func__);
++    }
++    jfclose(jfp);
++
++bail:
++
++    for(i = 0; i < valid_disks; i++){
++	free(label[i]);
++    }
++
++    return err;
++}
++
++int CacheHitRatioDaygraph_data()
++{
++    FILE *jfp = NULL;
++    char *jimgname = "data_ch_ratio_bw.json";
++    char *id = "Global Hourly Cache Hit Ratio for Last 24 Hours";
++    char *dataconfig = "refreshinterval";
++    char *label_cache_hit_ratio = "Cache Hit Ratio";
++    char *label_origin_bw = "Origin BW";
++    char *label_bandwidth_savings = "Bandwidth Savings";
++    char jfilename [SZ_OF_FILENAME]= {0};
++    char buf[MAX_SIZE] = {0};
++    int err = 0, ret_bytes = 0;
++    struct tm * t;
++    int this_hr, last_hr, tnow;
++    time_t now;
++
++    //Create the graph
++    double sum24hrs_CHR[HOURS]; //This graph will show the data for full day, last 24 hours
++    char *label[HOURS];
++    double sum24hrs_cache[HOURS];
++    double sum24hrs_noncache[HOURS];
++    double sum24hrs_total[HOURS];
++    int i, j;
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    err = jopenid(buf, MAX_SIZE, id);
++    bail_error(err);
++    err = jopendataconfig(buf, dataconfig, sleep_time);
++    bail_error(err);
++
++    now = time(NULL);
++    t = localtime(&now);
++    tnow = t->tm_hour;
++
++    for (i=0; i<HOURS; i++) {
++	this_hr = (tnow+i+1)%24;
++	label[i] = (char *)malloc(3);
++	memset(label[i], 0, 3);
++	sprintf(label[i], "%02d", this_hr);
++	sum24hrs_CHR[i] = 0.0;
++	sum24hrs_cache[i] = 0.0;
++	sum24hrs_noncache[i] = 0.0;
++	sum24hrs_total[i] = 0.0;
++    }
++
++    for (i=1; i<HOURS; i++) {
++	this_hr = (tnow+i+1)%24;
++	last_hr = (tnow+i)%24;
++
++	sum24hrs_cache[i] = 0.0;
++	sum24hrs_noncache[i] = 0.0;
++	for (j=0; j<total_ns_data; j++) {
++	    /* Cacheable */
++	    sum24hrs_cache[i] += get_delta_data(ns_data[j].client.out_bytes_disk[this_hr],
++		    ns_data[j].client.out_bytes_disk[last_hr]);
++	    sum24hrs_cache[i] += get_delta_data(ns_data[j].client.out_bytes_ram[this_hr],
++		    ns_data[j].client.out_bytes_ram[last_hr]);
++
++	    /* Non-cacheable */
++	    sum24hrs_noncache[i] += get_delta_data(ns_data[j].client.out_bytes_origin[this_hr],
++		    ns_data[j].client.out_bytes_origin[last_hr]);
++	    sum24hrs_noncache[i] += get_delta_data(ns_data[j].client.out_bytes_tunnel[this_hr],
++		    ns_data[j].client.out_bytes_tunnel[last_hr]);
++	}
++	sum24hrs_total[i] = sum24hrs_cache[i] + sum24hrs_noncache[i];
++	if (sum24hrs_total[i] == 0) {
++	    sum24hrs_CHR[i] = 0.0;
++	}
++	else {
++	    sum24hrs_CHR[i] = 100.0 * sum24hrs_cache[i] / sum24hrs_total[i];
++	}
++	sum24hrs_cache[i] /= 1024.0; // Convert to GBytes
++	sum24hrs_cache[i] = ((int) (100 * sum24hrs_cache[i])) /100.0;
++	sum24hrs_noncache[i] /= 1024.0; // Convert to GBytes
++	sum24hrs_noncache[i] = ((int) (100 * sum24hrs_noncache[i])) /100.0;
++    }
++
++    err = jopenvalues(buf);
++    bail_error(err);
++    err = jopenlabel(buf, label_cache_hit_ratio);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, sum24hrs_CHR, HOURS);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_origin_bw);
++    bail_error(err);
++
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, sum24hrs_noncache, HOURS);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_bandwidth_savings);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, sum24hrs_cache, HOURS);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++
++    err = jclosedataconfig(buf);
++    bail_error(err);
++    err = jcloseid(buf);
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++    if(ret_bytes <= 0){
++	perror(__func__);
++    }
++    bail_error(err);
++    jfclose(jfp);
++
++
++bail:
++
++    for(i = 0; i < HOURS; i++){
++	free(label[i]);
++    }
++
++    return err;
++
++}
++
++int NamespaceCounterhtml_data( )
++{
++
++    FILE *jfp = NULL;
++    char *jimgname = "data_ns_bandwidth.json";
++    char *id = "Namespace-level Last 24 Hours' Average Cache Hit Ratio";
++    char *dataconfig = "refreshinterval";
++    char *label_cache_hit_ratio = "Cache Hit Ratio";
++    char *label_origin_bw = "Origin BW";
++    char *label_bandwidth_savings = "Bandwidth Savings";
++    char jfilename [SZ_OF_FILENAME]= {0};
++    char buf[MAX_SIZE] = {0};
++    int err = 0, ret_bytes = 0;
++    struct tm * t;
++    int this_hr, last_hr, tnow;
++    time_t now;
++    double tot_bw;
++    int display_total_ns_data;
++
++    //Create the graph
++    char *label[MAX_NAMESPACE];
++    double sum24hrs_cache[MAX_NAMESPACE];
++    double sum24hrs_noncache[MAX_NAMESPACE];
++    double sum24hrs_total[MAX_NAMESPACE];
++    double sum24hrs_CHR[MAX_NAMESPACE];
++    int i, j;
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    err = jopenid(buf, MAX_SIZE, id);
++    bail_error(err);
++    err = jopendataconfig(buf, dataconfig, sleep_time);
++    bail_error(err);
++
++    now = time(NULL);
++    t = localtime(&now);
++    tnow = t->tm_hour;
++    /*
++     * Calculate the data.
++     */
++    tot_bw = 0.0;
++
++    for (j=0; j<total_ns_data; j++)
++    {
++	label[j] = ns_data[j].name;
++	sum24hrs_cache[j] = 0.0;
++	sum24hrs_noncache[j] = 0.0;
++	for (i=0; i<HOURS-1; i++) {
++	    this_hr = (tnow+i)%24;
++	    last_hr = (tnow+i+23)%24;
++
++	    /* Cacheable */
++	    sum24hrs_cache[j] += get_delta_data(ns_data[j].client.out_bytes_disk[this_hr],
++		    ns_data[j].client.out_bytes_disk[last_hr]);
++	    sum24hrs_cache[j] += get_delta_data(ns_data[j].client.out_bytes_ram[this_hr],
++		    ns_data[j].client.out_bytes_ram[last_hr]);
++
++	    /* Non-cacheable */
++	    sum24hrs_noncache[j] += get_delta_data(ns_data[j].client.out_bytes_origin[this_hr],
++		    ns_data[j].client.out_bytes_origin[last_hr]);
++	    sum24hrs_noncache[j] += get_delta_data(ns_data[j].client.out_bytes_tunnel[this_hr],
++		    ns_data[j].client.out_bytes_tunnel[last_hr]);
++	}
++	sum24hrs_total[j] = sum24hrs_cache[j] + sum24hrs_noncache[j];
++	if (sum24hrs_total[j] == 0) {
++	    sum24hrs_CHR[j] = 0.0;
++	}
++	else {
++	    sum24hrs_CHR[j] = (int)(100.0 * sum24hrs_cache[j] / sum24hrs_total[j]);
++	}
++	tot_bw += sum24hrs_total[j];
++    }
++
++    for (j=0; j<total_ns_data; j++) {
++	if (tot_bw) {
++	    sum24hrs_cache[j] = (int) (100 * sum24hrs_cache[j] / tot_bw);
++	    sum24hrs_noncache[j] = (int) (100 * sum24hrs_noncache[j] / tot_bw);
++	}
++    }
++    /*
++     * Sort by bandwidth.
++     */
++    for (j=0; j<total_ns_data; j++) {
++	for (i=0; i<total_ns_data-1; i++) {
++	    if (sum24hrs_total[i] < sum24hrs_total[i+1]) {
++		// swap two slots
++		char * ptmp;
++		ptmp = label[i+1];
++		label[i+1]=label[i];
++		label[i]=ptmp;
++
++		double tmp;
++		tmp = sum24hrs_total[i+1];
++		sum24hrs_total[i+1]=sum24hrs_total[i];
++		sum24hrs_total[i]=tmp;
++
++		tmp = sum24hrs_cache[i+1];
++		sum24hrs_cache[i+1]=sum24hrs_cache[i];
++		sum24hrs_cache[i]=tmp;
++		tmp = sum24hrs_noncache[i+1];
++		sum24hrs_noncache[i+1]=sum24hrs_noncache[i];
++		sum24hrs_noncache[i]=tmp;
++
++		tmp = sum24hrs_CHR[i+1];
++		sum24hrs_CHR[i+1]=sum24hrs_CHR[i];
++		sum24hrs_CHR[i]=tmp;
++	    }
++	}
++    }
++    display_total_ns_data = (total_ns_data>30) ? 30 : total_ns_data;
++
++
++    err = jopenvalues(buf);
++    bail_error(err);
++    err = jopenlabel(buf, label_cache_hit_ratio);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, sum24hrs_CHR, display_total_ns_data);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_origin_bw);
++    bail_error(err);
++
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, sum24hrs_noncache, display_total_ns_data);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_bandwidth_savings);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, sum24hrs_cache, display_total_ns_data);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++
++    err = jclosedataconfig(buf);
++    bail_error(err);
++    err = jcloseid(buf);
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++     if(ret_bytes <= 0){
++        perror(__func__);
++    }
++    jfclose(jfp);
++
++
++bail:
++
++    /* chk this later on
++       for(i = 0; i < total_ns_data; i++){
++       free(label[i]);
++       }
++     */
++    return err;
++}
++
++int Namspace_CHR_data()
++{
++    FILE *jfp = NULL;
++    char *jimgname = "data_ns_chr.json";
++    char *id = "Namespace (%s) Hourly Cache Hit Ratio for Last 24 Hours";
++    char *dataconfig = "refreshinterval";
++    char *label_cache_hit_ratio = "Cache Hit Ratio";
++    char *label_origin_bw = "Origin BW";
++    char *label_bandwidth_savings = "Bandwidth Savings";
++    char jfilename [SZ_OF_FILENAME]= {0};
++    char buf[MAX_SIZE] = {0};
++    int err = 0, ret_bytes = 0;
++    struct tm * t;
++    int this_hr, last_hr, tnow, tthis;
++    time_t now;
++    double tot_bw;
++    int display_total_ns_data;
++
++    //Create the graph
++    char *label[HOURS];
++    double sum24hrs_cache[HOURS];
++    double sum24hrs_noncache[HOURS];
++    double sum24hrs_total[HOURS];
++    double sum24hrs_CHR[HOURS];
++    double tot_out_bytes;
++    double tot_out_bytes_ns;
++
++    int i, j, maxj;
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    err = jopenid(buf, MAX_SIZE, id);
++    bail_error(err);
++    err = jopendataconfig(buf, dataconfig, sleep_time);
++    bail_error(err);
++
++    now = time(NULL);
++    t = localtime(&now);
++    tnow = t->tm_hour;
++
++    this_hr = t->tm_hour;
++    last_hr = (t->tm_hour + 23) % 24;
++
++    /*
++     * Calculate the data.
++     */
++    tot_out_bytes = 0.0;
++    maxj = 0;
++    for (j=0; j<total_ns_data; j++)
++    {
++	tot_out_bytes_ns = 0.0;
++	for (i=0; i<HOURS-1; i++) {
++	    this_hr = (tnow+i)%24;
++	    last_hr = (tnow+i+23)%24;
++
++	    /* Cacheable */
++	    tot_out_bytes_ns += get_delta_data(ns_data[j].client.out_bytes_disk[this_hr],
++		    ns_data[j].client.out_bytes_disk[last_hr]);
++	    tot_out_bytes_ns += get_delta_data(ns_data[j].client.out_bytes_ram[this_hr],
++		    ns_data[j].client.out_bytes_ram[last_hr]);
++
++	    /* Non-cacheable */
++	    tot_out_bytes_ns += get_delta_data(ns_data[j].client.out_bytes_origin[this_hr],
++
++		    ns_data[j].client.out_bytes_origin[last_hr]);
++	    tot_out_bytes_ns += get_delta_data(ns_data[j].client.out_bytes_tunnel[this_hr],
++		    ns_data[j].client.out_bytes_tunnel[last_hr]);
++	}
++	if (tot_out_bytes_ns > tot_out_bytes) {
++	    maxj = j;
++	    tot_out_bytes = tot_out_bytes_ns;
++	}
++    }
++
++    for (i=0; i<HOURS; i++) {
++	this_hr = (tnow+i+1)%24;
++	label[i] = (char *)malloc(3);
++	sprintf(label[i], "%02d", this_hr);
++	sum24hrs_CHR[i] = 0.0;
++	sum24hrs_cache[i] = 0.0;
++	sum24hrs_noncache[i] = 0.0;
++    }
++    j = maxj;
++    for (i=1; i<HOURS; i++) {
++	this_hr = (tnow+i+1)%24;
++	last_hr = (tnow+i)%24;
++
++	/* Cacheable */
++	sum24hrs_cache[i] = get_delta_data(ns_data[j].client.out_bytes_disk[this_hr],
++		ns_data[j].client.out_bytes_disk[last_hr]);
++	sum24hrs_cache[i] += get_delta_data(ns_data[j].client.out_bytes_ram[this_hr],
++		ns_data[j].client.out_bytes_ram[last_hr]);
++
++	/* Non-cacheable */
++	sum24hrs_noncache[i] = get_delta_data(ns_data[j].client.out_bytes_origin[this_hr],
++		ns_data[j].client.out_bytes_origin[last_hr]);
++	sum24hrs_noncache[i] += get_delta_data(ns_data[j].client.out_bytes_tunnel[this_hr],
++		ns_data[j].client.out_bytes_tunnel[last_hr]);
++
++	sum24hrs_total[i] = sum24hrs_cache[i] + sum24hrs_noncache[i];
++	if (sum24hrs_total[i] == 0) {
++	    sum24hrs_CHR[i] = 0.0;
++	}
++	else {
++	    sum24hrs_CHR[i] = 100.0 * sum24hrs_cache[i] / sum24hrs_total[i];
++	}
++	sum24hrs_cache[i] /= 1024.0; // Convert to GBytes
++	sum24hrs_cache[i] = ((int) (100 * sum24hrs_cache[i])) /100.0;
++	sum24hrs_noncache[i] /= 1024.0; // Convert to GBytes
++	sum24hrs_noncache[i] = ((int) (100 * sum24hrs_noncache[i])) /100.0;
++    }
++
++    err = jopenvalues(buf);
++    bail_error(err);
++    err = jopenlabel(buf, label_cache_hit_ratio);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, sum24hrs_CHR, display_total_ns_data);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_origin_bw);
++    bail_error(err);
++
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, sum24hrs_noncache, display_total_ns_data);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = jopenlabel(buf, label_bandwidth_savings);
++    bail_error(err);
++    err = jxy(buf);
++    bail_error(err);
++    err = jxy_strx_doubley(buf, label, sum24hrs_cache, display_total_ns_data);
++    bail_error(err);
++    err = jcloselabel(buf);
++    bail_error(err);
++
++
++    err = jclosedataconfig(buf);
++    bail_error(err);
++    err = jcloseid(buf);
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++    if(ret_bytes <= 0){
++	perror(__func__);
++    }
++    jfclose(jfp);
++
++
++bail:
++    for (i=0; i<HOURS; i++) {
++	free(label[i]);
++    }
++
++    return err;
++}
++
++int CPU_usage_data()
++{
++    FILE *jfp = NULL;
++    char *jimgname = "data_average_cpu.json";
++    char *id = "Average CPU Usage";
++    char *dataconfig = "refreshinterval";
++    char jfilename [SZ_OF_FILENAME]= { 0 };
++    char buf[MAX_SIZE] = { 0 };
++    char data_buf[128] = { 0 };
++    int err = 0, ret_bytes = 0;
++    double data_val = g_cpu.avg_cpu;
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    err = jopenid(buf, MAX_SIZE, id);
++    bail_error(err);
++    err = jopendataconfig(buf, dataconfig, sleep_time);
++    bail_error(err);
++
++    err = jopenvalues(buf);
++    bail_error(err);
++    snprintf(data_buf, 128, "%f", data_val);
++    err = appendtobuf(buf, data_buf);
++    bail_error(err);
++
++    err = jclosedataconfig(buf);
++    bail_error(err);
++    err = jcloseid(buf);
++    bail_error(err);
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++    if(ret_bytes <= 0){
++	perror(__func__);
++    }
++    jfclose(jfp);
++
++bail:
++
++    return err;
++}
++
++int Info_data( ) // GB Delivered, Cache hit Ratio, video delivered
++{
++    int i, peaki, ret;
++
++    FILE *jfp = NULL;
++    char *jimgname = "data_info_GB_CHR_OBJ_del.json";
++    char *name1 = "Cumulative since";
++    char *name2 = "GB Delivered";
++    char *name3_1 = "Bytes(Cumulative)";
++    char *name3_2 = "Bytes(Last 24 Hr)";
++    char *name3_3 = "Objects(Cumulative)";
++    char *name3_4 = "Objects(Last 24 Hr)";
++    char *name4_1 = "Cumulative";
++    char *name4_2 = "Last 24 Hour";
++    char name4_3[100] = "Peak Hour";
++    char *name5 = "Objects Delivered";
++    char *dataconfig = "refreshinterval";
++    char jfilename [SZ_OF_FILENAME]= { 0 };
++    char buf[MAX_SIZE] = { 0 };
++    char data_buf[128] = { 0 };
++    int err = 0, ret_bytes = 0;
++
++    double total, save, var1, var2, var3, var4;     //Bytes
++    double bs_rate_cumu = 0.0;      //in bytes
++    double bs_rate_24hr = 0.0;      //in bytes
++    char filename[100];
++    double bytes_rate_24hr = 0.0;
++    double bytes_rate_cumu = 0.0;
++    double trans_rate_24hr = 0.0;
++    double trans_rate_cumu = 0.0;
++    double bs_peak_24hr = 0.0;
++
++    time_t tv;
++    struct tm * tm;
++    struct tm * stime;
++    char timestr[50];
++    time_t now;
++    struct tm * t;
++    int this_hr, last_hr, ahr, last_ahr;
++
++
++    strncpy(jfilename, imgpath, strlen(imgpath));
++    strncat(jfilename, jimgname, strlen(jimgname));
++    jfp = jfopen(jfilename, "w");
++    if(jfp == NULL){
++	return 1;
++    }
++    now = time(NULL);
++    t = localtime(&now);
++    this_hr = t->tm_hour;
++    last_hr = (t->tm_hour + 23) % 24;
++
++    // Calculate bs_rate_cumu
++    bs_rate_cumu = 0.0;
++    if(hr_client_send_tot_bytes[this_hr] > 0){
++	bs_rate_cumu = 100.00 *
++	    (hr_client_send_tot_bytes[this_hr] -
++	     hr_origin_recv_tot_bytes[this_hr]) /
++	    hr_client_send_tot_bytes[this_hr];
++	if (bs_rate_cumu > 100) bs_rate_cumu = 100.0;
++    }
++    else if(hr_client_send_tot_bytes[last_hr] > 0){
++	/* chance at the time clock just changed */
++	bs_rate_cumu = 100.00 *
++	    (hr_client_send_tot_bytes[last_hr] -
++	     hr_origin_recv_tot_bytes[last_hr]) /
++	    hr_client_send_tot_bytes[last_hr];
++	if (bs_rate_cumu > 100) bs_rate_cumu = 100.0;
++    }
++    // Calculate bs_rate_24hr
++    // Calculate bs_peak_24hr
++    total = save = 0.0;
++    bs_peak_24hr = 0.0;
++    bs_rate_24hr = 0.0;
++    var4 = 0.0;
++    for (i=0, peaki=0; i<HOURS-1; i++) {
++	last_ahr = (this_hr + 1 + i) %24;
++	ahr = (this_hr + 2 + i) % 24;
++	var1 = get_delta(hr_client_send_tot_bytes[ahr],
++		hr_client_send_tot_bytes[last_ahr]);
++	var2 = get_delta(hr_origin_recv_tot_bytes[ahr],
++		hr_origin_recv_tot_bytes[last_ahr]);
++	total += var1;
++	save += var1 - var2;
++	if (var1>var4) {
++	    var4 = var1;
++	    var3 = 100 * (var1 - var2) / var1;
++	    if (var3 > 100.0) var3 = 100.0;
++	    bs_peak_24hr = var3;
++	    peaki = i;
++	}
++    }
++    if (total > 0) {
++	bs_rate_24hr = 100.0 * save / total;
++	if (bs_rate_24hr > 100) bs_rate_24hr = 100.0;
++    }
++
++    // Calculate trans_rate_cumu
++    trans_rate_cumu = 0.0;
++    if(tot_video_delivered > 0){
++	trans_rate_cumu = 100.00 * tot_video_delivered_with_hit / tot_video_delivered;
++	if (trans_rate_cumu > 100) trans_rate_cumu = 100.0;
++    }        // Calculate trans_rate_24hr
++    total = save = 0.0;
++    trans_rate_24hr = 0.0;
++    for (i=0; i<HOURS-1; i++) {
++	last_ahr = (this_hr + 1 + i) %24;
++	ahr = (this_hr + 2 + i) % 24;
++	var1 = get_delta(hr_tot_video_delivered[ahr],
++		hr_tot_video_delivered[last_ahr]);
++	var2 = get_delta(hr_tot_video_delivered_with_hit[ahr],
++		hr_tot_video_delivered_with_hit[last_ahr]);
++	total += var1;
++	save += var2;
++    }
++    if (total > 0) {
++	trans_rate_24hr = 100.0 * save / total;
++	if (trans_rate_24hr > 100) trans_rate_24hr = 100.0;
++    }
++
++    // Calculate bytes_rate_cumu
++    bytes_rate_cumu = 0.0;
++    if (hr_tot_client_send[this_hr] > 0) {
++	bytes_rate_cumu = 100.0 *
++	    hr_tot_client_send_from_bm_or_dm[this_hr] /
++	    hr_tot_client_send[this_hr];
++	if (bytes_rate_cumu > 100) bytes_rate_cumu = 100.0;
++    }
++    else if (hr_tot_client_send[last_hr] > 0) {
++	/* chance at the time clock just changed */
++	bytes_rate_cumu = 100.0 *
++	    hr_tot_client_send_from_bm_or_dm[last_hr] /
++	    hr_tot_client_send[last_hr];
++	if (bytes_rate_cumu > 100) bytes_rate_cumu = 100.0;
++    }
++    // Calculate bytes_rate_24hr
++    total = save = 0.0;
++    bytes_rate_24hr = 0.0;
++    for (i=0; i<HOURS-1; i++) {
++	last_ahr = (this_hr + 1 + i) %24;
++	ahr = (this_hr + 2 + i) % 24;
++	var1 = get_delta(hr_tot_client_send[ahr],
++		hr_tot_client_send[last_ahr]);
++	var2 = get_delta(hr_tot_client_send_from_bm_or_dm[ahr],
++		hr_tot_client_send_from_bm_or_dm[last_ahr]);
++	total += var1;
++	save += var2;
++    }
++    if (total > 0) {
++	bytes_rate_24hr = 100.0 * save / total;
++	if (bytes_rate_24hr > 100) bytes_rate_24hr = 100.0;
++    }
++
++    //find time in the desired format
++    stime = localtime((time_t *)&nvsd_uptime_since);
++    strftime(timestr, 50, "%a %b %d %Y, %H:%M:%S", stime);
++
++    err = appendtobuf(buf, "{");
++    bail_error(err);
++    err = jnamevalue_pair(buf, name1, timestr);
++    bail_error(err);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    snprintf(data_buf, 128, "%0.2f", tot_gb_delivered);
++    err = jnamevalue_pair(buf, name2, data_buf);
++    bail_error(err);
++    memset(buf, 128, 0);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++    err = appendtobuf(buf, "\"Cache Hit Ratio\": {");
++    bail_error(err);
++
++    snprintf(data_buf, 128, "%0.0f%%", bytes_rate_cumu);
++    err = jnamevalue_pair(buf, name3_1, data_buf);
++    bail_error(err);
++    memset(buf, 128, 0);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++
++    snprintf(data_buf, 128, "%0.0f%%", bytes_rate_24hr);
++    err = jnamevalue_pair(buf, name3_2, data_buf);
++    bail_error(err);
++    memset(buf, 128, 0);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++
++    snprintf(data_buf, 128, "%0.0f%%", trans_rate_cumu);
++    err = jnamevalue_pair(buf, name3_3, data_buf);
++    bail_error(err);
++    memset(buf, 128, 0);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++
++    snprintf(data_buf, 128, "%0.0f%%", trans_rate_24hr);
++    err = jnamevalue_pair(buf, name3_4, data_buf);
++    bail_error(err);
++    memset(buf, 128, 0);
++
++    err = appendtobuf(buf, "},");
++    bail_error(err);
++
++    err = appendtobuf(buf, "\"Bandwidth Savings \": {");
++    bail_error(err);
++
++    snprintf(data_buf, 128, "%0.0f%%", bs_rate_cumu);
++    err = jnamevalue_pair(buf, name4_1, data_buf);
++    bail_error(err);
++    memset(buf, 128, 0);
++    err = appendtobuf(buf, ",");
++    bail_error(err);
++
++    snprintf(data_buf, 128, "%0.0f%%", bs_rate_24hr);
++    err = jnamevalue_pair(buf, name4_2, data_buf);
++    bail_error(err);
++    memset(buf, 128, 0);
++    err = appendtobuf(buf, ",");
++
++    snprintf(data_buf, 128, "(%d%s)",peaki % 12, (peaki<12)?"AM":"PM");
++    strncat(name4_3, data_buf, 100);
++    memset(buf, 128, 0);
++    snprintf(data_buf, 128, "%0.0f", bs_peak_24hr);
++    err = jnamevalue_pair(buf, name4_3, data_buf);
++    bail_error(err);
++    memset(buf, 128, 0);
++
++    err = appendtobuf(buf, "},");
++    bail_error(err);
++
++    snprintf(data_buf, 128, "%ld", tot_video_delivered);
++    err = jnamevalue_pair(buf, name5, data_buf);
++    bail_error(err);
++    err = appendtobuf(buf, "}");
++    bail_error(err);
++
++    ret_bytes = fwrite(buf, 1, MAX_SIZE, jfp);
++    if(ret_bytes <= 0){
++	perror(__func__);
++    }
++    jfclose(jfp);
++
++
++bail :
++    return err;
++}
++
++#if 0
++int data_cache_hit_ratio_daygraph( )
++{
++//significance of the below part..??
++  FILE * fp;
++        int i, j;
++        char d_filename[256];
++        char* f1 = "Hours           :";
++        char* f2 = "Cache BW(GBytes):";
++        char* f3 = "Total BW(GBytes):";
++        char* f4 = "Cache Hit Ratio :";
++
++        sprintf(d_filename, "%scache_hit_ratio.txt", imgpath);
++        fp = fopen(d_filename, "w");
++        if(!fp){
++                printf("unable to open file :%s\n", d_filename);
++                return;
++        }
++
++        fprintf(fp, "%s", f1);
++        for (i = 0; i < HOURS; i++) { fprintf(fp, " %s ", hr_bw_data[i].hrstr);}
++        fprintf(fp, "\n");
++
++        fprintf(fp,  "%s", f2);
++        for (i = 0; i < HOURS; i++) { fprintf(fp, " %.2f ", hr_bw_data[i].cache_bw);}
++        fprintf(fp, "\n");
++
++        fprintf(fp,  "%s", f3);
++        for (i = 0; i < HOURS; i++) { fprintf(fp, " %.2f ", hr_bw_data[i].total_bw);}
++        fprintf(fp, "\n");
++
++        fprintf(fp,  "%s", f4);
++        for (i = 0; i < HOURS; i++) { fprintf(fp, " %.2f ", hr_bw_data[i].ch_ratio); }
++        fprintf(fp, "\n");
++
++        fclose(fp);
++
++ //Create the graph
++        double sum24hrs_CHR[HOURS]; //This graph will show the data for full day, last 24 hours
++        char *labels[HOURS];
++        double sum24hrs_cache[HOURS];
++        double sum24hrs_noncache[HOURS];
++        double sum24hrs_total[HOURS];
++
++
++
++
++
++
+ }
++#endif
+Index: bin/dashboard/sbin/Makefile
+===================================================================
+--- bin/dashboard/sbin/Makefile	(revision 28106)
++++ bin/dashboard/sbin/Makefile	(working copy)
+@@ -7,9 +7,10 @@ PROG_INSTALL_DIR=sbin
+ PROG=nkn_dashboard
+ 
+ SRCS= \
++  db_jsonutils.c \
+   dashboard_datas.cc \
+-  dashboard_graphs.cc \
+   nkn_dashboard.cc \
++# dashboard_graphs.cc \
+ 
+ # The "-Wshadow" options causes warnings from ../include/*.h,
+ # so we have to specify the -W options we want ourselves.
+@@ -29,7 +30,10 @@ MY_W_DEFINES= \
+ CXXFLAGS= $(MY_W_DEFINES) -I../../../thirdparty/lib/chartdirector/include -I../../../include ${BUILD_EXTRA_CFLAGS}
+ LDFLAGS = ../../../thirdparty/lib/chartdirector/libchartdir.so.5.0.0 
+ LDFLAGS+= -lpthread 
+-LDADD = ${BUILD_EXTRA_LDADD}
++LDADD= \
++	${PROD_BUILD_OUTPUT_DIR}/${INSTALL_TREE}/${LIB_DIR}/libcommon/libcommon.a \
++	${PROD_BUILD_OUTPUT_DIR}/${INSTALL_TREE}/${LIB_DIR}/libtc_mt/libtc_mt.a \
++	${BUILD_EXTRA_LDADD}
+ 
+ ifeq (${BUILD_GCOV}, 1)
+         CXXFLAGS += -fprofile-arcs -ftest-coverage
+Index: thirdparty/lib/dojo/Makefile
+===================================================================
+--- thirdparty/lib/dojo/Makefile	(revision 0)
++++ thirdparty/lib/dojo/Makefile	(revision 0)
+@@ -0,0 +1,19 @@
++include ${PROD_TREE_ROOT}/src/mk/common.mk
++	
++FILE_DIR_TARGET=/opt/tms/lib/web/content/js
++FILES_INSTALL_DIR=${PROD_INSTALL_OUTPUT_DIR}/${INSTALL_TREE}/${FILE_DIR_TARGET}
++
++INSTALL_DIRECTIVES= \
++	${SYS_INSTALL_DIR_dojo_dir} \
++	${SYS_INSTALL_TGZ_dojo} \
++
++SYS_INSTALL_DIR_dojo_dir="dir 0755 root root ${FILE_DIR_TARGET}"
++SYS_INSTALL_TGZ_dojo="tar-gz dojo-release-1.8.0.tar.gz ${FILE_DIR_TARGET}"
++
++include ${PROD_TREE_ROOT}/src/mk/files_adv.mk
++
++
++DO_FILES_POST_INSTALL=\
++		      cmd="chown -R root:root ${FILES_INSTALL_DIR}"; \
++		      echo "${cmd}"; \
++		      $${cmd} || exit 1; 
+Index: thirdparty/lib/Makefile
+===================================================================
+--- thirdparty/lib/Makefile	(revision 28106)
++++ thirdparty/lib/Makefile	(working copy)
+@@ -6,6 +6,7 @@ include ${PROD_CUSTOMER_ROOT}/nokeena/sr
+ SUBDIRS= \
+   ketama \
+   stack \
++  dojo \
+ 

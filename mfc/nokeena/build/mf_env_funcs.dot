@@ -1,0 +1,598 @@
+#!/bin/sh
+# Configure environment variables needed to build MediaFlowController (MFC).
+#
+#### TBD ####
+# Need to use a loop like this when accessing svn, because
+# sometimes it fails, probably when there is a brief
+# network outage or if the SVN server refuses connections
+# temporarily (because of load to high???)
+#  while true ; do
+#    svn log -r ${THIS_REV} ${SVN_URL_FULL} > ${OUT_FILE1}
+#    RV=${?}
+#    LINES=`cat ${OUT_FILE1} | wc -l`
+#    [ ${LINES} -ne 0 ] && break
+#    RETRY=`expr ${RETRY} + 1`
+#    if [ ${RETRY} -gt 10 ] ; then
+#      echo Failed ${RV} >&2
+#      break
+#    fi
+#    echo Problem ${RV} >&2
+#    sleep ${RETRY}
+#    echo Retry svn log -r ${THIS_REV} >&2
+#  done
+
+function Look_For_Customer_Root()
+{
+  # Look for known directory pattern that shows that we are at the root of
+  # a MFx source tree.
+  # When found set PROD_PRODUCT (and PROD_CUSTOMER_ROOT) to match and return 0.
+  if [ ! -z "${PROD_PRODUCT}" ] ; then
+    export PROD_PRODUCT
+    export PROD_PRODUCT_LC=`echo ${PROD_PRODUCT} | tr '[A-Z]' '[a-z]'`
+    Look_For_Product_Customer_Root ${PROD_PRODUCT}
+    RV=${?}
+    return ${RV}
+  fi
+  for i in nokeena juniper
+  do
+    Look_For_Product_Customer_Root ${i}
+    RV=${?}
+    [ ${RV} -ne 0 ] && continue
+    export PROD_PRODUCT=${i}
+    export PROD_PRODUCT_LC=${i}
+    return 0
+  done
+  return 1
+}
+
+function Look_For_Product_Customer_Root()
+{
+  # Look for known directory pattern that shows that we are at the root of
+  # the MFx source tree as specified by the first parameter.
+  #  When found set PROD_CUSTOMER_ROOT to it and return 0.
+  MATCH=${1}/src/mk/build_settings.dot
+  SAVE1_DIR=`pwd`
+  TRY_DIR=
+  COUNT=0
+  while true; do
+    COUNT=`expr ${COUNT} + 1`
+    if [ ${COUNT} -gt 10 ] ; then
+      #echo Source tree not found
+      break
+    fi
+    if [ -f ${TRY_DIR}${MATCH} ] ; then
+      ############################################# CD ###
+      cd ./${TRY_DIR}
+      export PROD_CUSTOMER_ROOT=`pwd`
+      echo Setting PROD_CUSTOMER_ROOT="${PROD_CUSTOMER_ROOT}"
+      cd ${SAVE1_DIR}
+      return 0
+    fi
+    TRY_DIR=../${TRY_DIR}
+    if [ ! -d ${TRY_DIR} ] ; then
+      #echo Source tree not found
+      break
+    fi
+  done
+  ############################################# CD ###
+  cd ${SAVE1_DIR}
+  return 1
+}
+
+function Get_Env_Settings_From_File()
+{
+  # Look for environment settings in current directory and above.
+  SAVE2_DIR=`pwd`
+  LOOK_DIR=
+  COUNT=0
+  while true; do
+    COUNT=`expr ${COUNT} + 1`
+    if [ ${COUNT} -gt 10 ] ; then
+      echo Environment setting file not found
+      Look_For_Customer_Root ${SAVE2_DIR}
+      break
+    fi
+    if [ -f ${LOOK_DIR}:env.sh ] ; then
+      if [ -z "${PROD_CUSTOMER_ROOT}" ] ; then
+        Look_For_Customer_Root ${SAVE2_DIR}
+      fi
+      echo Using ${LOOK_DIR}:env.sh
+      . ${LOOK_DIR}:env.sh
+      break
+    fi
+    LOOK_DIR=../${LOOK_DIR}
+    if [ ! -d ${LOOK_DIR} ] ; then
+      echo Environment setting file not found
+      Look_For_Customer_Root ${SAVE2_DIR}
+      break
+    fi
+  done
+  ############################################# CD ###
+  cd ${SAVE2_DIR}
+  return
+}
+
+# Make sure the following are set and valid:
+# PROD_CUSTOMER_ROOT
+# PROD_OUTPUT_ROOT
+#
+function Validate_PROD()
+{
+  M=`hostname`.`domainname`
+  echo Machine name ${M}
+  case ${M} in
+  cmbu-build01.englab.juniper.net) OLD_STYLE_DEFAULTS=yes ;;
+  cmbu-build02.englab.juniper.net) OLD_STYLE_DEFAULTS=yes ;;
+  cmbu-build03.englab.juniper.net) OLD_STYLE_DEFAULTS=yes ;;
+  cmbu-build04.englab.juniper.net) OLD_STYLE_DEFAULTS=yes ;;
+  *) OLD_STYLE_DEFAULTS=no ;;
+  esac
+  # Validate PROD_CUSTOMER_ROOT
+  if [ -z "${PROD_CUSTOMER_ROOT}" ] ; then
+    echo ${PROD_CUSTOMER_ROOT} not set
+    if [ "${OLD_STYLE_DEFAULTS}" = "no" ] ; then
+      echo PROD_CUSTOMER_ROOT not set, cannot build.
+      exit 1
+    fi
+  elif [ ! -d "${PROD_CUSTOMER_ROOT}" ] ; then
+    echo no such PROD_CUSTOMER_ROOT ${PROD_CUSTOMER_ROOT}
+    exit 1
+  fi
+  # Validate PROD_OUTPUT_ROOT
+  if [ -z "${PROD_OUTPUT_ROOT}" ] ; then
+    if [ "${OLD_STYLE_DEFAULTS}" = "no" ] ; then
+      echo PROD_OUTPUT_ROOT not set, cannot build.
+      exit 1
+    fi
+  elif [ ! -d "${PROD_OUTPUT_ROOT}" ] ; then
+    echo no such PROD_OUTPUT_ROOT ${PROD_OUTPUT_ROOT}
+    exit 1
+  fi
+}
+
+# Set PROD_* and NKN_* environent variables.
+# Always sets:
+###############################   PROD_PRODUCT=nokeena
+#   PROD_TARGET_ARCH=X86_64
+#   PROD_TARGET_HOST=X86_64
+# Sets if not already set:
+#   REAL_USER
+#   NKN_BUILD_HOST_USER=
+#   NKN_BUILD_TYPE
+#   BUILD_LOG_DIR
+function Set_Defaults()
+{
+  export PROD_TARGET_ARCH=X86_64
+  export PROD_TARGET_HOST=X86_64
+  if [ "_${REAL_USER}" = "_" ] ; then
+    if [ "${USER}" != "root" ] ; then
+      export REAL_USER=${USER}
+    else
+      if [ "_${SUDO_USER}" != "_" ] ; then
+        export REAL_USER=${SUDO_USER}
+      else
+        export REAL_USER=unknown-user
+      fi
+    fi
+  fi
+  # When not set, use the defaults.
+  [ "_${NKN_BUILD_HOST_USER}" = "_" ] && export NKN_BUILD_HOST_USER=${REAL_USER}
+  [ "_${NKN_BUILD_TYPE}"      = "_" ] && export NKN_BUILD_TYPE=dev
+  # NOTE:
+  # Only on old style build machines will PROD_CUSTOMER_ROOT or
+  # PROD_OUTPUT_ROOT not be set at this time.
+  if [ -z "${PROD_CUSTOMER_ROOT}" ] ; then
+    export PROD_CUSTOMER_ROOT=${HOME}/samara/trunk
+  fi
+  if [ -z "${PROD_OUTPUT_ROOT}" ] ; then
+    case `hostname`.`domainname` in
+    cmbu-build01.englab.juniper.net) DEFAULT_OUT=/b1/out3 ;;
+    cmbu-build02.englab.juniper.net) DEFAULT_OUT=/b2/out3 ;;
+    cmbu-build03.englab.juniper.net) DEFAULT_OUT=/b3/out3 ;;
+    cmbu-build04.englab.juniper.net) DEFAULT_OUT=/b4/out3 ;;
+    *) DEFAULT_OUT=/tmp/out ;;
+    esac
+    export PROD_OUTPUT_ROOT=${DEFAULT_OUT}/${USER}/output
+  fi
+  if [ -z "${BUILD_LOG_DIR}" ] ; then
+    BUILD_LOG_DIR=${PROD_OUTPUT_ROOT}/log
+  fi
+  export BUILD_LOG_DIR
+  if [ ! -d "${BUILD_LOG_DIR}" ] ; then
+    echo mkdir -p "${BUILD_LOG_DIR}"
+    mkdir -p "${BUILD_LOG_DIR}"
+    if [ ! -d "${BUILD_LOG_DIR}" ] ; then
+      echo Error, cannot create directory "${BUILD_LOG_DIR}"
+      exit 1
+    fi
+  fi
+  export BUILD_LOG_DIR
+  if [ "_${LOG_FILE}"   = "_" ] ; then
+    export LOG_FILE="${BUILD_LOG_DIR}"/build-log.txt
+    [ ! -d "${BUILD_LOG_DIR}" ] && mkdir -p "${BUILD_LOG_DIR}"
+    rm -f ${LOG_FILE}
+  fi
+  return
+}
+
+# The function Validate_PROD_TREE_ROOT_From_Source_Tree() sets PROD_TREE_ROOT
+# if it is not already set.  To do this, PROD_CUSTOMER_ROOT must be set.
+# Also sets SAMARA_SVN_REV  and SAMARA_SVN_BRANCH from build_settings.dot.
+function Validate_PROD_TREE_ROOT_From_Source_Tree()
+{
+  SAVE3_DIR=`pwd`
+  if [ -z "${PROD_TREE_ROOT}" ] ; then
+    # The script set-mf-PROD_TREE_ROOT.sh sets:
+    #   PROD_TREE_ROOT
+    #   SAMARA_SVN_REV
+    #   SAMARA_SVN_BRANCH
+    . ${MY_DIR}/set-mf-PROD_TREE_ROOT.sh
+    # Verify build settings.
+    if [ -z "${PROD_TREE_ROOT}" ] ; then
+      echo Unable to set PROD_TREE_ROOT automatically.
+      exit 1
+    fi
+    case "${PROD_TREE_ROOT}" in
+    unknown*)
+      echo Cannot build PROD_CUSTOMER_ROOT=${PROD_CUSTOMER_ROOT} on this build machine.
+      echo ${PROD_TREE_ROOT}
+      exit 1
+      ;;
+    esac
+    echo PROD_TREE_ROOT=${PROD_TREE_ROOT} '# Automatically Set#'
+    if [ ! -d ${PROD_TREE_ROOT} ] ; then
+      echo Automatically set PROD_TREE_ROOT=${PROD_TREE_ROOT} not set to valid directory
+      exit 1
+    fi
+  else
+    SAMARA_SVN_REV=`cat ${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT}/src/mk/build_settings.dot \
+      | grep SAMARA_SVN_REV= | cut -f2 -d=`
+    SAMARA_SVN_BRANCH=`cat ${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT}/src/mk/build_settings.dot \
+      | grep SAMARA_SVN_BRANCH= | cut -f2 -d=`
+  fi
+  if [ ! -d ${PROD_TREE_ROOT} ] ; then
+    echo PROD_TREE_ROOT=${PROD_TREE_ROOT} not set to valid directory
+    exit 1
+  fi
+  if [ _${STANDALONE} = "_no" ] ; then
+  # Verify PROD_TREE_ROOT setting.
+  # ----------------------------------------------------------
+  ############################################# CD ###
+  cd ${PROD_TREE_ROOT}
+  FOUND_URL=`svn ${SVN_USERNAME_OPT} ${SVN_PASSWORD_OPT} --no-auth-cache --non-interactive info \
+    | grep ^URL: | cut -f2 -d' '`
+  FOUND_REV=`svn ${SVN_USERNAME_OPT} ${SVN_PASSWORD_OPT} --no-auth-cache --non-interactive info \
+    | grep '^Last Changed Rev:' | cut -f4 -d' '`
+  if [ -z "${FOUND_URL}" ] ; then
+    echo Error, PROD_TREE_ROOT=${PROD_TREE_ROOT} does not match a checked out source tree.
+    exit 1
+  fi
+  case ${SAMARA_SVN_REV} in
+  ""|head|top|latest|current)
+    ;;
+  *)
+    if [ "${FOUND_REV}" != "${SAMARA_SVN_REV}" ] ; then
+      echo Error, This is not the required Samara svn revision
+      echo PROD_TREE_ROOT=${PROD_TREE_ROOT}
+      echo Required rev: ${SAMARA_SVN_REV}
+      if [ "_${SAMARA_SVN_BRANCH}" != "_" -a "_${SAMARA_SVN_BRANCH}" != "_current" ] ; then
+        echo Required branch: ${SAMARA_SVN_BRANCH}
+      fi
+      echo Found rev:::: ${FOUND_REV}
+      exit 1
+    fi
+    ;;
+  esac
+  ############################################# CD ###
+  fi
+  cd ${SAVE3_DIR}
+  return
+}
+
+# Set NKN_* environent variables based on the source tree.
+# Always sets:
+#   NKN_BUILD_SCM_INFO_SHORT
+#   NKN_BUILD_SCM_INFO
+# Sets if not already set:
+#   NKN_BUILD_PROD_RELEASE
+#   NKN_BUILD_ID
+#   NKN_BUILD_NUMBER
+# Sets __JUNIPER_DEV_BUILD__ when NKN_BUILD_TYPE=dev
+# When VERBOSE=yes, prints to stdout the output from "svn status".
+# When SVN_STATUS_FAIL=yes, will exit when "svn status" printed anything out.
+function Set_NKN_Env_From_Source_Tree()
+{
+    if [ _${STANDALONE} = "_yes" ] ; then
+      SAVE4_DIR=`pwd`
+      cd ${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT}/src
+      THIS_RELEASE_VER=`cat mk/build_settings.dot | grep RELEASE_VER= | cut -f2 -d=`
+      export NKN_BUILD_PROD_RELEASE="${THIS_RELEASE_VER}"
+      export NKN_BUILD_ID="000000_000+0-nobody"
+      export NKN_BUILD_NUMBER="000000"
+      export NKN_BUILD_SCM_INFO_SHORT="000000+0[000000]_000+0[000]"
+      export NKN_BUILD_SCM_INFO="000000+0[000000]:svn://no-svn-host/nkn/appliance/trunk/nokeena/src:/user/xxx/builds/samara/trunk/nokeena/src___000+0[000]:svn://no-svn-host/thirdpartyall/samara/current/tree:/user/xxx/samaraDist/current/tree"
+      cd "${SAVE4_DIR}"
+      return
+    fi
+    # 1: Do "svn status" to check the state of the source tree.
+    # 2: Get the RELEASE_VER string from
+    #    ${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT}/src/mk/build_settings.dot
+    ERROR_STRING=
+    SAVE4_DIR=`pwd`
+    if [ ! -d ${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT}/src ] ; then
+        ERROR_STRING="Directory not found PROD_CUSTOMER_ROOT/PROD_PRODUCT/src=${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT}/src"
+        return
+    fi
+    if [ -z "${PROD_TREE_ROOT}" ] ; then
+      # The script set-mf-PROD_TREE_ROOT.sh sets:
+      #   PROD_TREE_ROOT
+      #   SAMARA_SVN_REV
+      #   SAMARA_SVN_BRANCH
+      . ${MY_DIR}/set-mf-PROD_TREE_ROOT.sh
+      # Verify build settings.
+      if [ -z "${PROD_TREE_ROOT}" ] ; then
+        ERROR_STRING="Unable to set PROD_TREE_ROOT automatically"
+        return
+      fi
+      case "${PROD_TREE_ROOT}" in
+      unknown*)
+        ERROR_STRING="Cannot build with PROD_CUSTOMER_ROOT=${PROD_CUSTOMER_ROOT} on this build machine"
+        return
+        ;;
+      esac
+      if [ ! -d ${PROD_TREE_ROOT} ] ; then
+        ERROR_STRING="Automatically set PROD_TREE_ROOT=${PROD_TREE_ROOT} not set to valid directory"
+        return
+      fi
+    fi
+    if [ ! -d ${PROD_TREE_ROOT} ] ; then
+      ERROR_STRING="Directory not found PROD_TREE_ROOT=${PROD_TREE_ROOT}"
+      return
+    fi
+    ############################################# CD ###
+    cd ${PROD_TREE_ROOT}
+    [ ! -d "${BUILD_LOG_DIR}" ] && mkdir -p "${BUILD_LOG_DIR}"
+    TMP_FILE_T1=${BUILD_LOG_DIR}/tmp-file-v1.txt
+    TMP_FILE_T2=${BUILD_LOG_DIR}/tmp-file-v2.txt
+    TMP_FILE_T3=${BUILD_LOG_DIR}/tmp-file-v3.txt
+    # SVN_CMD info
+    svn ${SVN_USERNAME_OPT} ${SVN_PASSWORD_OPT} --no-auth-cache --non-interactive info > ${TMP_FILE_T1} 2>&1
+    REVISION_T=`grep "Last Changed Rev:" ${TMP_FILE_T1} | cut -f2 -d:  | cut -c2-`
+    REPO_T=`grep "^URL:" ${TMP_FILE_T1} | cut -f2- -d:  | cut -c2-`
+    BR_T=`dirname ${REPO_T}`
+    BR_T=`basename ${BR_T}`
+    if [ "${BR_T}" = "current" ] ; then
+        BR_T=
+    else
+        BR_T="${BR_T}-"
+    fi
+    
+    OD_T=
+    # SVN_CMD info
+    svn ${SVN_USERNAME_OPT} ${SVN_PASSWORD_OPT} --no-auth-cache --non-interactive info ${REPO_T} > ${TMP_FILE_T2} 2>&1
+    REVISION_2T=`grep "Last Changed Rev:" ${TMP_FILE_T2} | cut -f2 -d:  | cut -c2-`
+    if [ "_${REVISION_2T}" = "_" ] ; then
+        efVprint WARNING: Failed to get info from ${REPO_T}, trying again as build user.
+        # SVN_CMD info
+        svn --username build --password buildbuild --no-auth-cache --non-interactive info ${REPO_T} > ${TMP_FILE_T2} 2>&1
+        REVISION_2T=`grep "Last Changed Rev:" ${TMP_FILE_T2} | cut -f2 -d:  | cut -c2-`
+    fi
+    if [ "_${REVISION_2T}" = "_" ] ; then
+        efVprint WARNING: Failed to get revision info from ${REPO_T}
+        OD_T="[${REVISION_T}]"
+    else
+        [ ${REVISION_T} -ne ${REVISION_2T} ] && OD_T="[${REVISION_2T}]"
+    fi
+    efVprint REVISION_T=${REVISION_T}
+    efVprint REVISION_2T=${REVISION_2T}
+    efVprint OD_T=${OD_T}
+
+    # SVN_CMD status
+    svn ${SVN_USERNAME_OPT} ${SVN_PASSWORD_OPT} --no-auth-cache --non-interactive status > ${TMP_FILE_T3} 2>&1
+    RV_T=`cat ${TMP_FILE_T3} | wc -l`
+    efVprint svn status in PROD_TREE_ROOT printed ${RV_T} lines
+    [ "_${LOG_FILE}" != "_" ] && cat ${TMP_FILE_T3} >> ${LOG_FILE}
+    if [ "_${VERBOSE_EFST}" = "_yes" ] ; then
+        cat ${TMP_FILE_T3}
+    fi
+
+      ############################################# CD ###
+    cd ${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT}/src
+    TMP_FILE_C1=${BUILD_LOG_DIR}/tmp-file-c1.txt
+    TMP_FILE_C2=${BUILD_LOG_DIR}/tmp-file-c2.txt
+    TMP_FILE_C3=${BUILD_LOG_DIR}/tmp-file-c3.txt
+    # SVN_CMD info
+    svn ${SVN_USERNAME_OPT} ${SVN_PASSWORD_OPT} --no-auth-cache --non-interactive info  > ${TMP_FILE_C1}
+    REVISION_C=`grep "Last Changed Rev:" ${TMP_FILE_C1} | cut -f2 -d:  | cut -c2-`
+    REPO_C=`grep "^URL:" ${TMP_FILE_C1} | cut -f2- -d:  | cut -c2-`
+    if [ "_${REVISION_C}" = "_" ] ; then
+        efVprint WARNING: Failed to get revision info from `pwd`
+        REVISION_C=unknown_rev
+        svn ${SVN_USERNAME_OPT} ${SVN_PASSWORD_OPT} --no-auth-cache --non-interactive info >> ${LOG_FILE}
+    fi
+    if [ "_${REPO_C}" = "_" ] ; then
+        efVprint WARNING: Failed to get URL info from `pwd`
+        REPO_C=unknown_url
+        svn ${SVN_USERNAME_OPT} ${SVN_PASSWORD_OPT} --no-auth-cache --non-interactive info >> ${LOG_FILE}
+    fi
+
+    OD_C=
+    # SVN_CMD info
+    svn ${SVN_USERNAME_OPT} ${SVN_PASSWORD_OPT} --no-auth-cache --non-interactive info ${REPO_C} > ${TMP_FILE_C2} 2>&1
+    REVISION_2C=`grep "Last Changed Rev:" ${TMP_FILE_C2} | cut -f2 -d:  | cut -c2-`
+    if [ "_${REVISION_2C}" = "_" ] ; then
+        efVprint WARNING: Failed to get info from ${REPO_C}, trying again as build user.
+        # SVN_CMD info
+        svn --username build --password buildbuild --no-auth-cache --non-interactive info ${REPO_C} > ${TMP_FILE_C2} 2>&1
+        REVISION_2C=`grep "Last Changed Rev:" ${TMP_FILE_C2} | cut -f2 -d:  | cut -c2-`
+    fi
+    if [ "_${REVISION_2C}" = "_" ] ; then
+        efVprint WARNING: Failed to get revision info from ${REPO_C}
+        OD_C="[${REVISION_C}]"
+    else
+        [ ${REVISION_C} -ne ${REVISION_2C} ] && OD_C="[${REVISION_2C}]"
+    fi
+    efVprint REVISION_C=${REVISION_C}
+    efVprint REVISION_2C=${REVISION_2C}
+    efVprint OD_C=${OD_C}
+
+    # SVN_CMD status
+    svn ${SVN_USERNAME_OPT} ${SVN_PASSWORD_OPT} --no-auth-cache --non-interactive status > ${TMP_FILE_C3} 2>&1
+    RV_C=`cat ${TMP_FILE_C3} | wc -l`
+    efVprint svn status in PROD_CUSTOMER_ROOT printed ${RV_C} lines
+    [ "_${LOG_FILE}" != "_" ] && cat ${TMP_FILE_C3} >> ${LOG_FILE}
+    if [ "_${VERBOSE_EFST}" = "_yes" ] ; then
+        cat ${TMP_FILE_C3}
+    fi
+    if [ "_${SVN_STATUS_FAIL}" = "_yes" ] ; then
+        if [ ${RV_T} -ne 0 -o ${RV_C} -ne 0 ] ; then
+            efVprint Fail because svn status showed that the tree was not clean.
+            exit 1
+        fi
+    fi
+    SV_T=
+    SV_C=
+    [ ${RV_T} -ne 0 ] && SV_T="+${RV_T}"
+    [ ${RV_C} -ne 0 ] && SV_C="+${RV_C}"
+
+    # When NKN_BUILD_NUMBER is not set, then the svn revision number is used.
+    # When NKN_BUILD_PROD_RELEASE is not set, it is set from info in
+    #      src/mk/build_settings.dot
+    # When NKN_BUILD_ID is not set, it is set based on various settings:
+    #  NKN_BUILD_TYPE determines the format.
+    #  NKN_BUILD_NUMBER
+
+    # About:
+    #   BUILD_RELEASE_APPEND, BUILD_ID_SVN_EXTRA, 
+    #   BUILD_ID_PREPEND,  BUILD_ID_APPEND
+    # These are to be optionally set by the overall builder, to customize
+    # the automatically set release version and build id strings.
+    #
+    # BUILD_RELEASE_APPEND is appended to NKN_BUILD_PROD_RELEASE when it
+    # is being set up from the string in the mk/build_settings.dot file.
+    # NOTE: THIS IS USED TO APPEND "qa", "rc", or "dv" for the official builds.
+    # ::::: Refer to the script build-release.sh
+    #
+    # BUILD_ID_SVN_EXTRA when set to "+" causes Subversion info about how
+    # many modified files there are to be added to NKN_BUILD_ID.
+    # If set to anything else, it is ignored.
+
+    # BUILD_ID_PREPEND is prepended to NKN_BUILD_ID when it is being set.
+    # NOTE: This is NOT currently being used in the official build scripts.
+
+    # BUILD_ID_APPEND is appended to NKN_BUILD_ID when it is being set.
+    # NOTE: This is currently only used in build-mine.sh when the special
+    # ::::: "--O" command line option is used.  (NOT normally used.)
+
+    # the release version string, perhaps to add an "rc" number or "qa" number
+    # or other special identifier.
+    #
+
+    if [ "_${NKN_BUILD_NUMBER}" = "_" ] ; then
+        export NKN_BUILD_NUMBER="${REVISION_C}"
+    fi
+    if [ "${NKN_BUILD_NUMBER}" = "${REVISION_C}" ] ; then
+        REV_NUM_ID=${REVISION_C}_${REVISION_T}
+    else
+        REV_NUM_ID=${NKN_BUILD_NUMBER}_${REVISION_C}_${REVISION_T}
+    fi
+    if [ "${BUILD_ID_SVN_EXTRA}" = "+" ] ; then
+        BUILD_ID_MADE="${BUILD_ID_PREPEND}${REV_NUM_ID}${SV_C}${BUILD_ID_APPEND}"
+    else
+        BUILD_ID_MADE="${BUILD_ID_PREPEND}${REV_NUM_ID}${BUILD_ID_APPEND}"
+    fi
+    efVprint new: BUILD_ID_MADE=${BUILD_ID_MADE}
+    if [ ! -f mk/build_settings.dot ] ; then
+      ERROR_STRING="`pwd`/mk/build_settings.dot not found"
+      ############################################# CD ###
+      cd "${SAVE4_DIR}"
+      return
+    fi
+    THIS_RELEASE_VER=`cat mk/build_settings.dot | grep RELEASE_VER= | cut -f2 -d=`
+    # It is supposed to have the format xxx-n.n.n or xxx-xxxn.n.n or
+    # even xxx-xxxn.n.n-xxx
+    # E.g. mfd-1.0.4, mfd-exp1.0.5, mfd-1.1.1-beta
+    efVprint RELEASE_VER value is ${THIS_RELEASE_VER} in ${PROD_PRODUCT}/src/mk/build_settings.dot
+    if [ "_${NKN_BUILD_PROD_RELEASE}" = "_" ] ; then
+      export NKN_BUILD_PROD_RELEASE="${THIS_RELEASE_VER}${BUILD_RELEASE_APPEND}"
+    fi
+    efVprint NKN_BUILD_PROD_RELEASE=${NKN_BUILD_PROD_RELEASE}
+    if [ "_${NKN_BUILD_ID}" = "_" ] ; then
+        case "${NKN_BUILD_TYPE}" in
+        numbered|none)
+            export NKN_BUILD_ID="${BUILD_ID_MADE}"
+            efVprint new: NKN_BUILD_ID=${NKN_BUILD_ID}
+            if [ "_${NKN_BUILD_PROD_VERSION}" = "_" ] ; then
+              export NKN_BUILD_PROD_VERSION="${NKN_BUILD_PROD_RELEASE} ${NKN_BUILD_ID}"
+              efVprint new: NKN_BUILD_PROD_VERSION=${NKN_BUILD_PROD_VERSION}
+            fi
+            ;;
+        dev)
+            export NKN_BUILD_ID="${BUILD_ID_MADE}-${REAL_USER}"
+            efVprint new: NKN_BUILD_ID=${NKN_BUILD_ID}
+            # Do no override the NKN_BUILD_PROD_VERSION for dev builds.
+            ;;
+        *)
+            export NKN_BUILD_ID="${BUILD_ID_MADE}-${NKN_BUILD_TYPE}"
+            efVprint new: NKN_BUILD_ID=${NKN_BUILD_ID}
+            if [ "_${NKN_BUILD_PROD_VERSION}" = "_" ] ; then
+              export NKN_BUILD_PROD_VERSION="${NKN_BUILD_PROD_RELEASE} ${NKN_BUILD_ID}"
+              efVprint new: NKN_BUILD_PROD_VERSION=${NKN_BUILD_PROD_VERSION}
+            fi
+            ;;
+        esac
+    fi
+    # IMPORTANT, cannot have commas the NKN_BUILD_SCM_INFO_SHORT string!
+    # There is a sed script in aiset.sh that uses commas as delimiters using the
+    # string in ${BUILD_PROD_VERSION} (which is contructed from NKN_BUILD_SCM_INFO_SHORT)
+    if [ "${NKN_BUILD_TYPE}" = "dev" ] ; then
+        # Only supply the OD_C and OD_T info for dev builds
+        export NKN_BUILD_SCM_INFO_SHORT="${REVISION_C}${SV_C}${OD_C}_${BR_T}${REVISION_T}${SV_T}${OD_T}"
+        export NKN_BUILD_SCM_INFO="${REVISION_C}${SV_C}${OD_C}:${REPO_C}:${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT}/src___${REVISION_T}${SV_T}${OD_T}:${REPO_T}:${PROD_TREE_ROOT}"
+        export __JUNIPER_DEV_BUILD__=juniper_dev_build
+    else
+        export NKN_BUILD_SCM_INFO_SHORT="${REVISION_C}${SV_C}_${BR_T}${REVISION_T}${SV_T}"
+        export NKN_BUILD_SCM_INFO="${REVISION_C}${SV_C}:${REPO_C}:${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT}/src___${REVISION_T}${SV_T}:${REPO_T}:${PROD_TREE_ROOT}"
+    fi
+    ############################################# CD ###
+    cd "${SAVE4_DIR}"
+    return
+}
+
+function Make_ENVS()
+{
+    ENVS=
+    SPACE_CHARACTER=[]
+    for P in `set | grep "^PROD_\|^NKN_BUILD_\|^BUILD_\|^DO_BUILD_" | sed "s/ /${SPACE_CHARACTER}/g"`
+    do
+         V=`echo ${P} | sed "s/'//g"`
+         ENVS="${ENVS} ${V}"
+    done
+    ENVS="${ENVS} LC_ALL=C REAL_USER=${REAL_USER}"
+    return
+}
+
+function efVprint()
+{
+    [ "_${LOG_FILE}" != "_" ] && echo "${@}" >> ${LOG_FILE}
+    [ "${VERBOSE_EFST}" = "yes" ] && echo "${@}"
+    return
+}
+
+function Clean_Up_mf_env_funcs()
+{
+  unset Get_Env_Settings_From_File
+  unset Look_For_Customer_Root
+  unset Make_ENVS
+  unset Set_Defaults
+  unset Set_NKN_Env_From_Source_Tree
+  unset Validate_PROD
+  unset Validate_PROD_TREE_ROOT_From_Source_Tree
+  unset efVprint
+  unset LOOK_DIR
+  unset COUNT
+  unset MATCH
+  unset SAVE1_DIR
+  unset SAVE2_DIR
+  unset TRY_DIR
+}

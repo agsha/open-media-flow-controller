@@ -1,0 +1,10 @@
+<!-- HostOriginMap 1.0 DTD, Copyright (c) 2009 by Juniper Networks, Inc -->
+<!ELEMENT HostOriginMap (Header*, HostOriginEntry*)>
+<!ELEMENT Header (Version, Application)>
+<!ELEMENT Version (#PCDATA)>
+<!ELEMENT Application (#PCDATA)>
+<!ELEMENT HostOriginEntry (Host, Origin, Port, Options?)>
+<!ELEMENT Host (#PCDATA)>
+<!ELEMENT Origin (#PCDATA)>
+<!ELEMENT Port (#PCDATA)>
+<!ELEMENT Options (#PCDATA)>

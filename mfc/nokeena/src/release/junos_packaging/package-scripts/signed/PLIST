@@ -1,0 +1,21 @@
+@comment PLIST
+@name %PACKAGE%-signed
+@srcdir %SRCDIR%
+@option no-record
+
+@ignore_inst
+%PACKAGE%.tgz
+@ignore_inst
+%PACKAGE%.tgz.md5
+@ignore_inst
+%PACKAGE%.tgz.sha1
+@ignore_inst
+%PACKAGE%.tgz.sig
+
+@comment only included in jbundle/jinstall
+@comment issu-indb @ignore_inst
+@comment issu-indb issu-indb.tgz
+
+@srcdir %CERTS_OBJDIR%
+@ignore_inst
+certs.pem

@@ -1,0 +1,89 @@
+#!/bin/sh
+#set -x
+# $Id: gensig,v 1.6 2008-10-02 08:19:30 sjg Exp $
+#
+# gensig -- generate a digital signature for one or more given files
+
+Mydir=`dirname $0`
+OPENSSL=openssl
+QUIET=
+DEBUG_DO=:
+SKIP_DN=
+SIGDIR=
+
+. $PKGVARTOPDIR/setup.sh
+
+require_vars OPENSSL SIGNATURE_BEGIN SIGNATURE_END
+
+QUIET=${QUIET:+:}
+SKIP_DN=${SKIP_DN:+:}
+
+usage() {
+    echo $1
+    echo "Usage: gensig <privatekey> <object1> [ <object2> ... ]" >&2
+    exit 1
+}
+
+# where the certs are
+CERTSDIR=${CERTSDIR:-${SIGKEYDIR}}
+
+# Get the name of the private key
+key=$1
+shift 2> /dev/null || usage;
+
+[ -r $key ] || 
+    { echo "Key file $key not found, no signature will be generated"; exit 0; }
+
+$OPENSSL rsa -in $key -noout -check >/dev/null \
+    || error "First argument must be a valid RSA key"
+$QUIET inform "Private key name is $key"
+
+# Find the cert corresponding to the key given
+cert=${SIGCERT:-$CERTSDIR/`basename $key _key.pem`.pem}
+[ -s $cert ] || error "Cert file $cert not found"
+$OPENSSL x509 -in $cert -noout || usage
+$QUIET inform "Cert name is $cert"
+
+if [ -z "$DEBUG_DO" ]; then
+    # Verify that the cert corresponds to the private key
+    a=`$OPENSSL x509 -noout -pubkey -in $cert`
+    b=`$OPENSSL rsa -in $key -pubout 2> /dev/null`
+    [ "$a" = "$b" ] || error "Cert $cert does not match key $key"
+    inform "Cert and key match."
+fi
+
+# Extract the distinguished name from the cert
+if [ -z "$SKIP_DN" ]; then
+    dn=`$OPENSSL x509 -noout -subject -in $cert`
+    [ $? -eq 0 ] || error "Failed to get DN from $cert"
+
+    dn=`echo $dn | sed -e 's/^subject= //'`
+    $QUIET inform "DN is $dn"
+fi
+# Generate the signature(s)
+
+for file in $*
+do
+    [ -r $file ] || error "File $file does not exist"
+    if [ -d ${SIGDIR:-/dev/null} ]; then
+	sig=$SIGDIR/`basename $file`.sig
+    else
+	sig="$file.sig"
+    fi
+    # write out the signature file
+    newsig="$sig.new"
+    > $newsig
+    $SKIP_DN echo $dn > $newsig
+    echo $SIGNATURE_BEGIN >> $newsig
+    $OPENSSL sha1 -sign $key $file | $OPENSSL base64 >> $newsig
+    echo $SIGNATURE_END >> $newsig
+
+    # verify the signature
+
+    run_overrides $Mydir/checksig FILE=$file $cert $newsig || \
+        error "Verification failed"
+
+    # good, rename the new sig to the final name
+    mv $newsig $sig
+
+done

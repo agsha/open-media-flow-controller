@@ -1,0 +1,78 @@
+#!/usr/bin/python
+import os
+import sys
+import cgi
+import string
+import cgitb; cgitb.enable();
+from xml.dom import minidom
+from time import sleep
+# query = cgi.FieldStorage()
+print "Content-Type:text/plain\r\n\r\n"
+#cgi.print_environ()
+#print os.environ.keys()
+
+PMF_Name = ""
+STAT_FILE_FLAG = "True"
+if os.environ["REQUEST_METHOD"] == "POST":
+        #print "POST"
+        size = int(os.environ["CONTENT_LENGTH"])
+        try:
+                buffer = sys.stdin.read(size)
+                try:
+                        xml_sock = minidom.parseString(buffer)
+                        reflist = xml_sock.getElementsByTagName('PubManifest');
+                        #print reflist[0].toxml();
+                        PMF = reflist[0];
+                        PMF_Name_Obj = PMF.attributes["name"];
+                        global PMF_Name
+                        PMF_Name = PMF_Name_Obj.value;
+                        action_list = xml_sock.getElementsByTagName('Action')
+                except(AttributeError, SyntaxError, TypeError):
+                        print str(sys.exc_info()) + "... Quitting"
+                        sys.exit(-1)
+                if len(action_list) != 0:
+                        filename = '/nkn/vpe/live/' + PMF_Name + '_action_post.xml'
+                else:
+                        filename = '/nkn/vpe/live/' + PMF_Name + '.xml'
+                        STAT_FILE_FLAG = "False"
+                fsock = open(filename, 'w')
+                print "Started writing to - " + filename
+                fsock.write(buffer)
+                # fsock.close()
+                print "SUCCESS: Post to" + filename
+        except IOError:
+                fsock.close()
+                print "ERROR: Post to " + filename + ". Quitting....."
+                sys.exit(-1)
+        fsock.close()
+else:
+        print "ERROR: Not a Expected POST. Quitting..."
+        sys.exit(0)
+# Deprecated START
+#if STAT_FILE_FLAG:
+#       f = open('/var/log/nkn/mfp.log', 'r')
+#       log_list = f.readlines(-50)
+#       f.close()
+#       for line in log_list:
+#               if (PMF_Name in line):
+#                       print line
+#               else:
+#                       print PMF_Name + " not in log file ......."
+#       sys.exit(0)
+# Deprecated END
+#
+if STAT_FILE_FLAG == "True":
+  sleep(10)
+  status_filename = '/nkn/vpe/stat/' + PMF_Name + '.xml'
+  try:
+    xmldoc2 = minidom.parse(status_filename);
+  except:
+    print "ERROR: Parsing Stat File... Quitting"
+    sys.exit(-1)
+  reflist2 = xmldoc2.getElementsByTagName('Status');
+  Status = reflist2[0];
+  Status_Text = Status.childNodes[0];
+  print Status.toxml();
+  print Status_Text.nodeValue;
+else:
+  print "Please check mfp.log file if Session was created properly because STAT file is not created when PMF posted using Script"

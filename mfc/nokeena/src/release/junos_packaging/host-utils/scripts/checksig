@@ -1,0 +1,58 @@
+#!/bin/sh
+#
+# $Id: checksig,v 1.4 2008-10-02 08:19:30 sjg Exp $
+#
+# checksig -- check a digital signature for one or more given files
+
+OPENSSL=openssl
+TMP=
+QUIET=
+FILE=
+
+. $PKGVARTOPDIR/setup.sh
+
+require_vars OPENSSL SIGNATURE_BEGIN SIGNATURE_END
+
+QUIET=${QUIET:+:}
+
+usage() {
+    echo "Usage: checksig <cert> <signature> [...]" >&2
+    exit 1
+}
+
+cleanup() {
+    case "$TMP" in
+    ""|/tmp|/var/tmp) ;;
+    *) [ -d $TMP ] && rm -rf $TMP;;
+    esac
+}
+
+trap 'cleanup; trap 0; exit ${ExitStatus:-1}' 0
+
+# Get the name of the private key
+cert=$1
+shift 2> /dev/null || usage 
+
+[ -s $cert ] || usage "cert file $cert not found"
+
+# Extract the public key and keep it handy
+
+TMP=`mktemp -d ${TMPDIR:-/tmp}/$USER.XXXXXXX`
+
+$OPENSSL x509 -noout -pubkey -in $cert > $TMP/pubkey
+
+# verify the signature(s)
+
+for sig in $*
+do
+    file=${FILE:-`echo $sig | sed 's,\.sig.*,,'`}
+    
+    # extract the base64 data, decode it, and write it to a temp file
+    awk "/$SIGNATURE_BEGIN/ {x=1;next} /$SIGNATURE_END/ {x=0}; x {print}" $sig | \
+	$OPENSSL base64 -d > $TMP/sigdata
+
+    # do the verification
+    $OPENSSL sha1 -signature $TMP/sigdata -verify $TMP/pubkey $file > /dev/null && $QUIET inform Verified $file signed by $cert || error "$file: verification failed"
+done
+Exit 0
+

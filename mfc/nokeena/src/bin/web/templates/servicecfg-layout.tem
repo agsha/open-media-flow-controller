@@ -1,0 +1,41 @@
+<?
+#
+# Filename:  servicecfg_layout.tem
+# Date:      2009/02/12
+# Author:    Chitra Devi R
+#
+# Nokeena Networks Inc
+#
+?>
+
+<INCLUDE "tms-defines">
+<INCLUDE "tms-utils">
+<INCLUDE "tms-layout">
+<TAG TMS-SERVICECFG-MENU selected {arg ""} {arg_value ""}>
+  <?
+    set servicecfg_options {
+        {network Delivery&nbsp;Network}
+        {delivery Delivery&nbsp;Protocol}
+        {virplayer Virtual&nbsp;Player}
+        {namespace NameSpace}
+        {media-cache Media-Cache}
+        {logging Logging}
+        {servermap Server&nbsp;map}
+    }
+    lappend options $servicecfg_options
+       # {analytics Analytics}
+  ?>
+  <div id="tms_servicecfg_menu">
+    <TMS-SIDEBAR-MENU $selected $options servicecfg- $arg $arg_value>
+    </TMS-SIDEBAR-MENU>
+  </div> <!-- tms_servicecfg_menu -->
+</TAG>
+
+<TAGEND TMS-SERVICECFG-MENU>
+    <!-- /TMS-SERVICECFG-MENU is deprecated -->
+</TAGEND>
+
+<TAG SECTION-HEADER label>
+	<tr class="listing_header">
+       	<td colspan="4"><h3><u><?=$label?></u></h3></td></tr>
+</TAG>

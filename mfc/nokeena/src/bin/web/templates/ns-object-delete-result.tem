@@ -1,0 +1,24 @@
+<?
+#
+# Filename:  ns-object-delete-result.tem,v $
+# Date:      2010/04/12 
+# Author:    Ramanand Narayanan
+#
+# (C) Copyright 2008-2010 Ankeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+
+
+<TMS-PAGE "Object Delete Result">
+<TMS-BODY>
+<TMS-PAGE-CONTENT "Namespace Object Deletion">
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

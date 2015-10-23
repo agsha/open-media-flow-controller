@@ -1,0 +1,70 @@
+<?
+#
+# Filename:  mfp-config.tem,v $
+# Date:       
+# Author:    Dhivyamanohary R
+#
+# (C) Copyright 2010 Juniper Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "mfp-layout">
+<INCLUDE "mfp-common">
+<TMS-PAGE "MFP">
+<TMS-MENU "mfp">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MFP-MENU "nfsmount"></TMS-MFP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "NFS  Manager">
+<CFG-FORM -action "config-form-list" -div_id "nfs-add">
+  <h2>Add Mount Points</h2>
+  <TMS-TABLE -div_id "nfs_table_1">
+    <TMS-TABLE-ENTRY "Mount Name(Local)">
+      <CFG-TEXTBOX -id "nfsname" -errname "nfsname" -caps "set_basic"
+                -type "string" -span_id "add_mount" -required "true" >
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Remote Hostname/IP">
+      <CFG-TEXTBOX -id "mountip" -errname "nfspath" -caps "set_basic"
+                -type "string" -span_id "add_mount" -required "true" >
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Remote Path">
+      <CFG-TEXTBOX -id "mountpath" -errname "nfspath" -caps "set_basic"
+                -type "string" -span_id "add_mount" -required "true" >
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+  <input type="hidden" name="d_type" value="nfspath">
+  <input type="hidden" name="t_type" value="string">
+  <input type="hidden" name="c_type" value="string">
+  <input type="hidden" name="e_type" value="true">
+  <input type="hidden" name="f_type" value="mfp_nfs"> 
+  <input type="hidden" name="f_list_root" value="/nkn/nfs_mount/config">
+  <input type="hidden" name="f_list_index" value="nfsname" required "true">
+  <input type="hidden" name="f_list_children" value="mountpath,mountip,type">
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "add_mount" >
+
+</CFG-FORM>
+
+<h2> NFS Mount List </h2>
+  <CFG-FORM -action "config-form-list" -div_id "mfp">
+    <div id="nfsList"></div>
+    <noscript>
+    <MFP-NFSMOUNT-LIST>
+    </noscript>
+  <CFG-BUTTON -type "remove" -text "Remove/Umount" -caps "set_basic"
+              -span_id "nm_disable_1">
+  </CFG-FORM>
+<SCRIPT type="text/javascript">
+  function getNfsList() {
+    getAjaxText ('<?=$ajax_mfp_nfs_list_url?>','nfsList');
+    return true;
+  }
+  setTimeout(getNfsList, 1000);
+</SCRIPT>
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

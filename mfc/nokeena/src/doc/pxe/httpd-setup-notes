@@ -1,0 +1,35 @@
+
+Typical HTTP GET:
+-----------------
+
+  GET /pxe/pxe-boot/mfc-12.3.7-qa-9_29666_371/image.img
+
+DocumentRoot "/var/www/html"
+  /var/www/html"
+    pxe -> /home2/tftpboot/
+  /home2/tftpboot/
+    pxe-boot
+      mfc-12.3.7-qa-9_29666_371
+        image.img
+      
+<Directory />
+    Options FollowSymLinks
+    AllowOverride None
+</Directory>
+
+<Directory "/var/www/html">
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Order allow,deny
+    Allow from all
+</Directory>
+
+Access log for typical PXE boot session:
+----------------------------------------
+10.87.140.92 - - [03/Aug/2015:15:35:21 -0700] "GET /pxe/pxe-boot/xxx-scl66/manufacture.tgz HTTP/1.1" 200 46223159 "-" "Wget"
+
+10.87.140.92 - - [03/Aug/2015:15:35:23 -0700] "GET /pxe/pxe-boot/xxx-scl66/ima
+ge.img HTTP/1.1" 200 591954063 "-" "Wget"
+
+10.87.140.92 - - [03/Aug/2015:15:35:42 -0700] "GET /pxe/pxe-boot/xxx-scl66/ima
+ge.img HTTP/1.1" 200 591954063 "-" "Wget"

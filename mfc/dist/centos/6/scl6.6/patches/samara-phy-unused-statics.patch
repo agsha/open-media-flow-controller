@@ -1,0 +1,33 @@
+--- kernel-2.6.32/linux-2.6.32/drivers/net/phy/realtek.c	2012-01-19 10:42:41.000000000 -0800
++++ kernel-2.6.32-tms/linux-2.6.32/drivers/net/phy/realtek.c	2012-02-13 21:40:39.946801516 -0800
+@@ -79,7 +79,7 @@
+ module_init(realtek_init);
+ module_exit(realtek_exit);
+ 
+-static struct mdio_device_id realtek_tbl[] = {
++static struct mdio_device_id __maybe_unused realtek_tbl[] = {
+ 	{ 0x001cc912, 0x001fffff },
+ 	{ }
+ };
+--- kernel-2.6.32/linux-2.6.32/drivers/net/phy/broadcom.c	2012-01-19 10:42:41.000000000 -0800
++++ kernel-2.6.32-tms/linux-2.6.32/drivers/net/phy/broadcom.c	2012-02-13 21:40:26.766801667 -0800
+@@ -908,7 +908,7 @@
+ module_init(broadcom_init);
+ module_exit(broadcom_exit);
+ 
+-static struct mdio_device_id broadcom_tbl[] = {
++static struct mdio_device_id __maybe_unused broadcom_tbl[] = {
+ 	{ 0x00206070, 0xfffffff0 },
+ 	{ 0x002060e0, 0xfffffff0 },
+ 	{ 0x002060c0, 0xfffffff0 },
+--- kernel-2.6.32/linux-2.6.32/drivers/net/phy/lxt.c	2012-01-19 10:42:41.000000000 -0800
++++ kernel-2.6.32-tms/linux-2.6.32/drivers/net/phy/lxt.c	2012-02-13 21:40:36.619801343 -0800
+@@ -175,7 +175,7 @@
+ module_init(lxt_init);
+ module_exit(lxt_exit);
+ 
+-static struct mdio_device_id lxt_tbl[] = {
++static struct mdio_device_id __maybe_unused lxt_tbl[] = {
+ 	{ 0x78100000, 0xfffffff0 },
+ 	{ 0x001378e0, 0xfffffff0 },
+ 	{ }

@@ -1,0 +1,306 @@
+<?
+#
+# Filename:  mon-ns-complete.tem,v $
+# Date:      2008/12/22
+# Author: Dheeraj Gautam
+#
+# (C) Copyright 2018 Juniper Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<?
+  set nsname [tms::get-param query "nsname1"]
+?>
+<TMS-PAGE "Namespace $nsname">
+<TMS-PAGE-CONTENT "Monitoring Statistics of Namespace $nsname ">
+<?
+# mb here is not 1024 * 1024, it must be calculated as 1000*1000 as it is bandwith
+    set mb [expr 1000.0 * 1000.0]
+    set rsrc_ns_path "/nkn/nvsd/resource_mgr/ns/$nsname"
+    set rsrc_namespace_path "/nkn/nvsd/resource_mgr/namespace/$nsname"
+    set gets [tms::get-config "/stat/nkn/namespace/$nsname/gets"]
+    set stat_http_path "/stat/nkn/namespace/$nsname/http/client"
+    set stat_rtsp_path "/stat/nkn/namespace/$nsname/rtsp/client"
+    if {[string length $gets] == 0} {
+      set gets 0
+    }
+    set tunnelled_req [tms::get-config "/stat/nkn/namespace/$nsname/tunnelled_requests"]
+    if {[string length $tunnelled_req] == 0} {
+      set tunnelled_req 0
+    }
+    set cache_tier1 [tms::get-config "$rsrc_ns_path/cache_tier_1_util"]
+    if {[string length $cache_tier1] == 0} {
+      set cache_tier1 0
+    }
+    set cache_tier2 [tms::get-config "$rsrc_ns_path/cache_tier_2_util"]
+    if {[string length $cache_tier2] == 0} {
+      set cache_tier2 0
+    }
+    set cache_tier3 [tms::get-config "$rsrc_ns_path/cache_tier_3_util"]
+    if {[string length $cache_tier3] == 0} {
+      set cache_tier3 0
+    }
+    set http_curr_bw [tms::get-config "/stats/state/sample/ns_served_bytes/node/\\/nkn\\/nvsd\\/resource_mgr\\/namespace\\/$nsname\\/http\\/served_bytes/last/value"]
+    if {[string length $http_curr_bw] == 0} {
+      set http_curr_bw 0
+    }
+    set http_curr_bw [expr $http_curr_bw / 5 * 8]
+    set http_curr_bw [format "%2.3f" [expr $http_curr_bw / $mb]]
+
+    set http_curr_sess [tms::get-config "$rsrc_ns_path/http/curr_ses" ]
+    if {[string length $http_curr_sess ] == 0} {
+      set http_curr_sess 0
+    }
+    set http_sb [tms::get-config "$rsrc_namespace_path/http/served_bytes" ]
+    if {[string length $http_sb ] == 0} {
+      set http_sb 0
+    }
+    set http_cache_req [tms::get-config "$rsrc_ns_path/http/cache_hit_ratio_on_req" ]
+    if {[string length $http_cache_req ] == 0} {
+      set http_cache_req 0
+    }
+    set http_cache_bytes [tms::get-config "$rsrc_ns_path/http/cache_hit_ratio_on_bytes" ]
+    if {[string length $http_cache_bytes ] == 0} {
+      set http_cache_bytes 0
+    }
+    set http_transactions_per_sec [tms::get-config "/stats/state/sample/ns_transactions/node/\\/nkn\\/nvsd\\/resource_mgr\\/namespace\\/$nsname\\/http\\/rtsp/last/value"]
+    if {[string length $http_transactions_per_sec ] == 0} {
+      set http_transactions_per_sec 0
+    }
+
+    set rtsp_curr_bw [tms::get-config "/stats/state/sample/ns_served_bytes/node/\\/nkn\\/nvsd\\/resource_mgr\\/namespace\\/$nsname\\/rtsp\\/served_bytes/last/value"]
+    if {[string length $rtsp_curr_bw] == 0} {
+      set rtsp_curr_bw 0
+    }
+    set rtsp_curr_bw [expr $rtsp_curr_bw / 5 * 8]
+    set rtsp_curr_bw [format "%2.3f" [expr $rtsp_curr_bw / $mb]]
+
+    set rtsp_curr_sess [tms::get-config "$rsrc_ns_path/rtsp/curr_ses" ]
+    if {[string length $rtsp_curr_sess ] == 0} {
+      set rtsp_curr_sess 0
+    }
+    set rtsp_sb [tms::get-config "$rsrc_namespace_path/rtsp/served_bytes" ]
+    if {[string length $rtsp_sb ] == 0} {
+      set rtsp_sb 0
+    }
+    set rtsp_cache_req [tms::get-config "$rsrc_ns_path/rtsp/cache_hit_ratio_on_req" ]
+    if {[string length $rtsp_cache_req ] == 0} {
+      set rtsp_cache_req 0
+    }
+    set rtsp_cache_bytes [tms::get-config "$rsrc_ns_path/rtsp/cache_hit_ratio_on_bytes" ]
+    if {[string length $rtsp_cache_bytes ] == 0} {
+      set rtsp_cache_bytes 0
+    }
+    set rtsp_transactions_per_sec [tms::get-config "/stats/state/sample/ns_transactions/node/\\/nkn\\/nvsd\\/resource_mgr\\/namespace\\/$nsname\\/rtsp\\/rtsp/last/value"]
+    if {[string length $rtsp_transactions_per_sec ] == 0} {
+      set rtsp_transactions_per_sec 0
+    }
+    set http_suc_req1 [tms::get-config "$stat_http_path/resp_2xx"]
+    if {[string length $http_suc_req1] == 0} {
+      set http_suc_req1 0
+    }
+    set http_suc_req2 [tms::get-config "$stat_http_path/resp_3xx"]
+    if {[string length $http_suc_req2] == 0} {
+      set http_suc_req2 0
+    }
+    set http_fail_req1 [tms::get-config "$stat_http_path/resp_4xx"]
+    if {[string length $http_fail_req1] == 0} {
+       set http_fail_req1 0
+    }
+    set http_fail_req2 [tms::get-config "$stat_http_path/resp_5xx"]
+    if {[string length $http_fail_req2] == 0} {
+       set http_fail_req2 0
+    }
+    set http_byte_ram [tms::get-config "$stat_http_path/out_bytes"]
+    if {[string length $http_byte_ram] == 0} {
+      set http_byte_ram 0
+    }
+    set http_byte_disk [tms::get-config "$stat_http_path/out_bytes_disk"]
+    if {[string length $http_byte_disk] == 0} {
+      set http_byte_disk 0
+    }
+    set http_byte_origin [tms::get-config "$stat_http_path/out_bytes_origin"]
+    if {[string length $http_byte_origin] == 0} {
+      set http_byte_origin 0
+    }
+    set http_byte_tunnel [tms::get-config "$stat_http_path/out_bytes_tunnel"]
+    if {[string length $http_byte_tunnel] == 0} {
+      set http_byte_tunnel 0
+    }
+    set rtsp_suc_req1 [tms::get-config "$stat_rtsp_path/resp_2xx"]
+    if {[string length $rtsp_suc_req1] == 0} {
+      set rtsp_suc_req1 0
+    }
+    set rtsp_suc_req2 [tms::get-config "$stat_rtsp_path/resp_3xx"]
+    if {[string length $rtsp_suc_req2] == 0} {
+      set rtsp_suc_req2 0
+    }
+    set rtsp_fail_req1 [tms::get-config "$stat_rtsp_path/resp_4xx"]
+    if {[string length $rtsp_fail_req1] == 0} {
+       set rtsp_fail_req1 0
+    }
+    set rtsp_fail_req2 [tms::get-config "$stat_rtsp_path/resp_5xx"]
+    if {[string length $rtsp_fail_req2] == 0} {
+       set rtsp_fail_req2 0
+    }
+    set rtsp_byte_ram [tms::get-config "$stat_rtsp_path/out_bytes"]
+    if {[string length $rtsp_byte_ram] == 0} {
+      set rtsp_byte_ram 0
+    }
+    set rtsp_byte_disk [tms::get-config "$stat_rtsp_path/out_bytes_disk"]
+    if {[string length $rtsp_byte_disk] == 0} {
+      set rtsp_byte_disk 0
+    }
+    set rtsp_byte_origin [tms::get-config "$stat_rtsp_path/out_bytes_origin"]
+    if {[string length $rtsp_byte_origin] == 0} {
+      set rtsp_byte_origin 0
+    }
+    set rtsp_byte_tunnel [tms::get-config "$stat_rtsp_path/out_bytes_tunnel"]
+    if {[string length $rtsp_byte_tunnel] == 0} {
+      set rtsp_byte_tunnel 0
+    }
+?>
+<table cellpadding="1" border="0" width="100%">
+<tr><td align="center">
+<table class="tms_mon" width="100%" border="0" cellspacing="0" cellpadding="1">
+ <tr  class="listing_head">
+ <th align="left" > Stat. Parameter Name </th>
+ <th align="left" > Counters </th>
+ </tr>
+ <tr>
+   <td align="left" class="label"> Number of Requests </td>
+   <td align="left" > <?= $gets ?> </td>
+ </tr>
+ <tr>
+   <td align="left" class="label"> Tunnelled requests </td>
+   <td align="left" > <?=$tunnelled_req?> </td>
+ </tr>
+ <tr>
+   <td align="left" class="label" > Cache Tier 1 </td>
+   <td align="left" > <?= $cache_tier1 ?> </td>
+ </tr>
+ <tr>
+   <td class="label" align="left" > Cache Tier 2 </td>
+   <td align="left" > <?= $cache_tier2 ?> </td>
+ </tr>
+ <tr>
+   <td  align="left" class="label"> Cache Tier 3 </td>
+   <td align="left" > <?= $cache_tier3 ?> </td>
+ </tr>
+</table>
+</td></tr><tr><td align="center">
+<table class="tms_mon" width="100%" border="0" cellspacing="0" cellpadding="1">
+ <tr  class="listing_head">
+   <th align="left" > Monitoring counters </th>
+   <th align="left" > HTTP </th>
+   <th align="left" > RTSP </th>
+ </tr>
+ <tr>
+   <td class="label" align="left" > Current Bandwidth (Mbps)</td>
+   <td align="left" > <?= $http_curr_bw ?> </td>
+   <td align="left" > <?= $rtsp_curr_bw ?> </td>
+ </tr>
+ <tr>
+   <td  align="left" class="label"> Current Sessions </td>
+   <td align="left" > <?= $http_curr_sess ?> </td>
+   <td align="left" > <?= $rtsp_curr_sess ?> </td>
+ </tr>
+ <tr>
+   <td  align="left" class="label">  Served Bytes</td>
+   <td align="left" > <?= $http_sb?> </td>
+   <td align="left" > <?= $rtsp_sb?> </td>
+ </tr>
+ <tr>
+   <td  align="left" class="label">  Transactions Per Sec </td>
+   <td align="left" > <?= $http_transactions_per_sec ?> </td>
+   <td align="left" > <?= $rtsp_transactions_per_sec ?> </td>
+ </tr>
+ <tr>
+   <td align="left" class="label"> Req. Cache Hit Ratio </td>
+   <td align="left" > <?= $http_cache_req ?> </td>
+   <td align="left" > <?= $rtsp_cache_req ?> </td>
+ </tr>
+ <tr>
+   <td align="left" class="label"> Bytes Cache Hit Ratio </td>
+   <td align="left" > <?= $http_cache_bytes ?> </td>
+   <td align="left" > <?= $rtsp_cache_bytes ?> </td>
+ </tr>
+</table>
+</td>
+</tr>
+</table>
+<table class="tms_mon" width="100%" border="0" cellspacing="0" cellpadding="1">
+ <tr  class="listing_head">
+   <th align="left" > Client counters </th>
+   <th align="left"> HTTP </th>
+   <th align="left"> RTSP </th>
+ </tr>
+ <tr>
+   <td class="label" align="left" > Successful requests&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </td>
+   <td align="left" > </td>
+   <td align="left" > </td>
+ </tr>
+ <tr>
+   <td class="label" align="left" > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Response code 2xx </td>
+   <td align="left" > <?= $http_suc_req1 ?> </td>
+   <td align="left" > <?= $rtsp_suc_req1 ?> </td>
+ </tr>
+ <tr>
+   <td class="label" align="left" > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Response code 3xx </td>
+   <td align="left" > <?= $http_suc_req2 ?> </td>
+   <td align="left" > <?= $rtsp_suc_req2 ?> </td>
+ </tr>
+ <tr>
+   <td  align="left" class="label"> Unsuccessful requests </td>
+   <td align="left" > </td>
+   <td align="left" > </td>
+ </tr>
+ <tr>
+   <td  align="left" class="label"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Response code 4xx </td>
+   <td align="left" > <?= $http_fail_req1 ?> </td>
+   <td align="left" > <?= $rtsp_fail_req1 ?> </td>
+ </tr>
+ <tr>
+   <td  align="left" class="label"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Response code 5xx </td>
+   <td align="left" > <?= $http_fail_req2 ?> </td>
+   <td align="left" > <?= $rtsp_fail_req2 ?> </td>
+ </tr>
+ <tr>
+   <td  align="left" class="label">  Bytes sent from  </td>
+   <td align="left" > </td>
+   <td align="left" > </td>
+ </tr>
+ <tr>
+   <td align="left" class="label"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RAM </td>
+   <td align="left" > <?= $http_byte_ram ?> </td>
+   <td align="left" > <?= $rtsp_byte_ram ?> </td>
+ </tr>
+ <tr>
+   <td align="left" class="label"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Disk </td>
+   <td align="left" > <?= $http_byte_disk ?> </td>
+   <td align="left" > <?= $rtsp_byte_disk ?> </td>
+ </tr>
+ <tr>
+   <td align="left" class="label"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Origin </td>
+   <td align="left" > <?= $http_byte_origin ?> </td>
+   <td align="left" > <?= $rtsp_byte_origin ?> </td>
+ </tr>
+ <tr>
+   <td align="left" class="label"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tunnel </td>
+   <td align="left" > <?= $http_byte_tunnel ?> </td>
+   <td align="left" > <?= $rtsp_byte_tunnel ?> </td>
+ </tr>
+</table>
+
+<script type="text/javascript">
+function refresh()
+{
+  window.location.reload();
+}
+</script>
+<script type="text/javascript">
+  setTimeout('refresh()',5000);
+</script>

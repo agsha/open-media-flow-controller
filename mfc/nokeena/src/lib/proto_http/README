@@ -1,0 +1,9 @@
+#
+# Unit test notes.
+# All unit tests contained proto_http_test.c
+
+# Build unit test binary
+MAKE -f Makefile-other
+
+# Execute unit test binary
+./proto_http_test

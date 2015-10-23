@@ -1,0 +1,55 @@
+README.rattle V1.05
+
+2/18/01
+Richard Cooper
+
+
+DISCLAIMER!!!!!!
+THIS IS A READ/WRITE TEST.  IT SHOULD ONLY BE USED BY A
+RESPONSIBLE ADULT.  YOU HAVE BEEN WARNED!!!!!!
+
+
+1. Installation....
+
+unpack the tarfile
+#tar xvf rattle.tar
+
+Build the program..
+#make rattle
+
+or, compile by hand.
+#gcc -o rattle rattle.c
+
+
+2. Rattle is a read/write exerciser that will test raw, file
+structured, or logical volumes. 
+You must setup a data file in the following format.
+
+/dev/rdsk/c1t1d0s2  80 2
+/dev/rdsk/c1t0d0s2  60 1
+/ss2usr/mail/xxx 50 1
+
+
+Each line must have the device name to test, the read/write percentage,
+and the number of processes to run on that device.  In this case,
+/dev/rdsk/c1t1d0s2 will be tested.  80% of the IO's will be reads, and
+two processes will be run.  To test in read-only mode, set the 
+read/write percentage to 100.  Any read/write percentage less than 100
+will enable writing. "xxx" is a file on the nfs mounted
+"/ss2usr/mail/" file system.
+
+When you start the test, you will be asked for the name of the data
+file.  The devices are opened, and sized up to 2**31-1 bytes.  If you
+have enabled writing on any device, you will be asked if you want to
+continue.
+To terminate the test, type ^C.
+
+You can run the test detached in the following manner:
+#rattle datafile &
+#
+
+WARNING!!!!  In detached mode, rattle does not ask if you want to
+proceed if writing is enabled!  You have been warned!!
+
+Do a 'ps' to identify the detached processes.  The detached processes
+will run forever, or until killed, whichever comes first......

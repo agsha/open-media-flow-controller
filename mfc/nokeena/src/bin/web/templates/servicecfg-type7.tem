@@ -1,0 +1,77 @@
+<?
+#
+# Filename:  servicecfg-type2.tem,v $
+# Date:      2009/05/20 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Virtual Player">
+<?
+    
+    set config_type [tms::get-param query "type"]
+    if {[string length $config_type] == 0} {
+      set config_type "flashstream"
+    }
+
+?>
+   <?
+      set vp_name_posted [tms::get-param query "vpname"]
+      set vp_prefix "/nkn/nvsd/virtual_player/config"
+      set vp_ids [tms::iterate-config $vp_prefix]
+      set vp_list {}
+      foreach vp_id $vp_ids {
+        set prefix_len [string length "$vp_prefix/"]
+        set vp_name [string range $vp_id $prefix_len end]
+        set type [tms::get-config "$vp_id/type"]
+        if { $type == 7 } {
+          if {[string length $vp_name_posted] == 0 } {
+              set vp_name_posted $vp_name
+          }
+          lappend vp_list "$vp_name $vp_name"
+        }
+      }
+  ?>
+
+<TMS-BODY>
+<TMS-PAGE-CONTENT "Virtual Player Type flashstream-pub Configuration Page ">
+<h2 align="center"> Virtual Player Name : <?=$vp_name_posted?> </h2>
+
+<CFG-FORM  -div_id "virplayer_param_8">
+  <TMS-TABLE -div_id "virplayer_8">
+    <SECTION-HEADER "Configuration">
+    <TMS-TABLE-ENTRY "Fragment tag">
+      <CFG-TEXTBOX -id "flash-fragment-tag" -errname "Fragment tag" 
+                   -caps "set_basic"
+                   -type "string" -span_id "configure_frag_str"
+		   -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/flash-fragment-tag">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Segment tag">
+      <CFG-TEXTBOX -id "segment-tag" 
+                   -errname "Segment tag" 
+                   -caps "set_basic" -required "false"
+                   -type "string" -span_id "configure_seg_rate"
+		   -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/segment-tag">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Segment fragment delimiter">
+      <CFG-TEXTBOX -id "segment-delimiter-tag"
+                   -errname "Segment delimiter tag"
+		   -caps "set_basic" -required "false"
+                   -type "string" -span_id "configure_seg_delim"
+		   -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/segment-delimiter-tag">
+    </TMS-TABLE-ENTRY>
+    <tr><td height="4"></td></tr>
+  </TMS-TABLE>
+  <CFG-BUTTON -type "add" -text "Add/Update" -caps "set_basic"
+              -span_id "vp_apply_8">
+
+</CFG-FORM>
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

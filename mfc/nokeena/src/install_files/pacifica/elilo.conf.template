@@ -1,0 +1,17 @@
+#
+# force chooser to simple menu
+chooser=simple
+default=MFC
+timeout=50
+prompt
+
+message=PREFIX_PATH/IMAGE_VERSION/juniper-banner.msg
+
+image=PREFIX_PATH/IMAGE_VERSION/vmlinuz0
+        label=MFC
+        description="Media Flow Controller"
+        read-only
+        root=/LiveOS/ext3fs.img
+        initrd=PREFIX_PATH/IMAGE_VERSION/initrd.img
+        append="console=ttyS0,9600n8 quiet crashkernel=640M@0M panic=10 img_id=1 live_ram model=pacifica method=tftp://128.0.0.1:31340PREFIX_PATH/IMAGE_VERSION/mfcrootfs.img"
+

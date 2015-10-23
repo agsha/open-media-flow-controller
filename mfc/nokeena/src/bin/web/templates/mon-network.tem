@@ -1,0 +1,108 @@
+<?
+# (C) Copyright 2015 Juniper Networks
+# All rights reserved.
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Network statistics">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "network"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Network Usage (Last Hour)">
+
+  <?
+    set interface_ids [tms::iterate-config "/net/interface/state"]
+    set prefix_len [string length "/net/interface/state/"]
+  ?>
+
+<? global ref_ui_graph_ver ?>
+<TMS-AJAX-GRAPH intf_hour intf_hour 10 auto $ref_ui_graph_ver> 
+
+  <FOREACH iface_bn $interface_ids>
+  <?
+    set iface [string range $iface_bn $prefix_len end]
+    if {[string compare $iface "lo"] == 0} {
+       continue
+    }
+  ?>
+
+  <h2><?= $iface ?> statistics</h2>
+
+  <table border="0" cellspacing="0" cellpadding="2" class="tms_mon">
+    <tr>
+      <td width="15">
+      <td><b>RX bytes</b>
+      <td width="8">
+      <td><TMS-INTF-STAT $iface "stats/rx/bytes">
+      <td width="25">
+      <td><b>TX bytes</b>
+      <td width="8">
+      <td><TMS-INTF-STAT $iface "stats/tx/bytes">
+
+    <tr>
+      <td>
+      <td><b>RX packets</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/packets">
+      <td>
+      <td><b>TX packets</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/packets">
+
+    <tr>
+      <td>
+      <td><b>RX mcast packets</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/multicast_packets">
+      <td>
+      <td><b>TX discards</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/discards">
+
+    <tr>
+      <td>
+      <td><b>RX discards</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/discards">
+      <td>
+      <td><b>TX errors</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/errors">
+
+    <tr>
+      <td>
+      <td><b>RX errors</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/errors">
+      <td>
+      <td><b>TX overruns</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/overruns">
+
+    <tr>
+      <td>
+      <td><b>RX overruns</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/overruns">
+      <td>
+      <td><b>TX carrier</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/carrier">
+
+    <tr>
+      <td>
+      <td><b>RX frame</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/frame">
+      <td>
+      <td><b>TX collisions</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/collisions">
+  </table>
+
+  </FOREACH>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

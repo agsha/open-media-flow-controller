@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!-- TODO : Marked within file as (A), (B) and (C) -->
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:annotation>
+		<xs:documentation>Created with EditiX (http://www.editix.com) at Wed Aug 25 09:46:14 IST 2010</xs:documentation>
+	</xs:annotation><!-- root level -->
+	<xs:element name="PubManifest" type="pub_manifest">
+	</xs:element>
+	<xs:complexType name="pub_manifest"><!-- A PubManifest can contail only one of them -->
+		<xs:sequence>
+			<xs:choice>
+				<xs:element name="FileMediaSource" type="file_media_source">
+				</xs:element>
+				<xs:element name="LiveMediaSource" type="live_media_source">
+				</xs:element>
+				<xs:element name="ControlMediaSource" type="media_source_control">
+				</xs:element>
+			</xs:choice>
+			<!-- -(A) Currently PubSchemes is marked as optional : Reason: Control PMF will not have it -->
+			<xs:element maxOccurs="1" minOccurs="0" name="PubSchemes" type="pub_schemes">
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="version" type="xs:float" use="required">
+		</xs:attribute>
+		<xs:attribute name="name" type="xs:string" use="required">
+		</xs:attribute>
+	</xs:complexType><!-- LEVEL 1 -->
+	
+	<xs:complexType name="file_media_source">
+		<xs:choice>
+			<xs:element name="SSP_MBR_Encapsulation" type="ssp_mbr_encap">
+			</xs:element>
+			<xs:element name="SSP_SBR_Encapsulation" type="ssp_sbr_encap">
+			</xs:element>
+			<xs:element name="MP2TS_SPTS_UDP_Encapsulation" type="mp2ts_spts_udp_encap">
+			</xs:element>
+		</xs:choice>
+	</xs:complexType>
+	<xs:complexType name="live_media_source">
+		<xs:choice>
+			<xs:element name="MP2TS_SPTS_UDP_Encapsulation" type="mp2ts_spts_udp_encap">
+			</xs:element>
+			<xs:element name="SSP_SBR_Encapsulation" type="ssp_sbr_encap">
+			</xs:element>
+			<xs:element name="MP2TS_SPTS_UDP_Encapsulation" type="mp2ts_spts_udp_encap">
+			</xs:element>
+		</xs:choice>
+	</xs:complexType>
+	<xs:complexType name="media_source_control">
+		<xs:all>
+		<xs:element name="Action" minOccurs="1" maxOccurs="1">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="STATUS">
+					</xs:enumeration>
+					<xs:enumeration value="STOP">
+					</xs:enumeration>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:element>
+		</xs:all>
+	</xs:complexType>
+	<xs:complexType name="pub_schemes">
+		<xs:all>
+			<xs:element maxOccurs="1" minOccurs="1" name="MobileStreaming" type="mobile_streaming">
+			</xs:element>
+			<xs:element maxOccurs="1" minOccurs="1" name="SmoothStreaming" type="smooth_flash_streaming">
+			</xs:element>
+			<xs:element maxOccurs="1" minOccurs="1" name="FlashStreaming" type="smooth_flash_streaming">
+			</xs:element>
+		</xs:all>
+	</xs:complexType><!-- LEVEL 2 -->
+	<xs:complexType name="ssp_mbr_encap">
+		<xs:sequence>
+			<xs:element maxOccurs="3" minOccurs="3" name="SSP_Media" type="ssp_media">
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ssp_sbr_encap">
+		<xs:sequence>
+			<xs:element maxOccurs="3" minOccurs="3" name="SSP_Media" type="ssp_media">
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="mp2ts_spts_udp_encap">
+		<xs:sequence>
+			<xs:element maxOccurs="20" minOccurs="1" name="SPTS_Media" type="spts_media">
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="mobile_streaming">
+		<xs:attribute name="status" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="ON">
+					</xs:enumeration>
+					<xs:enumeration value="OFF">
+					</xs:enumeration>
+					<xs:enumeration value="on">
+					</xs:enumeration>
+					<xs:enumeration value="off">
+					</xs:enumeration>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="KeyFrameInterval" type="xs:integer" use="required">
+		</xs:attribute>
+		<xs:attribute default="1" name="SegmentStartIndex" use="optional">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1">
+					</xs:minInclusive>
+					<xs:maxInclusive value="4294967295">
+					</xs:maxInclusive>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute default="10" name="MinSegsInChildPlaylist" use="optional">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1">
+					</xs:minInclusive>
+					<xs:maxInclusive value="30">
+					</xs:maxInclusive>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="SegmentIndexPrecision" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1">
+					</xs:minInclusive>
+					<xs:maxInclusive value="10">
+					</xs:maxInclusive>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="SegmentRolloverInterval" use="optional">
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:minInclusive value="1">
+					</xs:minInclusive>
+					<xs:maxInclusive value="10000">
+					</xs:maxInclusive>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="DVR" use="optional">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="ON">
+					</xs:enumeration>
+					<xs:enumeration value="OFF">
+					</xs:enumeration>
+					<xs:enumeration value="on">
+					</xs:enumeration>
+					<xs:enumeration value="off">
+					</xs:enumeration>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="StorageURL" type="xs:string" use="required">
+		</xs:attribute>
+		<xs:attribute name="DeliveryURL" type="xs:string" use="required">
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="smooth_flash_streaming">
+		<xs:attribute name="status" use="required">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="ON">
+					</xs:enumeration>
+					<xs:enumeration value="OFF">
+					</xs:enumeration>
+					<xs:enumeration value="on">
+					</xs:enumeration>
+					<xs:enumeration value="off">
+					</xs:enumeration>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="DVR" use="optional">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="ON">
+					</xs:enumeration>
+					<xs:enumeration value="OFF">
+					</xs:enumeration>
+					<xs:enumeration value="on">
+					</xs:enumeration>
+					<xs:enumeration value="off">
+					</xs:enumeration>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:attribute>
+		<xs:attribute name="KeyFrameInterval" type="xs:integer" use="required">
+		</xs:attribute>
+		<xs:attribute name="StorageURL" type="xs:string" use="required">
+		</xs:attribute>
+		<xs:attribute name="DeliveryURL" type="xs:string" use="required">
+		</xs:attribute>
+	</xs:complexType><!-- LEVEL 3 -->
+	<xs:complexType name="ssp_media">
+		<xs:all>
+			<xs:element name="Src" type="xs:string" maxOccurs="1" minOccurs="0">
+			</xs:element><!-- (B) Src has to be mandatory for FILE: Currently our GUI for Live does not include Src for Live.
+		So, temporarliy making it optional even for FILE. This has to be validated within the MFP -->
+			<xs:element name="Type" maxOccurs="1" minOccurs="1">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="svr-manifes">
+						</xs:enumeration>
+						<xs:enumeration value="client-manifest">
+						</xs:enumeration>
+						<xs:enumeration value="video">
+						</xs:enumeration>
+						<xs:enumeration value="audio">
+						</xs:enumeration>
+						<xs:enumeration value="mux">
+						</xs:enumeration>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="BitRate" type="xs:integer" maxOccurs="1" minOccurs="0">
+			</xs:element>
+		</xs:all>
+	</xs:complexType>
+	<xs:complexType name="spts_media">
+		<xs:all>
+			<xs:element maxOccurs="1" minOccurs="1" name="ProfileId">
+				<xs:simpleType>
+					<xs:restriction base="xs:integer">
+						<xs:minInclusive value="1">
+						</xs:minInclusive>
+						<xs:maxInclusive value="20">
+						</xs:maxInclusive>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element maxOccurs="1" minOccurs="0" name="Src" type="xs:string">
+			</xs:element><!-- (C) Src has to be mandatory for FILE: Currently our GUI for Live does not include Src for Live.
+		So, temporarliy making it optional even for FILE. This has to be validated within the MFP -->
+			<xs:element maxOccurs="1" minOccurs="0" name="Dest" type="xs:string">
+			</xs:element>
+			<xs:element maxOccurs="1" minOccurs="0" name="BitRate" type="xs:integer">
+			</xs:element>
+			<xs:element maxOccurs="1" minOccurs="0" name="vpid" type="xs:integer">
+			</xs:element>
+			<xs:element maxOccurs="1" minOccurs="0" name="apid" type="xs:integer">
+			</xs:element>
+		</xs:all>
+	</xs:complexType>
+</xs:schema>

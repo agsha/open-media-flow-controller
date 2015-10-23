@@ -1,0 +1,194 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE Menu: Recent developer builds
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL dpeet-a29a
+ MENU LABEL dpeet-a29a mfc-12.3.0-27114_342+20-dpeet 2012-07-19
+ KERNEL pxe-boot/dpeet-a29a/vmlinuz-bootflop-mfc-12.3.0-27114_342+20-dpeet
+ APPEND initrd=pxe-boot/dpeet-a29a/rootflop-mfc-12.3.0-27114_342+20-dpeet.img  installfrom=pxe/pxe-boot/dpeet-a29a installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL dnarasim-nknlogd
+ MENU LABEL dnarasim-nknlogd mfc-12.3.0-26193_342+314-dnarasim 2012-07-19
+ KERNEL pxe-boot/dnarasim-nknlogd/vmlinuz-bootflop-mfc-12.3.0-26193_342+314-dnarasim
+ APPEND initrd=pxe-boot/dnarasim-nknlogd/rootflop-mfc-12.3.0-26193_342+314-dnarasim.img  installfrom=pxe/pxe-boot/dnarasim-nknlogd installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL yunleiy-12_2_yunleiy_object
+ MENU LABEL yunleiy-12_2_yunleiy_object 12_2_yunleiy_object 2012-07-19
+ KERNEL pxe-boot/yunleiy-12_2_yunleiy_object/vmlinuz-bootflop-mfc-12.2.1-27058_339+186-yunleiy
+ APPEND initrd=pxe-boot/yunleiy-12_2_yunleiy_object/rootflop-mfc-12.2.1-27058_339+186-yunleiy.img  installfrom=pxe/pxe-boot/yunleiy-12_2_yunleiy_object installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL rchitra-compression_12.3
+ MENU LABEL rchitra-compression_12.3 Compression short sanity 2012-07-19
+ KERNEL pxe-boot/rchitra-compression_12.3/vmlinuz-bootflop-mfc-12.3.0-27074_342+67-rchitra
+ APPEND initrd=pxe-boot/rchitra-compression_12.3/rootflop-mfc-12.3.0-27074_342+67-rchitra.img  installfrom=pxe/pxe-boot/rchitra-compression_12.3 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL rnavanee-Short_sanity_798075
+ MENU LABEL rnavanee-Short_sanity_798075 Short Sanity for 798075 2012-07-18
+ KERNEL pxe-boot/rnavanee-Short_sanity_798075/vmlinuz-bootflop-mfc-12.2.1-27129_339+97-rnavanee
+ APPEND initrd=pxe-boot/rnavanee-Short_sanity_798075/rootflop-mfc-12.2.1-27129_339+97-rnavanee.img  installfrom=pxe/pxe-boot/rnavanee-Short_sanity_798075 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL dpeet-18c
+ MENU LABEL dpeet-18c mfc-12.3.0-27114_342+18-dpeet 2012-07-18
+ KERNEL pxe-boot/dpeet-18c/vmlinuz-bootflop-mfc-12.3.0-27114_342+18-dpeet
+ APPEND initrd=pxe-boot/dpeet-18c/rootflop-mfc-12.3.0-27114_342+18-dpeet.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/dpeet-18c installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL dpeet-18b
+ MENU LABEL dpeet-18b mfc-12.3.0-27114_342+18-dpeet 2012-07-18
+ KERNEL pxe-boot/dpeet-18b/vmlinuz-bootflop-mfc-12.3.0-27114_342+18-dpeet
+ APPEND initrd=pxe-boot/dpeet-18b/rootflop-mfc-12.3.0-27114_342+18-dpeet.img  installfrom=pxe/pxe-boot/dpeet-18b installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL randra-mirror
+ MENU LABEL randra-mirror mfc-12.3.0-27144_342+45-randra 2012-07-18
+ KERNEL pxe-boot/randra-mirror/vmlinuz-bootflop-mfc-12.3.0-27144_342+45-randra
+ APPEND initrd=pxe-boot/randra-mirror/rootflop-mfc-12.3.0-27144_342+45-randra.img  installfrom=pxe/pxe-boot/randra-mirror installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL qsun-dailymotion_fix
+ MENU LABEL qsun-dailymotion_fix Qichao 2012-07-18
+ KERNEL pxe-boot/qsun-dailymotion_fix/vmlinuz-bootflop-mfc-12.2.1-27126_339+9-qsun
+ APPEND initrd=pxe-boot/qsun-dailymotion_fix/rootflop-mfc-12.2.1-27126_339+9-qsun.img  installfrom=pxe/pxe-boot/qsun-dailymotion_fix installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL bijchand-asymcli
+ MENU LABEL bijchand-asymcli mfc-12.3.0-27132_342+222-bijchand 2012-07-18
+ KERNEL pxe-boot/bijchand-asymcli/vmlinuz-bootflop-mfc-12.3.0-27132_342+222-bijchand
+ APPEND initrd=pxe-boot/bijchand-asymcli/rootflop-mfc-12.3.0-27132_342+222-bijchand.img  installfrom=pxe/pxe-boot/bijchand-asymcli installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL snlakshmi-agentd-modular
+ MENU LABEL snlakshmi-agentd-modular mfc-12.3.0-27132_342+250-snlakshmi 2012-07-18
+ KERNEL pxe-boot/snlakshmi-agentd-modular/vmlinuz-bootflop-mfc-12.3.0-27132_342+250-snlakshmi
+ APPEND initrd=pxe-boot/snlakshmi-agentd-modular/rootflop-mfc-12.3.0-27132_342+250-snlakshmi.img  installfrom=pxe/pxe-boot/snlakshmi-agentd-modular installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL mithab-PR796660
+ MENU LABEL mithab-PR796660 mfc-12.2.1-27129_339+26-mithab 2012-07-18
+ KERNEL pxe-boot/mithab-PR796660/vmlinuz-bootflop-mfc-12.2.1-27129_339+26-mithab
+ APPEND initrd=pxe-boot/mithab-PR796660/rootflop-mfc-12.2.1-27129_339+26-mithab.img  installfrom=pxe/pxe-boot/mithab-PR796660 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL dpeet-18a
+ MENU LABEL dpeet-18a mfc-12.3.0-27114_342+13-dpeet 2012-07-18
+ KERNEL pxe-boot/dpeet-18a/vmlinuz-bootflop-mfc-12.3.0-27114_342+13-dpeet
+ APPEND initrd=pxe-boot/dpeet-18a/rootflop-mfc-12.3.0-27114_342+13-dpeet.img  installfrom=pxe/pxe-boot/dpeet-18a installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL mvengata-718
+ MENU LABEL mvengata-718 mfc-12.3.0-27114_342+26-mvengata 2012-07-17
+ KERNEL pxe-boot/mvengata-718/vmlinuz-bootflop-mfc-12.3.0-27114_342+26-mvengata
+ APPEND initrd=pxe-boot/mvengata-718/rootflop-mfc-12.3.0-27114_342+26-mvengata.img  installfrom=pxe/pxe-boot/mvengata-718 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL snlakshmi-mfa-vp-fix
+ MENU LABEL snlakshmi-mfa-vp-fix mfc-12.2.1-27129_339+7-snlakshmi 2012-07-17
+ KERNEL pxe-boot/snlakshmi-mfa-vp-fix/vmlinuz-bootflop-mfc-12.2.1-27129_339+7-snlakshmi
+ APPEND initrd=pxe-boot/snlakshmi-mfa-vp-fix/rootflop-mfc-12.2.1-27129_339+7-snlakshmi.img  installfrom=pxe/pxe-boot/snlakshmi-mfa-vp-fix installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL smukundan-mfn-
+ MENU LABEL smukundan-mfn- mfn-0.0.9-1_27102_317+8-smukundan 2012-07-17
+ KERNEL pxe-boot/smukundan-mfn-/vmlinuz-bootflop-mfn-0.0.9-1_27102_317+8-smukundan
+ APPEND initrd=pxe-boot/smukundan-mfn-/rootflop-mfn-0.0.9-1_27102_317+8-smukundan.img  installfrom=pxe/pxe-boot/smukundan-mfn- installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL dpeet-17a
+ MENU LABEL dpeet-17a mfc-12.3.0-27114_342+11-dpeet 2012-07-17
+ KERNEL pxe-boot/dpeet-17a/vmlinuz-bootflop-mfc-12.3.0-27114_342+11-dpeet
+ APPEND initrd=pxe-boot/dpeet-17a/rootflop-mfc-12.3.0-27114_342+11-dpeet.img  installfrom=pxe/pxe-boot/dpeet-17a installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL rajaru-smap_sanity
+ MENU LABEL rajaru-smap_sanity mfc-12.3.0-26784_335+21-rajaru 2012-07-17
+ KERNEL pxe-boot/rajaru-smap_sanity/vmlinuz-bootflop-mfc-12.3.0-26784_335+21-rajaru
+ APPEND initrd=pxe-boot/rajaru-smap_sanity/rootflop-mfc-12.3.0-26784_335+21-rajaru.img  installfrom=pxe/pxe-boot/rajaru-smap_sanity installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL dgautam-garfield-bugfix
+ MENU LABEL dgautam-garfield-bugfix mfc-12.2.1-27116_339+10-dgautam 2012-07-17
+ KERNEL pxe-boot/dgautam-garfield-bugfix/vmlinuz-bootflop-mfc-12.2.1-27116_339+10-dgautam
+ APPEND initrd=pxe-boot/dgautam-garfield-bugfix/rootflop-mfc-12.2.1-27116_339+10-dgautam.img  installfrom=pxe/pxe-boot/dgautam-garfield-bugfix installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL jdevadoss-1707
+ MENU LABEL jdevadoss-1707 mfn-0.0.9-1_27117_317+12-jdevadoss 2012-07-17
+ KERNEL pxe-boot/jdevadoss-1707/vmlinuz-bootflop-mfn-0.0.9-1_27117_317+12-jdevadoss
+ APPEND initrd=pxe-boot/jdevadoss-1707/rootflop-mfn-0.0.9-1_27117_317+12-jdevadoss.img  installfrom=pxe/pxe-boot/jdevadoss-1707 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL qsun-wait_for_more_data
+ MENU LABEL qsun-wait_for_more_data Qichao 2012-07-16
+ KERNEL pxe-boot/qsun-wait_for_more_data/vmlinuz-bootflop-mfc-12.2.1-27092_339+10-qsun
+ APPEND initrd=pxe-boot/qsun-wait_for_more_data/rootflop-mfc-12.2.1-27092_339+10-qsun.img  installfrom=pxe/pxe-boot/qsun-wait_for_more_data installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL rnavanee-Everett_Nawras
+ MENU LABEL rnavanee-Everett_Nawras Everett Nawras private image 2012-07-16
+ KERNEL pxe-boot/rnavanee-Everett_Nawras/vmlinuz-bootflop-mfc-11.B.4-26108_314+162-rnavanee
+ APPEND initrd=pxe-boot/rnavanee-Everett_Nawras/rootflop-mfc-11.B.4-26108_314+162-rnavanee.img  installfrom=pxe/pxe-boot/rnavanee-Everett_Nawras installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL ymariappan-high_memory
+ MENU LABEL ymariappan-high_memory high_memory_yuva 2012-07-16
+ KERNEL pxe-boot/ymariappan-high_memory/vmlinuz-bootflop-mfc-12.2.1-27086_339+7-ymariappan
+ APPEND initrd=pxe-boot/ymariappan-high_memory/rootflop-mfc-12.2.1-27086_339+7-ymariappan.img  installfrom=pxe/pxe-boot/ymariappan-high_memory installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL smukundan-mfn-gcov-old-cli
+ MENU LABEL smukundan-mfn-gcov-old-cli mfn-0.0.9-1_27014_317-smukundan 2012-07-16
+ KERNEL pxe-boot/smukundan-mfn-gcov-old-cli/vmlinuz-bootflop-mfn-0.0.9-1_27014_317-smukundan
+ APPEND initrd=pxe-boot/smukundan-mfn-gcov-old-cli/rootflop-mfn-0.0.9-1_27014_317-smukundan.img  installfrom=pxe/pxe-boot/smukundan-mfn-gcov-old-cli installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL smukundan-mfn-gcov
+ MENU LABEL smukundan-mfn-gcov mfn-0.0.9-1_27079_317-smukundan 2012-07-16
+ KERNEL pxe-boot/smukundan-mfn-gcov/vmlinuz-bootflop-mfn-0.0.9-1_27079_317-smukundan
+ APPEND initrd=pxe-boot/smukundan-mfn-gcov/rootflop-mfn-0.0.9-1_27079_317-smukundan.img  installfrom=pxe/pxe-boot/smukundan-mfn-gcov installopt=,accept-eula,
+ IPAPPEND 3
+

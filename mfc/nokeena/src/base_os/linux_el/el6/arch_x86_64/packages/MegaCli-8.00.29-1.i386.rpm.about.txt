@@ -1,0 +1,13 @@
+BinaryFile: MegaCli-8.00.29-1.i386.rpm
+Description: MegaCLI SAS RAID Management Tool, Ver 8.00.29 July 12, 2010, for LSI controllers.
+From: LSI
+Compiled from source: no
+Modified: no
+Copyright: Copyright LSI Corporation
+LicenseType: Commercial, free to use
+LicenseURL: http://www.lsi.com/terms.html
+BinaryDownloadedFrom: http://www.lsi.com/DistributionSystem/AssetDocument/8.00.29_Linux_MegaCli.zip
+BinaryLocalCopy: svn: nokeena/src/base_os/linux_el/el6/arch_x86_64/packages/MegaCli-8.00.29-1.i386.rpm
+SourceDownloadedFrom: None
+SourceLocalCopy: None
+# (There is no license along with or in the MegaCli rpm package.) 

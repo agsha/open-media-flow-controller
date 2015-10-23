@@ -1,0 +1,109 @@
+<?
+# (C) Copyright 2015 Juniper Networks
+# All rights reserved.
+
+# ==================================================
+#
+# Contains some basic utilities.
+#
+?>
+
+<?
+namespace eval tms-utils {
+
+# ===================================================
+# tms-utils::get-user
+#
+# returns the currently authenticated user
+#
+
+namespace export get-user
+proc get-user {} {
+    return [tms::get-cgi-var "REMOTE_USER"]
+}
+
+namespace export get-user-local
+proc get-user-local {} {
+    return [tms::get-cgi-var "REMOTE_AUTH_USER"]
+}
+
+# ===================================================
+# tms-utils::get-device-ip device
+#
+# returns the current ip of the given device
+#
+
+namespace export get-device-ip
+proc get-device-ip {device} {
+    set device_entry [exec /sbin/ifconfig $device]
+    set ip_idx [expr [string first "inet addr:" $device_entry] + 10]
+    set device_part [string range $device_entry $ip_idx end]
+    set spc_idx [string first " " $device_part]
+    return [string range $device_part 0 $spc_idx]
+}
+
+# ===================================================
+# tms-utils::get-hostname
+#
+# returns the current hostname
+#
+
+namespace export get-hostname
+proc get-hostname {} {
+    return [exec hostname]
+}
+
+
+# ===================================================
+# tms-utils::named-args
+#
+# Take an argument list and a set of defaults and 'return' an unnamed
+# array with each element representing a possible command option
+#
+
+namespace export named-args
+proc named-args {args defaults} {
+    upvar 1 "" ""
+    array set "" $defaults
+    foreach {key value} $args {
+        if {![info exists ($key)]} {
+           error "Bad option '$key', should be one of: [lsort [array names {}]]"
+        }
+        set ($key) $value
+    }
+}
+
+
+# ===================================================
+# tms-utils::is-invis-user
+#
+# Determine if the specified username is supposed to be invisible in the UI.
+#
+namespace export is-invis-user
+proc is-invis-user {user} {
+  foreach invs_user {"apache" "ntp" "pcap" "sshd" "root" "statsd" "tmsresv" "nobody" "vcsa" "__mfcd"} {
+    if {[string compare $user $invs_user] == 0} {
+      return true
+    }
+  }
+  return false
+}
+
+# ===================================================
+# tms-utils::is-system-user
+#
+# Determine if the specified username is a "system user".
+#
+namespace export is-system-user
+proc is-system-user {user} {
+  foreach sys_user {"admin" "monitor"} {
+    if {[string compare $user $sys_user] == 0} {
+      return true
+    }
+  }
+  return false
+}
+
+}
+
+?>

@@ -1,0 +1,239 @@
+<?
+#
+# Filename:  servicecfg-network.tem,v $
+# Date:      2009/02/06 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Network">
+<TMS-MENU "servicecfg">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SERVICECFG-MENU "network"></TMS-SERVICECFG-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Network Configuration">
+
+<CFG-FORM -div_id "net_conn">
+  <h2>Network Connection</h2>
+  <TMS-TABLE -div_id "network_conn">
+
+    <TMS-TABLE-ENTRY "Connection Idle Timeout(secs)">
+      <CFG-TEXTBOX -id "idle_timeout" -errname "idle_timeout" -caps "set_basic"
+                   -name "/nkn/nvsd/network/config/timeout"
+                   -type "uint32" -span_id "configure_idle_timeout">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Connection Max-Bandwidth(kbps)">
+      <CFG-TEXTBOX -id "max_bw" -errname "max_bw" -caps "set_basic"
+                   -name "/nkn/nvsd/network/config/max_bandwidth"
+                   -type "uint32" -span_id "configure_max_bw">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Connection Concurrent Sessions">
+      <CFG-TEXTBOX -id "con_sess" -errname "con_sess" -caps "set_basic"
+                   -name "/nkn/nvsd/network/config/max_connections"
+                   -type "uint32" -span_id "configure_con_sess">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Connection Assured Flow Rate(kbps)">
+      <CFG-TEXTBOX -id "afr" -errname "afr" -caps "set_basic"
+                   -name "/nkn/nvsd/network/config/assured_flow_rate"
+                   -type "uint32" -span_id "configure_afr">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "nw_apply_1">
+
+</CFG-FORM>
+<!--
+<h2>Permitted Network Access Entries</h2>
+<CFG-FORM -action "config-form-array" -div_id "permit_2">
+  <?
+    set cur_line 0
+    set permit_prefix "/nkn/nvsd/network/config/access_control/permit"
+    set permit_ids [tms::iterate-config $permit_prefix]
+  ?>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        IP address</td>
+      <td>
+        Net Mask</td>
+    </tr>
+    <FOREACH permit_id $permit_ids>
+    <?
+    set prefix_len [string length "$permit_prefix/"]
+    set row_id [string range $permit_id $prefix_len end]
+    set permit_addr [tms::get-config "$permit_id/address"]
+    set permit_mask [tms::get-config "$permit_id/mask"]
+    ?>
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$row_id" -caps "set_privileged"
+                         -value "/nkn/nvsd/network/config/access_control/permit/$row_id"
+                         -span_id "permit_cbox_1">
+      </td>
+      <td>
+        <?=$permit_addr?></td>
+      <td>
+        <?=$permit_mask?></td>
+    </tr>
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Permitted Network Access Control Configured.
+      <SET priv DISABLED_set_privileged>
+    <ELSE>
+      <SET priv set_privileged>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+  <input type="hidden" name="f_array_root" value="/nkn/nvsd/network/config/access_control/permit">
+  <input type="hidden" name="f_array_shift" value="true">
+
+  <input type="hidden" name="f_array_custom_buttons" value="remove">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps "set_privileged" -span_id "permit_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+
+    </p></td>
+ </CFG-FORM>
+ </tr></table>
+
+<CFG-FORM -action "config-form-array" -div_id "access_1">
+  <h2>Add Permit Network Access Entry</h2>
+  <TMS-TABLE -div_id "acc_ctrl_table_1">
+    <TMS-TABLE-ENTRY "IP Address">
+      <CFG-TEXTBOX -id "address" -errname "IP addrss" 
+           -caps "set_privileged" -type "ipv4addr" -cols "20"
+           -span_id "acc_addr_1">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Mask">
+      <CFG-TEXTBOX -id "mask" -errname "Mask" 
+           -caps "set_privileged" -type "ipv4addr" -cols "20"
+           -span_id "acc_mask_1">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="15">
+  </TMS-TABLE>
+  <input type="hidden" name="f_array_root" value="/nkn/nvsd/network/config/access_control/permit"">
+  <input type="hidden" name="f_array_children"
+      value="address,mask">
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_privileged"
+              -span_id "acc_ctrl_permit_1">
+
+</CFG-FORM>
+
+</CFG-FORM>
+<h2> Denied Network Access Entries</h2>
+<CFG-FORM -action "config-form-array" -div_id "deny_2">
+  <?
+    set cur_line 0
+    set deny_prefix "/nkn/nvsd/network/config/access_control/deny"
+    set deny_ids [tms::iterate-config $deny_prefix]
+  ?>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        IP address</td>
+      <td>
+        Net Mask</td>
+    </tr>
+    <FOREACH deny_id $deny_ids>
+    <?
+    set prefix_len [string length "$deny_prefix/"]
+    set row_id [string range $deny_id $prefix_len end]
+    set deny_addr [tms::get-config "$deny_id/address"]
+    set deny_mask [tms::get-config "$deny_id/mask"]
+    ?>
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$row_id" -caps "set_privileged"
+                         -value "/nkn/nvsd/network/config/access_control/deny/$row_id"
+                         -span_id "deny_cbox_1">
+      </td>
+      <td>
+        <?=$deny_addr?></td>
+      <td>
+        <?=$deny_mask?></td>
+    </tr>
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Denied Network Access Control Configured.
+      <SET priv DISABLED_set_privileged>
+    <ELSE>
+      <SET priv set_privileged>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+  <input type="hidden" name="f_array_root" value="/nkn/nvsd/network/config/access_control/deny">
+  <input type="hidden" name="f_array_shift" value="true">
+
+  <input type="hidden" name="f_array_custom_buttons" value="remove">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps "set_privileged" -span_id "deny_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+
+    </p></td>
+ </CFG-FORM>
+ </tr></table>
+
+<CFG-FORM -action "config-form-array" -div_id "access_2">
+  <h2>Add Deny Network Access Entry</h2>
+  <TMS-TABLE -div_id "acc_ctrl_table_2">
+    <TMS-TABLE-ENTRY "IP Address">
+      <CFG-TEXTBOX -id "address" -errname "IP addrss" 
+           -caps "set_privileged" -type "ipv4addr" -cols "20"
+           -span_id "acc_addr_2">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Mask">
+      <CFG-TEXTBOX -id "mask" -errname "Mask" 
+           -caps "set_privileged" -type "ipv4addr" -cols "20"
+           -span_id "acc_mask_2">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="15">
+  </TMS-TABLE>
+  <input type="hidden" name="f_array_root" value="/nkn/nvsd/network/config/access_control/deny"">
+  <input type="hidden" name="f_array_children"
+      value="address,mask">
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_privileged"
+              -span_id "acc_ctrl_deny_1">
+</CFG-FORM>
+-->
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

@@ -1,0 +1,1468 @@
+<?
+# (C) Copyright 2015 Juniper Networks
+# All rights reserved.
+?>
+
+<INCLUDE "tms-defines">
+<INCLUDE "tms-utils">
+<INCLUDE "tms-cfg-form">
+
+<?
+# =============================================================================
+# === Check if an upgrade is in progress                                    ===
+# =============================================================================
+?>
+<TAG CHECK-UPGRADE-STATUS require_running>
+  <?
+    global active_opers
+    global inst_any
+    set active_opers 0
+    set session_id [tms::get-session-id]
+    set owner "web-$session_id"
+  ?>
+  <SET inst_any [tms::get-config "/image/state/last_install/running"]>
+  <SET dl_opers [tms::get-progress-opers-by-type "$owner" "image_download"]>
+  <FOREACH oper $dl_opers>
+    <SET oper_state [tms::get-config "/progress/state/oper/$oper/state"]>
+    <IF {[string compare $oper_state "running"] == 0 || [string compare $require_running "true"] != 0}>
+      <SET active_opers [expr $active_opers + 1]>
+    </IF>
+  </FOREACH>
+  <SET inst_opers [tms::get-progress-opers-by-type "$owner" "image_install"]>
+  <FOREACH oper $inst_opers>
+    <SET oper_state [tms::get-config "/progress/state/oper/$oper/state"]>
+    <IF {[string compare $oper_state "running"] == 0 || [string compare $require_running "true"] != 0}>
+      <SET active_opers [expr $active_opers + 1]>
+    </IF>
+  </FOREACH>
+</TAG>
+
+<TAG TMS-PAGE title {refresh_cookie ""} {do_autologout "true"}>
+<?
+  global banner_logo_src
+  global banner_logo_width
+  global banner_logo_height
+  global company_name
+  global company_url
+  global console_banner
+  global redirect
+  global logout_url
+  global page_body_disable
+  global home_template
+  global cluster_redirect_template
+  set hostname [tms-utils::get-hostname]
+  set user [tms-utils::get-user]
+  set local_user [tms-utils::get-user-local]
+  set cluster_id {}
+  set cluster_local_role {}
+  set cluster_redirect_param {}
+  set cluster_redirect_cookie {}
+  set cluster_allow_redirect "true"
+  set cluster_no_redirect_cookie_value {}
+  set cluster_had_redirect "false"
+  set cluster_redirect_from_hostname {}
+  set cluster_redirect_from_url {}
+  set redirect {}
+  set master_vip {}
+  set master_redirect_url {}
+  set mfd_license 0
+  set num_license 0
+  set key 0
+  set license_str ""
+  # Conditional on PROD_FEATURE_CLUSTER
+  set have_cluster [tms::have-prod-feature cluster]
+  set have_cluster_enable "false"
+  set autologout_time 0
+  if {![info exists page_body_disable]} {
+        set page_body_disable "false"
+  }
+  if {![info exists home_template]} {
+        set home_template "home"
+  }
+  if {![info exists cluster_redirect_template]} {
+        set cluster_redirect_template $home_template
+  }
+
+  global display_config_confirm
+  global has_set_capab
+
+  if {[string compare $have_cluster "true"] == 0} {
+      set cluster_redirect_param [tms::get-param query "clredir"]
+      set cluster_redirect_from_hostname [tms::get-param query "clredir_from"]
+      set cluster_redirect_from_url [tms::get-param query "clredir_from_url"]
+      set cluster_redirect_cookie [tms::get-cookie cluster_master_redirect]
+      set cluster_no_redirect_cookie_value "false"
+
+      # The URL can have "clredir=false" to explictly talk to a
+      # non-master box.  This will set a cookie below, using javascript.
+      # If the URL has "clredir=true" (or anything else), it will remove
+      # any existing cookie.
+
+      if {[string length $cluster_redirect_param] > 0 &&
+         [string compare $cluster_redirect_param "false"] != 0} {
+          set cluster_allow_redirect "true"
+      } elseif {[string compare $cluster_redirect_param "false"] == 0 || 
+        ([string length $user] > 0 &&
+         [string compare $cluster_redirect_cookie $cluster_no_redirect_cookie_value] == 0)} {
+          set cluster_allow_redirect "false"
+      } else {
+          set cluster_allow_redirect "true"
+      }
+
+      if {[string length $cluster_redirect_from_hostname] > 0} {
+          set cluster_had_redirect "true"
+      }
+  }
+
+  if {[string length $user] > 0} {
+      # set local_user [tms::get-config "/mgmtd/session/current/username_local"]
+      
+      # - Commented out use of MFD license - # USE_MFD_LICENSE
+      #set key 0
+      #set license_ids [tms::iterate-config "/license/key"]
+      #set num_license [llength $license_ids]
+      #if {$num_license == 0} {
+      #    set license_str "License: Not installed"
+      #} else {
+      #    foreach  key_id $license_ids {
+      #       set l_feature [tms::get-config "$key_id/properties/feature"]
+      #       set l_valid [tms::get-config "$key_id/properties/valid"]
+      #       set l_active [tms::get-config "$key_id/properties/active"]
+      #       if { [string compare $l_feature "MFD"] == 0} {
+      #           set mfd_license 1
+      # 	  set key [tms::get-config "$key_id"]
+      # 	  if { [string compare $l_active "true"] == 0} {
+      # 	      set license [tms::get-config "/license/key/$key/properties/end_date"]
+      # 	      if { [string length $license ] == 0 } {
+      # 	          set license "Never"
+      #               }
+      #               set license_str "License: Expires on : $license"
+      # 	      break
+      # 	  } elseif { [string compare $l_valid "true"] == 0 } {
+      # 	      set license [tms::get-config "/license/key/$key/properties/end_date"]
+      # 	      set license_str "License : Product disabled. License expired on :$license"
+      # 	  } else {
+      # 	      set license_str "License : Product disabled. Malformed license"
+      # 	  }
+      #       }
+      #   }
+      #   if {$mfd_license == 0} {
+      #       set license_str "License:  Not installed"
+      #   }
+      #}
+      # - End of Commented out use of MFD license - # USE_MFD_LICENSE
+
+      if {[string compare $do_autologout "true"] == 0} {
+        set autologout_time [tms::get-config "/wsm/inactivity_timeout"]
+        global autologout_url
+      }
+
+      if {[string compare $have_cluster "true"] == 0} {
+          set have_cluster_enable [tms::get-config "/cluster/config/enable"]
+
+          if {[string compare $have_cluster_enable "true"] == 0} {
+              # are we on the cluster master?
+              set cluster_id [tms::get-config "/cluster/config/id"]
+              set master_id  [tms::get-config "/cluster/state/master/id"]
+              set local_id   [tms::get-config "/cluster/state/local/id"]
+              set cluster_local_role [tms::get-config "/cluster/state/local/role"]
+
+              # is cluster up?
+              if {[string length $master_id] > 0} {
+                  # yes, are we master?
+                  if {$master_id != $local_id} {
+                      # no, may redirect to master
+                      set master_vip [tms::get-config "/cluster/config/master/vip"]
+                      set redirect [tms::get-config "/cluster/state/global/$master_id/primary_addr"]
+
+                      set cluster_redirect_host {}
+                      if {(0 < [string length $master_vip]) &&
+                          ![string match $master_vip "0.0.0.0"]} {
+                          set cluster_redirect_host $master_vip
+                      } elseif {0 < [string length $redirect] } {
+                          set cluster_redirect_host $redirect
+                      }
+                       
+                      # 
+                      # Figure out the master redirect URL, as well as
+                      # our URL, so that the master can have a link back
+                      #
+                      if {[string length $cluster_redirect_host] > 0 && 
+                          [string length $cluster_redirect_template] > 0} {
+                          set self_url [tms::request-scheme]://[tms::get-cgi-var SERVER_ADDR][tms::get-cgi-var REQUEST_URI]
+                          set self_url [regsub -all {&clredir=[a-z]*} $self_url ""]
+                          set self_url $self_url&clredir=false
+                          set master_redirect_url [tms::request-scheme]://$cluster_redirect_host[tms::construct-url-paired "template" $cluster_redirect_template "clredir_from" $hostname "clredir_from_url" [tms::url-escape $self_url]]
+                      }
+                      # URL that when clicked stops master redirect from happening
+                      set self_no_master_redirect_url "[tms::get-cgi-var REQUEST_URI]"
+                      set self_no_master_redirect_url [regsub -all {&clredir=[a-z]*} $self_no_master_redirect_url ""]
+                      set self_no_master_redirect_url "$self_no_master_redirect_url&amp;clredir=false"
+                  }
+              }
+          }
+      }
+
+    # Display the config confirmation if (a) confirmation of configuration is
+    # needed on this system; and (b) if the user has some set capability
+    # potential.  (Don't taunt the monitor user...)
+
+    set need_config_confirm [tms::need-config-confirm]
+
+    # Conditional on PROD_FEATURE_CAPABS
+    set have_capabs [tms::have-prod-feature capabs]
+    if {([string compare $have_capabs "true"] == 0)} {
+      set max_capabs [tms::get-capabilities-max]
+      if {[lsearch $max_capabs "set_*"] == -1} {
+        set has_set_potential 0
+      } else {
+        set has_set_potential 1
+      }
+
+      if {$need_config_confirm != 0 && $has_set_potential != 0} {
+        set display_config_confirm 1
+        set curr_capabs [tms::get-capabilities]
+        if {[lsearch $curr_capabs "set_*"] == -1} {
+          set has_set_capab "0"
+          set config_edits_status "disabled"
+        } else {
+          set has_set_capab "1"
+          set config_edits_status "enabled"
+        }
+       set confirm_change_conf_url [tms::construct-url-paired "template" "setup-cmc-client"]
+      } else {
+        set display_config_confirm 0
+      }
+    }
+
+    # Conditional on PROD_FEATURE_ACLS
+    set have_acls [tms::have-prod-feature acls]
+    if {([string compare $have_acls "true"] == 0)} {
+      # XXXXX/EMT/RBAC: incorrect!
+      # (It's going to be hard to get 'has_set_potential'...)
+      set display_config_confirm 0
+      set has_set_capab "1"
+    }
+  } else {
+      set display_config_confirm 0
+  }
+?>
+  <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+  <html>
+  <head>
+    <title><?=$hostname?> - <?=$title?></title>
+    <link title="default" rel="stylesheet" type="text/css" href="/tms-default.css">
+    <IF {(0 < [string length $master_vip]) && ![string match $master_vip "0.0.0.0"]}>
+      <meta http-equiv="refresh" content="1; URL=http://<?=$master_vip?>">
+    <ELSE> 
+      <IF {0 < [string length $redirect] } >
+        <meta http-equiv="refresh" content="1; URL=http://<?=$redirect?>">
+      </IF>
+    </IF>
+    <IF {$autologout_time \> 0}>
+      <meta HTTP-EQUIV="Refresh"
+            CONTENT="<?=$autologout_time?>; URL=<?=$autologout_url?>">
+    </IF>
+    <script type="text/javascript" src="/tms-utils.js"></script>
+    <script type="text/javascript" src="/dashboard.js"></script>
+    <script type="text/javascript">
+        function homepagepopup(mylink)
+	{
+	    if (! window.focus)return true;
+	    var href;
+	    if (typeof(mylink) == 'string')
+	        href=mylink;
+	    else
+	        href=mylink.href;
+	    window.open(href, 'Juniper', 'scrollbars=yes');
+	    return false;
+	}
+    </script>
+  </head>
+
+<?
+    if {[string compare $page_body_disable "true"] == 0} {
+        tms::puts "<body></body></html>";
+        return -code return "Ended page early"
+    }
+?>
+
+<IF {[string compare $have_cluster "true"] == 0}>
+    <IF {[string compare $cluster_allow_redirect "false"] == 0 &&
+        [string length $cluster_no_redirect_cookie_value] \> 0}>
+        <IF {[string compare $cluster_redirect_cookie $cluster_no_redirect_cookie_value] != 0}>
+            <script type="text/javascript">setClusterNoRedirect(<?=$cluster_no_redirect_cookie_value?>);</script>
+        </IF>
+    <ELSE>
+        <IF {[string length $cluster_redirect_cookie] != 0}>
+            <script type="text/javascript">clearClusterNoRedirect();</script>
+        </IF>
+    </IF>
+</IF>
+
+<IF {[string length $refresh_cookie] != 0}>
+  <body onLoad='doRefresh(\"<?=$refresh_cookie?>\")' id="tms_layout">
+<ELSE>
+  <body onLoad='doPageLocation();'>
+</IF>  
+            <div id="tms_page">
+                <div id="preamble">
+                  <div id="logo_area">
+                     <h1> <?=$company_name?> </h1>
+                  </div>
+                  <div id="message_area">
+                    <div id="banner">
+                      <?=$console_banner?>
+                    </div>
+<IF {[string compare $have_cluster_enable "true"] == 0}>
+                    <br>
+                    <div id="ajaxStatus">
+                    </div>
+                    <div id="empty_message">
+                    </div>
+                    <div id="cluster_message">
+                      <IF {[string compare $cluster_allow_redirect "false"] == 0}>
+                          <IF {[string length $cluster_local_role] == 0 || [string compare $cluster_local_role "unknown"] == 0}>
+                                <br style="line-height: 0.5ex">
+                                <span class="warning">Warning:</span>
+                                master unknown.  Shared configuration
+                                must be changed on the 
+                                 <a href=\"<?=$master_redirect_url?>\" onClick="clearClusterNoRedirect();">Cluster Master</a>.
+                          <ELSE>
+                               <IF {[string compare $cluster_local_role "normal"] == 0 || [string compare $cluster_local_role "standby"] == 0}>
+                                 <br style="line-height: 0.5ex">
+                                 <span class="warning">Warning:</span>
+                                 this system is not the master.  Shared
+                                 configuration must be changed on the
+                                 <a href=\"<?=$master_redirect_url?>\" onClick="clearClusterNoRedirect();">Cluster Master</a>.
+                               </IF>
+                          </IF>
+                      </IF>
+                      <IF {[string compare $cluster_had_redirect "true"]  == 0}>
+                          <br style="line-height: 0.5ex">
+                          <span class="notice">Note:</span> Redirected to
+                            cluster master from 
+                            <IF {[string length $cluster_redirect_from_url] \> 0}>
+                                <a href=\"<?=$cluster_redirect_from_url?>\"><?=$cluster_redirect_from_hostname?></a>
+                            <ELSE>
+                                <?=$cluster_redirect_from_hostname?>
+                            </IF>
+                            .
+                      </IF>
+                    </div>
+
+                    <IF {0 < [string length $master_redirect_url]}>
+                        <IF {[string compare $cluster_allow_redirect "false"] != 0}>
+                            <div id="cluster_redirect">
+                                <span class="warning">Warning:</span> redirecting to <a
+                  href=\"<?=$master_redirect_url?>\">Cluster Master</a></span>.  Click
+                  for <a href=\"<?=$self_no_master_redirect_url?>\">local</a> management.
+                            </div>
+                        </IF>
+                    </IF>   
+</IF>
+                  </div>
+                  <div id="login">
+<IF {[string compare $have_cluster_enable "true"] == 0 && [string length cluster_id] \> 0}>
+                    <span class="keyword">Cluster:</span> <?=$cluster_id?><br>
+</IF>
+                    <span class="keyword">Host:</span> <?=$hostname?><br>
+                    <IF {[string match "" $user] == 1}>
+                      (not logged in)
+                    <ELSE>
+                    <span class="keyword">User:</span> <?=$user?><br>
+		    <span class="red"> <?=$license_str?></span><br>
+
+<IF {[string length $local_user] != 0 && [string compare $local_user $user] != 0}>
+                    <br><span class="keyword">Local user:</span> <?=$local_user?>
+</IF>
+
+                      <a href="<?=$logout_url?>">(logout)</a>
+
+                      <IF {$display_config_confirm == 1}>
+                        <br>
+                        <span class="keyword">Config changes:</span> 
+                        <?=$config_edits_status?>
+                        <a href="<?=$confirm_change_conf_url?>">
+                        (change...)</a>
+                      </IF>
+
+                    </IF>
+
+                  </div>
+             <div id="preambleLast"></div>
+          </div>
+</TAG>
+
+<TAGEND TMS-PAGE>
+<?
+  global copyright_range 
+  global company_url
+  global company_legal
+  global ajax_status_url
+
+  set user [tms-utils::get-user]
+
+  # Conditional on PROD_FEATURE_CLUSTER
+  set have_cluster [tms::have-prod-feature cluster]
+  set have_cluster_enable "false"
+  if {[string length $user] > 0} {
+      if {[string compare $have_cluster "true"] == 0} {
+          set have_cluster_enable [tms::get-config "/cluster/config/enable"]
+      }
+  }
+?>
+      <div id="after">                                                                                                        
+            <div id="after2">                                                                                                     
+              <span id="copyright">                                                                                               
+               &copy; <?=$copyright_range?>                                                                                       
+              <a href="<?=$company_url?>"><?=$company_legal?></a>                                                                 
+              </span>                                                                                                             
+            </div>                                                                                                                
+          </div>                                                                                                                  
+          <div id="last"></div>                                                                                                   
+      </div>     
+<?
+###      <div style="color: #ccc; text-align: right;">
+###      <span onclick="setActiveStyleSheet('default');">Default Style</span><br />
+###      <span onclick="setActiveStyleSheet('alt1');">Alternate Style</span>
+###      </div>
+?>
+      <div id="extradiv1"></div>
+      <div id="extradiv2"></div>
+      <div id="extradiv3"></div>
+      <div id="extradiv4"></div>
+      <div id="extradiv5"></div>
+<IF {[string compare $have_cluster_enable "true"] == 0}>
+  <IF {0 < [string length $user]}>
+    <?
+        # update every 10 seconds
+        set interval [expr {10 * 1000}]
+    ?>
+    <SCRIPT type="text/javascript">
+        function alertWrapper() {
+            getAjaxText ('<?=$ajax_status_url?>','ajaxStatus')
+            setTimeout(alertWrapper, <?=$interval?>);
+        }
+        alertWrapper();
+    </SCRIPT>
+</IF>
+
+</IF>
+
+      </body>
+      </html> <!-- TMS-PAGE -->
+</TAGEND>
+
+
+<TAG TMS-BODY>
+    <div id="pageBody">
+</TAG>
+
+<TAGEND TMS-BODY>
+    <div id="pageBodyLast"></div>
+    </div> <!-- TMS-BODY -->
+</TAGEND>
+
+<TAG TMS-SIDEBAR>
+     <div id="pageSidebar">
+</TAG>
+
+<TAGEND TMS-SIDEBAR>
+     <div id="pageSidebarLast"></div>
+     </div> <!-- TMS-SIDEBAR -->
+</TAGEND>
+
+<TAG TMS-PAGE-CONTENT title>
+    <div id="pageContent">
+
+      <TMS-MSG>
+
+      <IF {[string length $title] != 0 && [string compare $title "-"] != 0}>
+          <div id="pageTitle">
+              <?=$title?>
+          </div>
+      </IF>
+</TAG>
+
+<TAGEND TMS-PAGE-CONTENT>
+     <div id="pageContentLast"></div>
+    </div> <!-- TMS-PAGE-CONTENT -->
+</TAGEND>
+
+<TAG TAB selected tmpl label left_pad right_pad>
+<li>
+    <a href="/admin/launch?script=rh&amp;template=<?=$tmpl?>" class="sel<?=$selected?>">
+      <?=$label?>
+    </a>
+</li>
+</TAG>
+
+<TAG TMS-MENU selected>
+  <?
+    global setup_main_tab
+    global mon_main_tab
+    global servicecfg_tab
+    global dashboard_tab
+    global reports_tab
+    global mfp_tab
+    set have_cmc [tms::get-config "/cmc/config/available"]
+    foreach item {"mon" "ezconfig" "setup" "servicecfg" "logs" "servicelog" "tracelog" "cachelog" "streamlog" "publishlog" "dashboard" "reports" "documents" "mfp"} {
+      set ${item}_selected 0
+    }
+    if {[string compare $have_cmc "true"] == 0} {
+      set cmc_profile_selected 0
+      set cmc_setup_selected 0
+    }
+    set ${selected}_selected 1
+  ?>
+  <div id="tms_menu_top"></div>
+  <div id="tms_menu_outer">
+    <ul id="tms_menu">
+            <TAB $mon_selected $mon_main_tab Monitoring 8 2>
+            <TAB $setup_selected $setup_main_tab "System&nbsp;Config" 2 2>
+            <IF {[string compare $have_cmc "true"] == 0}>
+              <TAB $cmc_setup_selected setup-cmc-appliances
+               "CMC&nbsp;Setup" 2 2>
+              <TAB $cmc_profile_selected profile-cmc-main
+               "CMC&nbsp;Profiles" 2 2>
+            </IF>
+            <TAB $logs_selected "logging&amp;log=current" "Logs" 2 2>
+            <TAB $dashboard_selected $dashboard_tab "Dashboard" 2 2>
+            <TAB $reports_selected $reports_tab "Reports" 2 2>
+	    <TAB $mfp_selected $mfp_tab "Media Flow Publisher" 2 2>
+<!--
+	    <TAB $documents_selected "show_documents" "Documents" 2 2>
+-->
+    </ul>
+  </div> <!-- tms_menu_outer -->
+   <div id="changes_outer">
+       <div id="changes">
+            <CFG-FORM -div_id "changes_inner">
+                <?
+                  global node_unsaved_changes 
+                  set db_dirty [tms::get-config $node_unsaved_changes]
+                ?>
+                <p>
+                <IF {[string compare $db_dirty "true"] == 0}>
+                   <span class="red">
+                        Unsaved changes
+                   </span>
+
+                <ELSE>
+                  No unsaved changes
+                </IF>
+                &nbsp;
+                <CFG-BUTTON -type "save" -text "Save" 
+                            -caps "action_privileged"
+                            -acl {all_7 sys_9} -acl_oper {action}>
+                </p>
+           </CFG-FORM>
+       </div>
+   </div> <!-- changes_outer -->
+
+  <div id="tms_menu_bottom">
+  </div>
+
+</TAG>
+
+<TAG TMS-SIDEBAR-MENU selected options prefix {arg ""} {arg_value ""}>
+  <div id="tms_sidebar_menu">
+    <ul class="sidebar_menu">
+    <?
+      set arg_str ""
+      if {[string length $arg] > 0 && [string length $arg_value] > 0} {
+        set arg_str "&amp;$arg=$arg_value"
+      }
+      set elems_left [llength $options]
+      set elems_done 0
+      foreach section $options {
+        set elems_left [expr $elems_left - 1]
+        foreach item $section {
+          set id [lindex $item 0]
+          set str [lindex $item 1]
+          set no_ref_span [lindex $item 2]
+          if {[string compare $id $selected] == 0} {
+            set class sidebar_sel
+          } else {
+            set class sidebar_unsel
+          }
+  ?>
+    <li>
+    <IF {[string length $no_ref_span] == 0}>
+      <a href="/admin/launch?script=rh&amp;template=<?=$prefix?><?=$id?><?=$arg_str?>"
+          class="<?=$class?>">
+        <?=$str?>
+      <IF {$class == "sidebar_sel"}>
+          &laquo;
+      </IF>
+     </a>
+    <ELSE>
+      <span class="<?=$no_ref_span?>"><?=$str?></span>
+    </IF>
+      <? 
+         incr elems_done
+      ?>
+    </li>
+  <?
+        }
+  ?>
+  <?
+    if {$elems_left != 0 && $elems_done != 0} {
+  ?>
+
+<?
+ # This row is just a bottom margin above any horizontal divider
+?>
+              <table border="0" cellspacing="0" cellpadding="0" class="sidebar_sep">
+                <tr>
+                  <td height="1"></td>
+                </tr>
+              </table>
+  <?
+      }
+  ?>
+  <?
+      }
+  ?>
+</TAG>
+
+<TAGEND TMS-SIDEBAR-MENU>
+    </ul>
+  </div> <!-- TMS-SIDEBAR-MENU -->
+</TAGEND>
+
+<TAG TMS-MON-MENU selected {arg ""} {arg_value ""}>
+  <?
+    global customer_mon_sidebar
+    set have_cmc [tms::get-config "/cmc/config/available"]
+
+    # Conditional on PROD_FEATURE_VIRT
+    set have_virt [tms::have-prod-feature virt]
+
+    set virt_capab [tms::get-config "/virt/state/capabilities/virtualization"]
+
+    # If we can't query this node, it's probably because tvirtd is not
+    # running.  And that is probably because it was just restarted to
+    # handle a fundamental change or a libvirtd disturbance (see bug 13650).
+    # In any case, we can't just treat this the same as "false", since
+    # that could mean an unjustified disappearance of the "Virt" item in
+    # the sidebar (see bug 13649).  Rather than wait and retry, which risks
+    # slowing down every page in the Web UI if something is actually wrong
+    # with tvirtd, let's just assume that we're capable of Virt.  Luckily,
+    # if tvirtd is being restarted, it probably suggests that we are.
+    # And on the off chance that we're not, we can deal with that on the
+    # virt page itself.
+    if {[string length $virt_capab] == 0} {
+      set virt_capab "true"
+    }
+
+    if {([string compare $have_virt "true"] == 0) &&
+        ([string compare $virt_capab "true"] == 0)} {
+        set virt_offered "true"
+    } else {
+        set virt_offered "false"
+    }    
+    #virt is not supprted.hiding the option
+    set virt_offered "false"
+
+    # Conditional on PROD_FEATURE_CLUSTER
+    set have_cluster [tms::have-prod-feature cluster]
+    set have_cluster_enable "false"
+    
+    if {[string compare $have_cluster "true"] == 0} {
+      set have_cluster_enable [tms::get-config "/cluster/config/enable"]
+      set cluster_local_role [tms::get-config "/cluster/state/local/role"]
+    }
+    set mon_options {
+        {summary Summary}
+        {stats Statistics}
+        {bandwidth Bandwidth}
+	{resourcepool Resource&nbsp;Pool}
+        {namespace Namespace}
+    }
+    foreach mon_sidebar $customer_mon_sidebar {
+      lappend mon_options $mon_sidebar
+    }      
+    lappend mon_options \
+        {cpu {CPU&nbsp;Load}} \
+        {mem {Memory}} \
+        {network Network} \
+        {disks Storage&nbsp;Devices}
+        #{fsmnt {File&nbsp;System}}
+    if {[string compare $have_cluster_enable "true"] == 0} {
+      lappend mon_options {cluster {Cluster Status}}
+      if {[string compare $cluster_local_role "master"] == 0} {
+        lappend mon_options {cluster-versions {Cluster Versions}}
+      }
+    }
+    if {[string compare $have_cmc "true"] == 0} {
+      lappend mon_options {cmc {CMC&nbsp;Appliances}}
+
+      if {[string compare $selected "cmc-detail"] == 0} {
+        lappend mon_options {cmc-detail "&nbsp;&nbsp;&nbsp;&nbsp;Detail"}
+      }
+    }
+
+    if {[string compare $virt_offered "true"] == 0} {
+      lappend mon_options {virt {Virtualization}}
+      if {[string compare $selected "virt-detail"] == 0} {
+        lappend mon_options {virt-detail "&nbsp;&nbsp;&nbsp;&nbsp;VM&nbsp;detail"}
+      }
+    }
+
+    lappend options $mon_options
+  ?>
+  <div id="tms_mon_menu">
+    <TMS-SIDEBAR-MENU $selected $options mon- $arg $arg_value>
+</TAG>
+
+<TAGEND TMS-MON-MENU>
+    </TMS-SIDEBAR-MENU>
+  </div> <!-- TMS-MON-MENU -->
+</TAGEND>
+
+<TAG TMS-SETUP-MENU selected {arg ""} {arg_value ""}>
+  <?
+    global customer_setup_sidebar
+    # Conditional on PROD_FEATURE_NTP_CLIENT
+    set have_ntp_client [tms::have-prod-feature ntp_client]
+    # Conditional on PROD_FEATURE_FRONT_PANEL
+    set have_lcd_feature [tms::have-prod-feature front_panel]
+    set lcd_io_handlers [tms::iterate-mfd "/mfg/mfdb/fpd/io_modules"]
+    set num_lcd_io_handlers [llength $lcd_io_handlers]
+    # Conditional on PROD_FEATURE_AAA
+    set have_aaa [tms::have-prod-feature aaa]
+    # Conditional on PROD_FEATURE_CRYPTO
+    set have_crypto [tms::have-prod-feature crypto]
+    # Conditional on PROD_FEATURE_RADIUS
+    set have_radius [tms::have-prod-feature radius]
+    # Conditional on PROD_FEATURE_TACACS
+    set have_tacacs [tms::have-prod-feature tacacs]
+    # Conditional on PROD_FEATURE_LDAP
+    set have_ldap [tms::have-prod-feature ldap]
+    # Conditional on PROD_FEATURE_I18N_SUPPORT
+    set have_i18n [tms::have-prod-feature i18n_support]
+    set have_cmc_client [tms::get-config "/cmc/client/config/available"]
+    set have_cmc_client  "false"
+    # Conditional on PROD_FEATURE_CLUSTER
+    set have_cluster [tms::have-prod-feature cluster]
+    set have_cluster_enable "false"
+    if {[string compare $have_cluster "true"] == 0} {
+      set have_cluster_enable [tms::get-config "/cluster/config/enable"]
+      set cluster_local_role [tms::get-config "/cluster/state/local/role"]
+    }
+
+    # Conditional on PROD_FEATURE_VIRT
+    set have_virt [tms::have-prod-feature virt]
+    set virt_capab [tms::get-config "/virt/state/capabilities/virtualization"]
+
+    # See comment in TMS-MON-MENU about why we do this.
+    if {[string length $virt_capab] == 0} {
+      set virt_capab "true"
+    }
+
+    if {([string compare $have_virt "true"] == 0) &&
+        ([string compare $virt_capab "true"] == 0)} {
+        set virt_offered "true"
+    } else {
+        set virt_offered "false"
+    }
+    #Virt page is being hidden. Setting option as false always
+    set virt_offered "false"
+    # Conditional on PROD_FEATURE_IPV6
+    set have_ipv6 [tms::have-prod-feature ipv6]
+
+    set options {}
+    lappend options $customer_setup_sidebar
+    set main_options \
+      {
+        {interface Interfaces}
+        {routing Routing}
+        {dns DNS}
+        {hostname Hostname}
+        {hosts Hosts}
+        {arp ARP}
+      }
+
+    if {([string compare $have_ipv6 "true"] == 0)} {
+      lappend main_options {neighbors Neighbors}
+    }
+    lappend main_options {web Web}
+
+    if {([string compare $have_lcd_feature "true"] == 0) &&
+        ([string compare $num_lcd_io_handlers "0"] != 0)} {
+      lappend main_options {lcd LCD}
+    }
+
+    if {[string compare $have_cluster "true"] == 0} {
+      lappend main_options {cluster Cluster}
+    }
+
+    if {[string compare $virt_offered "true"] == 0} {
+      lappend main_options {virt Virtualization}
+    }
+
+    if {[string compare $have_cmc_client "true"] == 0} {
+      lappend main_options {cmc-client CMC}
+    }
+
+    lappend options $main_options
+
+    set acct_options {
+      {users Users}
+      {ssh SSH}
+    }
+    if {[string compare $have_aaa "true"] == 0} {
+      lappend acct_options {aaa AAA}
+    }
+    if {[string compare $have_radius "true"] == 0} {
+      lappend acct_options {radius RADIUS}
+    }
+    if {[string compare $have_tacacs "true"] == 0} {
+      lappend acct_options {tacacs TACACS+}
+    }
+    if {[string compare $have_ldap "true"] == 0} {
+      lappend acct_options {ldap LDAP}
+    }
+    if {[string compare $have_crypto "true"] == 0} {
+     # lappend acct_options {ipsec IPSec}
+    }
+    lappend options $acct_options
+
+    set misc_options \
+      {
+        {snmp SNMP}
+        {faults Faults}
+        {logging Logging}
+      }
+
+    # {stats Statistics}
+
+    if {[string compare $selected "stats-edit"] == 0} {
+      lappend misc_options {stats-edit "&nbsp;&nbsp;&nbsp;&nbsp;Edit"}
+    }
+
+    lappend options $misc_options
+
+    set other_options {
+        {configs Config&nbsp;Mgmt}
+    }
+
+    if {[string compare $have_i18n "true"] == 0} {
+      lappend other_options {locale {Locale}}
+    }
+
+    lappend other_options {date {Date&nbsp;and&nbsp;time}}
+    lappend other_options {ntp NTP}
+    lappend other_options {license Licensing}
+    lappend other_options {reboot Reboot}
+
+    global node_unsaved_changes 
+    set db_dirty [tms::get-config $node_unsaved_changes]
+
+    if {[string compare $selected "reboot-confirm"] == 0} {
+      lappend other_options {reboot-confirm "&nbsp;&nbsp;&nbsp;&nbsp;Confirm"}
+    }
+
+    if {[string compare $have_cluster_enable "true"] == 0 && 
+        [string compare $cluster_local_role "master"] == 0} {
+       lappend other_options {cluster-upgrade Upgrade}
+    } else {
+       lappend other_options {upgrade Upgrade}
+       global active_opers
+       global inst_any
+?>
+       <CHECK-UPGRADE-STATUS "false">
+<?
+       if {$active_opers != 0 || [string compare $inst_any "true"] == 0} {
+           lappend other_options {upgrade-status {Upgrade&nbsp;status}}
+       }
+    }
+
+    lappend options $other_options
+    set tech_options \
+      {
+        {tech-support Tech&nbsp;Support}
+      }
+    lappend options $tech_options
+    set restart_options \
+      {
+        {restart Restart&nbsp;Services}
+      }
+    lappend options $restart_options
+  ?>
+  <div id="tms_setup_menu">
+    <TMS-SIDEBAR-MENU $selected $options setup- $arg $arg_value>
+    </TMS-SIDEBAR-MENU>
+  </div> <!-- tms_setup_menu -->
+</TAG>
+
+<TAGEND TMS-SETUP-MENU>
+  <!-- /TMS-SETUP-MENU is deprecated -->
+</TAGEND>
+
+<TAG TMS-MSG>
+<?
+  set success_msg [tms::get-custom-var "v_success"]
+?>
+<IF {[string length $success_msg] != 0}>
+<div id="tms_msg">
+  <p>
+    <? global color_success_text ?>
+    <font color="<?=$color_success_text?>">
+      <?= $success_msg ?>
+    </font>
+  </p>
+</div> <!-- tms_msg -->
+</IF>
+<?
+  set err_msg [tms::get-custom-var "v_error"]
+?>
+<IF {[string length $err_msg] != 0}>
+<div id="tms_msg">
+  <p>
+    <? global color_error_text ?>
+    <font color="<?=$color_error_text?>">
+      <?= $err_msg ?>
+    </font>
+  </p>
+</div> <!-- tms_msg -->
+</IF>
+</TAG>
+
+<TAG TMS-TABLE-SPACE>
+      <tr>
+        <td height="13"></td>
+      </tr>
+</TAG>
+
+<TAG TMS-TABLE args>
+<?
+  tms-utils::named-args $args {-cellpadding "3" -div_id "-" -class "-"}
+
+  if {[string compare $(-div_id) "-"] == 0} {
+      set id [tms::get-unique-id]
+      set (-div_id) "tms_table_$id"
+  }
+?>
+  <div id="<?= $(-div_id) ?>">
+    <table border="0" cellspacing="0" cellpadding=<?=$(-cellpadding)?>
+    <? if {[string compare $(-class) "-"] == 0} {
+        tms::puts " class=\"$(-class)\""} ?> >
+</TAG>
+
+<TAGEND TMS-TABLE>
+    </table>
+  </div> <!-- TMS-TABLE -->
+</TAGEND>
+
+<TAG TMS-BANDED-TABLE-OUTER>
+  <table border="0" width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+</TAG>
+
+<TAG TMS-BANDED-TABLE headers>
+  <? 
+    global cur_line
+    set cur_line 0
+  ?>
+    <td>
+      <table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+      <tr class="listing_head">
+        <td>
+        <FOREACH header $headers>
+          <td><?=$header?></td>
+        </FOREACH>
+      </tr>
+</TAG>
+
+<TAGEND TMS-BANDED-TABLE empty_mesg>
+      <? 
+        global cur_line
+        global priv
+      ?>
+      <IF {$cur_line == 0}>
+        <tr>
+          <td width="1%" nowrap align="left" valign="middle">
+          <td colspan="5">
+            <?=$empty_mesg?>
+        <SET priv DISABLED_set_privileged>
+      <ELSE>
+        <SET priv set_privileged>
+      </IF>
+      <tr>
+        <td height="13"></td>
+      </tr>
+      </table> <!-- TMS-BANDED-TABLE -->
+</TAGEND>
+
+<TAGEND TMS-BANDED-TABLE-OUTER>
+  </tr>
+  </table> <!-- TMS-BANDED-TABLE-OUTER -->
+</TAGEND>
+
+<TAG TMS-BANDED-ROW>
+  <? 
+    global cur_line
+  ?>
+
+  <tr class="<? if {[expr $cur_line % 2] == 0} {
+      tms::puts "listing_even"
+    } else {
+      tms::puts "listing_odd"
+    }?>">
+
+</TAG>
+
+<TAGEND TMS-BANDED-ROW>
+  </tr>
+  <?
+    global cur_line
+    incr cur_line
+  ?>
+</TAGEND>
+
+<TAG TMS-BANDED-FIRST-ENTRY>
+  <td width="1%" nowrap align="left" valign="middle">
+</TAG>
+
+<TAG TMS-BANDED-ENTRY>
+  <td>
+</TAG>
+
+<TAGEND TMS-BANDED-ENTRY>
+  </td>
+</TAGEND>
+
+<?
+# ==================================================
+#
+# <TMS-TABLE-ENTRY label width>
+#
+# ==================================================
+?>
+<TAG TMS-TABLE-ENTRY label {padding 20} {class "listing_even"}>
+  <tr class="<?=$class?>">
+    <td width=<?=$padding?>></td>
+    <td valign="middle"><?=$label?></td>
+    <td></td>
+    <td>
+</TAG>
+
+<TAGEND TMS-TABLE-ENTRY>
+    </td>
+  </tr>
+</TAGEND>
+
+
+<?
+# ==================================================
+#
+# <TMS-TABLE-ENTRY-SPAN label colspan>
+#
+# ==================================================
+?>
+<TAG TMS-TABLE-ENTRY-SPAN label {padding 20} {class "listing_even"} {colspan 1}>
+  <tr class="<?=$class?>">
+    <td width=<?=$padding?>></td>
+    <td valign="middle"><?=$label?></td>
+    <td></td>
+    <td colspan=<?=$colspan?>>
+</TAG>
+
+<TAGEND TMS-TABLE-ENTRY-SPAN>
+    </td>
+  </tr>
+</TAGEND>
+
+
+<?
+# ==================================================
+#
+# <TMS-TABLE-ENTRY-TWO width>
+#
+# ==================================================
+?>
+<TAG TMS-TABLE-ENTRY-TWO {padding 20}>
+  <tr>
+    <td width=<?=$padding?>></td>
+    <td>
+</TAG>
+
+<TAGEND TMS-TABLE-ENTRY-TWO label>
+    </td>
+    <td valign="middle"><?=$label?></td>
+    <td></td>
+  </tr>
+</TAGEND>
+
+<TAG TMS-INTF-STAT intf stat>
+<?
+  set istat [tms::get-config "/net/interface/state/${intf}/${stat}"]
+  if {[string length $istat] == 0} {
+    tms::puts "N/A"
+  } else {
+    tms::puts $istat
+  }
+?>
+</TAG>
+
+<TAG TMS-DISK-IO-STAT disk stat>
+<?
+  set diskstat [tms::get-config "/system/disks/${disk}/stats/${stat}"]
+  if {[string length $diskstat] == 0} {
+    tms::puts "N/A"
+  } else {
+    if {[string match "*_bytes" ${stat}] == 1} {
+      if {[expr $diskstat > 1048576]} {
+        set diskstat [format "%2.1f MB" [expr $diskstat / 1048576.0]]
+      } elseif {[expr $diskstat > 1024]} {
+        # Don't bother with fractional KB since it should always be a mutliple
+        # of 512, and it seems in practice that sector count is always even on
+        # our systems in any case.
+        set diskstat [format "%2.0f KB" [expr $diskstat / 1024.0]]
+      }
+    } elseif {[string match "*_ms" ${stat}] == 1} {
+      # XXX/SML: Should we break this down into hours/min/sec.msec?
+      set diskstat [tms::time-to-counter-ex $diskstat]
+    }
+    tms::puts $diskstat
+  }
+?>
+</TAG>
+
+<TAG TMS-FS-MNT-STAT fs_mnt stat>
+<?
+  set fstat [tms::get-config "/system/fs/mount/${fs_mnt}/${stat}"]
+  if {[string length $fstat] == 0} {
+    tms::puts "N/A"
+  } else {
+    if {[string compare -length 5 ${stat} bytes] == 0} {
+      if {[expr $fstat > 1048576]} {
+        set fstat [format "%2.1f MB" [expr $fstat / 1048576.0]]
+      } elseif {[expr $fstat > 1024]} {
+        set fstat [format "%2.1f KB" [expr $fstat / 1024.0]]
+      }
+    }
+    tms::puts $fstat
+  }
+?>
+</TAG>
+
+<TAG TMS-AUTO-REFRESH cookie_prefix interval>
+<?
+  set autologout_time [tms::get-config "/wsm/inactivity_timeout"]
+  # Run the auto refresh for 50% of the autologout time
+  set duration [expr $autologout_time / 2]
+?>
+
+<form name="auto_refresh">
+<input name="start" type="button" value="Start Auto-refresh" onclick='startRefresh(\"<?=$cookie_prefix?>\", <?=$interval?>, <?=$duration?>)'>
+
+<input name="stop" type="button" value="Stop Auto-refresh" onclick='stopRefresh(\"<?=$cookie_prefix?>\", true)'>
+</form>
+</TAG>
+
+<?
+# format a duration in seconds; "clock format" doesn't quite cut it.
+proc duration { int_time } {
+     set timeList [list]
+     foreach div {86400 3600 60 1} mod {0 24 60 60} name {d h m s} {
+         set n [expr {$int_time / $div}]
+         if {$mod > 0} {set n [expr {$n % $mod}]}
+         lappend timeList "$n$name"
+     }
+     return [join $timeList]
+ }
+?>
+
+<?
+ # Display a SINGLE auto-updated graph.  Note that this tag will NOT work
+ # if used more than once on a single page.  If you need to display
+ # multiple graphs on a page, see the custom tags defined in 
+ # tms-graph-utils.tem.
+ #
+ # This tag takes a fixed set of parameters, which must be provided
+ # in the following order:
+ #
+ #   1. graph_action: action node to invoke to generate the graph.
+ #      If this begins with '/', it is assumed to be an absolute path.
+ #      Otherwise, it is assumed to go underneath "/tms/graphs/".
+ #      There is no way to specify custom parameters to be passed to
+ #      this action; certain standard parameters (width, height, etc.)
+ #      will be passed by the infrastructure.
+ #
+ #   2. graph_name: a string uniquely identifying this graph.  This will
+ #      be used in the filename of the images generated.
+ #
+ #   3. interval: the number of seconds between automatic updates of 
+ #      this graph.
+ #
+ #   4. graph_ver: graph version parameter to pass to graph-generating
+ #      action.  Only relevant to the Samara built-in graph actions:
+ #      1 for "old-style" graphs, and 2 for "new-style".
+ #
+ #   5. clear_data_url: a URL to which to redirect the browser which will
+ #      trigger (presumably through use of a Web action) the data for this
+ #      graph to be cleared.
+ ?>
+<TAG TMS-AJAX-GRAPH graph_action graph_name interval width {graph_ver 1} {clear_data_url_local ""}>
+  <?
+    # scale interval to ms
+    set interval_ms [expr {$interval * 1000}]
+
+    # analyze width parameter
+    set width_style "auto"
+    set width_param 0
+    if {[string compare -nocase $width "auto"] == 0} {
+        # automatic width 
+        set width_style "auto"
+        set width_param 0
+    } elseif {[string match {[0-9]*%} $width] == 1} {
+        # percent of div width
+        set width_style "percent"
+        set width_param [string trimright $width "%"]
+    } elseif {[string match {[0-9]*} $width] == 1} {
+        # fixed size
+        set width_style "fixed"
+        set width_param $width
+    } else {
+        error "TMS-AJAX-GRAPH: Bad width spec \"$width\""
+        set width_style "ERR"
+        set width_param "ERR"
+    }
+
+    if {[string match "/*" ${graph_action}] == 0} {
+        set graph_action_path "/tms/graphs/$graph_action"
+    } else {
+        set graph_action_path "$graph_action"
+    }
+?>
+
+
+  <p>
+     <div id="graphArea">
+  <noscript>
+    <? # if we have no javascript, fall back to static images with default width
+         global color_main_pane
+         global graph_ext
+         set imgFilename graph-$graph_name.ns.$graph_ext
+         if {$graph_ver == 2} {
+             if {[catch {tms::call-action "$graph_action_path" \
+                [list "bgcolor"  "string" $color_main_pane] \
+                [list "filename" "string" $imgFilename] \
+                [list "graphver" "uint32" $graph_ver]}]} {
+                 set imgFilename ""
+             }
+         } else {
+             if {[catch {tms::call-action "$graph_action_path" \
+                [list "bgcolor"  "string" $color_main_pane] \
+                [list "gif_name" "string" $imgFilename] \
+                [list "graphver" "uint32" $graph_ver]}]} {
+                 set imgFilename ""
+             }
+         }
+         if {$imgFilename != ""} {
+             tms::puts "<img border=0 src=\"/graphs/$imgFilename\">";
+             tms::puts "<div id=\"graphMsgStatic\"></div>";
+         } else {
+             tms::puts "<div id=\"graphMsgStatic\">";
+             tms::puts "<p>No data available for graph at present</p>";
+             tms::puts "</div>";
+         }
+    ?>
+  </noscript>
+  <script type="text/javascript">
+    // write a blank image into the doc for the initial load, since it will 
+    // immediately be overwritten by one with custom width.
+    document.write('<img border=0 src="/images/em.gif" id="displayImg">');
+  </script>
+  <div id="graphMsg"></div>
+
+     </div>
+  </p>
+  <div id="graphStaging" style="display: none;">
+  </div>
+
+  <div id="graphControls">
+  <script type="text/javascript">
+    document.write('<p>Updated: <span id="updateTime" style="display:inline;"></span></p>');
+    document.write('<p><table width="100%"><td align="left"><span id="ajaxPauseButton" class="ajaxButton" onclick="pauseAjax();">Pause</span>');
+    document.write('<span id="ajaxResumeButton" class="ajaxButtonDisabled" onclick="resumeAjax();">Resume</span>');
+  <? if {[string length $clear_data_url_local] > 0} { ?>
+    <? if {[tms::check-authorization "action_restricted" {all_action_7 stats_action_9} {action}] == 0} { ?>
+      document.write('<td align="right"><span id="ajaxClearButton" class="ajaxButtonDisabled">Clear Data</span>');
+    <? } else { ?>
+      document.write('<td align="right"><span id="ajaxClearButton" class="ajaxButton" onclick="clearData();">Clear Data</span>');
+    <? } ?>
+      clear_data_url='<?=$clear_data_url_local?>';
+  <? } ?>
+    document.write('</table></p>');
+  </script>
+  </div>
+<?
+    # build URL to get next graph
+    tms::set-url-param "name"   "$graph_name"
+    tms::set-url-param "action" "$graph_action"
+    tms::set-url-param "graphver" "$graph_ver"
+    set destURL [tms::construct-url template=get-graph tms_noninteractive]
+    if {$graph_ver == 2} {
+        set graph_width_diff 80
+    } else {
+        set graph_width_diff 200
+    }
+?>
+
+<script type="text/javascript">
+    var ajaxUpdate = true;
+    var ajaxTimeout = null;
+    var widthStyle = '<?=$width_style?>';
+    var widthParam = '<?=$width_param?>';
+
+    // Also called when the page is initialled rendered, as well as on resize
+    function resizeHandler() {
+        // cancel existing timeout
+        if (ajaxTimeout != null) {
+          clearTimeout(ajaxTimeout);
+        }
+        // calculate new width
+        var sidebarDiv = document.getElementById('pageSidebar');
+        var graphAreaDiv = document.getElementById('graphArea');
+        var graph = document.getElementById('displayImg');
+        var sidebarWidth = 0;
+        if (sidebarDiv) {
+            sidebarWidth = sidebarDiv.offsetLeft + sidebarDiv.offsetWidth;
+        }
+        newWidth = document.body.clientWidth - sidebarWidth - <?=$graph_width_diff?>;
+        if (! (newWidth > 100) ) {
+            newWidth = 100;
+        }
+//        graphAreaDiv.style.width = newWidth;
+        // force immediate update
+        graphWrapper();
+    }
+
+    window.onresize = resizeHandler;
+
+    function pauseAjax() {
+        o = document.getElementById('updateTime');
+        if (o && ajaxUpdate) {
+            o.innerHTML += ' (Paused)';
+        }
+        ajaxUpdate = false;
+        if (ajaxTimeout != null) {
+          clearTimeout(ajaxTimeout);
+        }
+
+        gc = document.getElementById('ajaxPauseButton');
+        gc.className = 'ajaxButtonDisabled';
+        gc = document.getElementById('ajaxResumeButton');
+        gc.className = 'ajaxButton';
+    }
+
+    function resumeAjax() {
+        if (!ajaxUpdate) {
+            ajaxUpdate = true;
+            gc = document.getElementById('ajaxPauseButton');
+            gc.className = 'ajaxButton';
+            gc = document.getElementById('ajaxResumeButton');
+            gc.className = 'ajaxButtonDisabled';
+            graphWrapper();
+        }
+    }
+
+    function clearData() {
+        window.location.assign(clear_data_url);
+    }
+
+    function newGraphLoaded(o) {
+        var newGraph = document.getElementById('displayImg');
+        if (newGraph && o && o.name == 'stagedImage') {
+            // copy graph to display div
+            newGraph.src = o.src
+            // update o
+            timestamp = document.getElementById('timeStamp');
+            var o2 = document.getElementById('updateTime');
+            if (o2) {
+                o2.innerHTML = timestamp.innerHTML;
+            }
+        }
+        var hasLoadGraphError = document.getElementById('loadGraphError');
+        if (!hasLoadGraphError) {
+            var gmsg = document.getElementById('graphMsg');
+            if (gmsg) {
+                gmsg.innerHTML = '';
+            }
+        }
+    }
+
+    function newGraphLoadedHack () {
+        o = document.getElementById('stagedImage');
+        return newGraphLoaded(o);
+    }
+
+    // set the graphMsg to say we failed
+    function newGraphLoadedFailed(o) {
+         newGraphLoaded(o);
+         // update msg
+         var gmsg = document.getElementById('graphMsg');
+         if (gmsg) {
+             gmsg.innerHTML = '<p>No data available for graph at present</p>';
+         }
+    }
+    
+    // function to be called by timeout; loads new graph
+    // and reschedules itself.
+    function graphWrapper() {        
+        // url was constructed by rh above
+        var url = '<?=$destURL?>';
+        var newWidth = 0, sidebarWidth = 0;
+
+        var sidebarDiv = document.getElementById('pageSidebar');
+        var graphAreaDiv = document.getElementById('graphArea');
+        var graph = document.getElementById('displayImg');
+
+        switch (widthStyle) {
+        default:
+            // default style: same as auto
+            // fall through...
+        case 'auto':
+            // auto style: make image as wide as the div will allow
+            // same as 100%
+            widthParam = 100;
+            // fall through
+        case 'percent':
+            // percent style: make the image XX percent of the div
+            // adjust for vertical legend and scale if wide enough
+
+            sidebarWidth = 0;
+            if (sidebarDiv) {
+                sidebarWidth = sidebarDiv.offsetLeft + sidebarDiv.offsetWidth;
+            }
+            newWidth = document.body.clientWidth - sidebarWidth - <?=$graph_width_diff?> ;
+            if (widthParam != 100) {
+                newWidth = newWidth * widthParam / 100;
+            }
+            // minimum width
+            if (! (newWidth > 100) ) {
+                newWidth = 100;
+            }
+            break;
+        case 'fixed':
+            // fixed style: just use the user-supplied width
+            newWidth = widthParam;
+            break;
+        } // end switch
+        
+        // need to replace HTML entities before AJAX can load the URL
+        url += '&var_width=' + newWidth;
+        getAjaxText (url.replace(/&amp;/g, '&'), 'graphStaging');
+        if (ajaxUpdate == true) {
+            ajaxTimeout = setTimeout(graphWrapper,  <?=$interval_ms?>);
+        }
+    }
+    // Do initial image load.
+    graphWrapper();
+</script>
+</TAG>

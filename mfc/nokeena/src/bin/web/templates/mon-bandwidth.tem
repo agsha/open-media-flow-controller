@@ -1,0 +1,36 @@
+<?
+#
+# Filename:  mon-bandwidth.tem 
+# Date:      2009/02/04
+# Author:    Chitra Devi R 
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+?>
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Bandwidth Usage">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "bandwidth"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "">
+ <h3> Bandwidth Usage (Last Hour)</h3>
+<? global ref_ui_graph_ver ?>
+<TMS-AJAX-GRAPH /stat/nkn/actions/bandwidth bandwidth 10 auto 2>
+
+<!--
+ <h3> Last 24 hours Bandwidth Usage </h3>
+ <img src="/graphs/day/bandwidth_day.png">
+ <h3> Last 7 days Bandwidth Usage </h3>
+ <img src="/graphs/week/bandwidth_week.png">
+-->
+
+<?
+
+  set total_bw [tms::get-config "/stats/state/chd/total_byte_rate/node/\\/stat\\/nkn\\/nvsd\\/total_byte_rate/last/value"]
+  set mb [expr 1024 * 1024]
+  set total_bw [expr $total_bw / $mb]
+?>
+
+

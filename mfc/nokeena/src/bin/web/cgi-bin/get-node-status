@@ -1,0 +1,52 @@
+#!/bin/sh
+#
+#	File : get-node-status
+#
+#	Description : CGI to return the used bandwidth percentage
+#			and nvsd status
+#
+#	Created By : Ramanand Narayanan (ramanandn@juniper.net)
+#
+#	Created On : 25 September, 2010
+#
+#	Copyright (c) Juniper Networks Inc., 2008-10
+#
+
+MDREQ=/opt/tms/bin/mdreq
+TM_TOTAL_BW_NODE=/stat/nkn/interface/bw/service_intf_total
+TM_USED_BW_NODE=/stats/state/chd/current_bw_serv_rate/node/\/stat\/nkn\/interface\/bw\/service_intf_bw/last/value
+TM_NVSD_STATUS_NODE=/pm/monitor/process/nvsd/state
+
+# Function to get the delivery bandwidth percentage
+function get_bw_percentage()
+{
+  # Get the Total Bandwidth from the TM node
+  local total_bw=`${MDREQ} -v query get - ${TM_TOTAL_BW_NODE}`
+  local used_bw=`${MDREQ} -v query get - ${TM_USED_BW_NODE}`
+
+  # Now calculate the %
+  local hundred_times_used=$((used_bw * 100)); 
+
+  PERCENT_BW_USED=`expr ${hundred_times_used} / ${total_bw}`
+}
+
+#--------------------------------------------------------------
+#
+#  MAIN LOGIC BEGINS HERE 
+#
+#--------------------------------------------------------------
+
+# Get the bandwidth %
+get_bw_percentage;
+
+
+# First send a blank line (no headers)
+echo "";
+echo "Tx bandwidth used : ${PERCENT_BW_USED}%";
+
+NVSD_STATUS=`${MDREQ} -v query get - ${TM_NVSD_STATUS_NODE}`
+echo "nvsd status : ${NVSD_STATUS}";
+
+#
+# End of get-node-status
+#

@@ -1,0 +1,64 @@
+Libpcap.so is a shared lib having APIs to do packet capturing (developed by tcpdump team).
+
+  + BSD License
+  + Version: libpcap-1.2.0
+  + http://www.tcpdump.org/
+  + http://www.tcpdump.org/beta/libpcap-1.2.0rc1.tar.gz 
+
+It is in the MFC source tree as:
+  dist/build-machine/build-machine-src/libpcap/libpcap-1.2.0rc1.tar.gz
+The source is archived locally as:
+  /data/archive/thirdparty/build-machine-src/libpcap/libpcap-1.2.0rc1.tar.gz
+
+Extract this tar file in a new temp directory and configure, build and install it.
+
+mkdir /tmp/libpcap-build
+cd /tmp/libpcap-build
+tar zxvf /data/archive/thirdparty/build-machine-src/libpcap/libpcap-1.2.0rc1.tar.gz
+cd libpcap-1.2.0
+./configure
+make
+make install
+
+Files installed (other than man pages):
+
+/usr/local/include/pcap-bpf.h
+/usr/local/include/pcap-namedb.h
+/usr/local/include/pcap.h
+/usr/local/include/pcap/bluetooth.h
+/usr/local/include/pcap/bpf.h
+/usr/local/include/pcap/ipnet.h
+/usr/local/include/pcap/namedb.h
+/usr/local/include/pcap/pcap.h
+/usr/local/include/pcap/sll.h
+/usr/local/include/pcap/usb.h
+/usr/local/include/pcap/vlan.h
+/usr/local/bin/pcap-config
+/usr/local/lib/libpcap.a
+/usr/local/lib/libpcap.so -> libpcap.so.1
+/usr/local/lib/libpcap.so.1 -> libpcap.so.1.2.0
+/usr/local/lib/libpcap.so.1.2.0
+
+The MFC build must pick up the shared library (.so) put it in the MFC package.
+
+License from the "LICENSE" file in the source:
+
+License: BSD
+ 
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+  
+  1. Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in
+     the documentation and/or other materials provided with the
+     distribution.
+  3. The names of the authors may not be used to endorse or promote
+     products derived from this software without specific prior
+     written permission.
+  
+THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.

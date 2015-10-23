@@ -1,0 +1,76 @@
+<INCLUDE "tms-cfg-form">
+<INCLUDE "tms-defines">
+<INCLUDE "tms-utils">
+<TAG MFP-NFSMOUNT-LIST>
+
+  <?
+    set cur_line 0
+    set mount_prefix "/nkn/nfs_mount/config"
+    set mount_ids [tms::iterate-config $mount_prefix]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+     <td></td>
+      <td> <b>Local Name</b> </td>
+      <td> <b>Mount Path</b> </td>
+      <td> <b>Status</b> </td>
+    </tr>
+
+    <FOREACH mount_id $mount_ids>
+    <?
+    set prefix_len [string length "$mount_prefix/"]
+    set mount_name [string range $mount_id $prefix_len end]
+    set mount_path [tms::get-config "/nkn/nfs_mount/config/$mount_name/mountpath"]
+    set mount_type [tms::get-config "/nkn/nfs_mount/config/$mount_name/type"]
+    set mount_ip [tms::get-config "/nkn/nfs_mount/config/$mount_name/mountip"]
+    set mount_stat [tms::get-config "/nkn/nfs_mount/mount_status/$mount_name"]
+    set mount_complete_path ""
+    if {[string compare $mount_type "disk"] == 0} {
+	set mount_complete_path $mount_path
+    } else {
+	set mount_complete_path $mount_ip:$mount_path
+    }
+    ?>
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+      <?  if {[string compare $mount_type "disk"] == 0} { ?>
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                         -value "$mount_id" -span_id "nm_cbox_2" -disabled "true"></td>
+    <?} else {?>
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                         -value "$mount_id" -span_id "nm_cbox_2" ></td>
+    <? } ?>
+      <td>
+        <?=$mount_name?></td>
+      <td>
+        <?=$mount_complete_path?></td>
+      <td>
+        <?=$mount_stat?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No NFS Mounts configured
+      <SET priv DISABLED_set_basic>
+    <ELSE>
+      <SET priv set_basic>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+  </p></td>
+  </tr></table>
+
+</TAG>

@@ -1,0 +1,5 @@
+6/7/10 -- C++ new/delete are overridden with custom versions which are
+          tailored to CMM behavior in the steady state; typically 
+	  new/delete CMMSchedulerEntry.   In addition, the C++ fast 
+	  allocators are disabled via the environment variable
+	  "GLIBCXX_FORCE_NEW=1".

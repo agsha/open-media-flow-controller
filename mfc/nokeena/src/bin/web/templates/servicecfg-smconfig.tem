@@ -1,0 +1,121 @@
+<?
+#
+# Filename:  servicecfg-smconfig.tem,v $
+# Date:      
+# Author:    Dhivyamanohary R
+#
+# (C) Copyright Juniper Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Servermap Configuration">
+<?
+	set config_type [tms::get-param query "type"]
+	if { [string length $config_type] == 0} {
+		set config_type "uri"
+	}
+?>
+<?
+      set sm_name_posted [tms::get-param query "smname"]
+      set sm_prefix "/nkn/nvsd/server-map"
+      set sm_ids [tms::iterate-config $sm_prefix]
+      set sm_list {}
+      foreach sm_id $sm_ids {
+        set prefix_len [string length "$sm_prefix/"]
+        set sm_name [string range $sm_id $prefix_len end]
+	if { [string length $sm_name_posted] == 0} {
+	 set sm_name_posted $sm_name
+	}
+        lappend sm_list "$sm_name $sm_name"
+        }
+
+?>
+
+<TMS-BODY>
+<TMS-PAGE-CONTENT "Server map Configuration">
+<h2 align="center"> Server map : <?=$sm_name_posted?> </h2>
+<CFG-FORM -div_id "addnm_1">
+<TMS-TABLE -div_id "nm_table_1">
+<TMS-TABLE-ENTRY "URL">
+     <CFG-TEXTBOX -id "file-url" -errname "file-url" -caps "set_basic"
+                -type "string" -span_id "add_servermap" -required "true"
+                -name "/nkn/nvsd/server-map/config/$sm_name_posted/file-url" >
+</TMS-TABLE-ENTRY>
+
+<td width 1>
+<td width 1>
+<td width 4>
+
+<TMS-TABLE-ENTRY "Refresh interval">
+      <CFG-TEXTBOX -id "refresh" -errname "refresh" -caps "set_basic"
+                -type "uint32" -span_id "add_servermap" -required "true"
+                -name "/nkn/nvsd/server-map/config/$sm_name_posted/refresh" >
+</TMS-TABLE-ENTRY>
+
+<td width 4>
+ 
+<CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "add_servermap">
+
+<td width 1>
+<td width 1>
+<td width 4>
+</TMS-TABLE>
+
+<h2 align="center"> Monitoring Parameters</h2>
+<TMS-TABLE -div_id "heartbeat">
+<TMS-TABLE-ENTRY "Allowed failures">
+     <CFG-TEXTBOX -id "allowed-fails" -errname "allow" -caps "set_basic"
+                -type "uint32" -span_id "add_servermap" -required "true"
+                -name "/nkn/nvsd/server-map/config/$sm_name_posted/node-monitoring/heartbeat/allowed-fails" >
+</TMS-TABLE-ENTRY>
+
+<td width 1>
+<td width 1>
+<td width 4>
+<TMS-TABLE-ENTRY "Connection timeout">
+     <CFG-TEXTBOX -id "connect-timeout" -errname "timeout" -caps "set_basic"
+                -type "uint32" -span_id "add_servermap" -required "true"
+                -name "/nkn/nvsd/server-map/config/$sm_name_posted/node-monitoring/heartbeat/connect-timeout" >
+</TMS-TABLE-ENTRY>
+
+<td width 1>
+<td width 1>
+<td width 4>
+<TMS-TABLE-ENTRY "Interval">
+     <CFG-TEXTBOX -id "interval" -errname "interval" -caps "set_basic"
+                -type "uint32" -span_id "add_servermap" -required "true"
+                -name "/nkn/nvsd/server-map/config/$sm_name_posted/node-monitoring/heartbeat/interval" >
+</TMS-TABLE-ENTRY>
+
+<td width 1>
+<td width 1>
+<td width 4>
+<TMS-TABLE-ENTRY "Read time-out">
+     <CFG-TEXTBOX -id "read-timeout" -errname "" -caps "set_basic"
+                -type "uint32" -span_id "add_servermap" -required "true"
+                -name "/nkn/nvsd/server-map/config/$sm_name_posted/node-monitoring/heartbeat/read-timeout" >
+</TMS-TABLE-ENTRY>
+
+<td width 4>
+
+<CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "add_servermap">
+
+<td width 1>
+<td width 1>
+<td width 4>
+
+<td width 4>
+</TMS-TABLE>
+
+</CFG-FORM>
+
+<INPUT type="button" value="Done" onclick="window.close()">
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

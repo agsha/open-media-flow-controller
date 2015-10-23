@@ -1,0 +1,5 @@
+JUNOS Signed Package [%PACKAGE%]
+Copyright (c) %COPYRIGHT%, Juniper Networks, Inc.
+All rights reserved.
+
+This package contains %PACKAGE% and its digital checksum.

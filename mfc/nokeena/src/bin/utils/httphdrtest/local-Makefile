@@ -1,0 +1,41 @@
+NKN_INCLUDE=/home/davey/builds/samara/everett/nokeena/src/include
+
+COPTS=-pipe -fsigned-char -fmerge-constants -g -std=c99  -m64 -Wall -W -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wpointer-arith -Wnested-externs -Wredundant-decls -Wundef -Wreturn-type -Wwrite-strings -Wbad-function-cast -Wno-unused  -Wformat-security -Wmissing-format-attribute -Winline  -Werror -D_XOPEN_SOURCE=600 -D_REENTRANT -MMD -MP -I/usr/lib64/glib-2.0/include -I/usr/include/glib-2.0 -I/usr/include/glib-2.0/include -I. -I../../../include
+
+test:	mime_header.o rtsp_header.o http_header.o nkn_opt.o test_http_header.o 
+	gcc -o test $^ -lssl -luuid -lpthread
+
+rtsp_header.o:	rtsp_header.c
+	gcc $(COPTS) -c rtsp_header.c 
+
+rtsp_header.c:
+	ln -s ../../../lib/nvsd/common/rtsp_header.c  .
+	ln -s ../../../lib/nvsd/common/rtsp_data.c  .
+
+http_header.o:	http_header.c
+	gcc $(COPTS) -c http_header.c 
+
+http_header.c:
+	ln -s ../../../lib/nvsd/common/http_header.c  .
+	ln -s ../../../lib/nvsd/common/http_data.c  .
+
+mime_header.o:	mime_header.c
+	gcc $(COPTS) -c mime_header.c 
+
+mime_header.c:
+	ln -s ../../../lib/nvsd/common/mime_hdr_private.c  .
+	ln -s ../../../lib/nvsd/common/mime_header.c  .
+	ln -s /usr/include/sys/queue.h .
+
+nkn_opt.o:	nkn_opt.c
+	gcc $(COPTS) -c nkn_opt.c
+
+nkn_opt.c:	
+	ln -s ../../../lib/nvsd/common_opt/nkn_opt.c .
+
+test_http_header.o:	test_http_header.c
+	gcc -g -I. -I${NKN_INCLUDE} -c test_http_header.c
+
+clean:
+	rm -rf queue.h mime_header.c mime_hdr_private.c rtsp_header.c rtsp_data.c http_header.c http_data.c  nkn_opt.c mime_header.d rtsp_header.d http_header.d nkn_opt.d
+	rm -rf test *.o

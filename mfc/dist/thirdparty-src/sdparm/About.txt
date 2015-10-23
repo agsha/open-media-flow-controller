@@ -1,0 +1,27 @@
+About sdparm v1.03
+
+sdparm home page:
+  http://sg.danny.cz/sg/sdparm.html
+The source to sdparm is from sdparm-1.03.tgz (released 2008-06-23), downloaded on 2009-02-17 from
+  http://sg.danny.cz/sg/p/sdparm-1.03.tgz
+
+This source archive is in the MFC source tree as:
+  dist/thirdparty-src/sdparm/sdparm-1.03.tgz
+
+The license is BSD style.
+See License-sdparm-1.0.3.txt for the Copyright and License text from
+the source file "COPYING", and the copyrights in the src/*.c and src/*.h)
+
+The needed attributions are in the file Attribution-sdparm-1.03.txt
+
+Note: Latest version as of 2014-08-08 is 1.08 (release 2013-06-06)
+
+Built with these steps:
+
+OUTPUT_DIR=/tmp/sdparm-build
+[ -d "${OUTPUT_DIR}" ] && mkdir ${OUTPUT_DIR}
+make distclean
+./configure --prefix ${OUTPUT_DIR}
+make
+make install
+

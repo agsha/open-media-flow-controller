@@ -1,0 +1,143 @@
+diff ngrep-1.45/ngrep.c ngrep-1.45a/ngrep.c
+116a117
+> uint8_t  print_ack = 0, print_hash = 0;
+198c199
+<     while ((c = getopt(argc, argv, "LNhXViwqpevxlDtTRMs:n:c:d:A:I:O:S:P:F:W:")) != EOF) {
+---
+>     while ((c = getopt(argc, argv, "LNhXViwqpeHEvxlDtTRMas:n:c:d:A:I:O:S:P:F:W:")) != EOF) {
+277a279,281
+>             case 'E':
+>                              print_time = &print_time_epoch;
+>                              break;
+312a317,322
+>             case 'a':
+>                              print_ack++;
+>                              break;
+>                  case 'H':
+>                              print_hash++;
+>                              break;
+632a643,645
+>     size_t src = 0;
+>     size_t dst = 0;
+> 
+657a671,672
+>             len         = ntohs(ip4_pkt->ip_len) + link_offset; /* frames may be padded, this covers this */
+> 
+663a679,681
+>                  src=ip4_pkt->ip_src.s_addr;
+>                  dst=ip4_pkt->ip_dst.s_addr;
+>                  
+684a703,704
+>                  src=ip6_pkt->ip6_src.s_addr;
+>                  dst=ip6_pkt->ip6_dst.s_addr;
+698a719,724
+>                  size_t hash = ((size_t)(src) * 31 ) ^
+>                                                ((size_t)(dst)      ) ^
+>                                                ((size_t)(ntohs(tcp_pkt->th_sport))<< 15) ^
+>                                                ((size_t)(ntohs(tcp_pkt->th_dport)) ) ^
+>                                                ((size_t)(ip_proto));
+> 
+712c738
+<                         tcphdr_offset, fragmented, frag_offset, frag_id);
+---
+>                         tcphdr_offset, fragmented, frag_offset, frag_id, ntohl(tcp_pkt->th_ack), hash);
+718a745,750
+>                  size_t hash = ((size_t)(htonl(src)) * 31   ) ^
+>                                                ((size_t)(dst)             ) ^
+>                                                ((size_t)(ntohs(udp_pkt->uh_sport))<< 15) ^
+>                                                ((size_t)(ntohs(udp_pkt->uh_dport)) ) ^
+>                                                ((size_t)(ip_proto));
+> 
+736c768
+<                         udphdr_offset, fragmented, frag_offset, frag_id);
+---
+>                         udphdr_offset, fragmented, frag_offset, frag_id, 0, hash);
+751c783
+<                         icmp4hdr_offset, fragmented, frag_offset, frag_id);
+---
+>                         icmp4hdr_offset, fragmented, frag_offset, frag_id, 0, 0);
+767c799
+<                         icmp6hdr_offset, fragmented, frag_offset, frag_id);
+---
+>                         icmp6hdr_offset, fragmented, frag_offset, frag_id, 0, 0);
+783c815
+<                         igmphdr_offset, fragmented, frag_offset, frag_id);
+---
+>                         igmphdr_offset, fragmented, frag_offset, frag_id, 0, 0);
+795c827
+<                         0, fragmented, frag_offset, frag_id);
+---
+>                         0, fragmented, frag_offset, frag_id, 0, 0);
+809c841
+<                  uint16_t hdr_offset, uint8_t frag, uint16_t frag_offset, uint32_t frag_id) {
+---
+>                  uint16_t hdr_offset, uint8_t frag, uint16_t frag_offset, uint32_t frag_id, tcp_seq ack, size_t hash) {
+817,818c849,851
+<     if ((len > 0 && match_func(data, len) == invert_match) && !keep_matching)
+<         return;
+---
+>     if ((len > 0 && match_func(data, len) == invert_match) && !keep_matching) {
+>              return;
+>              }
+821d853
+<         dump_delay(h);
+846,847c878,880
+<     if ((proto == IPPROTO_TCP || proto == IPPROTO_UDP) && (sport || dport) && (hdr_offset || frag_offset == 0))
+< 
+---
+>     if ((proto == IPPROTO_TCP || proto == IPPROTO_UDP) && (sport || dport) && (hdr_offset || frag_offset == 0)) {
+>              if ( print_hash )
+>                              printf ("%u ", hash);
+848a882
+>              }
+850c884,888
+<     else
+---
+>     else {
+>              if ( print_hash )
+>                              printf (" -");
+>         printf("- %s -> %s", ip_src, ip_dst);
+>              }
+852c890,893
+<         printf("%s -> %s", ip_src, ip_dst);
+---
+>     if (print_ack && flags & TH_ACK)
+>              printf(" %u", ack);
+>     else
+>              printf(" 0");
+855c896
+<         printf(" [%s%s%s%s%s%s%s%s]",
+---
+>         printf(" %s%s%s%s%s%s%s%s",
+856a898
+>                (flags & TH_PUSH)? "P" : "",
+861d902
+<                (flags & TH_PUSH)? "P" : "",
+1106a1148,1151
+> void print_time_epoch(struct pcap_pkthdr *h) {
+>     printf("%u%06u ", h->ts.tv_sec, (uint32_t)h->ts.tv_usec);
+> }
+> 
+1235,1236c1280,1282
+<            "   -t  is print timestamp every time a packet is matched\n"
+<            "   -T  is print delta timestamp every time a packet is matched\n"
+---
+>            "   -t  is print timestamp every time a packet is displayed\n"
+>            "   -T  is print delta timestamp every time a packet is displayed\n"
+>            "   -E  is print epoch time in us every time a packet is displayed\n"
+1248a1295,1296
+>            "   -a  show ack value\n"
+>                 "   -H  Print a session hash for tcp/udp frames\n"
+diff ngrep-1.45/ngrep.h ngrep-1.45a/ngrep.h
+10c10
+< #define VERSION "1.45"
+---
+> #define VERSION "1.45 Juniper Modified"
+84c84
+<                  uint16_t, uint8_t, uint16_t, uint32_t);
+---
+>                  uint16_t, uint8_t, uint16_t, uint32_t, tcp_seq, size_t);
+98a99
+> void print_time_epoch    (struct pcap_pkthdr *);
+
+

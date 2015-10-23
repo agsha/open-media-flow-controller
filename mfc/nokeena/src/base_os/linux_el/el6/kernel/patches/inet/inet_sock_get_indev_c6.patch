@@ -1,0 +1,56 @@
+--- orig/image_kernel_smp/include/linux/in.h	2015-02-13 14:58:34.521606000 -0800
++++ new/image_kernel_smp/include/linux/in.h	2015-02-13 14:59:43.144325000 -0800
+@@ -86,6 +86,9 @@
+
+ #define IP_MINTTL       21
+
++/* This option is to get packet's incoming device name */
++#define IP_INDEV	125
++
+ /* IP_MTU_DISCOVER values */
+ #define IP_PMTUDISC_DONT		0	/* Never send DF frames */
+ #define IP_PMTUDISC_WANT		1	/* Use per route hints	*/
+--- orig/image_kernel_smp/include/net/inet_sock.h	2015-02-13 15:26:21.547225000 -0800
++++ new/image_kernel_smp/include/net/inet_sock.h	2015-02-13 15:26:55.646768000 -0800
+@@ -190,6 +190,7 @@
+ 				mc_loop:1,
+ 				transparent:1,
+ 				mc_all:1;
++	char			if_name[IFNAMSIZ];
+ 	int			mc_index;
+ 	__be32			mc_addr;
+ 	struct ip_mc_socklist	*mc_list;
+--- orig/image_kernel_smp/net/ipv4/ip_sockglue.c	2015-02-13 15:29:01.857342000 -0800
++++ new/image_kernel_smp/net/ipv4/ip_sockglue.c	2015-02-13 15:32:06.624166000 -0800
+@@ -1249,6 +1249,17 @@
+ 	case IP_MINTTL:
+ 		val = sk_get_min_ttl(sk);
+ 		break;
++        case IP_INDEV:
++                if (len != IFNAMSIZ) {
++                        release_sock(sk);
++                        return -EINVAL;
++                }
++                if (copy_to_user(optval, inet->if_name, len)) {
++                        release_sock(sk);
++                        return -EFAULT;
++                }
++                release_sock(sk);
++                return 0;
+ 	default:
+ 		release_sock(sk);
+ 		return -ENOPROTOOPT;
+--- orig/image_kernel_smp/net/ipv4/tcp_ipv4.c	2015-02-13 15:36:58.896633000 -0800
++++ new/image_kernel_smp/net/ipv4/tcp_ipv4.c	2015-02-13 15:37:14.025282000 -0800
+@@ -1399,6 +1399,11 @@
+ 		inet_csk(newsk)->icsk_ext_hdr_len = inet_opt->optlen;
+ 	newinet->id = newtp->write_seq ^ jiffies;
+
++        if (dst->dev)
++                strcpy(newinet->if_name, dst->dev->name);
++        else
++                newinet->if_name[0] = '\0';
++
+ 	tcp_mtup_init(newsk);
+ 	tcp_sync_mss(newsk, dst_mtu(dst));
+ 	newtp->advmss = dst_metric(dst, RTAX_ADVMSS);

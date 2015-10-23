@@ -1,0 +1,8 @@
+
+QOSMOS library stubs for use with opensource MFC since the 
+QOSMOS libraries require a commercial license.
+
+
+To rebuild stub libraries:
+  make -f Makefile-rebuild-stubs clean
+  make -f Makefile-rebuild-stubs

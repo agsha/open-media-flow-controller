@@ -1,0 +1,95 @@
+#!/bin/bash
+#
+#	File : log_analyzer_server
+#	Purpose : Wrapper script for log_analyzer_pbr.py
+#
+#	Author : Ramanand Narayanan (ramanandn@juniper.net)
+#	
+#	(C) Copyright 2014 Juniper Networks, Inc.
+#	All Rights Reserved
+#
+
+
+# Local Environment Variables
+RETVAL=0;
+ROOT_DIR=/opt/dpi-analyzer
+SCRIPT_DIR=$ROOT_DIR/scripts
+PID_FILE=/var/run/log_analyzer_server.pid
+	
+# Function to restart the server 
+restart() {
+	# Perform program exit housekeeping
+	echo "restart log_analyzer_server";
+	logger "restarting log_analyzer_server";
+	kill -HUP `cat ${PID_FILE}`;
+}
+
+# Function to clean up the server sending SIGTERM to the PID 
+clean_up() {
+	# Perform program exit housekeeping
+	echo "Cleaning-up ";
+	logger "cleaning-up log_analyzer_server";
+	kill `cat ${PID_FILE}`;
+	exit $RETVAL;
+}
+
+# Handle the standard signals
+trap 'clean_up' INT
+trap 'clean_up' TERM
+# trap 'restart' HUP  # Restart not supported for now
+trap 'clean_up' HUP 
+trap 'clean_up' QUIT 
+
+# Making this a daemon process
+sleep_forever() {
+	while /bin/true ; do
+		sleep 3
+		# Check if log_analyzer_pbr.py is running
+		ps -p `cat ${PID_FILE}` > /dev/null
+		if [ $? == 1 ]; then
+			echo "warning: log_analyzer_pbr.py exited, hence exiting log-analyzer-server";
+			exit 1;
+		fi
+	done
+}
+
+# Start the server process
+runserver() {
+	if [ -f $PID_FILE ]; then
+		rm $PID_FILE
+	fi
+	cd $ROOT_DIR; \
+	source bin/activate;\
+	export HOME=/var/home/root;\
+	cd $SCRIPT_DIR;\
+	python log_analyzer_pbr.py $1 $2 &
+	echo $! > $PID_FILE;
+	sleep_forever;
+}
+
+usage(){
+	echo -e $"Usage:\n \
+	1. log_analyzer_server (to run on DPI log)\n \
+	2. log_analyzer_server --mode mfc (to run on MFC's accesslog)"
+
+	exit 1
+}
+
+
+#
+# MAIN LOGIC BEGINS HERE
+#
+
+if [ $# -eq 0 ]; then
+	runserver 
+
+elif [ $# -eq 2 ]; then
+	runserver $1 $2
+else
+	usage
+fi
+
+exit $RETVAL
+
+
+# End of log_analyzer_server

@@ -1,0 +1,115 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-12.3.11
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-12.3.11-qa-7_30647_410
+ MENU LABEL mfc-12.3.11-qa-7_30647_410 BR:halifax 2015-07-30
+ KERNEL pxe-boot/mfc-12.3.11-qa-7_30647_410/vmlinuz-bootflop-mfc-12.3.11-qa-7_30647_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-qa-7_30647_410/rootflop-mfc-12.3.11-qa-7_30647_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-qa-7_30647_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-dv-9_30647_410
+ MENU LABEL mfc-12.3.11-dv-9_30647_410 BR:halifax 2015-07-29
+ KERNEL pxe-boot/mfc-12.3.11-dv-9_30647_410/vmlinuz-bootflop-mfc-12.3.11-dv-9_30647_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-dv-9_30647_410/rootflop-mfc-12.3.11-dv-9_30647_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-dv-9_30647_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-qa-6_30636_410
+ MENU LABEL mfc-12.3.11-qa-6_30636_410 BR:halifax 2015-07-28
+ KERNEL pxe-boot/mfc-12.3.11-qa-6_30636_410/vmlinuz-bootflop-mfc-12.3.11-qa-6_30636_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-qa-6_30636_410/rootflop-mfc-12.3.11-qa-6_30636_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-qa-6_30636_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-dv-8_30636_410
+ MENU LABEL mfc-12.3.11-dv-8_30636_410 BR:halifax 2015-07-28
+ KERNEL pxe-boot/mfc-12.3.11-dv-8_30636_410/vmlinuz-bootflop-mfc-12.3.11-dv-8_30636_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-dv-8_30636_410/rootflop-mfc-12.3.11-dv-8_30636_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-dv-8_30636_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-dv-7_30634_410
+ MENU LABEL mfc-12.3.11-dv-7_30634_410 BR:halifax 2015-07-28
+ KERNEL pxe-boot/mfc-12.3.11-dv-7_30634_410/vmlinuz-bootflop-mfc-12.3.11-dv-7_30634_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-dv-7_30634_410/rootflop-mfc-12.3.11-dv-7_30634_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-dv-7_30634_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-qa-5_30628_410
+ MENU LABEL mfc-12.3.11-qa-5_30628_410 BR:halifax 2015-07-22
+ KERNEL pxe-boot/mfc-12.3.11-qa-5_30628_410/vmlinuz-bootflop-mfc-12.3.11-qa-5_30628_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-qa-5_30628_410/rootflop-mfc-12.3.11-qa-5_30628_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-qa-5_30628_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-dv-6_30628_410
+ MENU LABEL mfc-12.3.11-dv-6_30628_410 BR:halifax 2015-07-22
+ KERNEL pxe-boot/mfc-12.3.11-dv-6_30628_410/vmlinuz-bootflop-mfc-12.3.11-dv-6_30628_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-dv-6_30628_410/rootflop-mfc-12.3.11-dv-6_30628_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-dv-6_30628_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-qa-4_30626_410
+ MENU LABEL mfc-12.3.11-qa-4_30626_410 BR:halifax 2015-07-20
+ KERNEL pxe-boot/mfc-12.3.11-qa-4_30626_410/vmlinuz-bootflop-mfc-12.3.11-qa-4_30626_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-qa-4_30626_410/rootflop-mfc-12.3.11-qa-4_30626_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-qa-4_30626_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-dv-5_30626_410
+ MENU LABEL mfc-12.3.11-dv-5_30626_410 BR:halifax 2015-07-20
+ KERNEL pxe-boot/mfc-12.3.11-dv-5_30626_410/vmlinuz-bootflop-mfc-12.3.11-dv-5_30626_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-dv-5_30626_410/rootflop-mfc-12.3.11-dv-5_30626_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-dv-5_30626_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-qa-3_30618_410
+ MENU LABEL mfc-12.3.11-qa-3_30618_410 BR:halifax 2015-07-17
+ KERNEL pxe-boot/mfc-12.3.11-qa-3_30618_410/vmlinuz-bootflop-mfc-12.3.11-qa-3_30618_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-qa-3_30618_410/rootflop-mfc-12.3.11-qa-3_30618_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-qa-3_30618_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-dv-4_30618_410
+ MENU LABEL mfc-12.3.11-dv-4_30618_410 BR:halifax 2015-07-17
+ KERNEL pxe-boot/mfc-12.3.11-dv-4_30618_410/vmlinuz-bootflop-mfc-12.3.11-dv-4_30618_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-dv-4_30618_410/rootflop-mfc-12.3.11-dv-4_30618_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-dv-4_30618_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-dv-3_30617_410
+ MENU LABEL mfc-12.3.11-dv-3_30617_410 BR:halifax 2015-07-17
+ KERNEL pxe-boot/mfc-12.3.11-dv-3_30617_410/vmlinuz-bootflop-mfc-12.3.11-dv-3_30617_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-dv-3_30617_410/rootflop-mfc-12.3.11-dv-3_30617_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-dv-3_30617_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-qa-2_30611_410
+ MENU LABEL mfc-12.3.11-qa-2_30611_410 BR:halifax 2015-07-15
+ KERNEL pxe-boot/mfc-12.3.11-qa-2_30611_410/vmlinuz-bootflop-mfc-12.3.11-qa-2_30611_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-qa-2_30611_410/rootflop-mfc-12.3.11-qa-2_30611_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-qa-2_30611_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-dv-2_30611_410
+ MENU LABEL mfc-12.3.11-dv-2_30611_410 BR:halifax 2015-07-15
+ KERNEL pxe-boot/mfc-12.3.11-dv-2_30611_410/vmlinuz-bootflop-mfc-12.3.11-dv-2_30611_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-dv-2_30611_410/rootflop-mfc-12.3.11-dv-2_30611_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-dv-2_30611_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-qa-1_30578_410
+ MENU LABEL mfc-12.3.11-qa-1_30578_410 BR:halifax 2015-05-11
+ KERNEL pxe-boot/mfc-12.3.11-qa-1_30578_410/vmlinuz-bootflop-mfc-12.3.11-qa-1_30578_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-qa-1_30578_410/rootflop-mfc-12.3.11-qa-1_30578_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-qa-1_30578_410 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.11-dv-1_30578_410
+ MENU LABEL mfc-12.3.11-dv-1_30578_410 BR:halifax 2015-05-11
+ KERNEL pxe-boot/mfc-12.3.11-dv-1_30578_410/vmlinuz-bootflop-mfc-12.3.11-dv-1_30578_410
+ APPEND initrd=pxe-boot/mfc-12.3.11-dv-1_30578_410/rootflop-mfc-12.3.11-dv-1_30578_410.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.11-dv-1_30578_410 installopt=,accept-eula,
+ IPAPPEND 3

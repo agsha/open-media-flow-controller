@@ -1,0 +1,223 @@
+<?
+#
+# Filename:  servicecfg-type4.tem,v $
+# Date:      2009/05/20
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Virtual Player">
+
+<?
+    set config_type [tms::get-param query "type"]
+    if {[string length $config_type] == 0} {
+      set config_type "seekquery"
+    }
+
+?> 
+<?
+    set vp_name_posted [tms::get-param query "vpname"]
+    set vp_prefix "/nkn/nvsd/virtual_player/config"
+    set vp_ids [tms::iterate-config $vp_prefix]
+    set vp_list {}
+    set vp_all_list {}
+    foreach vp_id $vp_ids {
+      set prefix_len [string length "$vp_prefix/"]
+      set vp_name [string range $vp_id $prefix_len end]
+      set type [tms::get-config "$vp_id/type"]
+      if { $type == 4 } {
+        if { [string length $vp_name_posted] == 0} {
+         set vp_name_posted $vp_name
+        }
+        lappend vp_list "$vp_name $vp_name"
+        lappend vp_all_list "$vp_name"
+      }
+    }
+?>
+<TMS-BODY>
+
+<TMS-PAGE-CONTENT "Virtual Player Type smoothflow Configuration Page ">
+
+
+<h2 align="center"> Virtual Player Name : <?=$vp_name_posted?> </h2>
+<table width="100%" border="0" cellspacing="0" cellpadding="5">
+<CFG-FORM -div_id "vp_type4_4">
+<tr>
+<td width="45%">
+<table class="tms_mon" width="100%" border="0" cellspacing="0"
+	cellpadding="1">
+    <SECTION-HEADER "Signals configuration">
+    <TMS-TABLE-ENTRY "Active">
+      <CFG-CHECKBOX -id "signals/active" -errname "signals_active" 
+                   -caps "set_basic" 
+                   -type "bool" -span_id "set_active"
+                   -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/signals/active">
+    </TMS-TABLE-ENTRY>
+<!--
+    <TMS-TABLE-ENTRY "Chunk Query String">
+      <CFG-TEXTBOX -id "signals/chunk/uri_query" -errname "chunk uri str" 
+                   -caps "set_basic" -required "false"
+                   -type "string" -span_id "configure_chunk_uri_str"
+       -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/signals/chunk/uri_query">
+    </TMS-TABLE-ENTRY>
+-->
+    <TMS-TABLE-ENTRY "Profile Query String">
+      <CFG-TEXTBOX -id "signals/profile/uri_query" -errname "profile uri str" 
+                   -caps "set_basic" -required "false"
+                   -type "string" -span_id "configure_profile_uri_str"
+        -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/signals/profile/uri_query">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Session Id Query String">
+      <CFG-TEXTBOX -id "signals/session_id/uri_query" 
+                   -errname "session_id uri str" 
+                   -caps "set_basic" -required "false"
+                   -type "string" -span_id "configure_session_id_uri_str"
+        -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/signals/session_id/uri_query">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "State Query String">
+      <CFG-TEXTBOX -id "signals/state/uri_query" 
+                   -errname "state_id uri str" 
+                   -caps "set_basic" -required "false"
+                   -type "string" -span_id "configure_state_id_uri_str"
+        -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/signals/state/uri_query">
+    </TMS-TABLE-ENTRY>
+    <tr><td height="4"></td></tr>
+
+    <SECTION-HEADER "Connection Bandwidth Configuration">
+    <TMS-TABLE-ENTRY "Max Session Rate (kbps)">
+      <CFG-TEXTBOX -id "max_session_rate" -errname "max_sess_rate" 
+                   -caps "set_basic"
+                   -type "uint32" -span_id "configure_sess_rate"
+                   -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/max_session_rate">
+    </TMS-TABLE-ENTRY>
+    <tr><td height="4"></td></tr>
+
+    <SECTION-HEADER "Seek Query Configuration">
+    <TMS-TABLE-ENTRY "Active">
+      <CFG-CHECKBOX -id "seek/active" -errname "seek_active" 
+                   -caps "set_basic" 
+                   -type "bool" -span_id "set_active"
+         -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/seek/active">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Seek query string param">
+      <CFG-TEXTBOX -id "seek/uri_query" -errname "seek qry str" 
+                   -caps "set_basic" -required "false"
+                   -type "string" -span_id "configure_seek_str"
+         -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/seek/uri_query">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Seek-length query string param">
+      <CFG-TEXTBOX -id "seek/length/uri_query" -errname "seek qry str" 
+                   -caps "set_basic" -required "false"
+                   -type "string" -span_id "configure_seek_str"
+         -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/seek/length/uri_query">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Seek FLV Type">
+      <CFG-DROPDOWN -id "seek/flv-type" -errname "seek_flv_type"
+                -caps "set_basic" -type "string"
+                -span_id "configure_flv_type" -options
+                {	{ "byte-offset" "byte-offset" }
+			{ "time-secs" "time-secs" }
+			{ "time-msec" "time-msec" }
+		}
+                -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/seek/flv-type">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Seek MP4 Type">
+      <CFG-DROPDOWN -id "seek/mp4-type" -errname "seek_mp4_type"
+                    -caps "set_basic" -type "string"
+                    -span_id "configure_mp4_type" -options
+		    {
+		    	{ "time-secs" "time-sec" }
+			{ "time-msec" "time-msec" }
+	            }
+		    -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/seek/mp4-type">
+     </TMS-TABLE-ENTRY>
+    <tr><td height="4"></td></tr>
+</table>
+<td width="45%">
+<table class="tms_mon" width="100%" border="0" cellspacing="0"
+	cellpadding="1">
+
+    <SECTION-HEADER "Control Point Configuration">
+
+    <TMS-TABLE-ENTRY "Control Point string">
+      <CFG-DROPDOWN -id "control_point" -errname "ctrl pt str" 
+                   -caps "set_basic" -required "true" 
+                   -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/control_point"
+                   -type "string" -span_id "configure_ctrl_pt_str"
+                   -options { {"player" "player"} {"server" "server"} } >
+    </TMS-TABLE-ENTRY>
+    <tr><td height="4"></td></tr>
+
+    <SECTION-HEADER "Hash Verify Configuration">
+
+    <TMS-TABLE-ENTRY "Active">
+      <CFG-CHECKBOX -id "hash_verify/active" -errname "hv_active" 
+                   -caps "set_basic" 
+                   -type "bool" -span_id "set_active"
+                   -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/hash_verify/active">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Digest">
+      <CFG-DROPDOWN -id "hash_verify/digest" -errname "hv_digest" 
+                  -caps "set_basic" -type "string" 
+                  -span_id "configure_digest" -options
+                  { {"md-5" "md-5" } {"sha-1" "sha-1" } }
+                  -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/hash_verify/digest">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Url Format">
+    	<CFG-DROPDOWN -id "hash_verify/url_type" -errname "hv_url" 
+		-caps "set_basic"
+		-type "string" -span_id "configure_hvurl"
+		-options { {"absolute-url" "absolute-url"}
+		{"relative-uri" "relative-uri"}
+		{"object-name" "object-name"}
+		}
+		-name "/nkn/nvsd/virtual_player/config/$vp_name_posted/hash_verify/url_type">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Shared Secret Type">
+      <CFG-DROPDOWN -id "hash_verify/secret/type" -errname "hv_secret_type" 
+                  -caps "set_basic" -type "string" 
+                  -span_id "configure_hvsecret_type" -options
+                  { { "append" "append" } { "prefix" "prefix" } }
+                  -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/hash_verify/secret/type">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Shared Secret Value">
+      <CFG-TEXTBOX -id "hash_verify/secret/value" -errname "hv_secret_val" 
+                  -caps "set_basic" -type "string" 
+                  -span_id "configure_hvsecret_val"
+                  -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/hash_verify/secret/value">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "URI Query String Param">
+      <CFG-TEXTBOX -id "hash_verify/match/uri_query" -errname "hv_uriquery" 
+                  -caps "set_basic" -type "string" 
+                  -span_id "configure_hv_uriqry"
+                  -name "/nkn/nvsd/virtual_player/config/$vp_name_posted/hash_verify/match/uri_query">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Expiry Time Verify">
+    	<CFG-TEXTBOX -id "hash_verify/expiry_time/epochtime" -errname "hv_expiry" 
+		-caps "set_basic"
+		-type "string" -span_id "configure_hvexpiry"
+		-name "/nkn/nvsd/virtual_player/config/$vp_name_posted/hash_verify/expiry_time/epochtime">
+    </TMS-TABLE-ENTRY>
+    <tr><td height="4"></td></tr>
+    <tr><td height="8"></td></tr>
+    <tr><td height="28"></td></tr>
+    <tr><td height="28"></td></tr>
+</table>
+</td></tr>
+<tr><td colspan="2">
+  <CFG-BUTTON -type "add" -text "Add/Update" -caps "set_basic"
+              -span_id "vp_apply_5">
+</td></tr>
+</CFG-FORM>
+</table>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

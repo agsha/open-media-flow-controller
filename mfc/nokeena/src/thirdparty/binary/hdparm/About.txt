@@ -1,0 +1,14 @@
+About hdparm v9.30
+
+hdparm home page:
+  http://hdparm.sourceforge.net/  
+The source to hdparm is hdparm-9.30.tar.gz (released 2010-09-19), downloaded on 2011-02-26 from Sourceforge.net
+  http://downloads.sourceforge.net/project/hdparm/hdparm/hdparm-9.30.tar.gz
+Local copy:
+  /data/archive/thirdparty/src/hdparm/hdparm-9.30.tar.gz
+
+The license is BSD style, with no attribution needed.
+See License-hdparm-9.30.txt for the License text from the source file hdparm-9.30/LICENSE.TXT
+~                                                                     
+
+Note: Latest version is hdparm-9.43.tar.gz (Released 2012-11-15)

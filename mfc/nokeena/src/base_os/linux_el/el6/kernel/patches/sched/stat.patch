@@ -1,0 +1,129 @@
+--- orig/image_kernel_smp/include/linux/fs.h	2015-02-15 10:29:40.000000000 -0800
++++ new/image_kernel_smp/include/linux/fs.h	2015-02-15 10:30:09.000000000 -0800
+@@ -404,6 +404,13 @@
+ 
+ #ifdef __KERNEL__
+ 
++/*
++ * oh the beauties of C type declarations.
++ */
++struct page;
++struct address_space;
++struct writeback_control;
++
+ #include <linux/linkage.h>
+ #include <linux/wait.h>
+ #include <linux/types.h>
+@@ -551,13 +558,6 @@
+ 						* helper code (eg buffer layer)
+ 						* to clear GFP_FS from alloc */
+ 
+-/*
+- * oh the beauties of C type declarations.
+- */
+-struct page;
+-struct address_space;
+-struct writeback_control;
+-
+ struct iov_iter {
+ 	const struct iovec *iov;
+ 	unsigned long nr_segs;
+--- orig/image_kernel_smp/mm/truncate.c	2015-02-15 10:36:10.000000000 -0800
++++ new/image_kernel_smp/mm/truncate.c	2015-02-15 10:36:30.000000000 -0800
+@@ -8,6 +8,7 @@
+  */
+ 
+ #include <linux/kernel.h>
++#include <linux/fs.h>
+ #include <linux/backing-dev.h>
+ #include <linux/mm.h>
+ #include <linux/swap.h>
+--- orig/image_kernel_smp/mm/backing-dev.c	2015-02-15 10:37:15.000000000 -0800
++++ new/image_kernel_smp/mm/backing-dev.c	2015-02-15 10:37:30.000000000 -0800
+@@ -1,5 +1,6 @@
+ 
+ #include <linux/wait.h>
++#include <linux/fs.h>
+ #include <linux/backing-dev.h>
+ #include <linux/kthread.h>
+ #include <linux/freezer.h>
+--- orig/image_kernel_smp/mm/fremap.c	2015-02-15 10:37:53.000000000 -0800
++++ new/image_kernel_smp/mm/fremap.c	2015-02-15 10:38:07.000000000 -0800
+@@ -5,6 +5,7 @@
+  *
+  * started by Ingo Molnar, Copyright (C) 2002, 2003
+  */
++#include <linux/fs.h>
+ #include <linux/backing-dev.h>
+ #include <linux/mm.h>
+ #include <linux/swap.h>
+--- orig/image_kernel_smp/fs/nfs/pnfs.h	2015-02-15 10:43:13.000000000 -0800
++++ new/image_kernel_smp/fs/nfs/pnfs.h	2015-02-15 12:25:17.000000000 -0800
+@@ -398,7 +398,7 @@
+ }
+ 
+ static inline void set_pnfs_layoutdriver(struct nfs_server *s,
+-					 const struct nfs_fh *mntfh, u32 id);
++					 const struct nfs_fh *mntfh, u32 id)
+ {
+ }
+ 
+--- orig/image_kernel_smp/fs/nfs/fscache.h	2015-02-15 16:25:45.000000000 -0800
++++ new/image_kernel_smp/fs/nfs/fscache.h	2015-02-15 16:26:50.000000000 -0800
+@@ -231,6 +231,8 @@
+ 
+ static inline void nfs_fscache_invalidate(struct inode *inode) {}
+ 
++static inline void nfs_fscache_wait_on_invalidate(struct inode *inode) {}
++
+ static inline const char *nfs_server_fscache_state(struct nfs_server *server)
+ {
+ 	return "no ";
+--- orig/image_kernel_smp/net/core/fib_rules.c	2015-02-15 13:16:12.000000000 -0800
++++ new/image_kernel_smp/net/core/fib_rules.c	2015-02-15 13:17:11.000000000 -0800
+@@ -11,6 +11,7 @@
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/list.h>
++#include <linux/fs.h>
+ #include <net/net_namespace.h>
+ #include <net/sock.h>
+ #include <net/fib_rules.h>
+--- orig/image_kernel_smp/net/ipv4/proc.c	2015-02-15 13:23:43.000000000 -0800
++++ new/image_kernel_smp/net/ipv4/proc.c	2015-02-15 13:24:00.000000000 -0800
+@@ -32,6 +32,7 @@
+  *		2 of the License, or (at your option) any later version.
+  */
+ #include <linux/types.h>
++#include <linux/fs.h>
+ #include <net/net_namespace.h>
+ #include <net/icmp.h>
+ #include <net/protocol.h>
+--- orig/image_kernel_smp/net/xfrm/xfrm_sysctl.c	2015-02-15 13:30:29.000000000 -0800
++++ new/image_kernel_smp/net/xfrm/xfrm_sysctl.c		2015-02-15 13:31:03.000000000 -0800
+@@ -1,4 +1,5 @@
+ #include <linux/sysctl.h>
++#include <linux/fs.h>
+ #include <net/net_namespace.h>
+ #include <net/xfrm.h>
+ 
+--- orig/image_kernel_smp/lib/percpu_counter.c	2015-02-15 13:32:55.000000000 -0800
++++ new/image_kernel_smp/lib/percpu_counter.c	2015-02-15 13:33:16.000000000 -0800
+@@ -2,6 +2,7 @@
+  * Fast batching percpu counters.
+  */
+ 
++#include <linux/fs.h>
+ #include <linux/percpu_counter.h>
+ #include <linux/notifier.h>
+ #include <linux/mutex.h>
+--- orig/image_kernel_smp/lib/proportions.c	2015-02-15 13:34:36.000000000 -0800
++++ new/image_kernel_smp/lib/proportions.c	2015-02-15 13:35:04.000000000 -0800
+@@ -70,6 +70,7 @@
+  *   x_{j} /= 2^(c - c_{j}), c_{j} = c
+  */
+ 
++#include <linux/fs.h>
+ #include <linux/proportions.h>
+ #include <linux/rcupdate.h>
+ 

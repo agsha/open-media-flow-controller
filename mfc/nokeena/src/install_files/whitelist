@@ -1,0 +1,10 @@
+echo
+ps
+date
+/opt/nkn/generic_cli_bin/verify_config.sh
+/opt/tms/bin/cli -d
+nslookup
+mount
+grep
+dmesg
+

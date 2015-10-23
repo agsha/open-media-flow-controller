@@ -1,0 +1,79 @@
+<?
+#
+# Filename:  servicecfg-shownm.tem,v $
+# Date:      
+# Author:    Dhivyamanohary R
+#
+# (C) Copyright Juniper Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "ServermapList">
+<!-- <TMS-MENU "servicecfg"> -->
+<TMS-BODY>
+<TMS-PAGE-CONTENT "Details on Configured Servermap">
+
+<?
+  set smap_name [tms::get-param query "smname"]
+  set match_file [tms::get-config "/nkn/nvsd/server-map/config/$smap_name/file-url"]
+  set match_format [tms::get-config "/nkn/nvsd/server-map/config/$smap_name/format-type"]
+  set match_nm_failures [tms::get-config "/nkn/nvsd/server-map/config/$smap_name/node-monitoring/heartbeat/allowed-fails"]
+  set match_nm_connect_timeout [tms::get-config "/nkn/nvsd/server-map/config/$smap_name/node-monitoring/heartbeat/connect-timeout"]
+  set match_nm_interval [tms::get-config "/nkn/nvsd/server-map/config/$smap_name/node-monitoring/heartbeat/interval"]
+  set match_nm_read_timeout [tms::get-config "/nkn/nvsd/server-map/config/$smap_name/node-monitoring/heartbeat/read-timeout"]
+?>
+
+<?
+  if {[string length $smap_name] != 0} {
+?>
+
+<CFG-FORM -div_id "disp_area">
+  <table>
+    <tr></tr>
+    <tr>
+      <td><b>Server map : </b> </td>
+      <td> <?=$smap_name?> </td>
+    </tr>
+
+    <tr>
+      <td>File-URL</td>
+      <td> <?=$match_file?> </td>
+    </tr>
+
+    <tr>
+      <td>Format type</td>
+      <td> <?=$match_format?> </td>
+    </tr>
+
+    <tr>
+      <td>Number of Allowed failures</td>
+      <td> <?=$match_nm_failures?> </td>
+    </tr>
+
+    <tr>
+      <td>Connection timeout</td>
+      <td> <?=$match_nm_connect_timeout?> </td>
+    </tr>
+
+    <tr>
+      <td>Interval</td>
+      <td> <?=$match_nm_interval?> </td>
+    </tr>
+
+    <tr>
+      <td>Read timeout</td>
+      <td> <?=$match_nm_read_timeout?> </td>
+    </tr>
+
+  </table>
+<CFG-FORM>
+<?
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

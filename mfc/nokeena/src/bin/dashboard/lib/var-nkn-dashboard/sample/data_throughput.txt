@@ -1,0 +1,9 @@
+dc_1read = 0  
+dc_3read = 0  
+dc_3read = 0  
+dc_4read = 0  
+dc_1write = 0  
+dc_2write = 0  
+dc_3write = 0  
+dc_4write = 0  
+time = 0:0   

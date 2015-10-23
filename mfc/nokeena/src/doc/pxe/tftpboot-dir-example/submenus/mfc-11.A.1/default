@@ -1,0 +1,67 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-11.A.1
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-11.A.1-6_22597_291
+ MENU LABEL mfc-11.A.1-6_22597_291     BR:denali 2012-01-09
+ KERNEL pxe-boot/mfc-11.A.1-6_22597_291/vmlinuz-bootflop-mfc-11.A.1-6_22597_291
+ APPEND initrd=pxe-boot/mfc-11.A.1-6_22597_291/rootflop-mfc-11.A.1-6_22597_291.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.A.1-6_22597_291 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A.1-qa-1_22270_291
+ MENU LABEL mfc-11.A.1-qa-1_22270_291  BR:denali 2011-12-26
+ KERNEL pxe-boot/mfc-11.A.1-qa-1_22270_291/vmlinuz-bootflop-mfc-11.A.1-qa-1_22270_291
+ APPEND initrd=pxe-boot/mfc-11.A.1-qa-1_22270_291/rootflop-mfc-11.A.1-qa-1_22270_291.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.A.1-qa-1_22270_291 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A.1-5_21354_291
+ MENU LABEL mfc-11.A.1-5_21354_291     BR:denali 2011-11-21
+ KERNEL pxe-boot/mfc-11.A.1-5_21354_291/vmlinuz-bootflop-mfc-11.A.1-5_21354_291
+ APPEND initrd=pxe-boot/mfc-11.A.1-5_21354_291/rootflop-mfc-11.A.1-5_21354_291.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.A.1-5_21354_291 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A.1-4_20859_291
+ MENU LABEL mfc-11.A.1-4_20859_291     BR:denali 2011-11-02
+ KERNEL pxe-boot/mfc-11.A.1-4_20859_291/vmlinuz-bootflop-mfc-11.A.1-4_20859_291
+ APPEND initrd=pxe-boot/mfc-11.A.1-4_20859_291/rootflop-mfc-11.A.1-4_20859_291.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.A.1-4_20859_291 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A.1-3_20624_291
+ MENU LABEL mfc-11.A.1-3_20624_291     BR:denali 2011-10-19
+ KERNEL pxe-boot/mfc-11.A.1-3_20624_291/vmlinuz-bootflop-mfc-11.A.1-3_20624_291
+ APPEND initrd=pxe-boot/mfc-11.A.1-3_20624_291/rootflop-mfc-11.A.1-3_20624_291.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.A.1-3_20624_291 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A.1-2_20309_291
+ MENU LABEL mfc-11.A.1-2_20309_291     BR:denali 2011-10-17
+ KERNEL pxe-boot/mfc-11.A.1-2_20309_291/vmlinuz-bootflop-mfc-11.A.1-2_20309_291
+ APPEND initrd=pxe-boot/mfc-11.A.1-2_20309_291/rootflop-mfc-11.A.1-2_20309_291.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.A.1-2_20309_291 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A.1-1_19792_291
+ MENU LABEL mfc-11.A.1-1_19792_291     BR:denali 2011-10-06
+ KERNEL pxe-boot/mfc-11.A.1-1_19792_291/vmlinuz-bootflop-mfc-11.A.1-1_19792_291
+ APPEND initrd=pxe-boot/mfc-11.A.1-1_19792_291/rootflop-mfc-11.A.1-1_19792_291.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.A.1-1_19792_291 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A.1-qa-39_19619_247
+ MENU LABEL mfc-11.A.1-qa-39_19619_247 BR:denali 2011-09-29
+ KERNEL pxe-boot/mfc-11.A.1-qa-39_19619_247/vmlinuz-bootflop-mfc-11.A.1-qa-39_19619_247
+ APPEND initrd=pxe-boot/mfc-11.A.1-qa-39_19619_247/rootflop-mfc-11.A.1-qa-39_19619_247.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.A.1-qa-39_19619_247 installopt=,accept-eula,
+ IPAPPEND 3

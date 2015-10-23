@@ -1,0 +1,136 @@
+body, html { height: 98%; }
+div.claro.jnpr{
+	margin:10px;
+	height: 800px;
+	width:98%;
+	overflow:hidden;
+}
+.claro.jnpr .dojoTabPane {
+	padding : 10px 10px 10px 10px;
+	overflow: auto;
+}
+.claro.jnpr #contentarea{
+}
+.claro.jnpr .jnprcontainer {
+	/*position: absolute;
+	top:	0;
+	left:	0;*/
+	width:	400px;
+	height: 300px;
+} 
+.claro.jnpr .bigcontainer {
+	/*position: absolute;
+	top:	0;
+	left:	0;*/
+	width:	800px;
+	height: 300px;
+} 
+.claro.jnpr .loader{
+	width:100%;
+	height:100%;
+	padding-left:75px;
+	padding-top:100px;
+}
+.claro.jnpr #statstable{
+	width:225px;
+}
+
+.claro.jnpr #statscontainer {
+	width:225px;
+	padding:5px;
+	height: 284px;
+	text-align: center;
+	vertical-align:top;
+}	
+.claro.jnpr  #layoutcontainer{
+	width:98%;
+	height:98%;
+	
+}
+.claro.jnpr  .title{
+margin: 0px;
+padding: 0px;
+border-width: 0px;
+font: normal normal bold 10pt Tahoma;
+color: #333;
+padding:0 0 12px 72px;
+}
+.claro.jnpr .title.dashboard{
+	padding: 0px;
+}
+.claro.jnpr  #cpuGaugeContainer{
+	margin-top: 0;
+	
+}
+.claro.jnpr table td {
+	text-align:left;
+	vertical-align:top;
+
+}
+.claro.jnpr table td.column{
+		padding-left: 15px;
+    padding-top: 20px;
+}
+.claro.jnpr  #row1column1{
+	width:24%;
+
+}
+.claro.jnpr #bandwidthSavingsTab #row1column1{
+	width:100%;
+}
+.claro.jnpr #diskCacheTab #row1column1{
+	width:11%;
+}
+.claro.jnpr  #row1column2{
+	width:37%;
+}
+
+.claro.jnpr #row1column3{
+	width:37%;
+}
+.claro.jnpr #row2 td.column{
+	padding-top: 20px;
+}
+.claro.jnpr .hideLoader{
+	display:none;
+}
+.claro.jnpr .legend{
+	margin-bottom:35px;
+	margin-top:10px;
+}
+.claro.jnpr .dojoxLegendNode {
+	border: 1px solid #ccc; 
+	margin-bottom: 4px;
+    margin-top: 7px;
+}
+.claro.jnpr .dojoxLegendText {
+	vertical-align: text-top; 
+	padding-right: 10px
+}
+.claro.jnpr #legendOfOpenConnectionsChartContainer{
+	margin-left:19px;
+}
+.claro.jnpr #legendOfWeeklyBandwidthSavingsChartContainer{
+	margin-left:100px;
+
+}
+.claro.jnpr #legendOfCacheTierThroughputChartContainer{
+	margin-left:60px;
+}
+.claro.jnpr .title.hidden{
+	display:none;
+}
+.claro.jnpr.title{
+	display:block;
+}
+
+.claro.jnpr #cpuGaugeComposite.displayed{
+	width: 225px; 
+	height:284px;
+	padding-top: 14px; 
+	background: #c1c1c1; 
+	border: 1px solid #818181;	
+}	
+.claro.jnpr #statsContainer.displayed{
+	border: 1px solid #818181;
+}

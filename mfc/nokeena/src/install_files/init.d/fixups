@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# fixups: Startup script to make sure the system is adjusted as needed for MFC
+# Note: The file ./base_os/common/script_files/customer.sh
+# runs "chkconfig --add" for this in the "firstboot_graft_2()" function
+#
+# chkconfig: 3 13 85
+# description: Make system changes needed before the MFC system is started
+
+
+START_SCRIPT=/etc/rc.d/init.d/fixups.sh
+
+RETVAL=0
+case "${1}" in
+start)
+    echo "Doing fixups"
+    ${START_SCRIPT}
+    echo "Fixups done"
+    ;;
+stop|status)
+    # Nothing to do
+    :
+    ;;
+*)
+    echo "Usage: $0 {start}"
+    RETVAL=1
+    ;;
+esac
+exit ${RETVAL}

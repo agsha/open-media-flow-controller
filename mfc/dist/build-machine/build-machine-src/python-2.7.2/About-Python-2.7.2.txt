@@ -1,0 +1,32 @@
+Downloaded http://www.python.org/ftp/python/2.7.2/Python-2.7.2.tgz
+MD5 checksum:
+0ddfe265f1b3d0a8c2459f5bf66894c7  14091337  Python-2.7.2.tgz
+
+From the web page http://www.python.org/download/releases/2.7.2/
+    Python 2.7.2 was released on June 11th, 2011.
+    The Python 2.7 series is scheduled to be the last major version in the 2.x
+    series before 2.x moves into an extended maintenance period.  The 2.7 series
+    contains many of the features that were first released in Python 3.1. 
+    Improvements in this release include:
+    + An ordered dictionary type
+    + New unittest features including test skipping, new assert methods, and test discovery
+    + A much faster io module
+    + Automatic numbering of fields in the str.format() method
+    + Float repr improvements backported from 3.x
+    + Tile support for Tkinter
+    + A backport of the memoryview object from 3.x
+    + Set literals
+    + Set and dictionary comprehensions
+    + Dictionary views
+    + New syntax for nested with statements
+    + The sysconfig module
+
+
+License-----
+See the file "License-Python-2.7.2.txt".  It has the license from
+the page http://docs.python.org/license.html
+That page also has this note:
+  All Python licenses, unlike the GPL, let you distribute a modified version
+  without making your changes open source. The GPL-compatible licenses make it
+  possible to combine Python with other software that is released under the GPL;
+  the others don't.

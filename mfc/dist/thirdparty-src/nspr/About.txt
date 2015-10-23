@@ -1,0 +1,3 @@
+# Netscape Portable Runtime (NSPR)
+# See below link for details.
+https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSPR#Related_Topics

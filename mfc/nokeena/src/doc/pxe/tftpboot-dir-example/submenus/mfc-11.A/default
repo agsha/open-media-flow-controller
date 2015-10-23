@@ -1,0 +1,241 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-11.A
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-11.A-qa-79_18636_247
+ MENU LABEL mfc-11.A-qa-79_18636_247   BR:everett 2011-08-10
+ KERNEL pxe-boot/mfc-11.A-qa-79_18636_247/vmlinuz-bootflop-mfc-11.A-qa-79_18636_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-79_18636_247/rootflop-mfc-11.A-qa-79_18636_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-79_18636_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-78_18630_247
+ MENU LABEL mfc-11.A-qa-78_18630_247   BR:everett 2011-08-09
+ KERNEL pxe-boot/mfc-11.A-qa-78_18630_247/vmlinuz-bootflop-mfc-11.A-qa-78_18630_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-78_18630_247/rootflop-mfc-11.A-qa-78_18630_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-78_18630_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-77_18624_247
+ MENU LABEL mfc-11.A-qa-77_18624_247   BR:everett 2011-08-09
+ KERNEL pxe-boot/mfc-11.A-qa-77_18624_247/vmlinuz-bootflop-mfc-11.A-qa-77_18624_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-77_18624_247/rootflop-mfc-11.A-qa-77_18624_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-77_18624_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-76_18618_247
+ MENU LABEL mfc-11.A-qa-76_18618_247   BR:everett 2011-08-09
+ KERNEL pxe-boot/mfc-11.A-qa-76_18618_247/vmlinuz-bootflop-mfc-11.A-qa-76_18618_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-76_18618_247/rootflop-mfc-11.A-qa-76_18618_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-76_18618_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-75_18588_247
+ MENU LABEL mfc-11.A-qa-75_18588_247   BR:everett 2011-08-07
+ KERNEL pxe-boot/mfc-11.A-qa-75_18588_247/vmlinuz-bootflop-mfc-11.A-qa-75_18588_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-75_18588_247/rootflop-mfc-11.A-qa-75_18588_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-75_18588_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-74_18588_247
+ MENU LABEL mfc-11.A-qa-74_18588_247   BR:everett 2011-08-05
+ KERNEL pxe-boot/mfc-11.A-qa-74_18588_247/vmlinuz-bootflop-mfc-11.A-qa-74_18588_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-74_18588_247/rootflop-mfc-11.A-qa-74_18588_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-74_18588_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-73_18565_247
+ MENU LABEL mfc-11.A-qa-73_18565_247   BR:mainline 2011-08-04
+ KERNEL pxe-boot/mfc-11.A-qa-73_18565_247/vmlinuz-bootflop-mfc-11.A-qa-73_18565_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-73_18565_247/rootflop-mfc-11.A-qa-73_18565_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-73_18565_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-72_18561_247
+ MENU LABEL mfc-11.A-qa-72_18561_247   BR:mainline 2011-08-04
+ KERNEL pxe-boot/mfc-11.A-qa-72_18561_247/vmlinuz-bootflop-mfc-11.A-qa-72_18561_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-72_18561_247/rootflop-mfc-11.A-qa-72_18561_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-72_18561_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-70_18526_247
+ MENU LABEL mfc-11.A-qa-70_18526_247   BR:mainline 2011-08-02
+ KERNEL pxe-boot/mfc-11.A-qa-70_18526_247/vmlinuz-bootflop-mfc-11.A-qa-70_18526_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-70_18526_247/rootflop-mfc-11.A-qa-70_18526_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-70_18526_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-69_18475_247
+ MENU LABEL mfc-11.A-qa-69_18475_247   BR:mainline 2011-08-01
+ KERNEL pxe-boot/mfc-11.A-qa-69_18475_247/vmlinuz-bootflop-mfc-11.A-qa-69_18475_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-69_18475_247/rootflop-mfc-11.A-qa-69_18475_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-69_18475_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-68_18468_247
+ MENU LABEL mfc-11.A-qa-68_18468_247   BR:mainline 2011-07-31
+ KERNEL pxe-boot/mfc-11.A-qa-68_18468_247/vmlinuz-bootflop-mfc-11.A-qa-68_18468_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-68_18468_247/rootflop-mfc-11.A-qa-68_18468_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-68_18468_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-67_18417_247
+ MENU LABEL mfc-11.A-qa-67_18417_247   BR:mainline 2011-07-28
+ KERNEL pxe-boot/mfc-11.A-qa-67_18417_247/vmlinuz-bootflop-mfc-11.A-qa-67_18417_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-67_18417_247/rootflop-mfc-11.A-qa-67_18417_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-67_18417_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-66_18409_247
+ MENU LABEL mfc-11.A-qa-66_18409_247   BR:mainline 2011-07-28
+ KERNEL pxe-boot/mfc-11.A-qa-66_18409_247/vmlinuz-bootflop-mfc-11.A-qa-66_18409_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-66_18409_247/rootflop-mfc-11.A-qa-66_18409_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-66_18409_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-65_18401_247
+ MENU LABEL mfc-11.A-qa-65_18401_247   BR:mainline 2011-07-26
+ KERNEL pxe-boot/mfc-11.A-qa-65_18401_247/vmlinuz-bootflop-mfc-11.A-qa-65_18401_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-65_18401_247/rootflop-mfc-11.A-qa-65_18401_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-65_18401_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-64_18340_247
+ MENU LABEL mfc-11.A-qa-64_18340_247   BR:mainline 2011-07-25
+ KERNEL pxe-boot/mfc-11.A-qa-64_18340_247/vmlinuz-bootflop-mfc-11.A-qa-64_18340_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-64_18340_247/rootflop-mfc-11.A-qa-64_18340_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-64_18340_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-63_18335_247
+ MENU LABEL mfc-11.A-qa-63_18335_247   BR:mainline 2011-07-24
+ KERNEL pxe-boot/mfc-11.A-qa-63_18335_247/vmlinuz-bootflop-mfc-11.A-qa-63_18335_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-63_18335_247/rootflop-mfc-11.A-qa-63_18335_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-63_18335_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-62_18323_247
+ MENU LABEL mfc-11.A-qa-62_18323_247   BR:mainline 2011-07-21
+ KERNEL pxe-boot/mfc-11.A-qa-62_18323_247/vmlinuz-bootflop-mfc-11.A-qa-62_18323_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-62_18323_247/rootflop-mfc-11.A-qa-62_18323_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-62_18323_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-61_18297_247
+ MENU LABEL mfc-11.A-qa-61_18297_247   BR:mainline 2011-07-19
+ KERNEL pxe-boot/mfc-11.A-qa-61_18297_247/vmlinuz-bootflop-mfc-11.A-qa-61_18297_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-61_18297_247/rootflop-mfc-11.A-qa-61_18297_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-61_18297_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-60_18263_247
+ MENU LABEL mfc-11.A-qa-60_18263_247   BR:mainline 2011-07-17
+ KERNEL pxe-boot/mfc-11.A-qa-60_18263_247/vmlinuz-bootflop-mfc-11.A-qa-60_18263_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-60_18263_247/rootflop-mfc-11.A-qa-60_18263_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-60_18263_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-59_18248_247
+ MENU LABEL mfc-11.A-qa-59_18248_247   BR:mainline 2011-07-14
+ KERNEL pxe-boot/mfc-11.A-qa-59_18248_247/vmlinuz-bootflop-mfc-11.A-qa-59_18248_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-59_18248_247/rootflop-mfc-11.A-qa-59_18248_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-59_18248_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-58_18241_247
+ MENU LABEL mfc-11.A-qa-58_18241_247   BR:mainline 2011-07-14
+ KERNEL pxe-boot/mfc-11.A-qa-58_18241_247/vmlinuz-bootflop-mfc-11.A-qa-58_18241_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-58_18241_247/rootflop-mfc-11.A-qa-58_18241_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-58_18241_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-57_18218_247
+ MENU LABEL mfc-11.A-qa-57_18218_247   BR:mainline 2011-07-12
+ KERNEL pxe-boot/mfc-11.A-qa-57_18218_247/vmlinuz-bootflop-mfc-11.A-qa-57_18218_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-57_18218_247/rootflop-mfc-11.A-qa-57_18218_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-57_18218_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-56_18183_247
+ MENU LABEL mfc-11.A-qa-56_18183_247   BR:mainline 2011-07-10
+ KERNEL pxe-boot/mfc-11.A-qa-56_18183_247/vmlinuz-bootflop-mfc-11.A-qa-56_18183_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-56_18183_247/rootflop-mfc-11.A-qa-56_18183_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-56_18183_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-55_18112_247
+ MENU LABEL mfc-11.A-qa-55_18112_247   BR:mainline 2011-07-07
+ KERNEL pxe-boot/mfc-11.A-qa-55_18112_247/vmlinuz-bootflop-mfc-11.A-qa-55_18112_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-55_18112_247/rootflop-mfc-11.A-qa-55_18112_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-55_18112_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-54_18074_247
+ MENU LABEL mfc-11.A-qa-54_18074_247   BR:mainline 2011-07-05
+ KERNEL pxe-boot/mfc-11.A-qa-54_18074_247/vmlinuz-bootflop-mfc-11.A-qa-54_18074_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-54_18074_247/rootflop-mfc-11.A-qa-54_18074_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-54_18074_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-53_18042_247
+ MENU LABEL mfc-11.A-qa-53_18042_247   BR:mainline 2011-07-03
+ KERNEL pxe-boot/mfc-11.A-qa-53_18042_247/vmlinuz-bootflop-mfc-11.A-qa-53_18042_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-53_18042_247/rootflop-mfc-11.A-qa-53_18042_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-53_18042_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-52_18034_247
+ MENU LABEL mfc-11.A-qa-52_18034_247   BR:mainline 2011-06-30
+ KERNEL pxe-boot/mfc-11.A-qa-52_18034_247/vmlinuz-bootflop-mfc-11.A-qa-52_18034_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-52_18034_247/rootflop-mfc-11.A-qa-52_18034_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-52_18034_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-50_17932_247
+ MENU LABEL mfc-11.A-qa-50_17932_247   BR:mainline 2011-06-26
+ KERNEL pxe-boot/mfc-11.A-qa-50_17932_247/vmlinuz-bootflop-mfc-11.A-qa-50_17932_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-50_17932_247/rootflop-mfc-11.A-qa-50_17932_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-50_17932_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-49_17923_247
+ MENU LABEL mfc-11.A-qa-49_17923_247   BR:mainline 2011-06-23
+ KERNEL pxe-boot/mfc-11.A-qa-49_17923_247/vmlinuz-bootflop-mfc-11.A-qa-49_17923_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-49_17923_247/rootflop-mfc-11.A-qa-49_17923_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-49_17923_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-48_17888_247
+ MENU LABEL mfc-11.A-qa-48_17888_247   BR:mainline 2011-06-21
+ KERNEL pxe-boot/mfc-11.A-qa-48_17888_247/vmlinuz-bootflop-mfc-11.A-qa-48_17888_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-48_17888_247/rootflop-mfc-11.A-qa-48_17888_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-48_17888_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-46_17857_247
+ MENU LABEL mfc-11.A-qa-46_17857_247   BR:mainline 2011-06-19
+ KERNEL pxe-boot/mfc-11.A-qa-46_17857_247/vmlinuz-bootflop-mfc-11.A-qa-46_17857_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-46_17857_247/rootflop-mfc-11.A-qa-46_17857_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-46_17857_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-45_17832_247
+ MENU LABEL mfc-11.A-qa-45_17832_247   BR:mainline 2011-06-16
+ KERNEL pxe-boot/mfc-11.A-qa-45_17832_247/vmlinuz-bootflop-mfc-11.A-qa-45_17832_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-45_17832_247/rootflop-mfc-11.A-qa-45_17832_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-45_17832_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-44_17812_247
+ MENU LABEL mfc-11.A-qa-44_17812_247   BR:mainline 2011-06-14
+ KERNEL pxe-boot/mfc-11.A-qa-44_17812_247/vmlinuz-bootflop-mfc-11.A-qa-44_17812_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-44_17812_247/rootflop-mfc-11.A-qa-44_17812_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-44_17812_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-43_17765_247
+ MENU LABEL mfc-11.A-qa-43_17765_247   BR:mainline 2011-06-12
+ KERNEL pxe-boot/mfc-11.A-qa-43_17765_247/vmlinuz-bootflop-mfc-11.A-qa-43_17765_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-43_17765_247/rootflop-mfc-11.A-qa-43_17765_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-43_17765_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-42_17699_247
+ MENU LABEL mfc-11.A-qa-42_17699_247   BR:mainline 2011-06-07
+ KERNEL pxe-boot/mfc-11.A-qa-42_17699_247/vmlinuz-bootflop-mfc-11.A-qa-42_17699_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-42_17699_247/rootflop-mfc-11.A-qa-42_17699_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-42_17699_247 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-41_17682_247
+ MENU LABEL mfc-11.A-qa-41_17682_247   BR:mainline 2011-06-05
+ KERNEL pxe-boot/mfc-11.A-qa-41_17682_247/vmlinuz-bootflop-mfc-11.A-qa-41_17682_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-41_17682_247/rootflop-mfc-11.A-qa-41_17682_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-41_17682_247 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-11.A-qa-40_17666_247
+ MENU LABEL mfc-11.A-qa-40_17666_247   BR:mainline 2011-06-02
+ KERNEL pxe-boot/mfc-11.A-qa-40_17666_247/vmlinuz-bootflop-mfc-11.A-qa-40_17666_247
+ APPEND initrd=pxe-boot/mfc-11.A-qa-40_17666_247/rootflop-mfc-11.A-qa-40_17666_247.img        installfrom=pxe/pxe-boot/mfc-11.A-qa-40_17666_247 installopt=,show-pxe-menu,
+ IPAPPEND 3

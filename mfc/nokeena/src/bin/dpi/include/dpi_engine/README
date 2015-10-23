@@ -1,0 +1,4 @@
+After acquiring the qosmos license, copy the header files here.
+  dpi/
+  platform/
+  qosmos -> dpi

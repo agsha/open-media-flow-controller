@@ -1,0 +1,5 @@
+# Install the needed kernel modules.
+
+modprobe e1000
+modprobe e1000e
+modprobe igb

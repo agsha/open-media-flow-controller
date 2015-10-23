@@ -1,0 +1,38 @@
+# Filename: lib/cr/dns_pb/Makefile.ut
+
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+topdir = ./
+includedir = -I$(PROD_CUSTOMER_ROOT)/nokeena/src/include\
+-I$(PROD_CUSTOMER_ROOT)/nokeena/src/include/cr\
+-I$(PROD_CUSTOMER_ROOT)/nokeena/src/include/cr/dns_pb\
+-I$(PROD_CUSTOMER_ROOT)/nokeena/src/include/cr/common\
+-I/usr/include/glib-2.0/ -I/usr/lib64/glib-2.0/include
+output = dns_parser_ut
+
+SRCS =  \
+     dns_parser.c\
+
+CFLAGS = -Wall -Werror -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE\
+-U_USE_NKN_VFS -g `xml2-config --cflags` -DDNS_PARSER_UT
+
+LDFLAGS = -L/usr/lib64 -lm -lvirt -lcprops -lssl -lxml2 -lglib-2.0 `xml2-config --libs`\
+${PROD_OUTPUT_ROOT}/product-nokeena-x86_64/build/image/custlib/nvsd/memalloc/libnvsd_memalloc.so.1.0.0\
+${PROD_OUTPUT_ROOT}/product-nokeena-x86_64/build/image/custlib/mfp/libmfp_event_timer.a\
+${PROD_BUILD_OUTPUT_DIR}/${INSTALL_TREE}/${CUST_LIB_DIR}/lf/liblf_connector.a \
+${PROD_BUILD_OUTPUT_DIR}/${INSTALL_TREE}/${CUST_LIB_DIR}/lf/liblf_common.a \
+#${PROD_OUTPUT_ROOT}/product-nokeena-x86_64/build/image/custlib/nvsd/parser/libnvsd_parser.a\
+#${PROD_OUTPUT_ROOT}/product-nokeena-x86_64/build/image/custlib/nknlog/libnkn_log.a\
+
+
+#LDADD =\
+# ${PROD_OUTPUT_ROOT}/product-nokeena-x86_64/build/image/custlib/nvsd/parser/libnvsd_parser.a                                                                                                                    
+CC = gcc
+
+driver: $(SRCS)
+	$(CC) $(SRCS) $(CFLAGS) $(includedir) $(LDFLAGS) -o $(output)
+
+clean:
+	rm -f *.o $(outputdir)/$(output)
+
+include ${PROD_TREE_ROOT}/src/mk/prog.mk

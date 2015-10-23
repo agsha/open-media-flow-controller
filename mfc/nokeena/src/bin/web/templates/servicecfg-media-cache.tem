@@ -1,0 +1,91 @@
+
+<?
+#
+# Filename:  servicecfg-media-cache.tem,v $
+# Date:      2009/02/06 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Media-Cache">
+<TMS-MENU "servicecfg">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SERVICECFG-MENU "media-cache"></TMS-SERVICECFG-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Media-Cache Configuration">
+
+  <?
+  set disk_ids [tms::get-diskids]
+  ?>
+
+  <h2>Disk Cache </h2>
+<CFG-FORM -action "config-form-diskcache" -div_id "diskcache_1">
+    <TMS-TABLE -div_id "disk_table_1">
+    <TMS-TABLE-ENTRY "Disk Name">
+        <select name="f_diskname" size="1"
+        <?
+          if {[tms::has-capability "set_basic"] == 0} {
+              tms::puts "disabled"
+          }
+        ?>>
+          <FOREACH disk $disk_ids>
+              <option value="<?=$disk?>"><?=$disk?></option>
+          </FOREACH>
+        </select>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Activate">
+        <CFG-RADIO -id "diskaction" 
+                     -caps "set_privileged" 
+                     -value "activate" -checked "true" 
+                     -span_id "activate">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Deactivate">
+        <CFG-RADIO -id "diskaction"
+                     -caps "set_privileged" 
+                     -value "deactivate" -checked "false" 
+                     -span_id "deactivate">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Cache Enable">
+        <CFG-RADIO -id "diskaction"
+                     -caps "set_privileged" 
+                     -value "cacheable" -checked "false" 
+                     -span_id "cacheable">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Cache Disable">
+        <CFG-RADIO -id "diskaction"
+                     -caps "set_privileged" 
+                     -value "notcacheable" -checked "false" 
+                     -span_id "notcacheable">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Format">
+        <CFG-RADIO -id "diskaction"
+                     -caps "set_privileged" 
+                     -value "format" -checked "false" 
+                     -span_id "format">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Repair">
+        <CFG-RADIO -id "diskaction"
+                     -caps "set_privileged" 
+                     -value "repair" -checked "false" 
+                     -span_id "format">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+
+    </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "diskcache_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -span_id "diskcache_cancel_1">
+
+</CFG-FORM>
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

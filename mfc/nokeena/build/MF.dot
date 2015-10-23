@@ -1,0 +1,96 @@
+# Set env variables for building MFC or MFN
+. /eng/build/bin/mf_env_funcs.dot
+SAVE_PCR=${PROD_CUSTOMER_ROOT}
+SAVE_POR=${PROD_OUTPUT_ROOT}
+PROD_OUTPUT_ROOT=unset
+Look_For_Customer_Root
+SAVE_PROD_TREE_ROOT=${PROD_TREE_ROOT}
+Get_Env_Settings_From_File
+if [ "_${SAVE_PROD_TREE_ROOT}" != "_${PROD_TREE_ROOT}" ] ; then
+  if [ "_${SAVE_PROD_TREE_ROOT}" = "_" ] ; then
+    echo "# Set PROD_TREE_ROOT to ${PROD_TREE_ROOT}"
+  else
+    echo "# Changed PROD_TREE_ROOT to ${PROD_TREE_ROOT} from ${SAVE_PROD_TREE_ROOT}"
+  fi
+  MY_PROD_TREE_ROOT=yes
+elif [ "_${PROD_TREE_ROOT}" = "_" ] ; then
+  echo "#  PROD_TREE_ROOT not set yet"
+fi
+[ -z "${PROD_CUSTOMER_ROOT}" ] && PROD_CUSTOMER_ROOT=unset
+[ -z "${PROD_OUTPUT_ROOT}" ]   && PROD_OUTPUT_ROOT=unset
+if [ "${PROD_CUSTOMER_ROOT}" = "unset" ] ; then
+  echo Error, Could not determine PROD_CUSTOMER_ROOT.
+  PROD_CUSTOMER_ROOT=${SAVE_PCR}
+  PROD_OUTPUT_ROOT=${SAVE_POR}
+elif [ "${PROD_OUTPUT_ROOT}" = "unset" ] ; then
+  echo Error, no :env.sh found, cannot determine settings.
+  PROD_CUSTOMER_ROOT=${SAVE_PCR}
+  PROD_OUTPUT_ROOT=${SAVE_POR}
+else
+  echo PROD_CUSTOMER_ROOT=${PROD_CUSTOMER_ROOT}
+  echo PROD_OUTPUT_ROOT=${PROD_OUTPUT_ROOT}
+  if [ "_${MY_PROD_TREE_ROOT}" = "_" ] ; then
+    echo "# DOT  /eng/build/bin/set-mf-PROD_TREE_ROOT.sh"
+    SAVE_PROD_TREE_ROOT=${PROD_TREE_ROOT}
+    . /eng/build/bin/set-mf-PROD_TREE_ROOT.sh > /dev/null 2> /dev/null
+    if [ "_${SAVE_PROD_TREE_ROOT}" != "_${PROD_TREE_ROOT}" ] ; then
+      if [ "_${SAVE_PROD_TREE_ROOT}" = "_" ] ; then
+        echo "# Set PROD_TREE_ROOT to ${PROD_TREE_ROOT}"
+      else
+        echo "# Changed PROD_TREE_ROOT to ${PROD_TREE_ROOT} from ${SAVE_PROD_TREE_ROOT}"
+      fi
+    elif [ "_${PROD_TREE_ROOT}" = "_" ] ; then
+      echo "#  PROD_TREE_ROOT not set yet"
+    else
+      echo "# Set PROD_TREE_ROOT to ${PROD_TREE_ROOT}"
+    fi
+  fi
+  unset BUILD_SAMARA_SRC_TOP
+  unset BS_FILE
+  if [ ! -d ${PROD_TREE_ROOT} ] ; then
+    echo Samara source does not exist: ${PROD_TREE_ROOT}
+    unset PROD_TREE_ROOT
+  else
+    echo PROD_TREE_ROOT=${PROD_TREE_ROOT}
+  fi
+fi
+echo PROD_PRODUCT=${PROD_PRODUCT}
+export PROD_PRODUCT
+export PROD_PRODUCT_LC=`echo ${PROD_PRODUCT} | tr '[A-Z]' '[a-z]'`
+export PROD_CUSTOMER_ROOT
+export PROD_OUTPUT_ROOT
+export PROD_TREE_ROOT
+export BUILD_LOG_DIR
+
+unset SAVE_PCR
+unset SAVE_POR
+unset SAMARA_SVN_BRANCH
+unset SAMARA_SVN_REV
+if [ -f ${PROD_CUSTOMER_ROOT}/MF.dot ] ; then
+  . ${PROD_CUSTOMER_ROOT}/MF.dot
+else
+  case ${PROD_PRODUCT} in
+  mfc*) DOT_FILE=${PROD_CUSTOMER_ROOT}/MFC.dot ;;
+  mfn*) DOT_FILE=${PROD_CUSTOMER_ROOT}/MFN.dot ;;
+  *) DOT_FILE=/dev/null
+  esac 
+  if [ -f ${DOT_FILE} ] ; then
+    . ${DOT_FILE}
+  fi
+fi
+if [ -f ${HOME}/bin/MF.dot ] ; then
+  . ${HOME}/bin/MF.dot
+else
+  case ${PROD_PRODUCT} in
+  mfc*) DOT_FILE=${HOME}/bin/MFC.dot ;;
+  mfn*) DOT_FILE=${HOME}/bin/MFN.dot ;;
+  *) DOT_FILE=/dev/null
+  esac 
+  if [ -f ${DOT_FILE} ] ; then
+    . ${DOT_FILE}
+  fi
+fi
+unset
+# unset the functions set by mf_env_funcs.dot
+Clean_Up_mf_env_funcs
+unset Clean_Up_mf_env_funcs

@@ -1,0 +1,86 @@
+BinaryFile: rssh-2.3.3-2.el6.rf.x86_64.rpm
+Description: Restricted shell for use with OpenSSH, allowing only scp and/or sftp
+From: Derek D. Martin
+Compiled from source: no
+Modified: no
+Copyright: 
+LicenseType: BSD
+LicenseURL:
+BinaryDownloadedFrom: http://pkgs.repoforge.org/rssh/rssh-2.3.3-2.el6.rf.x86_64.rpm
+BinaryLocalCopy: svn: nokeena/src/base_os/linux_el/el6/arch_x86_64/packages/rssh-2.3.3-2.el6.rf.x86_64.rpm
+SourceDownloadedFrom: http://pkgs.repoforge.org/rssh/rssh-2.3.3-2.rf.src.rpm
+SourceLocalCopy:
+
+# From rssh.spec:
+# $Id: rssh.spec 9124 2010-09-22 11:26:24Z cmr $
+# Authority: dag
+# Upstream: Derek Martin <code$pizzashack,org>
+# Upstream: <rssh-discuss$lists,sf,net>
+# Summary: Restricted shell for use with OpenSSH, allowing only scp and/or sftp
+# Name: rssh
+# Version: 2.3.3
+# Release: 2%{?dist}
+# License: BSD
+# Group: Applications/Internet
+# URL: http://www.pizzashack.org/rssh/
+# Packager: Dag Wieers <dag@wieers.com>
+# Vendor: Dag Apt Repository, http://dag.wieers.com/apt/
+# Source: http://sourceforge.net/projects/rssh/files/rssh/%{version}/rssh-%{version}.tar.gz
+
+# Text from file "LICENSE" in the source:
+#/*
+# * Copyright 2003-2006 Derek D. Martin ( code at pizzashack dot org ).
+# *
+# * This program is licensed under a BSD-style license, as follows:
+# *
+# * Redistribution and use in source and binary forms, with or without
+# * modification, are permitted provided that the following conditions
+# * are met:
+# * 1. Redistributions of source code must retain the above copyright
+# *      notice, this list of conditions and the following disclaimer.
+# * 2. Redistributions in binary form must reproduce the above copyright
+# *      notice, this list of conditions and the following disclaimer in the
+# *      documentation and/or other materials provided with the distribution.
+# *
+# * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+# * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+# * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+# * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# *
+# */
+
+# Text from file "COPYING" in the source:
+#The following copyright applies to all source code in this software
+#distribution, unless expressly stated otherwise: 
+# 
+#Copyright 2003 Derek D. Martin ( code at pizzashack dot org ).
+# 
+#The software can be redistributed under the terms of the modified Berkely
+#software license, as follows:
+# 
+#Redistribution and use in source and binary forms, with or without
+#modification, are permitted provided that the following conditions
+#are met:
+# 
+#1. Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+#2. Redistributions in binary form must reproduce the above copyright 
+#   notice, this list of conditions and the following disclaimer in the
+#   documentation and/or other materials provided with the distribution.
+# 
+#THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+#WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+#MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO
+#EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+#PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+#BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+#IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#POSSIBILITY OF SUCH DAMAGE.

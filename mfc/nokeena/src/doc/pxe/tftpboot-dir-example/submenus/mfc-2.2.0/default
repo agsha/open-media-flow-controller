@@ -1,0 +1,217 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-2.2.0
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-2.2.0-qa-104_18702_247
+ MENU LABEL mfc-2.2.0-qa-104_18702_247 BR:denali 2011-08-16
+ KERNEL pxe-boot/mfc-2.2.0-qa-104_18702_247/vmlinuz-bootflop-mfc-2.2.0-qa-104_18702_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-104_18702_247/rootflop-mfc-2.2.0-qa-104_18702_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-104_18702_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-dv-173_18702_247
+ MENU LABEL mfc-2.2.0-dv-173_18702_247 BR:denali 2011-08-16
+ KERNEL pxe-boot/mfc-2.2.0-dv-173_18702_247/vmlinuz-bootflop-mfc-2.2.0-dv-173_18702_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-dv-173_18702_247/rootflop-mfc-2.2.0-dv-173_18702_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-dv-173_18702_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-103_18696_247
+ MENU LABEL mfc-2.2.0-qa-103_18696_247 BR:denali 2011-08-16
+ KERNEL pxe-boot/mfc-2.2.0-qa-103_18696_247/vmlinuz-bootflop-mfc-2.2.0-qa-103_18696_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-103_18696_247/rootflop-mfc-2.2.0-qa-103_18696_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-103_18696_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-dv-172_18696_247
+ MENU LABEL mfc-2.2.0-dv-172_18696_247 BR:denali 2011-08-16
+ KERNEL pxe-boot/mfc-2.2.0-dv-172_18696_247/vmlinuz-bootflop-mfc-2.2.0-dv-172_18696_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-dv-172_18696_247/rootflop-mfc-2.2.0-dv-172_18696_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-dv-172_18696_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-102_18689_247
+ MENU LABEL mfc-2.2.0-qa-102_18689_247 BR:denali 2011-08-15
+ KERNEL pxe-boot/mfc-2.2.0-qa-102_18689_247/vmlinuz-bootflop-mfc-2.2.0-qa-102_18689_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-102_18689_247/rootflop-mfc-2.2.0-qa-102_18689_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-102_18689_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-dv-171_18689_247
+ MENU LABEL mfc-2.2.0-dv-171_18689_247 BR:denali 2011-08-15
+ KERNEL pxe-boot/mfc-2.2.0-dv-171_18689_247/vmlinuz-bootflop-mfc-2.2.0-dv-171_18689_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-dv-171_18689_247/rootflop-mfc-2.2.0-dv-171_18689_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-dv-171_18689_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-101_18680_247
+ MENU LABEL mfc-2.2.0-qa-101_18680_247 BR:denali 2011-08-12
+ KERNEL pxe-boot/mfc-2.2.0-qa-101_18680_247/vmlinuz-bootflop-mfc-2.2.0-qa-101_18680_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-101_18680_247/rootflop-mfc-2.2.0-qa-101_18680_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-101_18680_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-dv-170_18680_247
+ MENU LABEL mfc-2.2.0-dv-170_18680_247 BR:denali 2011-08-12
+ KERNEL pxe-boot/mfc-2.2.0-dv-170_18680_247/vmlinuz-bootflop-mfc-2.2.0-dv-170_18680_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-dv-170_18680_247/rootflop-mfc-2.2.0-dv-170_18680_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-dv-170_18680_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-100_18678_247
+ MENU LABEL mfc-2.2.0-qa-100_18678_247 BR:denali 2011-08-12
+ KERNEL pxe-boot/mfc-2.2.0-qa-100_18678_247/vmlinuz-bootflop-mfc-2.2.0-qa-100_18678_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-100_18678_247/rootflop-mfc-2.2.0-qa-100_18678_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-100_18678_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-dv-169_18678_247
+ MENU LABEL mfc-2.2.0-dv-169_18678_247 BR:denali 2011-08-12
+ KERNEL pxe-boot/mfc-2.2.0-dv-169_18678_247/vmlinuz-bootflop-mfc-2.2.0-dv-169_18678_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-dv-169_18678_247/rootflop-mfc-2.2.0-dv-169_18678_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-dv-169_18678_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-99_18677_247
+ MENU LABEL mfc-2.2.0-qa-99_18677_247  BR:denali 2011-08-12
+ KERNEL pxe-boot/mfc-2.2.0-qa-99_18677_247/vmlinuz-bootflop-mfc-2.2.0-qa-99_18677_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-99_18677_247/rootflop-mfc-2.2.0-qa-99_18677_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-99_18677_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-98_18673_247
+ MENU LABEL mfc-2.2.0-qa-98_18673_247  BR:denali 2011-08-11
+ KERNEL pxe-boot/mfc-2.2.0-qa-98_18673_247/vmlinuz-bootflop-mfc-2.2.0-qa-98_18673_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-98_18673_247/rootflop-mfc-2.2.0-qa-98_18673_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-98_18673_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-dv-168_18673_247
+ MENU LABEL mfc-2.2.0-dv-168_18673_247 BR:denali 2011-08-11
+ KERNEL pxe-boot/mfc-2.2.0-dv-168_18673_247/vmlinuz-bootflop-mfc-2.2.0-dv-168_18673_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-dv-168_18673_247/rootflop-mfc-2.2.0-dv-168_18673_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-dv-168_18673_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-97_18657_247
+ MENU LABEL mfc-2.2.0-qa-97_18657_247  BR:denali 2011-08-11
+ KERNEL pxe-boot/mfc-2.2.0-qa-97_18657_247/vmlinuz-bootflop-mfc-2.2.0-qa-97_18657_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-97_18657_247/rootflop-mfc-2.2.0-qa-97_18657_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-97_18657_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-96_18646_247
+ MENU LABEL mfc-2.2.0-qa-96_18646_247  BR:denali 2011-08-10
+ KERNEL pxe-boot/mfc-2.2.0-qa-96_18646_247/vmlinuz-bootflop-mfc-2.2.0-qa-96_18646_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-96_18646_247/rootflop-mfc-2.2.0-qa-96_18646_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-96_18646_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-dv-166_18646_247
+ MENU LABEL mfc-2.2.0-dv-166_18646_247 BR:denali 2011-08-10
+ KERNEL pxe-boot/mfc-2.2.0-dv-166_18646_247/vmlinuz-bootflop-mfc-2.2.0-dv-166_18646_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-dv-166_18646_247/rootflop-mfc-2.2.0-dv-166_18646_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-dv-166_18646_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-95_18637_247
+ MENU LABEL mfc-2.2.0-qa-95_18637_247  BR:denali 2011-08-10
+ KERNEL pxe-boot/mfc-2.2.0-qa-95_18637_247/vmlinuz-bootflop-mfc-2.2.0-qa-95_18637_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-95_18637_247/rootflop-mfc-2.2.0-qa-95_18637_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-95_18637_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-dv-165_18637_247
+ MENU LABEL mfc-2.2.0-dv-165_18637_247 BR:denali 2011-08-10
+ KERNEL pxe-boot/mfc-2.2.0-dv-165_18637_247/vmlinuz-bootflop-mfc-2.2.0-dv-165_18637_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-dv-165_18637_247/rootflop-mfc-2.2.0-dv-165_18637_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-dv-165_18637_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-94_18631_247
+ MENU LABEL mfc-2.2.0-qa-94_18631_247  BR:denali 2011-08-10
+ KERNEL pxe-boot/mfc-2.2.0-qa-94_18631_247/vmlinuz-bootflop-mfc-2.2.0-qa-94_18631_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-94_18631_247/rootflop-mfc-2.2.0-qa-94_18631_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-94_18631_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-93_18629_247
+ MENU LABEL mfc-2.2.0-qa-93_18629_247  BR:denali 2011-08-09
+ KERNEL pxe-boot/mfc-2.2.0-qa-93_18629_247/vmlinuz-bootflop-mfc-2.2.0-qa-93_18629_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-93_18629_247/rootflop-mfc-2.2.0-qa-93_18629_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-93_18629_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-dv-164_18629_247
+ MENU LABEL mfc-2.2.0-dv-164_18629_247 BR:denali 2011-08-09
+ KERNEL pxe-boot/mfc-2.2.0-dv-164_18629_247/vmlinuz-bootflop-mfc-2.2.0-dv-164_18629_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-dv-164_18629_247/rootflop-mfc-2.2.0-dv-164_18629_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-dv-164_18629_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-92_18612_247
+ MENU LABEL mfc-2.2.0-qa-92_18612_247  BR:denali 2011-08-08
+ KERNEL pxe-boot/mfc-2.2.0-qa-92_18612_247/vmlinuz-bootflop-mfc-2.2.0-qa-92_18612_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-92_18612_247/rootflop-mfc-2.2.0-qa-92_18612_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-92_18612_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-91_18608_247
+ MENU LABEL mfc-2.2.0-qa-91_18608_247  BR:denali 2011-08-08
+ KERNEL pxe-boot/mfc-2.2.0-qa-91_18608_247/vmlinuz-bootflop-mfc-2.2.0-qa-91_18608_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-91_18608_247/rootflop-mfc-2.2.0-qa-91_18608_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-91_18608_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-90_18592_247
+ MENU LABEL mfc-2.2.0-qa-90_18592_247  BR:denali 2011-08-06
+ KERNEL pxe-boot/mfc-2.2.0-qa-90_18592_247/vmlinuz-bootflop-mfc-2.2.0-qa-90_18592_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-90_18592_247/rootflop-mfc-2.2.0-qa-90_18592_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-90_18592_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-89_18569_247
+ MENU LABEL mfc-2.2.0-qa-89_18569_247  BR:denali 2011-08-05
+ KERNEL pxe-boot/mfc-2.2.0-qa-89_18569_247/vmlinuz-bootflop-mfc-2.2.0-qa-89_18569_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-89_18569_247/rootflop-mfc-2.2.0-qa-89_18569_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-89_18569_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-88_18552_247
+ MENU LABEL mfc-2.2.0-qa-88_18552_247  BR:denali 2011-08-04
+ KERNEL pxe-boot/mfc-2.2.0-qa-88_18552_247/vmlinuz-bootflop-mfc-2.2.0-qa-88_18552_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-88_18552_247/rootflop-mfc-2.2.0-qa-88_18552_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-88_18552_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-87_18551_247
+ MENU LABEL mfc-2.2.0-qa-87_18551_247  BR:denali 2011-08-04
+ KERNEL pxe-boot/mfc-2.2.0-qa-87_18551_247/vmlinuz-bootflop-mfc-2.2.0-qa-87_18551_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-87_18551_247/rootflop-mfc-2.2.0-qa-87_18551_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-87_18551_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-86_18543_247
+ MENU LABEL mfc-2.2.0-qa-86_18543_247  BR:denali 2011-08-04
+ KERNEL pxe-boot/mfc-2.2.0-qa-86_18543_247/vmlinuz-bootflop-mfc-2.2.0-qa-86_18543_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-86_18543_247/rootflop-mfc-2.2.0-qa-86_18543_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-86_18543_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-85_18542_247
+ MENU LABEL mfc-2.2.0-qa-85_18542_247  BR:denali 2011-08-03
+ KERNEL pxe-boot/mfc-2.2.0-qa-85_18542_247/vmlinuz-bootflop-mfc-2.2.0-qa-85_18542_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-85_18542_247/rootflop-mfc-2.2.0-qa-85_18542_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-85_18542_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-84_18536_247
+ MENU LABEL mfc-2.2.0-qa-84_18536_247  BR:denali 2011-08-03
+ KERNEL pxe-boot/mfc-2.2.0-qa-84_18536_247/vmlinuz-bootflop-mfc-2.2.0-qa-84_18536_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-84_18536_247/rootflop-mfc-2.2.0-qa-84_18536_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-84_18536_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-83_18522_247
+ MENU LABEL mfc-2.2.0-qa-83_18522_247  BR:denali 2011-08-02
+ KERNEL pxe-boot/mfc-2.2.0-qa-83_18522_247/vmlinuz-bootflop-mfc-2.2.0-qa-83_18522_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-83_18522_247/rootflop-mfc-2.2.0-qa-83_18522_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-83_18522_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-82_18521_247
+ MENU LABEL mfc-2.2.0-qa-82_18521_247  BR:denali 2011-08-02
+ KERNEL pxe-boot/mfc-2.2.0-qa-82_18521_247/vmlinuz-bootflop-mfc-2.2.0-qa-82_18521_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-82_18521_247/rootflop-mfc-2.2.0-qa-82_18521_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-82_18521_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.2.0-qa-81_18482_247
+ MENU LABEL mfc-2.2.0-qa-81_18482_247  BR:denali 2011-08-01
+ KERNEL pxe-boot/mfc-2.2.0-qa-81_18482_247/vmlinuz-bootflop-mfc-2.2.0-qa-81_18482_247
+ APPEND initrd=pxe-boot/mfc-2.2.0-qa-81_18482_247/rootflop-mfc-2.2.0-qa-81_18482_247.img        installfrom=pxe/pxe-boot/mfc-2.2.0-qa-81_18482_247 installopt=,accept-eula,
+ IPAPPEND 3

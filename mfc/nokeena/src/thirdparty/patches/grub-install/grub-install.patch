@@ -1,0 +1,22 @@
+--- grub-install	2013-04-12 15:25:59.843730959 -0700
++++ grub-install.fixed	2013-04-12 15:27:32.272648482 -0700
+@@ -102,8 +102,8 @@
+     linux*)
+ 	tmp_disk=`echo "$1" | grep -v '/mapper/control$' |
+ 		grep -v '/mapper/[[:alnum:]]\+-[[:alnum:]]\+$' | uniq |
+-		sed -e 's%\([shv]d[a-z]\)[0-9]*$%\1%' \
+-				  -e 's%\(d[0-9]*\)p[0-9]*$%\1%' \
++		sed -e 's%\([shv]d[a-z][a-z]*\)[0-9]*$%\1%' \
++				  -e 's%\(d[0-9]*\)p[0-9][0-9]*$%\1%' \
+ 				  -e 's%\(fd[0-9]*\)$%\1%' \
+ 				  -e 's%/part[0-9]*$%/disc%' \
+ 				  -e 's%\(c[0-7]d[0-9]*\).*$%\1%' \
+@@ -112,7 +112,7 @@
+ 	  -e 's%\(/mapper/[[:alpha:]]\+_[[:alpha:]]\+\)[[:digit:]]\+$%\1%'`
+ 	tmp_part=`echo "$1" | grep -v '/mapper/control$' |
+ 		grep -v '/mapper/[[:alnum:]]\+-[[:alnum:]]\+$' | uniq |
+-		sed -e 's%.*/[shv]d[a-z]\([0-9]*\)$%\1%' \
++		sed -e 's%.*/[shv]d[a-z][a-z]*\([0-9]*\)$%\1%' \
+ 				  -e 's%.*d[0-9]*p%%' \
+ 				  -e 's%.*/fd[0-9]*$%%' \
+ 				  -e 's%.*/floppy/[0-9]*$%%' \

@@ -1,0 +1,829 @@
+#!/bin/sh
+#
+# $Id: script-funcs,v 1.21.78.1 2009-09-16 12:45:12 jyan Exp $
+#
+# Copyright (c) 1999-2007, Juniper Networks, Inc.
+# All rights reserved.
+#
+
+# if /etc/rc.fips, then we are always FIPS
+# even if fips_level has not yet been raised.
+isFIPSimage() {
+    test -s /etc/rc.fips
+}
+
+isFIPS() {
+    isFIPSimage || (fips-mode) 2> /dev/null
+}
+
+# return true if veriexec is being enforced
+veriexec_check() {
+    if [ -x /sbin/veriexec ]; then
+	(/sbin/veriexec -i enforce) > /dev/null 2>&1
+	return $?
+    fi
+    return 1
+}
+
+#
+# SHA1 is better than MD5, use it if available
+# HASH_CMD is the command we run
+# HASH_EXT is the .ext (sans .)
+# HASH_NAME is the official name of the hash
+#
+# XXX don't add sha256 yet, we only use this to find
+# the files that need verifying and .sha1 will do.
+if [ -x /sbin/sha1 ]; then
+    HASH_CMD=sha1
+    HASH_EXT=sha1
+    HASH_NAME=SHA1
+else
+    HASH_CMD=md5
+    HASH_EXT=md5
+    HASH_NAME=MD5
+fi
+
+# atexit.sh will provide this, but have it here to so we
+# can use it without atexit
+Exit() {
+	ExitStatus=$1
+	exit_sts=$1
+	exit $1
+}
+
+# from debug.sh
+Myname=${Myname:-${0##*/}}
+
+DEBUGGING=
+DEBUG_DO=:
+DEBUG_SKIP=
+export DEBUGGING DEBUG_DO DEBUG_SKIP
+
+_debugOn() {
+	DEBUG_OFF=
+	DEBUG_DO=
+	DEBUG_SKIP=:
+	set -x
+	DEBUG_ON=$1
+}
+
+_debugOff() {
+	DEBUG_OFF=$1
+	set +x
+	DEBUG_ON=$2
+	DEBUG_DO=:
+	DEBUG_SKIP=
+}
+
+# Turn on debugging if appropriate
+DebugOn() {
+	local e
+
+	case "${DEBUG_SH:-$DEBUG}" in
+	"")	return 1;;
+	esac
+	# if debuggin is off because of a !e
+	# don't add 'all' to the On list.
+	case "$DEBUG_OFF" in
+	"")	e=all;;
+	*)	e=;;
+	esac
+	for e in ${*:-$Myname} $e
+	do
+		case ",${DEBUG_SH:-$DEBUG}," in
+		*,!$e,*|*,!$Myname:$e,*)
+			# only turn it off if it was on
+			$DEBUG_DO _debugOff $e $DEBUG_ON
+			return 0
+			;;
+		*,$e,*|*,$Myname:$e,*)
+			# only turn it on if it was off
+			$DEBUG_SKIP _debugOn $e
+			return 0
+			;;
+		esac
+	done
+	return 1
+}
+
+# Only turn debugging off if one of our args was the reason it
+# was turned on.
+DebugOff() {
+	local e
+
+	for e in $*
+	do
+		case "$DEBUG_OFF" in
+		"")	break;;
+		$e)	_debugOn $DEBUG_ON; return 0;;
+		esac
+	done
+	for e in $*
+	do
+		case "$DEBUG_ON" in
+		"")	break;;
+		$e)	_debugOff; return 0;;
+		esac
+	done
+	return 0		# always happy
+}
+
+_TTY=${_TTY:-`test -t 0 && tty`}; export _TTY
+
+# override this if you like
+_debugShell() {
+	{
+		echo DebugShell "$@"
+		echo "Type 'exit' to continue..."
+	} > $_TTY
+	${DEBUG_SHELL:-${SHELL:-/bin/sh}} < $_TTY > $_TTY 2>&1
+}
+
+# Run an interactive shell if appropriate
+# Note: you can use $DEBUG_SKIP DebugShell ... to skip unless debugOn
+DebugShell() {
+	case "$_TTY^${DEBUG_INTERACTIVE}" in
+	*^|^*) return 0;;	# no tty or no spec
+	esac
+	for _e in ${*:-$Myname} all
+	do
+		case ",${DEBUG_INTERACTIVE}," in
+		*,!$_e,*|*,!$Myname:$_e,*)
+			return 0
+			;;
+		*,$_e,*|*,$Myname:$_e,*)
+			# Provide clues as to why/where
+			_debugShell "$_e: $@"
+			return $?
+			;;
+		esac
+	done
+	return 0
+}
+
+# return the first of $* that exists
+# we generally use this to deal with expanding wildcards.
+Exists() {
+    case "$1" in
+    -?) _t=$1; shift;;
+    *) _t=-s;;
+    esac
+    for f in $*
+    do 
+	[ $_t $f ] || continue
+	echo $f
+	break
+    done
+}
+
+# a boolean form of Exists
+exists() {
+    case "$1" in
+    -?) _t=$1; shift;;
+    *) _t=-s;;
+    esac
+    for f in $*
+    do 
+        [ $_t $f ] && return 0
+    done
+    return 1
+}
+
+# make it easier to add per-package tweaks without having to
+# re-introduce cut/paste hell.
+add_hooks() {
+    eval __h="\$$1"			# current hook values
+    __hook=$1  shift			# get hook name
+    eval $__hook="'$__h $@'"		# append new values
+}
+
+run_hooks() {
+    eval __h="\$$1"
+    for e in $__h
+    do
+        $e
+    done
+}
+
+read_link() {
+    if [ -h $1 ]; then
+        /bin/ls -l $1 | sed -e 's,.*-> ,,' -e 's,.*/,,'
+    else
+        echo $1
+    fi
+}
+
+# make_symlink <src> <target>
+#
+# if <target> does not already point at <src>
+# make the link.
+# The goal is to minimize writes to the flash
+
+make_symlink() {
+    DebugOn make_symlink make_symlink:$1 make_symlink:$2
+    local src target target_dir
+    src=$1 
+    target=$2
+
+    if [ -h $DESTDIR$target ]; then
+        case `/bin/ls -l $DESTDIR$target` in
+	*"> $src")
+            trace "make_symlink: ok: $DESTDIR$target -> $src"
+	    DebugOff make_symlink make_symlink:$src make_symlink:$target
+            return;;
+	esac
+    fi
+    trace "make_symlink: making: $DESTDIR$target -> $src"
+    target_dir=`dirname $DESTDIR$target`
+    [ -d $target_dir ] || mkdir -p $target_dir
+    /bin/ln -sf $src $DESTDIR$target
+    DebugOff make_symlink make_symlink:$src make_symlink:$target
+}
+
+# make_symlinks <package-name>
+#
+# If the file symlinks exists, we compare it to
+# the one for the previous version of <package-name>
+# and implement any changes.
+
+make_symlinks() {
+    DebugOn make_symlinks make_symlinks:$package make_symlinks:$1
+    local symlinks old_symlinks tf
+
+    symlinks=${1:-./$package.symlinks}
+    old_symlinks=${2:-$pkgdir/$package.symlinks}
+    tf=/tmp/sl$$
+
+    if [ -s $symlinks ]; then
+        if [ -s $old_symlinks ]; then
+	    # make sure we don't trip over changed flags
+	    # cut(1) would be nice
+	    awk '{ print $1, $2 }' $symlinks | sort -u > $tf.new
+	    awk '{ print $1, $2 }' $old_symlinks | sort -u > $tf.old
+            # get rid of links which may no longer be correct
+            diff -b $tf.old $tf.new | while read op src target
+	    do
+                case "$op" in
+		"<") # delete - but only if it still points at src
+                     # and isn't no_unlink (in either list)
+                     case `grep " $target .*no_unlink" $symlinks $old_symlinks` in
+		     *no_unlink*) continue;;
+		     esac
+                     if [ -h $DESTDIR$target ]; then
+                         case `/bin/ls -l $DESTDIR$target` in
+			 *"> $src")
+                             trace "make_symlinks: removing: $DESTDIR$target -> $src"
+                             /bin/rm -f $DESTDIR$target
+                             ;;
+			 esac
+		     fi
+                     ;;
+		esac
+            done
+	fi
+	
+	# Create provider-prefix specific directories for external RE packages
+	if [ "$PKG_PROVIDER_NAME" -a "$pkg_origin" = "SDK_PKG_RE" ]; then
+	    mkdir -p -m 775 /var/log/ext/$PKG_PROVIDER_NAME
+	    mkdir -p -m 775 /var/run/ext/$PKG_PROVIDER_NAME
+	    mkdir -p -m 775 /var/db/ext/$PKG_PROVIDER_NAME
+	fi
+
+        # make sure that the ones that should be there, are.
+        while read src target flags
+	do
+	    # Modify path to symlinks for external RE/VE packages
+	    if [ "$PKG_PROVIDER_NAME" ]; then  
+		if [ "$pkg_origin" = "SDK_PKG_RE" -o "$pkg_origin" = "SDK_PKG_VE" ]; then
+		    if [ "$CHECK_SYMLINKS" ]; then
+			sdk_check_symlinks $target || exit $?
+		    fi
+		    case "$target" in
+			"/opt/lib/dd/lib"*"-dd.so" | \
+			"/opt/lib/dd/"*".dml" | \
+			"/opt/lib/render/lib"*"-render.so" | \
+		        "/var/db/scripts/op/"* | \
+		        "/var/db/scripts/event/"* | \
+		        "/var/db/scripts/commit/"*)
+			    if [ -e "$target" ]; then
+			        warn "COLLISION DETECTED"
+			        warn "Link $target already exists"
+			    else
+			        make_symlink $src $target
+			    fi;;
+		        "/opt/sdk/$PKG_PROVIDER_NAME/"*)
+			    if [ -e "$target" ]; then
+			        warn "COLLISION DETECTED"
+			        warn "Link $target already exists"
+			    else
+			        make_symlink $src $target
+			    fi;;
+		        *)  error_more "$target is not within /opt/sdk/$PKG_PROVIDER_NAME"
+			    [ "$PKG_FORCE" ] || break
+			    if [ -e "$target" ]; then
+			        warn "COLLISION DETECTED"
+			        warn "Link $target already exists"
+			    else
+			        make_symlink $src $target
+			    fi;;
+		    esac
+	        else
+		    make_symlink $src $target
+	        fi
+	    else
+		make_symlink $src $target
+	    fi
+        done < $symlinks
+	
+	# If src and target are set, then we aborted the symlink creation, so
+	# we need to remove any links that we already created.
+	if [ "$src" -a "$target" ]; then
+	    while read brokensrc brokentarget flags
+	    do
+		# Once we reach the same src and target lines in the symlink
+		# file, we are at the point of the collision and can stop.
+		[ "$src" = "$brokensrc" -a "$target" = "$brokentarget" ] && break
+		rm -f $brokentarget
+	    done < $symlinks
+	    Exit 1
+	fi
+    fi
+    DebugOff make_symlinks make_symlinks:$package make_symlinks:$1
+}
+
+# Override these if need be
+warn() {
+    if [ -z "$1" ]; then
+	echo 
+    else
+	echo "WARNING: $@"
+    fi
+}
+
+# more error to follow, don't die yet
+error_more() {
+    if [ -z "$1" ]; then
+	echo 
+    else
+	echo "ERROR: $@"
+    fi
+}
+
+error() {
+    error_more "$@"
+    ${PKG_FORCE:+:} Exit 1
+}
+
+# like error - but we don't allow PKG_FORCE to keep us from dying
+Error() {
+    error_more "$@"
+    Exit 1
+}
+
+notice() {
+    if [ -z "$1" ]; then
+	echo 
+    else
+	echo "NOTICE: $@"
+    fi
+}
+
+inform() {
+    if [ -z "$PKG_QUIET" ]; then
+	echo "$@"
+    fi
+}
+
+
+#
+# trace <args>
+#
+# make a trace message
+#
+trace() {
+    if [ ! -z "$PKG_TRACE_ENABLED" ]; then
+	echo "trace: $@"
+    fi
+}
+
+#
+# get_provider cert
+#
+# print the provider name of the certificate
+# exit if the provider name doesn't match the common name prefix
+#
+get_provider() {
+    local provider_name="jnxProviderName"
+
+    /sbin/x509-exts -c $provider_name "$@"
+    [ $? = 0 ] || Exit 1
+}
+
+check_expiry() {
+    local provider_name="jnxProviderName"
+
+    /sbin/x509-exts -sc $provider_name "$@"
+    [ $? = 0 ] || Exit 1
+}
+
+get_cert_type() {
+    local cert_type="jnxCertificateType"
+
+    /sbin/x509-exts -x $cert_type "$@"
+    [ $? = 0 ] || Exit 1
+}
+
+get_dep_type() {
+    local dep_type="jnxDeploymentType"
+
+    /sbin/x509-exts -x $dep_type "$@"
+    [ $? = 0 ] || Exit 1
+}
+
+check_allowed_extensions() {
+    # Figure out the provider name of the signer cert
+    PKG_PROVIDER_NAME=`get_provider $certs`
+    export PKG_PROVIDER_NAME
+    
+    # Figure out the certificate type and deployment type of the cert
+    PKG_CERT_TYPE=`get_cert_type $certs`
+    PKG_DEP_TYPE=`get_dep_type $certs`
+
+    if [ "$PKG_PROVIDER_NAME" ]; then
+	# Check if the SDK certificate is expired
+	check_expiry $certs
+
+	# it better be in extensions.allow
+	egrep "^$PKG_PROVIDER_NAME([[:space:]].*)?\$" $extensions_allow 2>/dev/null | \
+	while read provider certtype deptype
+	do
+	    if [ ! "$PKG_CERT_TYPE" -a ! "$PKG_DEP_TYPE" -a ! "$certtype" -a ! "$deptype" -a "$PKG_PROVIDER_NAME" = "$provider" ]; then
+		exit 1 # Allow packages signed with old cert to install
+	    fi
+
+	    if [ "$PKG_PROVIDER_NAME" = "$provider" -a "$PKG_CERT_TYPE" = "$certtype" -a "$PKG_DEP_TYPE" = "$deptype" ]; then
+		exit 1 # Allow packages signed with new cert to install
+	    fi
+	done
+
+	if [ $? -ne 1 ]; then
+	    Error "Packages from $PKG_PROVIDER_NAME are not allowed"
+	fi
+    fi
+}
+
+#
+# verify_hash hash
+#
+# If there is a file "hash" we check that
+# "hash_cmd" < "pkg" == `cat "hash"`
+# We determine "hash_cmd" from the extention of "hash"
+# and "pkg" is "hash" with its ."hash_ext" extention stripped.
+#
+verify_hash() {
+    DebugOn verify_hash
+    local pkg hash hash_cmd hash_desc hash_ext want have
+    local rc=1
+    local dir base certs
+    local extensions_allow="/var/etc/extensions.allow"
+
+    hash=$1
+
+    if [ -s $hash ]; then
+	case "$hash" in
+	*sig) # real signature file
+	    hash_cmd=/sbin/verify-sig
+	    ;;
+	*md5)  hash_cmd=/sbin/md5
+	    hash_ext=md5
+	    hash_name=MD5
+	    ;;
+	*sha1)	hash_cmd=/sbin/sha1
+	    hash_ext=sha1
+	    hash_name=SHA1
+	    ;;
+	*sha256) hash_cmd=/sbin/sha256
+	    hash_ext=sha256
+	    hash_name=SHA256
+	    ;;
+	esac
+
+	if [ -x $hash_cmd ]; then
+	    case "$hash" in
+	    *sig)
+		dir=`dirname $hash`
+		base=`basename $hash .sig`
+		certs=`Exists $dir/$base.certs $dir/certs.pem`
+		$hash_cmd -b -c $certs $hash || Exit 1
+		
+		# Allow/disallow external packages
+		check_allowed_extensions
+
+		rc=0
+		;;
+	    *)
+		# We rely on foo.tgz.$hash_ext being the $method hash
+		pkg=`expr $hash : "\(.*\).$hash_ext"`
+
+		want=`cat $hash`
+		have=`$hash_cmd < $pkg`
+		if [ "$have" = "$want" ]; then
+		    inform Verified $hash_name checksum of $pkg
+		    rc=0
+		else
+		    error Failed $hash_name checksum of $pkg
+		    # ensure we do not proceed - even with PKG_FORCE set.
+		    Exit 1
+		fi
+		;;
+	    esac
+	fi
+    fi
+    DebugOff verify_hash
+    return $rc
+}
+
+verify_files() {
+    DebugOn verify_files
+
+    for f in $*
+    do
+	[ -s $f ] || continue
+	case $f in
+	*.sha256|*.sha1|*.md5|*.sig)
+	    verify_hash $f
+	    ;;
+	*)  # try in our order of preference
+	    for h in $f.sig $f.sha256 $f.sha1 $f.md5
+	    do
+		    verify_hash $h && break
+	    done
+	    ;;
+	esac
+    done	    
+    DebugOff verify_files
+}
+
+# compensate for lack of cmp(1)
+cmp() {
+    case "$1" in
+    -s) shift;;
+    esac
+    diff $* > /dev/null 2>&1
+}
+
+#
+# replace $file with $file.new if appropriate 
+#
+install_if_new() {
+    local file=$1
+    local new=${NewExt:-new}
+    local old=${OldExt:-old}
+    
+    if [ -s $file.$new ]; then
+	if [ -f $file ]; then
+	    if cmp -s $file $file.$new; then
+		rm -f $file.$new
+	    else
+                rm -f $file.$old
+                mv $file $file.$old
+	    fi
+        fi
+    else
+        rm -f $file.$new
+    fi
+    if [ -s $file.$new ]; then
+        mv $file.$new $file
+        :
+    fi
+}
+
+# wrap output of $func in output tags after escaping
+# any <>&. Eg. if main function is called main:
+# xml_output main "$@"
+xml_output() {
+    local func rc
+
+    func=$1; shift
+    # dup 3 to stdout so we can avoid a temp file.
+    # we'll send stdout of the child to 3, and
+    # capture just what the child writes to fd 4.
+    exec 3>&1
+    rc=`(
+	# we trap but ignore these signals
+	# in the child that runs $func they will be reset to default
+	trap : 1 2 3
+	echo "<output>"
+
+	# Use a sed -n ... -e 'w/dev/stdout'
+	# kludge to work around buffered stdio
+	{ (exec 3>&- 4>&-; $func "$@") 2>&1; echo $? >&4; } |
+		sed -n -e 's,&,\&amp;,g' -e 's,<,\&lt;,g' -e 's,>,\&gt;,g' -e 'w/dev/stdout'
+
+	echo "</output>"
+    )  4>&1 1>&3`
+    exec 3>&-
+    return ${rc:-1}
+}
+
+# these are always handy, spacefor.c handles huge filesystems better
+# but we don't generally have that issue.
+file_size() {
+    du -k -s $1 2> /dev/null | ( read sz junk; echo $sz )
+}
+
+space_on() {
+    if [ -d $1 ]; then
+	df -k $1 | (
+	    while read fs blocks used avail rest
+	    do
+		case $avail in
+		Av*) continue;;
+		*) echo $avail; break;;
+		esac
+	    done
+	)
+    else
+	echo 0
+    fi
+}
+
+# dir=$1 want=$2
+# want can be a number or a file
+space_for() {
+    [ -f $2 ] && _want=`file_size $2` || _want=$2
+    _avail=`space_on $1`
+    [ ${_avail:-0} -ge ${_want:-0} ]
+}
+
+#
+# hup_daemon <daemon-name> <daemon-pid-file>
+#
+# send a hup signal to a daemon
+#
+hup_daemon() {
+    if [ -s $2 ]; then
+	kill -HUP `cat $2 2>/dev/null`
+    elif [ -s /var/run/$1.pid ]; then
+	kill -HUP `cat /var/run/$1.pid 2>/dev/null`
+    else
+	daemon_pid=`ps gax | grep "/$1 -N" | grep -v grep \
+		    | awk '{ print \$1 }' 2>/dev/null`
+	if [ ! -z "$daemon_pid" ]; then
+	    kill -HUP "$daemon_pid 2>/dev/null"
+	fi
+    fi
+    if [ $? != 0 ]; then
+	error "Could not send HUP to $1"
+    fi	
+}
+
+save_loader_tweaks() {
+    tmpfile=/tmp/loader.tweaks$$
+    # if loader.tweaks exists, prefer that over changes to loader.conf
+    local product_model=`sysctl -n hw.product.model`
+    [ -s /boot/loader.tweaks -a "$product_model" != "vjx1000" ] && return
+    if [ -s /boot/loader.conf ]; then
+        cat /boot/loader.conf | egrep -e "(ata|cid|retype|serialid|model${1:+|$1})"
+    fi > $tmpfile
+    [ -s $tmpfile ] && mv $tmpfile /boot/loader.tweaks
+    rm -f $tmpfile
+}
+
+restore_loader_tweaks() {
+    if [ -s /boot/loader.tweaks ]; then
+        cat /boot/loader.tweaks >> /boot/loader.conf
+    fi
+}
+
+printf() {
+    local fmt
+
+    fmt=`echo "$1" | sed 's/"/\\\\"/g'`
+    shift
+
+    eval "awk 'BEGIN { printf(\"$fmt\"`echo $@ | awk '{ for (i = 1; i <= NF; i++) { gsub(/\042/, "\134\042", $i); printf(", \042%s\042", $i); } }'`); }'"
+}
+
+# BIOS check 
+# 
+# BIOS on platforms like SRX branch needs BIOS upgrade to be transparent to 
+# the user. This function checks available and installed version of BIOS to 
+# decide whether BIOS needs to be upgraded automatically
+#
+# $1: Directory where BIOS files for installation are present
+bios_check() {
+    DebugOn bios_check
+
+    # Check if BIOS auto upgrade is enabled based on output of 
+    # sysctl variable hw.re.bios_auto_upgrade. If output is
+    #     0: Auto upgrade is disabled. Exit
+    #     1: Auto upgrade is enabled. Continue
+    #     Nothing: Default is to auto upgrade. Continue
+    local check_enabled=`sysctl -n hw.re.bios_auto_upgrade 2> /dev/null`
+    check_enabled=${check_enabled:-1}
+    if [ $check_enabled = 0 ]; then
+        return
+    fi
+
+    local product_model=`sysctl -n hw.product.model`
+
+    case "$product_model" in
+    srx[12][0-9][0-9][bh-]*|srx6[0-9][0-9])
+
+        local boot_dir=${1:-$CF/boot}
+
+        if [ ! -d $boot_dir ]; then
+            error BIOS check: Boot directory $boot_dir does not exist
+            return
+        fi
+
+        # Get the product family e.g. family for product model
+        # srx210h-poe is srx210
+        # Also, note that older JUNOS releases had the name 
+        # convention as srx210-hm for srx210 high memory. As, 
+        # it is possible that we are upgrading from an older 
+        # JUNOS which returns names with this convention as a 
+        # result of sysctl command above, take care of that
+        local product_family="${product_model%%[bh-]*}"
+
+        # Get the mandatory BIOS version needed for product family for the 
+        # Junos installed
+        local mandatory_version=`awk -v PRODUCT=$product_family '$1 == PRODUCT { print $2 }' \
+                                 $boot_dir/bios-autoupgrade.conf`
+
+        # Get the version of the BIOS available for install
+        # BIOS version is located at 0x500 offset in u-boot binary 
+        local avail_version=`dd if=$boot_dir/uboot bs=1 iseek=0x500 count=16 2> /dev/null | \
+                             sed -n '/^[0-9]*\.[0-9]*/s/\([0-9]*\)\.\([0-9]*\).*/\1\.\2/p'`
+
+        # Get the version of the current BIOS installed on the system
+        local installed_version="$(sysctl -n hw.re.biosversion)"
+
+        # Older BIOS had a different versioning scheme which had
+        # U-boot's GNU version number (1.1.6) as the version number
+        # This was superseded by a SRX branch platform specific 
+        # 2 digit versioning scheme for better control over code changes
+        #
+        # Hence, treat original version number 1.1.6 in older U-boots
+        # as version 0.0
+        case "$installed_version" in
+        *1.1.6*)
+            installed_version=0.0
+        esac
+
+        installed_version=${installed_version:-0.0}
+        mandatory_version=${mandatory_version:-0.0}
+        avail_version=${avail_version:-0.0}
+
+        # If installed version is less than mandatory version,
+        #        upgrade to available BIOS version
+        if version_lt "$installed_version" "$mandatory_version"; then
+
+            echo JUNOS requires BIOS version upgrade from \
+                 $installed_version to $avail_version
+            echo Upgrading to BIOS $avail_version ...
+ 
+            case "$product_family" in
+            srx240|srx650)
+
+                # PR 495910 - It is possible that the variables are incorrect for
+                # BIOS version < 1.5 on SRX650
+                if [ $product_family = "srx650" ]; then
+                    kenv boot.upgrade.uboot=0xBF400000
+                    kenv boot.upgrade.loader=0xBF600000
+                elif [ $product_family = "srx240" ]; then
+                    # PR 554283- It is possible that the variables are incorrect for
+                    # BIOS version < 1.5 on Asgard platforms 
+                    kenv boot.upgrade.uboot=0xbfc00000
+                    kenv boot.upgrade.loader=0xbfe00000
+                fi
+
+                # Upgrade U-boot, Loader and U-shell
+                bootupgrade -u $boot_dir/uboot -l $boot_dir/loader -U $boot_dir/ushell
+                ;;
+            srx100|srx210)
+                    # PR 554283- It is possible that the variables are incorrect for
+                    # BIOS version < 1.5 on Asgard platforms 
+                    kenv boot.upgrade.uboot=0xbfc00000
+                    kenv boot.upgrade.loader=0xbfe00000
+
+                    # Upgrade U-boot and Loader
+                    bootupgrade -u $boot_dir/uboot -l $boot_dir/loader
+                ;;
+            *)
+                # Upgrade U-boot and Loader
+                bootupgrade -u $boot_dir/uboot -l $boot_dir/loader
+                ;;
+            esac
+
+        fi
+        ;;
+
+    *)
+        ;;
+
+    esac
+
+    DebugOff bios_check
+}

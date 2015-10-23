@@ -1,0 +1,16 @@
+# This crontab is saved as /home2/build/cron-bin/crontab-sv02.txt
+
+# Every minute, see if need to update the pxe server menus
+* * * * * /eng/bin-pxeserver/update-pxe.sh -c > /dev/null 2>&1
+
+# Once an hour report the disk space for local filesystems.
+00 * * * * /eng/bin/DFL > /data/server-reports/cmbu-sv02.englab.df.txt
+
+##############################################################
+# field          allowed values
+# -----          --------------
+# minute         0-59
+# hour           0-23
+# day of month   1-31
+# month          1-12 (or names, see below)
+# day of week    0-7 (0 or 7 is Sun, or use names)

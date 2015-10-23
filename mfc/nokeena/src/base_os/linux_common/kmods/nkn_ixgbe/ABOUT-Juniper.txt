@@ -1,0 +1,7 @@
+Downloaded source using:
+  wget http://downloadmirror.intel.com/21214/eng/ixgbe-3.8.21.tar.gz 
+Unmodified source except for using a different Makefile.
+The Makefile used is based on the Samara standard prototype makefile for kernel modules.
+
+This is a Linux kernel loadable module.
+The source is licensed with GPLv2, and Copyright(c) 1999 - 2011 Intel Corporation

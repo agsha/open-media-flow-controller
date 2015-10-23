@@ -1,0 +1,2929 @@
+JUNIPER-MFC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+      enterprises,
+      MODULE-IDENTITY,
+      OBJECT-TYPE,
+      Counter64,
+      Gauge32,
+      Integer32,
+      Unsigned32,
+      TimeTicks
+            FROM SNMPv2-SMI
+      DateAndTime
+            FROM SNMPv2-TC
+      OBJECT-GROUP,
+      MODULE-COMPLIANCE
+            FROM SNMPv2-CONF;
+
+juniperMIB MODULE-IDENTITY
+      LAST-UPDATED "201308080000Z"  -- Aug 8, 2013 00:00:00 AM
+      ORGANIZATION "Juniper Networks, Inc"
+      CONTACT-INFO
+            "Juniper Technical Assistance Center
+            Juniper Networks, Inc.
+            1194 N. Mathilda Avenue
+            Sunnyvale, CA 94089
+            E-mail: support@juniper.net"
+      DESCRIPTION
+            "This MIB is applicable for Juniper Networks
+            Media Flow Controller Devices."
+      REVISION "201308080000Z"      -- Aug 8, 2013 00:00:00 AM
+      DESCRIPTION
+            "Added support of jmfcDictionaryTotalSize,
+	    jmfcDictionaryUsedSize"
+      REVISION "201201180000Z"      -- Jan 18, 2012 00:00:00 AM
+      DESCRIPTION
+            "Changed OID base from 1.3.6.1.4.1.2636.3.60 to
+            1.3.6.1.4.1.2636.1.2"
+      REVISION "201112180000Z"      -- Dec 18, 2011 00:00:00 AM
+      DESCRIPTION
+            "Added jmfcInterfaceTable."
+      REVISION "201008040851Z"      -- Aug 4, 2010 8:51:00 AM
+      DESCRIPTION
+            "Initial version."
+      -- 1.3.6.1.4.1.2636
+      ::= { enterprises 2636 }
+
+
+jnxProducts OBJECT IDENTIFIER
+      -- 1.3.6.1.4.1.2636.1
+      ::= { juniperMIB 1 }
+
+jnxMediaFlow OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2
+      ::= { jnxProducts 2 }
+
+--
+-- Object Identifier Assignments
+--
+
+jmfcMIBObjects OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1
+      ::= { jnxMediaFlow 1 }
+
+--
+-- The Media Flow Controller - System Group
+--
+-- The System Group contains information about the 
+-- system such as the OS version, System Id, any
+-- additional extensions that are installed (or available)
+-- and their specific versions.
+--
+
+jmfcSystem OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.1
+      ::= { jmfcMIBObjects 1 }
+
+jmfcSystemVersion OBJECT-TYPE
+      SYNTAX  OCTET STRING
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The current version of the Media Flow Controller
+            software running on the device. The version number
+            is in the form of mfc-<xx> <yy>, where
+            <xx> - is a number which denotes the release number.
+            <yy> - is a number which denotes the build id of the image.
+
+            For example, mfc-11.B.3 2_25820_314, mfc-12.1-1 1_25830_179"
+      -- 1.3.6.1.4.1.2636.1.2.1.1.1
+      ::= { jmfcSystem 1 }
+
+
+jmfcSystemId OBJECT-TYPE
+      SYNTAX  OCTET STRING
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The  Host-Id of the MFC. This is a unique number assigned 
+            to every MFC.
+
+            Example: 44454C4C-3500-1035-805A-B2C04F313253"
+      -- 1.3.6.1.4.1.2636.1.2.1.1.3
+      ::= { jmfcSystem 3 }
+
+--
+-- CPU details 
+--
+jmfcCpus OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.1.4
+      ::= { jmfcSystem 4 }
+
+jmfcCpuTable OBJECT-TYPE
+      SYNTAX  SEQUENCE OF JmfcCpuEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "A list of CPU ."
+      -- 1.3.6.1.4.1.2636.1.2.1.1.4.1
+      ::= { jmfcCpus 1 }
+
+
+jmfcCpuEntry OBJECT-TYPE
+      SYNTAX  JmfcCpuEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "An entry containing information related to a particular CPU."
+      INDEX {
+            jmfcCpuIndex }
+      -- 1.3.6.1.4.1.2636.1.2.1.1.4.1.1
+      ::= { jmfcCpuTable 1 }
+
+
+JmfcCpuEntry ::= SEQUENCE {
+       jmfcCpuIndex             Unsigned32,
+       jmfcIdleTime             TimeTicks,
+       jmfcSystemTime           TimeTicks,
+       jmfcUserTime             TimeTicks,
+       jmfcUtilPct1Min          Unsigned32
+}
+
+jmfcCpuIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Index of CPU, starting from 0"
+    ::= { jmfcCpuEntry 1 }
+
+jmfcIdleTime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Time in milliseconds CPU has spent idle"
+    ::= { jmfcCpuEntry 2 }
+
+jmfcSystemTime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Time in milliseconds CPU has spent busy with system tasks"
+    ::= { jmfcCpuEntry 3 }
+
+jmfcUserTime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Time in milliseconds CPU has spent busy with user tasks"
+    ::= { jmfcCpuEntry 4 }
+
+jmfcUtilPct1Min OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Percentage CPU utilization over the past minute"
+    ::= { jmfcCpuEntry 5 }
+
+jmfcCpuUtil OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Total CPU utilization over the past minute as a percentage"
+    ::= { jmfcCpus 2}
+
+jmfcCpuUtilErrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured upper threshold on CPU utilization for triggering an alarm"
+    ::= { jmfcCpus 3}
+
+jmfcCpuUtilClrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured threshold value on CPU utilization to clear the alarm"
+    ::= { jmfcCpus 4}
+
+jmfcAppMaxCpuUtil OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Total CPU utilization over the past minute as a percentage across core running HTTP application"
+    ::= { jmfcCpus 5}
+
+jmfcAppMaxCpuUtilErrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured upper threshold on HTTP application  CPU utilization for triggering an alarm"
+    ::= { jmfcCpus 6}
+
+jmfcAppMaxCpuUtilClrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured threshold value on HTTP application CPU utilization to clear the alarm"
+    ::= { jmfcCpus 7}
+
+jmfcMemory OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.1.5
+      ::= { jmfcSystem 5 }
+
+jmfcMemUtil OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " Non cache RAM utilization as percentage"
+    ::= { jmfcMemory 1}
+
+jmfcMemUtilErrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured upper threshold on memory utilization for triggering an alarm"
+    ::= { jmfcMemory 2}
+
+jmfcMemUtilClrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured threshold value on memory utilization"
+    ::= { jmfcMemory 3}
+
+jmfcPaging OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.1.6
+      ::= { jmfcSystem 6 }
+
+jmfcPagingCurrent OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " Current paging rate of the system"
+    ::= { jmfcPaging 1}
+
+jmfcPagingErrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured upper threshold on system paging for triggering an alarm"
+    ::= { jmfcPaging 2}
+
+jmfcPagingClrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured threshold value on system paging for clearing the notification"
+    ::= { jmfcPaging 3}
+
+--
+--The process manager table
+--
+jmfcService OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.1.7
+      ::= { jmfcSystem 7 }
+
+jmfcServiceTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF JmfcServiceEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "List of processes managed or monitored by PM"
+    ::= { jmfcService 1 }
+
+jmfcServiceEntry OBJECT-TYPE
+    SYNTAX      JmfcServiceEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for one process"
+    INDEX   { jmfcServiceIndex }
+    ::= { jmfcServiceTable 1 }
+
+JmfcServiceEntry ::=
+    SEQUENCE {
+        jmfcServiceIndex            Unsigned32,
+        jmfcServiceName             OCTET STRING,
+        jmfcServiceStatus           OCTET STRING,
+        jmfcServiceNumFailures      Unsigned32,
+        jmfcServiceLastDown         DateAndTime,
+        jmfcServiceLastUp            DateAndTime
+    }
+
+jmfcServiceIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Synthetic numeric unique ID of process"
+    ::= { jmfcServiceEntry 1 }
+
+jmfcServiceName OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Unique name of process"
+    ::= { jmfcServiceEntry 2 }
+
+jmfcServiceStatus OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Current state of process"
+    ::= { jmfcServiceEntry 3 }
+
+jmfcServiceNumFailures OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Number of times process has crashed or exited unexpectedly"
+    ::= { jmfcServiceEntry 4 }
+
+jmfcServiceLastDown OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The last time the service went down"
+    ::= { jmfcServiceEntry 5 }
+
+jmfcServiceLastUp OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The last time the service was started"
+    ::= { jmfcServiceEntry 6 }
+
+jmfcMaxThroughput OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Maximum Throughput possible in the MFC device"
+    ::= { jmfcSystem 10 }
+
+jmfcMaxOpenConnections OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Maximum number of open connections possible in the MFC device"
+    ::= { jmfcSystem 11 }
+
+ --
+ --The log server table
+ --
+jmfcLogger OBJECT IDENTIFIER
+    -- 1.3.6.1.4.1.2636.1.2.1.1.12
+    ::= { jmfcSystem 12 }
+
+jmfcLoggerTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF JmfcLoggerEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "List of access log profiles"
+    ::= { jmfcLogger 1 }
+
+jmfcLoggerEntry OBJECT-TYPE
+    SYNTAX      JmfcLoggerEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for one profile"
+    INDEX   { jmfcLoggerIndex }
+    ::= { jmfcLoggerTable 1 }
+
+JmfcLoggerEntry ::=
+    SEQUENCE {
+        jmfcLoggerIndex            Unsigned32,
+        jmfcLoggerName             OCTET STRING,
+        jmfcLoggerTemplate           OCTET STRING
+     }
+
+jmfcLoggerIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Synthetic numeric unique ID of each access log profile"
+    ::= { jmfcLoggerEntry 1 }
+
+jmfcLoggerName OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Accesslog Profile name present in the system"
+    ::= { jmfcLoggerEntry 2 }
+
+jmfcLoggerTemplate OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Displays the filename format used for the profile logging file
+	    Eg: access.log"
+    ::= { jmfcLoggerEntry 3 }
+
+jmfcTemperatureCurrent OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "The Current temperature of the chassis expressed in terms
+	    of the value below the max temperature.Eg:If max temperature
+	    is 100, actual temperature is 60, it will be displayed as 40."
+    -- 1.3.6.1.4.1.2636.1.2.1.1.13
+    ::= { jmfcSystem 13 }
+
+jmfcTemperatureThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Threshold Temperature of the chassis expressed in terms
+	     of the value below the max temperture. Eg:If max temperature
+	     is 100 and the notification needs to be triggered when temperature
+	     reaches 90, then threshold is set as 10"
+    -- 1.3.6.1.4.1.2636.1.2.1.1.14
+    ::= { jmfcSystem 14 }
+
+jmfcTemperatureSensorName OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Temperature sensor name that raised the trap"
+    -- 1.3.6.1.4.1.2636.1.2.1.1.15
+    ::= { jmfcSystem 15 }
+
+jmfcLoggerFileName OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "The accesslog filename for which upload failed"
+    -- 1.3.6.1.4.1.2636.1.2.1.1.16
+    ::= { jmfcSystem 16 }
+
+jmfcDictionaryTotalSize OBJECT-TYPE
+    SYNTAX	Gauge32
+    UNITS	"MB"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Total RAM Cache Dictionary size (MB)"
+    -- 1.3.6.1.4.1.2636.1.2.1.1.17
+    ::= { jmfcSystem 17 }
+
+jmfcDictionaryUsedSize OBJECT-TYPE
+    SYNTAX	Gauge32
+    UNITS	"MB"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Current usage of RAM Cache Dictionary (MB)"
+    -- 1.3.6.1.4.1.2636.1.2.1.1.18
+    ::= { jmfcSystem 18 }
+
+
+
+--
+-- The Media Flow Controller - Resource Group
+--
+
+jmfcResources OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.2
+      ::= { jmfcMIBObjects 2 }
+
+--
+-- Media Flow Controller - Disk Cache Information
+--
+-- Provides information on each disk cache installed on the 
+-- agent
+
+jmfcDisk OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1
+      ::= { jmfcResources 1 }
+
+jmfcDiskTable OBJECT-TYPE
+      SYNTAX  SEQUENCE OF JmfcDiskEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "The table of Disk installed on this system
+            and known by the SNMP agent."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1
+      ::= { jmfcDisk 1 }
+
+
+jmfcDiskEntry OBJECT-TYPE
+      SYNTAX  JmfcDiskEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "Details about a single Disk."
+      INDEX {
+            jmfcDiskIndex }
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1
+      ::= { jmfcDiskTable 1 }
+
+
+JmfcDiskEntry ::= SEQUENCE {
+
+      jmfcDiskIndex        Unsigned32,
+      jmfcDiskName         OCTET STRING,
+      jmfcDiskSerialNumber OCTET STRING,
+      jmfcDiskType         OCTET STRING,
+      jmfcDiskTypeModel     OCTET STRING,
+      jmfcDiskState        OCTET STRING,
+      jmfcDiskBlockSize    Unsigned32,
+      jmfcDiskTotalSize    Unsigned32,
+      jmfcDiskBlocksUsed   Gauge32,
+      jmfcDiskFreeSpace    Counter64,
+      jmfcDiskCapacity     Counter64,
+      jmfcDiskUtil         Counter64,
+      jmfcDiskIORate       Counter64,
+      jmfcDiskIORateErrThreshold  Gauge32,
+      jmfcDiskIORateClrThreshold  Gauge32,
+      jmfcDiskSpaceErrThreshold Gauge32,
+      jmfcDiskSpaceClrThreshold Gauge32,
+      jmfcDiskBW              Counter64,
+      jmfcDiskBWErrThreshold Gauge32,
+      jmfcDiskBWClrThreshold Gauge32     
+
+}
+
+
+jmfcDiskIndex OBJECT-TYPE
+      SYNTAX  Unsigned32
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "A unique integer index to identify a disk cache."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.1
+      ::= { jmfcDiskEntry 1 }
+
+jmfcDiskName OBJECT-TYPE
+      SYNTAX  OCTET STRING
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "A symbolic, internally generated cache name for                     the disk. For example, dc_1, dc_3, etc"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.5
+      ::= { jmfcDiskEntry 2 }
+
+jmfcDiskSerialNumber OBJECT-TYPE
+      SYNTAX  OCTET STRING
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The serial number read from the physical disk.
+
+            If no serial number was read from the physical disk, then this field
+            is empty."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.3
+      ::= { jmfcDiskEntry 3 }
+
+jmfcDiskType OBJECT-TYPE
+      SYNTAX  OCTET STRING
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The way the disk being used . Take 3 values       
+            dtRootOS  (Disk is used as root disk)
+            dtCache  (Disk is used for caching)
+            dtOther (Disk is used for other purpose)
+
+            If the disk type is not known, then this field returns
+            UNKNOWN."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.6
+      ::= { jmfcDiskEntry 4 }
+
+
+jmfcDiskTypeModel OBJECT-TYPE
+      SYNTAX  OCTET STRING
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The tier type for a given disk. At present,
+            three tier types are available -
+            dtmSSD  (Solid State Device)
+            dtmSAS  (Serial Attached SCSI)
+            dtmSATA (Serial Attached ATA)
+
+            If the disk type is not known, then this field returns
+            dtmOther."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.5
+      ::= { jmfcDiskEntry 5 }
+
+
+jmfcDiskState OBJECT-TYPE
+      SYNTAX  OCTET STRING
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "A disk can be in either of the following states.
+            1. Cache disabled
+               In this case, the disk is not used as a cache. No reads or
+               writes are done to the disk.
+            2. Cache enabled.
+               In this state, the disk is used as a cache.
+
+            TODO: Tell me more!"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.6
+      ::= { jmfcDiskEntry 6 }
+
+
+jmfcDiskBlockSize OBJECT-TYPE
+      SYNTAX  Unsigned32
+      UNITS
+            "KiloBytes"
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The block size configured for this disk cache.
+
+            For example, a value of 2048 denotes 2MBytes."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.7
+      ::= { jmfcDiskEntry 7 }
+
+
+jmfcDiskTotalSize OBJECT-TYPE
+      SYNTAX  Unsigned32
+      UNITS
+            "MegaByte"
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The total cache-able size of the disk. This does not include the
+            space reserved for meta-data.
+
+            For example, a value of 536870912 indicates a disk size of
+            512 MegaBytes of cache space."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.8
+      ::= { jmfcDiskEntry 8 }
+
+
+jmfcDiskBlocksUsed OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of blocks used for storing objects
+            that are cached. Objects that have expired are NOT
+            accounted for.
+
+            TODO: Get this clarified."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.9
+      ::= { jmfcDiskEntry 9 }
+
+
+jmfcDiskFreeSpace OBJECT-TYPE
+      SYNTAX  Counter64
+      UNITS
+            "MegaBytes"
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total free space that is available for caching objects.
+            Objects that have expired are also accounted as space that
+            is free and available for caching."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.10
+      ::= { jmfcDiskEntry 10 }
+
+jmfcDiskCapacity OBJECT-TYPE
+      SYNTAX  Counter64
+      UNITS
+            "MegaBytes"
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total storage space avialable in the disk"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.11
+      ::= { jmfcDiskEntry 11 }
+
+jmfcDiskUtil OBJECT-TYPE
+      SYNTAX  Counter64
+      UNITS
+            "Percentage"
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Percentage of the disk that is being utilized but the system"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.12
+      ::= { jmfcDiskEntry 12 }
+
+jmfcDiskIORate OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Average read/write per second taken form iostat."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.13
+      ::= { jmfcDiskEntry 13 }
+
+jmfcDiskIORateErrThreshold OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Configured Threshold value triggering alarm  for Disk I/O rate."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.14
+      ::= { jmfcDiskEntry 14 }
+
+jmfcDiskIORateClrThreshold OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Configured Threshold value for clearing the  alarm  for Disk I/O rate."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.15
+      ::= { jmfcDiskEntry 15 }
+
+
+jmfcDiskSpaceErrThreshold OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Configured lower bound threshold value for triggering the alarm for  Free space in Disk" 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.16
+      ::= { jmfcDiskEntry 16 }
+
+jmfcDiskSpaceClrThreshold OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Configured threshold value for clearing the alarm raised for Free space in Disk" 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.17
+      ::= { jmfcDiskEntry 17 }
+
+jmfcDiskBW OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The current disk bandwidth being used" 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.18
+      ::= { jmfcDiskEntry 18 }
+
+
+jmfcDiskBWErrThreshold OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Configured higher  bound threshold value for triggering the alarm for  exceeeding the Disk BW usage" 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.19
+      ::= { jmfcDiskEntry 19 }
+
+jmfcDiskBWClrThreshold OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Configured threshold value for clearing the alarm raised for Disk BW usage" 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.1.1.20
+      ::= { jmfcDiskEntry 20 }
+
+jmfcSasDiskUtil OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Percentage of SAS Disk Utilization"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.2
+      ::= { jmfcDisk 2 }
+
+jmfcSataDiskUtil OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Percentage of SATA Disk Utilization"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.3
+      ::= { jmfcDisk 3 }
+
+jmfcSsdDiskUtil OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Percentage of SSD Disk Utilization"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.1.4
+      ::= { jmfcDisk 4 }
+
+jmfcInterfaces OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.2
+      ::= { jmfcResources 2 }
+
+jmfcInterfaceTable OBJECT-TYPE
+      SYNTAX  SEQUENCE OF JmfcInterfaceEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "A list of etherchannel interfaces."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.2.1
+      ::= { jmfcInterfaces 1 }
+
+
+jmfcInterfaceEntry OBJECT-TYPE
+      SYNTAX  JmfcInterfaceEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "An entry containing management information applicable to a 
+            particular interface."
+      INDEX {
+            jmfcIfIndex }
+      -- 1.3.6.1.4.1.2636.1.2.1.2.2.1.1
+      ::= { jmfcInterfaceTable 1 }
+
+
+JmfcInterfaceEntry ::= SEQUENCE {
+
+      jmfcIfIndex Integer32,
+      jmfcIfName  OCTET STRING,
+      jmfcIfSpeed Gauge32
+}
+
+
+jmfcIfIndex OBJECT-TYPE
+      SYNTAX Integer32 (1..2147483647)
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "A unique value, greater than zero, for each interface."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.2.1.1.1
+      ::= { jmfcInterfaceEntry 1 }
+
+
+jmfcIfName OBJECT-TYPE
+      SYNTAX  OCTET STRING
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The textual name of the interface."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.2.1.1.2
+      ::= { jmfcInterfaceEntry 2 }
+
+
+jmfcIfSpeed OBJECT-TYPE
+      SYNTAX Gauge32 
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "An estimate of the interface's current bandwidth in Megabits
+            per second."
+      -- 1.3.6.1.4.1.2636.1.2.1.2.2.1.1.3
+      ::= { jmfcInterfaceEntry 3 }
+
+
+jmfcNetIntfUtil OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.2.2
+      ::= { jmfcInterfaces 2 }
+
+jmfcNetIntfUtilCurrent OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " Current value of network utilization across all interfaces"
+    ::= { jmfcNetIntfUtil 1}
+
+jmfcNetIntfUtilErrThreshold OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured upper threshold on network utilization"
+    ::= { jmfcNetIntfUtil 2}
+
+jmfcNetIntfUtilClrThreshold OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured threshold value on network utilization for clearing the notification"
+    ::= { jmfcNetIntfUtil 3}
+
+
+
+jmfcBandwidth OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.3
+      ::= { jmfcResources 3 }
+
+jmfcOriginBw OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " Origin bandwidth usage"
+    ::= { jmfcBandwidth 1}
+
+jmfcOriginBwErrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured upper threshold on origin bandwidth usage for triggering the notification"
+    ::= { jmfcBandwidth 2}
+
+jmfcOriginBwClrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured threshold value on origin bandwidth for clearing the notification"
+    ::= { jmfcBandwidth 3}
+
+jmfcCacheBw OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " Cache bandwidth usage"
+    ::= { jmfcBandwidth 4}
+
+jmfcCacheBwErrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured upper threshold on cache bandwidth usage for triggering the notification"
+    ::= { jmfcBandwidth 5}
+
+jmfcCacheBwClrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured threshold value on cache bandwidth for clearing the notification"
+    ::= { jmfcBandwidth 6}
+
+jmfcConnectionRate OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.4
+      ::= { jmfcResources 4 }
+
+jmfcConnectionRateCurrent OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " Current value of TCP network connections per second"
+    ::= { jmfcConnectionRate 1}
+
+jmfcConnectionRateErrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured upper threshold on the TCP connection rate for triggering an alarm"
+    ::= { jmfcConnectionRate 2}
+
+jmfcConnectionRateClrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured threshold value on TCP connection rate  for clearing the notification"
+    ::= { jmfcConnectionRate 3}
+
+jmfcCacheHit OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.5
+      ::= { jmfcResources 5 }
+
+jmfcCacheHitRatio OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " Current value of cache hit ratio"
+    ::= { jmfcCacheHit 1}
+
+jmfcCacheHitRatioErrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured upper threshold for cache hit ratio for triggering an alarm"
+    ::= { jmfcCacheHit 2}
+
+jmfcCacheHitRatioClrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured threshold value on cache hit ratio  for clearing the notification"
+    ::= { jmfcCacheHit 3}
+
+--
+--Resource pool table
+--
+jmfcResourcePool OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.2.6
+      ::= { jmfcResources 6 }
+
+jmfcResourcePoolTable OBJECT-TYPE
+   SYNTAX      SEQUENCE OF JmfcResourcePoolEntry
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION
+         "List of resource pool configured"
+   ::= { jmfcResourcePool 1 }
+
+jmfcResourcePoolEntry OBJECT-TYPE
+   SYNTAX      JmfcResourcePoolEntry
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION
+        "Entry for each resource pool"
+   INDEX   { jmfcResourcePoolIndex }
+       ::= { jmfcResourcePoolTable 1 }
+
+JmfcResourcePoolEntry ::= SEQUENCE {
+     jmfcResourcePoolIndex   Unsigned32,
+     jmfcResourcePoolName    OCTET STRING,
+     jmfcResourcePoolBandwidth Counter64,
+     jmfcResourcePoolActiveConns Counter64,
+     jmfcResourcePoolProvBandwidth Counter64,
+     jmfcResourcePoolProvMaxConns Counter64
+   }
+
+jmfcResourcePoolIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Synthetic numeric unique ID of resourcepool"
+    ::= { jmfcResourcePoolEntry 1 }
+
+jmfcResourcePoolName OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Resource pool name"
+    ::= { jmfcResourcePoolEntry 2 }
+
+jmfcResourcePoolBandwidth OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Bandwidth usage"
+    ::= { jmfcResourcePoolEntry 3 }
+
+jmfcResourcePoolActiveConns OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Number of TCP connections established"
+    ::= { jmfcResourcePoolEntry 4 }
+
+jmfcResourcePoolProvBandwidth OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Configured Bandwidth value "
+    ::= { jmfcResourcePoolEntry 5 }
+
+jmfcResourcePoolProvMaxConns OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Configured Maximum no. of connections"
+    ::= { jmfcResourcePoolEntry 6 }
+
+jmfcClusterInstance OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "Cluster Instance"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.7
+    ::= { jmfcResources 7 }
+
+jmfcNodeName OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "Node Name"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.8
+    ::= { jmfcResources 8 }
+
+jmfcClusterNamespace OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "Namespace associated with the cluster"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.9
+    ::= { jmfcResources 9 }
+
+jmfcMirrorBrokenErrDescr OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "Reason for the Root Disk Mirror Broken Notification"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.10
+    ::= { jmfcResources 10 }
+
+jmfcJBODShelfErrDescr OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "Reason for the JBOD Shelf Unreachable Notification"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.11
+    ::= { jmfcResources 11 }
+
+jmfcMirrorCompletionDescr OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "Message for the Root Disk Re-mirroring Completion Notification"
+      -- 1.3.6.1.4.1.2636.1.2.1.2.12
+    ::= { jmfcResources 12 }
+
+--
+-- The Media Flow Controller - Protocol Statistics Summary Group
+--
+-- This section provides statistics summary at a global level for each protocol.
+--
+
+jmfcProtocolSummary OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.3
+      ::= { jmfcMIBObjects 3 }
+
+--
+-- Media Flow Controller - HTTP Client Statistics Summary Group
+--
+
+jmfcHttpClientSummary OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.3.3
+      ::= { jmfcProtocolSummary 3 }
+
+jmfcHttpClientRequests OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of HTTP client requests received by this SNMP agent."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.3.1
+      ::= { jmfcHttpClientSummary 1 }
+
+
+jmfcHttpClientInBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes received from HTTP Clients."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.3.6
+      ::= { jmfcHttpClientSummary 6 }
+
+
+jmfcHttpClientOutBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes sent to HTTP Clients"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.3.7
+      ::= { jmfcHttpClientSummary 7 }
+
+
+jmfcHttpClientConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of HTTP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.3.8
+      ::= { jmfcHttpClientSummary 8 }
+
+
+jmfcHttpClientActiveConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Active HTTP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.3.9
+      ::= { jmfcHttpClientSummary 9 }
+
+
+jmfcHttpClientStatus2xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of client HTTP responses that
+            were successful with error code of 200, etc (2xx)"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.3.12
+      ::= { jmfcHttpClientSummary 12 }
+
+
+jmfcHttpClientStatus3xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of responses sent with a 3xx eror code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.3.13
+      ::= { jmfcHttpClientSummary 13 }
+
+
+jmfcHttpClientStatus4xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of responses sent with a 4xx eror code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.3.14
+      ::= { jmfcHttpClientSummary 14 }
+
+
+jmfcHttpClientStatus5xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of responses sent with a 5xx eror code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.3.15
+      ::= { jmfcHttpClientSummary 15 }
+
+
+--
+-- Media Flow Controller - HTTP Server Statistics Summary
+--
+
+jmfcHttpServerSummary OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.3.4
+      ::= { jmfcProtocolSummary 4 }
+
+jmfcHttpServerRequests OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of requests made to origin-servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.4.1
+      ::= { jmfcHttpServerSummary 1 }
+
+
+jmfcHttpServerResponses OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of responses received from Origin servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.4.2
+      ::= { jmfcHttpServerSummary 2 }
+
+
+jmfcHttpServerConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of sessions opened to origin servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.4.3
+      ::= { jmfcHttpServerSummary 3 }
+
+
+jmfcHttpServerActiveConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Active sessions to origin servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.4.4
+      ::= { jmfcHttpServerSummary 4 }
+
+
+jmfcHttpServerInBytes OBJECT-TYPE
+        SYNTAX  Counter64
+        MAX-ACCESS read-only
+        STATUS  current
+        DESCRIPTION
+                "Total number of bytes received from origin servers"
+        ::= { jmfcHttpServerSummary 6 }
+
+
+jmfcHttpServerOutBytes OBJECT-TYPE
+        SYNTAX  Counter64
+        MAX-ACCESS read-only
+        STATUS  current
+        DESCRIPTION
+                "Total number of bytes sent to origin servers"
+        ::= { jmfcHttpServerSummary 7 }
+
+
+jmfcHttpServerStatus3xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of responses received with a 3xx eror code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.4.10
+      ::= { jmfcHttpServerSummary 10 }
+
+
+jmfcHttpServerStatus4xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of responses received with a 4xx eror code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.4.11
+      ::= { jmfcHttpServerSummary 11 }
+
+
+jmfcHttpServerStatus5xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of responses received with a 5xx eror code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.4.12
+      ::= { jmfcHttpServerSummary 12 }
+
+
+--
+-- Media Flow Controller - RTSP Client Statistics Summary Group
+--
+
+jmfcRtspClientSummary OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5
+      ::= { jmfcProtocolSummary 5 }
+
+jmfcRtspClientRequests OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of RTSP client requests received. A single
+            RTSP may result in multiple request exchanges, such as
+            DESCRIBE, OPTIONS, SETUP, etc. This field counts each
+            such method exchange as a request and counts it instead
+            of counting requests for a single object."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.1
+      ::= { jmfcRtspClientSummary 1 }
+
+
+jmfcRtspClientResponses OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of RTSP Client responses that was sent
+            to clients. A single RTSP may result in multiple request
+            exchanges, such as DESCRIBE, OPTIONS, SETUP, etc.
+            As a result, there may be one or more responses sent to
+            the client for a single sessions. This field counts each
+            such method response and counts it instead of counting
+            responses for a single object."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.2
+      ::= { jmfcRtspClientSummary 2 }
+
+
+jmfcRtspClientCacheHit OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of RTSP object requests that resulted in
+            a cache hit, i.e. the object was served from the cache."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.3
+      ::= { jmfcRtspClientSummary 3 }
+
+
+jmfcRtspClientCacheMiss OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of RTSP requests that resulted in a
+            cache-miss, i.e the object was not found in cache
+            and was served from the origin."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.4
+      ::= { jmfcRtspClientSummary 4 }
+
+
+jmfcRtspClientCachePartialHit OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of requests that resulted in a partial hit in cache,
+            and rest of the data was a cache miss."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.5
+      ::= { jmfcRtspClientSummary 5 }
+
+
+jmfcRtspClientInBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes received from RTSP Clients"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.6
+      ::= { jmfcRtspClientSummary 6 }
+
+
+jmfcRtspClientOutBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes sent to RTSP Clients"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.7
+      ::= { jmfcRtspClientSummary 7 }
+
+
+jmfcRtspClientConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of RTSP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.8
+      ::= { jmfcRtspClientSummary 8 }
+
+
+jmfcRtspClientActiveConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Active RTSP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.9
+      ::= { jmfcRtspClientSummary 9 }
+
+
+jmfcRtspClientIdleConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Idle RTSP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.10
+      ::= { jmfcRtspClientSummary 10 }
+
+
+jmfcRtspClientStatus2xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of RTSP requests that were responded with a 2xx status code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.12
+      ::= { jmfcRtspClientSummary 12 }
+
+
+jmfcRtspClientStatus3xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of RTSP requests that were responded with a 3xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.13
+      ::= { jmfcRtspClientSummary 13 }
+
+
+jmfcRtspClientStatus4xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of RTSP requests that were responded with a 4xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.14
+      ::= { jmfcRtspClientSummary 14 }
+
+
+jmfcRtspClientStatus5xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of RTSP requests that were responded with a 5xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.5.15
+      ::= { jmfcRtspClientSummary 15 }
+
+
+--
+-- Media Flow Controller - RTSP Server Statistics Summary Group
+--
+
+jmfcRtspServerSummary OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6
+      ::= { jmfcProtocolSummary 6 }
+
+jmfcRtspServerRequests OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of requests made to origin-servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.1
+      ::= { jmfcRtspServerSummary 1 }
+
+
+jmfcRtspServerResponses OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of responses received from Origin servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.2
+      ::= { jmfcRtspServerSummary 2 }
+
+
+jmfcRtspServerConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of sessions opened to origin servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.3
+      ::= { jmfcRtspServerSummary 3 }
+
+
+jmfcRtspServerActiveConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Active sessions to origin servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.4
+      ::= { jmfcRtspServerSummary 4 }
+
+
+jmfcRtspServerIdleConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Idle sessions to RTSP origin servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.5
+      ::= { jmfcRtspServerSummary 5 }
+
+
+jmfcRtspServerInBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of bytes received from origin servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.6
+      ::= { jmfcRtspServerSummary 6 }
+
+
+jmfcRtspServerOutBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of bytes sent to origin servers"
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.7
+      ::= { jmfcRtspServerSummary 7 }
+
+
+jmfcRtspServerStatus2xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of RTSP responses received
+            from the origin-server with a 2xx status code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.9
+      ::= { jmfcRtspServerSummary 9 }
+
+
+jmfcRtspServerStatus3xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of RTSP responses received
+            from the origin-server with a 3xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.10
+      ::= { jmfcRtspServerSummary 10 }
+
+
+jmfcRtspServerStatus4xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of RTSP responses received
+            from the origin-server with a 4xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.11
+      ::= { jmfcRtspServerSummary 11 }
+
+
+jmfcRtspServerStatus5xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of RTSP responses received
+            from the origin-server with a 5xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.3.6.12
+      ::= { jmfcRtspServerSummary 12 }
+
+jmfcTransactionRate OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.3.7
+      ::= { jmfcProtocolSummary 7 }
+
+jmfcTransactionRateCurrent OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " Current value of HTTP transactions done per second"
+    ::= { jmfcTransactionRate 1}
+
+jmfcTransactionRateErrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured upper threshold on the HTTP transaction rate for triggering an alarm"
+    ::= { jmfcTransactionRate 2}
+
+jmfcTransactionRateClrThreshold OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Configured threshold value on HTTP transactions rate  for clearing the notification"
+    ::= { jmfcTransactionRate 3}
+
+--
+-- Media Flow Controller - Namespace specific Statistics Group
+--
+
+jmfcNamespace OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.4
+      ::= { jmfcMIBObjects 4 }
+
+jmfcNamespaceTable OBJECT-TYPE
+      SYNTAX  SEQUENCE OF JmfcNamespaceEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "The namespace table.
+
+            Namespaces are logical objects that combine a
+            client-request/response protocol, origin-server,
+            and define the caching-behavior for objects
+            received from the origin-server.  The namespace
+            table provides a list of namespaces that are currently
+            configured on the SNMP agent. Some of these
+            namespace may or may not be in an active state,
+            i.e. configured to actively serve data to a client.
+
+            Each index in the namespace table corresponds to
+            a namespace entry, such that the namespace index
+            can be used for retrieving more statistics for that
+            namespace. Assuming that a SNMP agent has the
+            following namespace configuration
+
+            .2636.1.2.1.4.1.1.2.ns-cdn-default  = ns-cdn-default  (jmfcNamespaceName)
+            .2636.1.2.1.4.1.1.3.ns-cdn-default  = 80FC-765D-14AB-90EA-8801  (jmfcNamespaceUID)
+            .2636.1.2.1.4.1.1.4.ns-cdn-default  = 1 (jmfcNamespaceStatus)
+
+            To query the HTTP server counters for this namespace object,
+            the SNMP manager would walk the HTTP server statistics
+            table (jmfcNamespaceHttpServerTable) with the namespace name as index 
+            (jmfcNamespaceName). A sample output could look like below
+
+            .2636.1.2.1.4.3.1.1.ns-cdn-default = 18378 (jmfcNamespaceHttpServerRequests)
+            .2636.1.2.1.4.3.1.2.ns-cdn-default = 18369 (jmfcNamespaceHttpServerResponses)
+            .2636.1.2.1.4.3.1.3.ns-cdn-default = 676320241 (jmfcNamespaceHttpServerInBytes)
+            .2636.1.2.1.4.3.1.4.ns-cdn-default = 36728932 (jmfcNamespaceHttpServerOutBytes)
+            .2636.1.2.1.4.3.1.5.ns-cdn-default = 121 (jmfcNamespaceHttpServerConns)
+            .2636.1.2.1.4.3.1.6.ns-cdn-default = 76 (jmfcNamespaceHttpServerActiveConns)
+            .2636.1.2.1.4.3.1.7.ns-cdn-default = 45 (jmfcNamespaceHttpServerIdleConns)
+            .2636.1.2.1.4.3.1.8.ns-cdn-default = 14788 (jmfcNamespaceHttpServer2xx)
+            .2636.1.2.1.4.3.1.9.ns-cdn-default = 541 (jmfcNamespaceHttpServer3xx)
+            .2636.1.2.1.4.3.1.10.ns-cdn-default = 48 (jmfcNamespaceHttpServer4xx)
+            .2636.1.2.1.4.3.1.11.ns-cdn-default = 87 (jmfcNamespaceHttpServer5xx)
+
+            Similarly, if another namespace 'ns-cdn-utube' was created
+            as,
+
+            .2636.1.2.1.4.1.1.2.ns-cdn-utube  = ns-cdn-utube  (jmfcNamespaceName)
+            .2636.1.2.1.4.1.1.3.ns-cdn-utube  = 80FC-123D-FCAB-90EA-8801  (jmfcNamespaceUID)
+            .2636.1.2.1.4.1.1.4.ns-cdn-utube  = 1 (jmfcNamespaceStatus)
+
+            Note that in this case, the namespace index is ns-cdn-utube
+            To query the HTTP server counters, the SNMP manager would
+            walk the jmfcNamespaceHttpServerTable with namespace name. A sample
+            output would look as below: 
+
+            .2636.1.2.1.4.3.1.1.ns-cdn-utube = 18378 (jmfcNamespaceHttpServerRequests)
+            .2636.1.2.1.4.3.1.2.ns-cdn-utube = 18369 (jmfcNamespaceHttpServerResponses)
+            .2636.1.2.1.4.3.1.3.ns-cdn-utube = 676320241 (jmfcNamespaceHttpServerInBytes)
+            .2636.1.2.1.4.3.1.4.ns-cdn-utube = 36728932 (jmfcNamespaceHttpServerOutBytes)
+            .2636.1.2.1.4.3.1.5.ns-cdn-utube = 121 (jmfcNamespaceHttpServerConns)
+            .2636.1.2.1.4.3.1.6.ns-cdn-utube = 76 (jmfcNamespaceHttpServerActiveConns)
+            .2636.1.2.1.4.3.1.7.ns-cdn-utube = 45 (jmfcNamespaceHttpServerIdleConns)
+            .2636.1.2.1.4.3.1.8.ns-cdn-utube = 14788 (jmfcNamespaceHttpServer2xx)
+            .2636.1.2.1.4.3.1.9.ns-cdn-utube = 541 (jmfcNamespaceHttpServer3xx)
+            .2636.1.2.1.4.3.1.10.ns-cdn-utube = 48 (jmfcNamespaceHttpServer4xx)
+            .2636.1.2.1.4.3.1.11.ns-cdn-utube = 87 (jmfcNamespaceHttpServer5xx)
+
+
+                                      +-----------+
+                                      |           |
+                                      |namespace  |
+                                      |table      |
+                                      |           |
+                                      +-----------+
+                                            |
+                                            |
+                               +------------+------------+
+                               |                         |
+                               |                         |
+                               |                         |
+                         +-----------+             +-----------+
+                         |           |             |           |
+                         |namespace  |             |namespace  |-------------------+
+                         |name (0)   |             |name (1)   |                   |
+                         |           |             |           |                   |
+                         +-----------+             +-----------+                   |
+                               |                                                   |
+                               |                                                   |
+                               +--------------------------------------+            |
+                               |                                      |            |
+                               |                                      |            |
+                               |                                      |            |
+            +-----------+      |                   +-----------+      |            |
+            |HTTP Server|      |                   |HTTP Client|      |            |
+            |statistics |      |                   |statistics |      |            |
+            |table      |      |                   |table      |      |            |
+            |           |     \|/                  |           |     \|/           |
+            +-----------+      V                   +-----------+      V            |
+                  |      +-----------+                   |      +-----------+      |
+                  |      |HTTP Server|                   |      |HTTP Client|      |
+                  +------|statistics |                   +------|statistics |      |
+                  |      |(0)        |                   |      |(0)        |      |
+                  |      |           |                   |      |           |      |
+                  |      +-----------+                   |      +-----------+      |
+                  |      +-----------+                   |      +-----------+      |
+                  |      |HTTP Server|                   |      |HTTP Client|      |
+                  +------|statistics |                   +------|statistics |------+
+                         |(1)        |                          |(1)        |
+                         |           |                          |           |
+                         +-----------+                          +-----------+
+
+            "
+      -- 1.3.6.1.4.1.2636.1.2.1.4.1
+      ::= { jmfcNamespace 1 }
+
+
+jmfcNamespaceEntry OBJECT-TYPE
+      SYNTAX  JmfcNamespaceEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "A namespace entry in the table that identifies a single namespace"
+      INDEX {
+            jmfcNamespaceName }
+      -- 1.3.6.1.4.1.2636.1.2.1.4.1.1
+      ::= { jmfcNamespaceTable 1 }
+
+
+JmfcNamespaceEntry ::= SEQUENCE {
+
+      jmfcNamespaceName   OCTET STRING,
+      jmfcNamespaceUID    OCTET STRING,
+      jmfcNamespaceStatus Integer32 ,
+      jmfcNamespaceResourcePool OCTET STRING }
+
+
+jmfcNamespaceName OBJECT-TYPE
+      SYNTAX  OCTET STRING (SIZE (1..32))
+      MAX-ACCESS not-accessible 
+      STATUS  current
+      DESCRIPTION
+            "The namespace name, as configured by the administrator
+            while creating the namespace."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.1.1.2
+      ::= { jmfcNamespaceEntry 2 }
+
+
+jmfcNamespaceUID OBJECT-TYPE
+      SYNTAX  OCTET STRING
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "A unique, internally generated UID to track the
+            namespace object."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.1.1.3
+      ::= { jmfcNamespaceEntry 3 }
+
+
+jmfcNamespaceStatus OBJECT-TYPE
+      SYNTAX  Integer32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The current status of the namespace - Active or Inactive."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.1.1.4
+      ::= { jmfcNamespaceEntry 4 }
+
+jmfcNamespaceResourcePool OBJECT-TYPE
+      SYNTAX  OCTET STRING
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The resource pool associated with  namespace object."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.1.1.5
+      ::= { jmfcNamespaceEntry 5 }
+
+
+jmfcNamespaceHttpClientTable OBJECT-TYPE
+      SYNTAX  SEQUENCE OF JmfcNamespaceHttpClientEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "The HTTP Client specific statistics for a namespace.
+
+            This table is modeled on jmfcHttpClientSummary,
+            but provides namespace specific counters."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2
+      ::= { jmfcNamespace 2 }
+
+
+jmfcNamespaceHttpClientEntry OBJECT-TYPE
+      SYNTAX  JmfcNamespaceHttpClientEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION "An entry in the HTTP Client statistics table"
+      INDEX {
+            jmfcNamespaceName }
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1
+      ::= { jmfcNamespaceHttpClientTable 1 }
+
+
+JmfcNamespaceHttpClientEntry ::= SEQUENCE {
+
+      jmfcNamespaceHttpClientRequests        Counter64,
+      jmfcNamespaceHttpClientResponses       Counter64,
+      jmfcNamespaceHttpClientCacheHit        Counter64,
+      jmfcNamespaceHttpClientCacheMiss       Counter64,
+      jmfcNamespaceHttpClientInBytes         Counter64,
+      jmfcNamespaceHttpClientOutBytes        Counter64,
+      jmfcNamespaceHttpClientConns           Counter64,
+      jmfcNamespaceHttpClientActiveConns     Counter64,
+      jmfcNamespaceHttpClientIdleConns       Counter64,
+      jmfcNamespaceHttpClientStatus2xx       Counter64,
+      jmfcNamespaceHttpClientStatus3xx       Counter64,
+      jmfcNamespaceHttpClientStatus4xx       Counter64,
+      jmfcNamespaceHttpClientStatus5xx       Counter64,
+      jmfcNamespaceHttpClient404Count       Counter64,
+      jmfcNamespaceHttpClient302Count       Counter64,
+      jmfcNamespaceHttpClient304Count       Counter64,
+      jmfcNamespaceHttpClient206Count       Counter64,
+      jmfcNamespaceHttpClient200Count       Counter64,
+      jmfcNamespaceHttpClientTunBytes       Counter64,
+      jmfcNamespaceHttpClientTunReq         Counter64	  	
+ }
+
+
+jmfcNamespaceHttpClientRequests OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of HTTP client requests received"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.1
+      ::= { jmfcNamespaceHttpClientEntry 1 }
+
+
+jmfcNamespaceHttpClientResponses OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of HTTP Client responses that was sent
+            to clients."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.2
+      ::= { jmfcNamespaceHttpClientEntry 2 }
+
+
+jmfcNamespaceHttpClientCacheHit OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of client HTTP requests that resulted
+            in a cache hit, i.e. the entire object was served from
+            the cache."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.3
+      ::= { jmfcNamespaceHttpClientEntry 3 }
+
+
+jmfcNamespaceHttpClientCacheMiss OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of HTTP client requests that resulted
+            in a complete cache-miss, i.e the object was not
+            in cache and was served from a origin server."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.4
+      ::= { jmfcNamespaceHttpClientEntry 4 }
+
+
+jmfcNamespaceHttpClientInBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes received from HTTP Clients"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.6
+      ::= { jmfcNamespaceHttpClientEntry 6 }
+
+
+jmfcNamespaceHttpClientOutBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes sent to HTTP Clients"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.7
+      ::= { jmfcNamespaceHttpClientEntry 7 }
+
+
+jmfcNamespaceHttpClientConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of HTTP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.8
+      ::= { jmfcNamespaceHttpClientEntry 8 }
+
+
+jmfcNamespaceHttpClientActiveConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Active HTTP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.9
+      ::= { jmfcNamespaceHttpClientEntry 9 }
+
+
+jmfcNamespaceHttpClientIdleConns OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Idle HTTP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.10
+      ::= { jmfcNamespaceHttpClientEntry 10 }
+
+
+jmfcNamespaceHttpClientStatus2xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of HTTP client requests that were
+            responded with a 2xx status code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.11
+      ::= { jmfcNamespaceHttpClientEntry 11 }
+
+
+jmfcNamespaceHttpClientStatus3xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of HTTP client requests that were
+            responded with a 3xx status code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.12
+      ::= { jmfcNamespaceHttpClientEntry 12 }
+
+
+jmfcNamespaceHttpClientStatus4xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of HTTP client requests that were
+            responded with a 4xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.13
+      ::= { jmfcNamespaceHttpClientEntry 13 }
+
+
+jmfcNamespaceHttpClientStatus5xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of HTTP client requests that were
+            responded with a 5xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.14
+      ::= { jmfcNamespaceHttpClientEntry 14 }
+
+jmfcNamespaceHttpClient404Count OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of HTTP client requests that were
+            responded with a 404 error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.15
+      ::= { jmfcNamespaceHttpClientEntry 15 }
+
+jmfcNamespaceHttpClient302Count OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of HTTP client requests that were
+            responded with a 302 error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.16
+      ::= { jmfcNamespaceHttpClientEntry 16 }
+
+jmfcNamespaceHttpClient304Count OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of HTTP client requests that were
+            responded with a 304 error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.17
+      ::= { jmfcNamespaceHttpClientEntry 17 }
+
+jmfcNamespaceHttpClient206Count OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of HTTP client requests that were
+            responded with a 206 error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.18
+      ::= { jmfcNamespaceHttpClientEntry 18 }
+
+jmfcNamespaceHttpClient200Count OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "The number of HTTP client requests that were
+            responded with a 200 code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.19
+      ::= { jmfcNamespaceHttpClientEntry 19 }
+
+jmfcNamespaceHttpClientTunBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of bytes tunnelled for this namespace ."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.20
+      ::= { jmfcNamespaceHttpClientEntry 20 }
+
+jmfcNamespaceHttpClientTunReq OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of requests tunnelled for this namespace ."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.2.1.21
+      ::= { jmfcNamespaceHttpClientEntry 21 }
+
+
+jmfcNamespaceHttpServerTable OBJECT-TYPE
+      SYNTAX  SEQUENCE OF JmfcNamespaceHttpServerEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "This table provides HTTP specific origin-server
+            counters for a given namespace. The namespace
+            is identified by the index identified in the
+            jmfcNamespaceTable."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3
+      ::= { jmfcNamespace 3 }
+
+
+jmfcNamespaceHttpServerEntry OBJECT-TYPE
+      SYNTAX  JmfcNamespaceHttpServerEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION "Namespace http server traffic related information"
+      INDEX {
+            jmfcNamespaceName }
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1
+      ::= { jmfcNamespaceHttpServerTable 1 }
+
+
+JmfcNamespaceHttpServerEntry ::= SEQUENCE {
+
+      jmfcNamespaceHttpServerRequests    Counter64,
+      jmfcNamespaceHttpServerResponses   Counter64,
+      jmfcNamespaceHttpServerInBytes     Counter64,
+      jmfcNamespaceHttpServerOutBytes    Counter64,
+      jmfcNamespaceHttpServerConns       Gauge32,
+      jmfcNamespaceHttpServerActiveConns Gauge32,
+      jmfcNamespaceHttpServerIdleConns   Gauge32,
+      jmfcNamespaceHttpServerStatus2xx   Counter64,
+      jmfcNamespaceHttpServerStatus3xx   Counter64,
+      jmfcNamespaceHttpServerStatus4xx   Counter64,
+      jmfcNamespaceHttpServerStatus5xx   Counter64 }
+
+
+jmfcNamespaceHttpServerRequests OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of HTTP server requests made to
+            origin servers."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.1
+      ::= { jmfcNamespaceHttpServerEntry 1 }
+
+
+jmfcNamespaceHttpServerResponses OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of HTTP server responses that was
+            received from origin servers."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.2
+      ::= { jmfcNamespaceHttpServerEntry 2 }
+
+
+jmfcNamespaceHttpServerInBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes received from HTTP origin servers."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.3
+      ::= { jmfcNamespaceHttpServerEntry 3 }
+
+
+jmfcNamespaceHttpServerOutBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes sent to HTTP origin servers."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.4
+      ::= { jmfcNamespaceHttpServerEntry 4 }
+
+
+jmfcNamespaceHttpServerConns OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of HTTP origin server sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.5
+      ::= { jmfcNamespaceHttpServerEntry 5 }
+
+
+jmfcNamespaceHttpServerActiveConns OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Active HTTP server sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.6
+      ::= { jmfcNamespaceHttpServerEntry 6 }
+
+
+jmfcNamespaceHttpServerIdleConns OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Idle HTTP server sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.7
+      ::= { jmfcNamespaceHttpServerEntry 7 }
+
+
+jmfcNamespaceHttpServerStatus2xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of HTTP responses received from
+            origin servers with a 2xx status code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.8
+      ::= { jmfcNamespaceHttpServerEntry 8 }
+
+
+jmfcNamespaceHttpServerStatus3xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of HTTP responses received from
+            origin servers with a 3xx status code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.9
+      ::= { jmfcNamespaceHttpServerEntry 9 }
+
+
+jmfcNamespaceHttpServerStatus4xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of HTTP responses received from
+            origin servers with a 4xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.10
+      ::= { jmfcNamespaceHttpServerEntry 10 }
+
+
+jmfcNamespaceHttpServerStatus5xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of HTTP responses received from
+            origin servers with a 5xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.3.1.11
+      ::= { jmfcNamespaceHttpServerEntry 11 }
+
+
+jmfcNamespaceRtspClientTable OBJECT-TYPE
+      SYNTAX  SEQUENCE OF JmfcNamespaceRtspClientEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "This table provides details on RTSP client statistics
+            for a namespace."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4
+      ::= { jmfcNamespace 4 }
+
+
+jmfcNamespaceRtspClientEntry OBJECT-TYPE
+      SYNTAX  JmfcNamespaceRtspClientEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION "Namespace level rtsp client delivery related  information"
+      INDEX {
+            jmfcNamespaceName }
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1
+      ::= { jmfcNamespaceRtspClientTable 1 }
+
+
+JmfcNamespaceRtspClientEntry ::= SEQUENCE {
+
+      jmfcNamespaceRtspClientRequests        Counter64,
+      jmfcNamespaceRtspClientResponses       Counter64,
+      jmfcNamespaceRtspClientCacheHit        Counter64,
+      jmfcNamespaceRtspClientCacheMiss       Counter64,
+      jmfcNamespaceRtspClientCachePartialHit Counter64,
+      jmfcNamespaceRtspClientInBytes         Counter64,
+      jmfcNamespaceRtspClientOutBytes        Counter64,
+      jmfcNamespaceRtspClientConns           Gauge32,
+      jmfcNamespaceRtspClientActiveConns     Gauge32,
+      jmfcNamespaceRtspClientIdleConns       Gauge32,
+      jmfcNamespaceRtspClientStatus2xx       Counter64,
+      jmfcNamespaceRtspClientStatus3xx       Counter64,
+      jmfcNamespaceRtspClientStatus4xx       Counter64,
+      jmfcNamespaceRtspClientStatus5xx       Counter64 }
+
+
+jmfcNamespaceRtspClientRequests OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of RTSP client requests received for
+            this namespace."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.1
+      ::= { jmfcNamespaceRtspClientEntry 1 }
+
+
+jmfcNamespaceRtspClientResponses OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of RTSP Client responses that
+            was sent."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.2
+      ::= { jmfcNamespaceRtspClientEntry 2 }
+
+
+jmfcNamespaceRtspClientCacheHit OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of requests that resulted in a cache
+            hit, i.e. the object was served from the cache."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.3
+      ::= { jmfcNamespaceRtspClientEntry 3 }
+
+
+jmfcNamespaceRtspClientCacheMiss OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of client requests that resulted in a
+            cache miss, i.e. the object was not found in cache
+            and was served from the origin-server."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.4
+      ::= { jmfcNamespaceRtspClientEntry 4 }
+
+
+jmfcNamespaceRtspClientCachePartialHit OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of requests that resulted in a partial hit in cache,
+            and rest of the data was a cache miss."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.5
+      ::= { jmfcNamespaceRtspClientEntry 5 }
+
+
+jmfcNamespaceRtspClientInBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes received from RTSP Clients"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.6
+      ::= { jmfcNamespaceRtspClientEntry 6 }
+
+
+jmfcNamespaceRtspClientOutBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes sent to RTSP Clients"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.7
+      ::= { jmfcNamespaceRtspClientEntry 7 }
+
+
+jmfcNamespaceRtspClientConns OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of RTSP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.8
+      ::= { jmfcNamespaceRtspClientEntry 8 }
+
+
+jmfcNamespaceRtspClientActiveConns OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Active RTSP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.9
+      ::= { jmfcNamespaceRtspClientEntry 9 }
+
+
+jmfcNamespaceRtspClientIdleConns OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Idle RTSP Client sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.10
+      ::= { jmfcNamespaceRtspClientEntry 10 }
+
+
+jmfcNamespaceRtspClientStatus2xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of RTSP requests that were responded
+            with a 2xx status code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.11
+      ::= { jmfcNamespaceRtspClientEntry 11 }
+
+
+jmfcNamespaceRtspClientStatus3xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of RTSP requests that were responded
+            with a 3xx status code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.12
+      ::= { jmfcNamespaceRtspClientEntry 12 }
+
+
+jmfcNamespaceRtspClientStatus4xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of RTSP requests that were responded
+            with a 4xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.13
+      ::= { jmfcNamespaceRtspClientEntry 13 }
+
+
+jmfcNamespaceRtspClientStatus5xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of RTSP requests that were responded
+            with a 5xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.4.1.14
+      ::= { jmfcNamespaceRtspClientEntry 14 }
+
+
+jmfcNamespaceRtspServerTable OBJECT-TYPE
+      SYNTAX  SEQUENCE OF JmfcNamespaceRtspServerEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION
+            "This table provides RTSP server specific statistics
+            for a namespace."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5
+      ::= { jmfcNamespace 5 }
+
+
+jmfcNamespaceRtspServerEntry OBJECT-TYPE
+      SYNTAX  JmfcNamespaceRtspServerEntry
+      MAX-ACCESS not-accessible
+      STATUS  current
+      DESCRIPTION "Namespace RTSP origin server specific statistic"
+      INDEX {
+            jmfcNamespaceName }
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1
+      ::= { jmfcNamespaceRtspServerTable 1 }
+
+
+JmfcNamespaceRtspServerEntry ::= SEQUENCE {
+
+      jmfcNamespaceRtspServerRequests    Counter64,
+      jmfcNamespaceRtspServerResponses   Counter64,
+      jmfcNamespaceRtspServerInBytes     Counter64,
+      jmfcNamespaceRtspServerOutBytes    Counter64,
+      jmfcNamespaceRtspServerConns       Gauge32,
+      jmfcNamespaceRtspServerActiveConns Gauge32,
+      jmfcNamespaceRtspServerIdleConns   Gauge32,
+      jmfcNamespaceRtspServerStatus2xx   Counter64,
+      jmfcNamespaceRtspServerStatus3xx   Counter64,
+      jmfcNamespaceRtspServerStatus4xx   Counter64,
+      jmfcNamespaceRtspServerStatus5xx   Counter64 }
+
+
+jmfcNamespaceRtspServerRequests OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of RTSP requests that were sent to
+            a RTSP origin server."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.1
+      ::= { jmfcNamespaceRtspServerEntry 1 }
+
+
+jmfcNamespaceRtspServerResponses OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of RTSP Server responses that was
+            received from an origin server."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.2
+      ::= { jmfcNamespaceRtspServerEntry 2 }
+
+
+jmfcNamespaceRtspServerInBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes received from RTSP origin servers."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.3
+      ::= { jmfcNamespaceRtspServerEntry 3 }
+
+
+jmfcNamespaceRtspServerOutBytes OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of bytes sent to RTSP origin servers."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.4
+      ::= { jmfcNamespaceRtspServerEntry 4 }
+
+
+jmfcNamespaceRtspServerConns OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of RTSP origin server sessions."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.5
+      ::= { jmfcNamespaceRtspServerEntry 5 }
+
+
+jmfcNamespaceRtspServerActiveConns OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Active RTSP server sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.6
+      ::= { jmfcNamespaceRtspServerEntry 6 }
+
+
+jmfcNamespaceRtspServerIdleConns OBJECT-TYPE
+      SYNTAX  Gauge32
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Number of Idle RTSP server sessions"
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.7
+      ::= { jmfcNamespaceRtspServerEntry 7 }
+
+
+jmfcNamespaceRtspServerStatus2xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of responses received from RTSP
+            origin servers with a 2xx status code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.8
+      ::= { jmfcNamespaceRtspServerEntry 8 }
+
+
+jmfcNamespaceRtspServerStatus3xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of responses received from RTSP
+            origin servers with a 3xx status code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.9
+      ::= { jmfcNamespaceRtspServerEntry 9 }
+
+
+jmfcNamespaceRtspServerStatus4xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of responses received from RTSP
+            origin servers with a 4xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.10
+      ::= { jmfcNamespaceRtspServerEntry 10 }
+
+
+jmfcNamespaceRtspServerStatus5xx OBJECT-TYPE
+      SYNTAX  Counter64
+      MAX-ACCESS read-only
+      STATUS  current
+      DESCRIPTION
+            "Total number of responses received from RTSP
+            origin servers with a 5xx error code."
+      -- 1.3.6.1.4.1.2636.1.2.1.4.5.1.11
+      ::= { jmfcNamespaceRtspServerEntry 11 }
+
+
+jmfcMIBConformance OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.5
+      ::= { jmfcMIBObjects 5 }
+
+jmfcMIBGroups OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2
+      ::= { jmfcMIBConformance 2 }
+
+jmfcMIBCompliances OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.1.5.3
+      ::= { jmfcMIBConformance 3 }
+
+jmfcSystemGroup OBJECT-GROUP
+      OBJECTS {
+            jmfcSystemVersion,
+            jmfcSystemId,
+            jmfcIdleTime,
+            jmfcSystemTime,
+            jmfcUserTime,
+            jmfcUtilPct1Min,
+            jmfcCpuUtil,
+            jmfcCpuUtilErrThreshold,
+            jmfcCpuUtilClrThreshold,
+            jmfcAppMaxCpuUtil,
+            jmfcAppMaxCpuUtilErrThreshold,
+            jmfcAppMaxCpuUtilClrThreshold,
+            jmfcMemUtil,
+            jmfcMemUtilErrThreshold,
+            jmfcMemUtilClrThreshold,
+            jmfcPagingCurrent,
+            jmfcPagingErrThreshold,
+            jmfcPagingClrThreshold,
+            jmfcServiceName,
+            jmfcServiceStatus,
+            jmfcServiceNumFailures,
+            jmfcServiceLastDown,
+            jmfcServiceLastUp,
+            jmfcMaxThroughput,
+            jmfcMaxOpenConnections,
+            jmfcLoggerName,
+            jmfcLoggerTemplate,
+            jmfcTemperatureCurrent,
+            jmfcTemperatureThreshold,
+            jmfcTemperatureSensorName,
+            jmfcMirrorBrokenErrDescr,
+            jmfcJBODShelfErrDescr,
+            jmfcMirrorCompletionDescr,
+            jmfcLoggerFileName,
+            jmfcDictionaryTotalSize,
+            jmfcDictionaryUsedSize
+	 }
+      STATUS  current
+      DESCRIPTION
+            "System related information"
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2.1
+      ::= { jmfcMIBGroups 1 }
+
+jmfcResourcesGroup OBJECT-GROUP
+      OBJECTS {
+            jmfcDiskName,
+            jmfcDiskSerialNumber,
+            jmfcDiskType,
+            jmfcDiskTypeModel,
+            jmfcDiskState,
+            jmfcDiskBlockSize,
+            jmfcDiskTotalSize,
+            jmfcDiskBlocksUsed,
+            jmfcDiskFreeSpace,
+            jmfcDiskCapacity,
+            jmfcDiskUtil,
+            jmfcDiskIORate,
+            jmfcDiskIORateErrThreshold,
+            jmfcDiskIORateClrThreshold,
+            jmfcDiskSpaceErrThreshold,
+            jmfcDiskSpaceClrThreshold,
+            jmfcDiskBW,
+            jmfcDiskBWErrThreshold,
+            jmfcDiskBWClrThreshold,
+            jmfcOriginBw,
+            jmfcOriginBwErrThreshold,
+            jmfcOriginBwClrThreshold,
+            jmfcCacheBw,
+            jmfcCacheBwErrThreshold,
+            jmfcCacheBwClrThreshold,
+            jmfcConnectionRateCurrent,
+            jmfcConnectionRateErrThreshold,
+            jmfcConnectionRateClrThreshold,
+            jmfcCacheHitRatio,
+            jmfcCacheHitRatioErrThreshold,
+            jmfcCacheHitRatioClrThreshold,
+            jmfcResourcePoolName,
+            jmfcResourcePoolBandwidth,
+            jmfcResourcePoolActiveConns,
+	     jmfcResourcePoolProvBandwidth,
+	     jmfcResourcePoolProvMaxConns,
+            jmfcSasDiskUtil,
+            jmfcSataDiskUtil,
+            jmfcSsdDiskUtil,
+            jmfcClusterInstance,
+            jmfcNodeName,
+            jmfcClusterNamespace,
+            jmfcMirrorBrokenErrDescr,
+            jmfcJBODShelfErrDescr
+      }
+      STATUS  current
+      DESCRIPTION "Collection of Resource related statistics"
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2.2
+      ::= { jmfcMIBGroups 2 }
+
+jmfcHttpGroup OBJECT-GROUP
+      OBJECTS {
+            jmfcHttpClientRequests,
+            jmfcHttpClientInBytes,
+            jmfcHttpClientOutBytes,
+            jmfcHttpClientConns,
+            jmfcHttpClientActiveConns,
+            jmfcHttpClientStatus2xx,
+            jmfcHttpClientStatus3xx,
+            jmfcHttpClientStatus4xx,
+            jmfcHttpClientStatus5xx,
+            jmfcHttpServerRequests,
+            jmfcHttpServerResponses,
+            jmfcHttpServerConns,
+            jmfcHttpServerActiveConns,
+            jmfcHttpServerStatus3xx,
+            jmfcHttpServerStatus4xx,
+            jmfcHttpServerStatus5xx,
+            jmfcHttpServerInBytes,
+            jmfcHttpServerOutBytes,
+            jmfcTransactionRateCurrent,
+            jmfcTransactionRateErrThreshold,
+            jmfcTransactionRateClrThreshold
+            }
+      STATUS  current
+      DESCRIPTION "Collection of HTTP protocol related statistics"
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2.3
+      ::= { jmfcMIBGroups 3 }
+
+jmfcRtspGroup OBJECT-GROUP
+      OBJECTS {
+            jmfcRtspClientRequests,
+            jmfcRtspClientResponses,
+            jmfcRtspClientCacheHit,
+            jmfcRtspClientCacheMiss,
+            jmfcRtspClientCachePartialHit,
+            jmfcRtspClientInBytes,
+            jmfcRtspClientOutBytes,
+            jmfcRtspClientConns,
+            jmfcRtspClientActiveConns,
+            jmfcRtspClientIdleConns,
+            jmfcRtspClientStatus2xx,
+            jmfcRtspClientStatus3xx,
+            jmfcRtspClientStatus4xx,
+            jmfcRtspClientStatus5xx,
+            jmfcRtspServerRequests,
+            jmfcRtspServerResponses,
+            jmfcRtspServerConns,
+            jmfcRtspServerActiveConns,
+            jmfcRtspServerIdleConns,
+            jmfcRtspServerInBytes,
+            jmfcRtspServerOutBytes,
+            jmfcRtspServerStatus2xx,
+            jmfcRtspServerStatus3xx,
+            jmfcRtspServerStatus4xx,
+            jmfcRtspServerStatus5xx }
+      STATUS  current
+      DESCRIPTION "Collection of RTSP protocol related statistics"
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2.4
+      ::= { jmfcMIBGroups 4 }
+
+jmfcNamespaceGroup OBJECT-GROUP 
+      OBJECTS {
+            jmfcNamespaceUID,
+            jmfcNamespaceStatus,
+            jmfcNamespaceResourcePool }
+      STATUS  current
+      DESCRIPTION "Namespace configuration summary"
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2.5
+      ::= { jmfcMIBGroups 5 }
+
+jmfcNamespaceHttpClientGroup OBJECT-GROUP
+      OBJECTS {
+            jmfcNamespaceHttpClientRequests,
+            jmfcNamespaceHttpClientResponses,
+            jmfcNamespaceHttpClientCacheHit,
+            jmfcNamespaceHttpClientCacheMiss,
+            jmfcNamespaceHttpClientInBytes,
+            jmfcNamespaceHttpClientOutBytes,
+            jmfcNamespaceHttpClientConns,
+            jmfcNamespaceHttpClientActiveConns,
+            jmfcNamespaceHttpClientIdleConns,
+            jmfcNamespaceHttpClientStatus2xx,
+            jmfcNamespaceHttpClientStatus3xx,
+            jmfcNamespaceHttpClientStatus4xx,
+            jmfcNamespaceHttpClientStatus5xx,
+            jmfcNamespaceHttpClient404Count,
+            jmfcNamespaceHttpClient302Count,
+            jmfcNamespaceHttpClient304Count,
+            jmfcNamespaceHttpClient206Count,
+            jmfcNamespaceHttpClient200Count,
+            jmfcNamespaceHttpClientTunBytes,
+            jmfcNamespaceHttpClientTunReq 
+ }
+      STATUS  current
+      DESCRIPTION "Collection of Namespace HTTP client related statistics"
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2.6
+      ::= { jmfcMIBGroups 6 }
+
+jmfcNamespaceHttpServerGroup OBJECT-GROUP
+      OBJECTS {
+            jmfcNamespaceHttpServerRequests,
+            jmfcNamespaceHttpServerResponses,
+            jmfcNamespaceHttpServerInBytes,
+            jmfcNamespaceHttpServerOutBytes,
+            jmfcNamespaceHttpServerConns,
+            jmfcNamespaceHttpServerActiveConns,
+            jmfcNamespaceHttpServerIdleConns,
+            jmfcNamespaceHttpServerStatus2xx,
+            jmfcNamespaceHttpServerStatus3xx,
+            jmfcNamespaceHttpServerStatus4xx,
+            jmfcNamespaceHttpServerStatus5xx }
+      STATUS  current
+      DESCRIPTION "Collection of Namespace HTTP origin-server related statistics"
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2.7
+      ::= { jmfcMIBGroups 7 }
+
+jmfcNamespaceRtspClientGroup OBJECT-GROUP
+      OBJECTS {
+            jmfcNamespaceRtspClientRequests,
+            jmfcNamespaceRtspClientResponses,
+            jmfcNamespaceRtspClientCacheHit,
+            jmfcNamespaceRtspClientCacheMiss,
+            jmfcNamespaceRtspClientCachePartialHit,
+            jmfcNamespaceRtspClientInBytes,
+            jmfcNamespaceRtspClientOutBytes,
+            jmfcNamespaceRtspClientConns,
+            jmfcNamespaceRtspClientActiveConns,
+            jmfcNamespaceRtspClientIdleConns,
+            jmfcNamespaceRtspClientStatus2xx,
+            jmfcNamespaceRtspClientStatus3xx,
+            jmfcNamespaceRtspClientStatus4xx,
+            jmfcNamespaceRtspClientStatus5xx }
+      STATUS  current
+      DESCRIPTION "Namespace RTSP client related statistics"
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2.8
+      ::= { jmfcMIBGroups 8 }
+
+jmfcNamespaceRtspServerGroup OBJECT-GROUP
+      OBJECTS {
+            jmfcNamespaceRtspServerRequests,
+            jmfcNamespaceRtspServerResponses,
+            jmfcNamespaceRtspServerInBytes,
+            jmfcNamespaceRtspServerOutBytes,
+            jmfcNamespaceRtspServerConns,
+            jmfcNamespaceRtspServerActiveConns,
+            jmfcNamespaceRtspServerIdleConns,
+            jmfcNamespaceRtspServerStatus2xx,
+            jmfcNamespaceRtspServerStatus3xx,
+            jmfcNamespaceRtspServerStatus4xx,
+            jmfcNamespaceRtspServerStatus5xx }
+      STATUS  current
+      DESCRIPTION
+            "A collection of objects of RTSP information"
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2.9
+      ::= { jmfcMIBGroups 9 }
+
+
+jmfcInterfacesGroup OBJECT-GROUP
+      OBJECTS {
+            jmfcIfName,
+            jmfcIfSpeed,
+            jmfcNetIntfUtilCurrent,
+            jmfcNetIntfUtilErrThreshold,
+            jmfcNetIntfUtilClrThreshold}
+      STATUS  current
+      DESCRIPTION
+            "A collection of objects providing information applicable to
+            network interfaces."
+      -- 1.3.6.1.4.1.2636.1.2.1.5.2.11
+      ::= { jmfcMIBGroups 11 }
+
+
+jmfcModuleCompliance MODULE-COMPLIANCE
+      STATUS  current
+      DESCRIPTION
+            "Collection of Mediaflow related statistics"
+
+      MODULE 
+      MANDATORY-GROUPS {
+                  jmfcSystemGroup,
+                  jmfcResourcesGroup,
+                  jmfcHttpGroup,
+                  jmfcRtspGroup,
+                  jmfcNamespaceGroup,
+                  jmfcNamespaceHttpClientGroup,
+                  jmfcNamespaceHttpServerGroup,
+                  jmfcNamespaceRtspClientGroup,
+                  jmfcNamespaceRtspServerGroup,
+                  jmfcInterfacesGroup }
+
+      -- 1.3.6.1.4.1.2636.1.2.1.5.3.1
+      ::= { jmfcMIBCompliances 1 }
+
+
+END

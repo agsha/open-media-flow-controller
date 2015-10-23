@@ -1,0 +1,19 @@
+librtspmsg
+==========
+
+Library functionality 
+1. Parse RTSP Message and form an rtsp message Data structure
+2. Compose RTSP Message from an rtsp message Data Structure
+3. RFC 2326
+
+interface
+=========
+Header file - rtsp.h
+
+APIs - Parser
+=============
+[TBD]
+
+APIs - Generator
+================
+[TBD]

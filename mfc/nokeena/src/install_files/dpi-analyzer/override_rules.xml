@@ -1,0 +1,29 @@
+<rules>
+	<domain>
+		<domain-pattern>(.*.apple.com)|17.251.100.202</domain-pattern>
+		<uri>
+			<uri-pattern>.*(nuggets).*</uri-pattern>
+			<querystring-present>cache</querystring-present>
+			<cache-control-no-cache>cache</cache-control-no-cache>
+			<pragma-no-cache>cache</pragma-no-cache>
+		</uri>
+		<uri>
+			<uri-pattern>uri-regex2</uri-pattern>
+			<querystring-present>no-cache</querystring-present>
+			<cache-control-no-cache>cache</cache-control-no-cache>
+			<pragma-no-cache>cache</pragma-no-cache>
+		</uri>
+	</domain>
+	<domain>
+		<domain-pattern>regex3</domain-pattern>
+		<uri>
+			<uri-pattern>uri-regex3</uri-pattern>
+			<querystring-present>cache</querystring-present>
+			<cache-control-no-cache>cache</cache-control-no-cache>
+			<pragma-no-cache>cache</pragma-no-cache>
+		</uri>
+	</domain>
+	<domain>
+		<domain-pattern>regex4</domain-pattern>
+	</domain>
+</rules>

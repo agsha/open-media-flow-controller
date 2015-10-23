@@ -1,0 +1,853 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-12.1
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-12.1-qa-155_24219_315
+ MENU LABEL mfc-12.1-qa-155_24219_315  BR:flathead 2012-03-21
+ KERNEL pxe-boot/mfc-12.1-qa-155_24219_315/vmlinuz-bootflop-mfc-12.1-qa-155_24219_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-155_24219_315/rootflop-mfc-12.1-qa-155_24219_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-155_24219_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-154_24208_315
+ MENU LABEL mfc-12.1-qa-154_24208_315  BR:flathead 2012-03-21
+ KERNEL pxe-boot/mfc-12.1-qa-154_24208_315/vmlinuz-bootflop-mfc-12.1-qa-154_24208_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-154_24208_315/rootflop-mfc-12.1-qa-154_24208_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-154_24208_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-153_24190_315
+ MENU LABEL mfc-12.1-qa-153_24190_315  BR:flathead 2012-03-20
+ KERNEL pxe-boot/mfc-12.1-qa-153_24190_315/vmlinuz-bootflop-mfc-12.1-qa-153_24190_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-153_24190_315/rootflop-mfc-12.1-qa-153_24190_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-153_24190_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-151_24178_315
+ MENU LABEL mfc-12.1-qa-151_24178_315  BR:flathead 2012-03-19
+ KERNEL pxe-boot/mfc-12.1-qa-151_24178_315/vmlinuz-bootflop-mfc-12.1-qa-151_24178_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-151_24178_315/rootflop-mfc-12.1-qa-151_24178_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-151_24178_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-150_24163_315
+ MENU LABEL mfc-12.1-qa-150_24163_315  BR:flathead 2012-03-19
+ KERNEL pxe-boot/mfc-12.1-qa-150_24163_315/vmlinuz-bootflop-mfc-12.1-qa-150_24163_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-150_24163_315/rootflop-mfc-12.1-qa-150_24163_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-150_24163_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-149_24154_315
+ MENU LABEL mfc-12.1-qa-149_24154_315  BR:flathead 2012-03-18
+ KERNEL pxe-boot/mfc-12.1-qa-149_24154_315/vmlinuz-bootflop-mfc-12.1-qa-149_24154_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-149_24154_315/rootflop-mfc-12.1-qa-149_24154_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-149_24154_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-148_24150_315
+ MENU LABEL mfc-12.1-qa-148_24150_315  BR:flathead 2012-03-16
+ KERNEL pxe-boot/mfc-12.1-qa-148_24150_315/vmlinuz-bootflop-mfc-12.1-qa-148_24150_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-148_24150_315/rootflop-mfc-12.1-qa-148_24150_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-148_24150_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-145_24105_315
+ MENU LABEL mfc-12.1-qa-145_24105_315  BR:flathead 2012-03-15
+ KERNEL pxe-boot/mfc-12.1-qa-145_24105_315/vmlinuz-bootflop-mfc-12.1-qa-145_24105_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-145_24105_315/rootflop-mfc-12.1-qa-145_24105_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-145_24105_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-144_24091_315
+ MENU LABEL mfc-12.1-qa-144_24091_315  BR:flathead 2012-03-15
+ KERNEL pxe-boot/mfc-12.1-qa-144_24091_315/vmlinuz-bootflop-mfc-12.1-qa-144_24091_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-144_24091_315/rootflop-mfc-12.1-qa-144_24091_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-144_24091_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-143_24081_315
+ MENU LABEL mfc-12.1-qa-143_24081_315  BR:flathead 2012-03-14
+ KERNEL pxe-boot/mfc-12.1-qa-143_24081_315/vmlinuz-bootflop-mfc-12.1-qa-143_24081_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-143_24081_315/rootflop-mfc-12.1-qa-143_24081_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-143_24081_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-142_24035_315
+ MENU LABEL mfc-12.1-qa-142_24035_315  BR:flathead 2012-03-14
+ KERNEL pxe-boot/mfc-12.1-qa-142_24035_315/vmlinuz-bootflop-mfc-12.1-qa-142_24035_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-142_24035_315/rootflop-mfc-12.1-qa-142_24035_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-142_24035_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-141_23998_315
+ MENU LABEL mfc-12.1-qa-141_23998_315  BR:flathead 2012-03-13
+ KERNEL pxe-boot/mfc-12.1-qa-141_23998_315/vmlinuz-bootflop-mfc-12.1-qa-141_23998_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-141_23998_315/rootflop-mfc-12.1-qa-141_23998_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-141_23998_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-139_23991_315
+ MENU LABEL mfc-12.1-qa-139_23991_315  BR:flathead 2012-03-13
+ KERNEL pxe-boot/mfc-12.1-qa-139_23991_315/vmlinuz-bootflop-mfc-12.1-qa-139_23991_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-139_23991_315/rootflop-mfc-12.1-qa-139_23991_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-139_23991_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-138_23983_315
+ MENU LABEL mfc-12.1-qa-138_23983_315  BR:flathead 2012-03-12
+ KERNEL pxe-boot/mfc-12.1-qa-138_23983_315/vmlinuz-bootflop-mfc-12.1-qa-138_23983_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-138_23983_315/rootflop-mfc-12.1-qa-138_23983_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-138_23983_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-137_23971_315
+ MENU LABEL mfc-12.1-qa-137_23971_315  BR:flathead 2012-03-10
+ KERNEL pxe-boot/mfc-12.1-qa-137_23971_315/vmlinuz-bootflop-mfc-12.1-qa-137_23971_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-137_23971_315/rootflop-mfc-12.1-qa-137_23971_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-137_23971_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-136_23970_315
+ MENU LABEL mfc-12.1-qa-136_23970_315  BR:flathead 2012-03-09
+ KERNEL pxe-boot/mfc-12.1-qa-136_23970_315/vmlinuz-bootflop-mfc-12.1-qa-136_23970_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-136_23970_315/rootflop-mfc-12.1-qa-136_23970_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-136_23970_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-135_23968_315
+ MENU LABEL mfc-12.1-qa-135_23968_315  BR:flathead 2012-03-09
+ KERNEL pxe-boot/mfc-12.1-qa-135_23968_315/vmlinuz-bootflop-mfc-12.1-qa-135_23968_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-135_23968_315/rootflop-mfc-12.1-qa-135_23968_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-135_23968_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-134_23958_315
+ MENU LABEL mfc-12.1-qa-134_23958_315  BR:flathead 2012-03-09
+ KERNEL pxe-boot/mfc-12.1-qa-134_23958_315/vmlinuz-bootflop-mfc-12.1-qa-134_23958_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-134_23958_315/rootflop-mfc-12.1-qa-134_23958_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-134_23958_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-133_23942_315
+ MENU LABEL mfc-12.1-qa-133_23942_315  BR:flathead 2012-03-08
+ KERNEL pxe-boot/mfc-12.1-qa-133_23942_315/vmlinuz-bootflop-mfc-12.1-qa-133_23942_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-133_23942_315/rootflop-mfc-12.1-qa-133_23942_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-133_23942_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-132_23931_315
+ MENU LABEL mfc-12.1-qa-132_23931_315  BR:flathead 2012-03-07
+ KERNEL pxe-boot/mfc-12.1-qa-132_23931_315/vmlinuz-bootflop-mfc-12.1-qa-132_23931_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-132_23931_315/rootflop-mfc-12.1-qa-132_23931_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-132_23931_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-131_23880_315
+ MENU LABEL mfc-12.1-qa-131_23880_315  BR:flathead 2012-03-07
+ KERNEL pxe-boot/mfc-12.1-qa-131_23880_315/vmlinuz-bootflop-mfc-12.1-qa-131_23880_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-131_23880_315/rootflop-mfc-12.1-qa-131_23880_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-131_23880_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-130_23869_315
+ MENU LABEL mfc-12.1-qa-130_23869_315  BR:flathead 2012-03-07
+ KERNEL pxe-boot/mfc-12.1-qa-130_23869_315/vmlinuz-bootflop-mfc-12.1-qa-130_23869_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-130_23869_315/rootflop-mfc-12.1-qa-130_23869_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-130_23869_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-129_23858_315
+ MENU LABEL mfc-12.1-qa-129_23858_315  BR:flathead 2012-03-06
+ KERNEL pxe-boot/mfc-12.1-qa-129_23858_315/vmlinuz-bootflop-mfc-12.1-qa-129_23858_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-129_23858_315/rootflop-mfc-12.1-qa-129_23858_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-129_23858_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-128_23844_315
+ MENU LABEL mfc-12.1-qa-128_23844_315  BR:flathead 2012-03-06
+ KERNEL pxe-boot/mfc-12.1-qa-128_23844_315/vmlinuz-bootflop-mfc-12.1-qa-128_23844_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-128_23844_315/rootflop-mfc-12.1-qa-128_23844_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-128_23844_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-127_23820_315
+ MENU LABEL mfc-12.1-qa-127_23820_315  BR:flathead 2012-03-05
+ KERNEL pxe-boot/mfc-12.1-qa-127_23820_315/vmlinuz-bootflop-mfc-12.1-qa-127_23820_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-127_23820_315/rootflop-mfc-12.1-qa-127_23820_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-127_23820_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-126_23812_315
+ MENU LABEL mfc-12.1-qa-126_23812_315  BR:flathead 2012-03-05
+ KERNEL pxe-boot/mfc-12.1-qa-126_23812_315/vmlinuz-bootflop-mfc-12.1-qa-126_23812_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-126_23812_315/rootflop-mfc-12.1-qa-126_23812_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-126_23812_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-125_23809_315
+ MENU LABEL mfc-12.1-qa-125_23809_315  BR:flathead 2012-03-05
+ KERNEL pxe-boot/mfc-12.1-qa-125_23809_315/vmlinuz-bootflop-mfc-12.1-qa-125_23809_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-125_23809_315/rootflop-mfc-12.1-qa-125_23809_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-125_23809_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-124_23805_315
+ MENU LABEL mfc-12.1-qa-124_23805_315  BR:flathead 2012-03-04
+ KERNEL pxe-boot/mfc-12.1-qa-124_23805_315/vmlinuz-bootflop-mfc-12.1-qa-124_23805_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-124_23805_315/rootflop-mfc-12.1-qa-124_23805_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-124_23805_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-123_23803_315
+ MENU LABEL mfc-12.1-qa-123_23803_315  BR:flathead 2012-03-03
+ KERNEL pxe-boot/mfc-12.1-qa-123_23803_315/vmlinuz-bootflop-mfc-12.1-qa-123_23803_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-123_23803_315/rootflop-mfc-12.1-qa-123_23803_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-123_23803_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-122_23802_315
+ MENU LABEL mfc-12.1-qa-122_23802_315  BR:flathead 2012-03-02
+ KERNEL pxe-boot/mfc-12.1-qa-122_23802_315/vmlinuz-bootflop-mfc-12.1-qa-122_23802_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-122_23802_315/rootflop-mfc-12.1-qa-122_23802_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-122_23802_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-121_23799_315
+ MENU LABEL mfc-12.1-qa-121_23799_315  BR:flathead 2012-03-02
+ KERNEL pxe-boot/mfc-12.1-qa-121_23799_315/vmlinuz-bootflop-mfc-12.1-qa-121_23799_315
+ APPEND initrd=pxe-boot/mfc-12.1-qa-121_23799_315/rootflop-mfc-12.1-qa-121_23799_315.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-121_23799_315 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-120_23737_313
+ MENU LABEL mfc-12.1-qa-120_23737_313  BR:flathead 2012-03-02
+ KERNEL pxe-boot/mfc-12.1-qa-120_23737_313/vmlinuz-bootflop-mfc-12.1-qa-120_23737_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-120_23737_313/rootflop-mfc-12.1-qa-120_23737_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-120_23737_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-119_23637_313
+ MENU LABEL mfc-12.1-qa-119_23637_313  BR:flathead 2012-03-01
+ KERNEL pxe-boot/mfc-12.1-qa-119_23637_313/vmlinuz-bootflop-mfc-12.1-qa-119_23637_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-119_23637_313/rootflop-mfc-12.1-qa-119_23637_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-119_23637_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-118_23636_313
+ MENU LABEL mfc-12.1-qa-118_23636_313  BR:flathead 2012-03-01
+ KERNEL pxe-boot/mfc-12.1-qa-118_23636_313/vmlinuz-bootflop-mfc-12.1-qa-118_23636_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-118_23636_313/rootflop-mfc-12.1-qa-118_23636_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-118_23636_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-117_23630_313
+ MENU LABEL mfc-12.1-qa-117_23630_313  BR:flathead 2012-02-29
+ KERNEL pxe-boot/mfc-12.1-qa-117_23630_313/vmlinuz-bootflop-mfc-12.1-qa-117_23630_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-117_23630_313/rootflop-mfc-12.1-qa-117_23630_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-117_23630_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-116_23628_313
+ MENU LABEL mfc-12.1-qa-116_23628_313  BR:flathead 2012-02-29
+ KERNEL pxe-boot/mfc-12.1-qa-116_23628_313/vmlinuz-bootflop-mfc-12.1-qa-116_23628_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-116_23628_313/rootflop-mfc-12.1-qa-116_23628_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-116_23628_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-115_23613_313
+ MENU LABEL mfc-12.1-qa-115_23613_313  BR:flathead 2012-02-28
+ KERNEL pxe-boot/mfc-12.1-qa-115_23613_313/vmlinuz-bootflop-mfc-12.1-qa-115_23613_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-115_23613_313/rootflop-mfc-12.1-qa-115_23613_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-115_23613_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-114_23610_313
+ MENU LABEL mfc-12.1-qa-114_23610_313  BR:flathead 2012-02-28
+ KERNEL pxe-boot/mfc-12.1-qa-114_23610_313/vmlinuz-bootflop-mfc-12.1-qa-114_23610_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-114_23610_313/rootflop-mfc-12.1-qa-114_23610_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-114_23610_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-113_23583_313
+ MENU LABEL mfc-12.1-qa-113_23583_313  BR:flathead 2012-02-27
+ KERNEL pxe-boot/mfc-12.1-qa-113_23583_313/vmlinuz-bootflop-mfc-12.1-qa-113_23583_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-113_23583_313/rootflop-mfc-12.1-qa-113_23583_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-113_23583_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-112_23581_313
+ MENU LABEL mfc-12.1-qa-112_23581_313  BR:flathead 2012-02-27
+ KERNEL pxe-boot/mfc-12.1-qa-112_23581_313/vmlinuz-bootflop-mfc-12.1-qa-112_23581_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-112_23581_313/rootflop-mfc-12.1-qa-112_23581_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-112_23581_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-111_23573_313
+ MENU LABEL mfc-12.1-qa-111_23573_313  BR:flathead 2012-02-25
+ KERNEL pxe-boot/mfc-12.1-qa-111_23573_313/vmlinuz-bootflop-mfc-12.1-qa-111_23573_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-111_23573_313/rootflop-mfc-12.1-qa-111_23573_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-111_23573_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-110_23568_313
+ MENU LABEL mfc-12.1-qa-110_23568_313  BR:flathead 2012-02-24
+ KERNEL pxe-boot/mfc-12.1-qa-110_23568_313/vmlinuz-bootflop-mfc-12.1-qa-110_23568_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-110_23568_313/rootflop-mfc-12.1-qa-110_23568_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-110_23568_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-109_23563_313
+ MENU LABEL mfc-12.1-qa-109_23563_313  BR:flathead 2012-02-24
+ KERNEL pxe-boot/mfc-12.1-qa-109_23563_313/vmlinuz-bootflop-mfc-12.1-qa-109_23563_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-109_23563_313/rootflop-mfc-12.1-qa-109_23563_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-109_23563_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-108_23552_313
+ MENU LABEL mfc-12.1-qa-108_23552_313  BR:flathead 2012-02-23
+ KERNEL pxe-boot/mfc-12.1-qa-108_23552_313/vmlinuz-bootflop-mfc-12.1-qa-108_23552_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-108_23552_313/rootflop-mfc-12.1-qa-108_23552_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-108_23552_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-107_23528_313
+ MENU LABEL mfc-12.1-qa-107_23528_313  BR:flathead 2012-02-23
+ KERNEL pxe-boot/mfc-12.1-qa-107_23528_313/vmlinuz-bootflop-mfc-12.1-qa-107_23528_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-107_23528_313/rootflop-mfc-12.1-qa-107_23528_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-107_23528_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-106_23517_313
+ MENU LABEL mfc-12.1-qa-106_23517_313  BR:flathead 2012-02-23
+ KERNEL pxe-boot/mfc-12.1-qa-106_23517_313/vmlinuz-bootflop-mfc-12.1-qa-106_23517_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-106_23517_313/rootflop-mfc-12.1-qa-106_23517_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-106_23517_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-105_23514_313
+ MENU LABEL mfc-12.1-qa-105_23514_313  BR:flathead 2012-02-23
+ KERNEL pxe-boot/mfc-12.1-qa-105_23514_313/vmlinuz-bootflop-mfc-12.1-qa-105_23514_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-105_23514_313/rootflop-mfc-12.1-qa-105_23514_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-105_23514_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-104_23489_313
+ MENU LABEL mfc-12.1-qa-104_23489_313  BR:flathead 2012-02-22
+ KERNEL pxe-boot/mfc-12.1-qa-104_23489_313/vmlinuz-bootflop-mfc-12.1-qa-104_23489_313
+ APPEND initrd=pxe-boot/mfc-12.1-qa-104_23489_313/rootflop-mfc-12.1-qa-104_23489_313.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-104_23489_313 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-103_23483_304
+ MENU LABEL mfc-12.1-qa-103_23483_304  BR:flathead 2012-02-22
+ KERNEL pxe-boot/mfc-12.1-qa-103_23483_304/vmlinuz-bootflop-mfc-12.1-qa-103_23483_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-103_23483_304/rootflop-mfc-12.1-qa-103_23483_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-103_23483_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-102_23479_304
+ MENU LABEL mfc-12.1-qa-102_23479_304  BR:flathead 2012-02-22
+ KERNEL pxe-boot/mfc-12.1-qa-102_23479_304/vmlinuz-bootflop-mfc-12.1-qa-102_23479_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-102_23479_304/rootflop-mfc-12.1-qa-102_23479_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-102_23479_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-101_23477_304
+ MENU LABEL mfc-12.1-qa-101_23477_304  BR:flathead 2012-02-21
+ KERNEL pxe-boot/mfc-12.1-qa-101_23477_304/vmlinuz-bootflop-mfc-12.1-qa-101_23477_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-101_23477_304/rootflop-mfc-12.1-qa-101_23477_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-101_23477_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-100_23475_304
+ MENU LABEL mfc-12.1-qa-100_23475_304  BR:flathead 2012-02-21
+ KERNEL pxe-boot/mfc-12.1-qa-100_23475_304/vmlinuz-bootflop-mfc-12.1-qa-100_23475_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-100_23475_304/rootflop-mfc-12.1-qa-100_23475_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-100_23475_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-97_23444_304
+ MENU LABEL mfc-12.1-qa-97_23444_304   BR:flathead 2012-02-21
+ KERNEL pxe-boot/mfc-12.1-qa-97_23444_304/vmlinuz-bootflop-mfc-12.1-qa-97_23444_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-97_23444_304/rootflop-mfc-12.1-qa-97_23444_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-97_23444_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-96_23435_304
+ MENU LABEL mfc-12.1-qa-96_23435_304   BR:flathead 2012-02-20
+ KERNEL pxe-boot/mfc-12.1-qa-96_23435_304/vmlinuz-bootflop-mfc-12.1-qa-96_23435_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-96_23435_304/rootflop-mfc-12.1-qa-96_23435_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-96_23435_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-95_23432_304
+ MENU LABEL mfc-12.1-qa-95_23432_304   BR:flathead 2012-02-20
+ KERNEL pxe-boot/mfc-12.1-qa-95_23432_304/vmlinuz-bootflop-mfc-12.1-qa-95_23432_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-95_23432_304/rootflop-mfc-12.1-qa-95_23432_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-95_23432_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-94_23418_304
+ MENU LABEL mfc-12.1-qa-94_23418_304   BR:flathead 2012-02-19
+ KERNEL pxe-boot/mfc-12.1-qa-94_23418_304/vmlinuz-bootflop-mfc-12.1-qa-94_23418_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-94_23418_304/rootflop-mfc-12.1-qa-94_23418_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-94_23418_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-93_23415_304
+ MENU LABEL mfc-12.1-qa-93_23415_304   BR:flathead 2012-02-17
+ KERNEL pxe-boot/mfc-12.1-qa-93_23415_304/vmlinuz-bootflop-mfc-12.1-qa-93_23415_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-93_23415_304/rootflop-mfc-12.1-qa-93_23415_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-93_23415_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-92_23412_304
+ MENU LABEL mfc-12.1-qa-92_23412_304   BR:flathead 2012-02-17
+ KERNEL pxe-boot/mfc-12.1-qa-92_23412_304/vmlinuz-bootflop-mfc-12.1-qa-92_23412_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-92_23412_304/rootflop-mfc-12.1-qa-92_23412_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-92_23412_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-91_23395_304
+ MENU LABEL mfc-12.1-qa-91_23395_304   BR:flathead 2012-02-16
+ KERNEL pxe-boot/mfc-12.1-qa-91_23395_304/vmlinuz-bootflop-mfc-12.1-qa-91_23395_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-91_23395_304/rootflop-mfc-12.1-qa-91_23395_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-91_23395_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-90_23388_304
+ MENU LABEL mfc-12.1-qa-90_23388_304   BR:flathead 2012-02-16
+ KERNEL pxe-boot/mfc-12.1-qa-90_23388_304/vmlinuz-bootflop-mfc-12.1-qa-90_23388_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-90_23388_304/rootflop-mfc-12.1-qa-90_23388_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-90_23388_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-89_23372_304
+ MENU LABEL mfc-12.1-qa-89_23372_304   BR:flathead 2012-02-15
+ KERNEL pxe-boot/mfc-12.1-qa-89_23372_304/vmlinuz-bootflop-mfc-12.1-qa-89_23372_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-89_23372_304/rootflop-mfc-12.1-qa-89_23372_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-89_23372_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-88_23362_304
+ MENU LABEL mfc-12.1-qa-88_23362_304   BR:flathead 2012-02-15
+ KERNEL pxe-boot/mfc-12.1-qa-88_23362_304/vmlinuz-bootflop-mfc-12.1-qa-88_23362_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-88_23362_304/rootflop-mfc-12.1-qa-88_23362_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-88_23362_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-87_23327_304
+ MENU LABEL mfc-12.1-qa-87_23327_304   BR:flathead 2012-02-14
+ KERNEL pxe-boot/mfc-12.1-qa-87_23327_304/vmlinuz-bootflop-mfc-12.1-qa-87_23327_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-87_23327_304/rootflop-mfc-12.1-qa-87_23327_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-87_23327_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-86_23322_304
+ MENU LABEL mfc-12.1-qa-86_23322_304   BR:flathead 2012-02-14
+ KERNEL pxe-boot/mfc-12.1-qa-86_23322_304/vmlinuz-bootflop-mfc-12.1-qa-86_23322_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-86_23322_304/rootflop-mfc-12.1-qa-86_23322_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-86_23322_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-85_23299_304
+ MENU LABEL mfc-12.1-qa-85_23299_304   BR:flathead 2012-02-13
+ KERNEL pxe-boot/mfc-12.1-qa-85_23299_304/vmlinuz-bootflop-mfc-12.1-qa-85_23299_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-85_23299_304/rootflop-mfc-12.1-qa-85_23299_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-85_23299_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-84_23294_304
+ MENU LABEL mfc-12.1-qa-84_23294_304   BR:mainline 2012-02-13
+ KERNEL pxe-boot/mfc-12.1-qa-84_23294_304/vmlinuz-bootflop-mfc-12.1-qa-84_23294_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-84_23294_304/rootflop-mfc-12.1-qa-84_23294_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-84_23294_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-83_23275_304
+ MENU LABEL mfc-12.1-qa-83_23275_304   BR:mainline 2012-02-12
+ KERNEL pxe-boot/mfc-12.1-qa-83_23275_304/vmlinuz-bootflop-mfc-12.1-qa-83_23275_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-83_23275_304/rootflop-mfc-12.1-qa-83_23275_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-83_23275_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-82_23274_304
+ MENU LABEL mfc-12.1-qa-82_23274_304   BR:mainline 2012-02-11
+ KERNEL pxe-boot/mfc-12.1-qa-82_23274_304/vmlinuz-bootflop-mfc-12.1-qa-82_23274_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-82_23274_304/rootflop-mfc-12.1-qa-82_23274_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-82_23274_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-81_23272_304
+ MENU LABEL mfc-12.1-qa-81_23272_304   BR:mainline 2012-02-10
+ KERNEL pxe-boot/mfc-12.1-qa-81_23272_304/vmlinuz-bootflop-mfc-12.1-qa-81_23272_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-81_23272_304/rootflop-mfc-12.1-qa-81_23272_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-81_23272_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-80_23269_304
+ MENU LABEL mfc-12.1-qa-80_23269_304   BR:mainline 2012-02-10
+ KERNEL pxe-boot/mfc-12.1-qa-80_23269_304/vmlinuz-bootflop-mfc-12.1-qa-80_23269_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-80_23269_304/rootflop-mfc-12.1-qa-80_23269_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-80_23269_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-79_23265_304
+ MENU LABEL mfc-12.1-qa-79_23265_304   BR:mainline 2012-02-09
+ KERNEL pxe-boot/mfc-12.1-qa-79_23265_304/vmlinuz-bootflop-mfc-12.1-qa-79_23265_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-79_23265_304/rootflop-mfc-12.1-qa-79_23265_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-79_23265_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-78_23262_304
+ MENU LABEL mfc-12.1-qa-78_23262_304   BR:mainline 2012-02-09
+ KERNEL pxe-boot/mfc-12.1-qa-78_23262_304/vmlinuz-bootflop-mfc-12.1-qa-78_23262_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-78_23262_304/rootflop-mfc-12.1-qa-78_23262_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-78_23262_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-77_23252_304
+ MENU LABEL mfc-12.1-qa-77_23252_304   BR:mainline 2012-02-08
+ KERNEL pxe-boot/mfc-12.1-qa-77_23252_304/vmlinuz-bootflop-mfc-12.1-qa-77_23252_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-77_23252_304/rootflop-mfc-12.1-qa-77_23252_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-77_23252_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-76_23240_304
+ MENU LABEL mfc-12.1-qa-76_23240_304   BR:mainline 2012-02-07
+ KERNEL pxe-boot/mfc-12.1-qa-76_23240_304/vmlinuz-bootflop-mfc-12.1-qa-76_23240_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-76_23240_304/rootflop-mfc-12.1-qa-76_23240_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-76_23240_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-75_23217_304
+ MENU LABEL mfc-12.1-qa-75_23217_304   BR:mainline 2012-02-07
+ KERNEL pxe-boot/mfc-12.1-qa-75_23217_304/vmlinuz-bootflop-mfc-12.1-qa-75_23217_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-75_23217_304/rootflop-mfc-12.1-qa-75_23217_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-75_23217_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-74_23214_304
+ MENU LABEL mfc-12.1-qa-74_23214_304   BR:mainline 2012-02-06
+ KERNEL pxe-boot/mfc-12.1-qa-74_23214_304/vmlinuz-bootflop-mfc-12.1-qa-74_23214_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-74_23214_304/rootflop-mfc-12.1-qa-74_23214_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-74_23214_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-73_23194_304
+ MENU LABEL mfc-12.1-qa-73_23194_304   BR:mainline 2012-02-05
+ KERNEL pxe-boot/mfc-12.1-qa-73_23194_304/vmlinuz-bootflop-mfc-12.1-qa-73_23194_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-73_23194_304/rootflop-mfc-12.1-qa-73_23194_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-73_23194_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-72_23153_304
+ MENU LABEL mfc-12.1-qa-72_23153_304   BR:mainline 2012-02-02
+ KERNEL pxe-boot/mfc-12.1-qa-72_23153_304/vmlinuz-bootflop-mfc-12.1-qa-72_23153_304
+ APPEND initrd=pxe-boot/mfc-12.1-qa-72_23153_304/rootflop-mfc-12.1-qa-72_23153_304.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-72_23153_304 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-68_23044_293
+ MENU LABEL mfc-12.1-qa-68_23044_293   BR:mainline 2012-01-30
+ KERNEL pxe-boot/mfc-12.1-qa-68_23044_293/vmlinuz-bootflop-mfc-12.1-qa-68_23044_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-68_23044_293/rootflop-mfc-12.1-qa-68_23044_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-68_23044_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-67_23020_293
+ MENU LABEL mfc-12.1-qa-67_23020_293   BR:mainline 2012-01-27
+ KERNEL pxe-boot/mfc-12.1-qa-67_23020_293/vmlinuz-bootflop-mfc-12.1-qa-67_23020_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-67_23020_293/rootflop-mfc-12.1-qa-67_23020_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-67_23020_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-66_23018_293
+ MENU LABEL mfc-12.1-qa-66_23018_293   BR:mainline 2012-01-25
+ KERNEL pxe-boot/mfc-12.1-qa-66_23018_293/vmlinuz-bootflop-mfc-12.1-qa-66_23018_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-66_23018_293/rootflop-mfc-12.1-qa-66_23018_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-66_23018_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-65_23002_293
+ MENU LABEL mfc-12.1-qa-65_23002_293   BR:mainline 2012-01-25
+ KERNEL pxe-boot/mfc-12.1-qa-65_23002_293/vmlinuz-bootflop-mfc-12.1-qa-65_23002_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-65_23002_293/rootflop-mfc-12.1-qa-65_23002_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-65_23002_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-64_22992_293
+ MENU LABEL mfc-12.1-qa-64_22992_293   BR:mainline 2012-01-24
+ KERNEL pxe-boot/mfc-12.1-qa-64_22992_293/vmlinuz-bootflop-mfc-12.1-qa-64_22992_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-64_22992_293/rootflop-mfc-12.1-qa-64_22992_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-64_22992_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-63_22961_293
+ MENU LABEL mfc-12.1-qa-63_22961_293   BR:mainline 2012-01-24
+ KERNEL pxe-boot/mfc-12.1-qa-63_22961_293/vmlinuz-bootflop-mfc-12.1-qa-63_22961_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-63_22961_293/rootflop-mfc-12.1-qa-63_22961_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-63_22961_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-62_22952_293
+ MENU LABEL mfc-12.1-qa-62_22952_293   BR:mainline 2012-01-23
+ KERNEL pxe-boot/mfc-12.1-qa-62_22952_293/vmlinuz-bootflop-mfc-12.1-qa-62_22952_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-62_22952_293/rootflop-mfc-12.1-qa-62_22952_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-62_22952_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-61_22944_293
+ MENU LABEL mfc-12.1-qa-61_22944_293   BR:mainline 2012-01-23
+ KERNEL pxe-boot/mfc-12.1-qa-61_22944_293/vmlinuz-bootflop-mfc-12.1-qa-61_22944_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-61_22944_293/rootflop-mfc-12.1-qa-61_22944_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-61_22944_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-60_22933_293
+ MENU LABEL mfc-12.1-qa-60_22933_293   BR:mainline 2012-01-22
+ KERNEL pxe-boot/mfc-12.1-qa-60_22933_293/vmlinuz-bootflop-mfc-12.1-qa-60_22933_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-60_22933_293/rootflop-mfc-12.1-qa-60_22933_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-60_22933_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-59_22931_293
+ MENU LABEL mfc-12.1-qa-59_22931_293   BR:mainline 2012-01-20
+ KERNEL pxe-boot/mfc-12.1-qa-59_22931_293/vmlinuz-bootflop-mfc-12.1-qa-59_22931_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-59_22931_293/rootflop-mfc-12.1-qa-59_22931_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-59_22931_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-57_22856_293
+ MENU LABEL mfc-12.1-qa-57_22856_293   BR:mainline 2012-01-19
+ KERNEL pxe-boot/mfc-12.1-qa-57_22856_293/vmlinuz-bootflop-mfc-12.1-qa-57_22856_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-57_22856_293/rootflop-mfc-12.1-qa-57_22856_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-57_22856_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-56_22844_293
+ MENU LABEL mfc-12.1-qa-56_22844_293   BR:mainline 2012-01-18
+ KERNEL pxe-boot/mfc-12.1-qa-56_22844_293/vmlinuz-bootflop-mfc-12.1-qa-56_22844_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-56_22844_293/rootflop-mfc-12.1-qa-56_22844_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-56_22844_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-55_22751_293
+ MENU LABEL mfc-12.1-qa-55_22751_293   BR:mainline 2012-01-13
+ KERNEL pxe-boot/mfc-12.1-qa-55_22751_293/vmlinuz-bootflop-mfc-12.1-qa-55_22751_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-55_22751_293/rootflop-mfc-12.1-qa-55_22751_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-55_22751_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-54_22700_293
+ MENU LABEL mfc-12.1-qa-54_22700_293   BR:mainline 2012-01-10
+ KERNEL pxe-boot/mfc-12.1-qa-54_22700_293/vmlinuz-bootflop-mfc-12.1-qa-54_22700_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-54_22700_293/rootflop-mfc-12.1-qa-54_22700_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-54_22700_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-53_22618_293
+ MENU LABEL mfc-12.1-qa-53_22618_293   BR:mainline 2012-01-06
+ KERNEL pxe-boot/mfc-12.1-qa-53_22618_293/vmlinuz-bootflop-mfc-12.1-qa-53_22618_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-53_22618_293/rootflop-mfc-12.1-qa-53_22618_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-53_22618_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-52_22589_293
+ MENU LABEL mfc-12.1-qa-52_22589_293   BR:mainline 2012-01-05
+ KERNEL pxe-boot/mfc-12.1-qa-52_22589_293/vmlinuz-bootflop-mfc-12.1-qa-52_22589_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-52_22589_293/rootflop-mfc-12.1-qa-52_22589_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-52_22589_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-51_22577_293
+ MENU LABEL mfc-12.1-qa-51_22577_293   BR:mainline 2012-01-04
+ KERNEL pxe-boot/mfc-12.1-qa-51_22577_293/vmlinuz-bootflop-mfc-12.1-qa-51_22577_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-51_22577_293/rootflop-mfc-12.1-qa-51_22577_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-51_22577_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-50_22563_293
+ MENU LABEL mfc-12.1-qa-50_22563_293   BR:mainline 2012-01-04
+ KERNEL pxe-boot/mfc-12.1-qa-50_22563_293/vmlinuz-bootflop-mfc-12.1-qa-50_22563_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-50_22563_293/rootflop-mfc-12.1-qa-50_22563_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-50_22563_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-49_22526_293
+ MENU LABEL mfc-12.1-qa-49_22526_293   BR:mainline 2012-01-03
+ KERNEL pxe-boot/mfc-12.1-qa-49_22526_293/vmlinuz-bootflop-mfc-12.1-qa-49_22526_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-49_22526_293/rootflop-mfc-12.1-qa-49_22526_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-49_22526_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-48_22471_293
+ MENU LABEL mfc-12.1-qa-48_22471_293   BR:mainline 2011-12-29
+ KERNEL pxe-boot/mfc-12.1-qa-48_22471_293/vmlinuz-bootflop-mfc-12.1-qa-48_22471_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-48_22471_293/rootflop-mfc-12.1-qa-48_22471_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-48_22471_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-47_22431_293
+ MENU LABEL mfc-12.1-qa-47_22431_293   BR:mainline 2011-12-29
+ KERNEL pxe-boot/mfc-12.1-qa-47_22431_293/vmlinuz-bootflop-mfc-12.1-qa-47_22431_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-47_22431_293/rootflop-mfc-12.1-qa-47_22431_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-47_22431_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-46_22427_293
+ MENU LABEL mfc-12.1-qa-46_22427_293   BR:mainline 2011-12-28
+ KERNEL pxe-boot/mfc-12.1-qa-46_22427_293/vmlinuz-bootflop-mfc-12.1-qa-46_22427_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-46_22427_293/rootflop-mfc-12.1-qa-46_22427_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-46_22427_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-45_22406_293
+ MENU LABEL mfc-12.1-qa-45_22406_293   BR:mainline 2011-12-28
+ KERNEL pxe-boot/mfc-12.1-qa-45_22406_293/vmlinuz-bootflop-mfc-12.1-qa-45_22406_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-45_22406_293/rootflop-mfc-12.1-qa-45_22406_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-45_22406_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-44_22357_293
+ MENU LABEL mfc-12.1-qa-44_22357_293   BR:mainline 2011-12-27
+ KERNEL pxe-boot/mfc-12.1-qa-44_22357_293/vmlinuz-bootflop-mfc-12.1-qa-44_22357_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-44_22357_293/rootflop-mfc-12.1-qa-44_22357_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-44_22357_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-43_22278_293
+ MENU LABEL mfc-12.1-qa-43_22278_293   BR:mainline 2011-12-25
+ KERNEL pxe-boot/mfc-12.1-qa-43_22278_293/vmlinuz-bootflop-mfc-12.1-qa-43_22278_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-43_22278_293/rootflop-mfc-12.1-qa-43_22278_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-43_22278_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-42_22273_293
+ MENU LABEL mfc-12.1-qa-42_22273_293   BR:mainline 2011-12-24
+ KERNEL pxe-boot/mfc-12.1-qa-42_22273_293/vmlinuz-bootflop-mfc-12.1-qa-42_22273_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-42_22273_293/rootflop-mfc-12.1-qa-42_22273_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-42_22273_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-41_22187_293
+ MENU LABEL mfc-12.1-qa-41_22187_293   BR:mainline 2011-12-20
+ KERNEL pxe-boot/mfc-12.1-qa-41_22187_293/vmlinuz-bootflop-mfc-12.1-qa-41_22187_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-41_22187_293/rootflop-mfc-12.1-qa-41_22187_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-41_22187_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-40_22170_293
+ MENU LABEL mfc-12.1-qa-40_22170_293   BR:mainline 2011-12-20
+ KERNEL pxe-boot/mfc-12.1-qa-40_22170_293/vmlinuz-bootflop-mfc-12.1-qa-40_22170_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-40_22170_293/rootflop-mfc-12.1-qa-40_22170_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-40_22170_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-39_22119_293
+ MENU LABEL mfc-12.1-qa-39_22119_293   BR:mainline 2011-12-19
+ KERNEL pxe-boot/mfc-12.1-qa-39_22119_293/vmlinuz-bootflop-mfc-12.1-qa-39_22119_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-39_22119_293/rootflop-mfc-12.1-qa-39_22119_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-39_22119_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-38_22117_293
+ MENU LABEL mfc-12.1-qa-38_22117_293   BR:mainline 2011-12-19
+ KERNEL pxe-boot/mfc-12.1-qa-38_22117_293/vmlinuz-bootflop-mfc-12.1-qa-38_22117_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-38_22117_293/rootflop-mfc-12.1-qa-38_22117_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-38_22117_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-37_22066_293
+ MENU LABEL mfc-12.1-qa-37_22066_293   BR:mainline 2011-12-19
+ KERNEL pxe-boot/mfc-12.1-qa-37_22066_293/vmlinuz-bootflop-mfc-12.1-qa-37_22066_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-37_22066_293/rootflop-mfc-12.1-qa-37_22066_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-37_22066_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-36_21975_293
+ MENU LABEL mfc-12.1-qa-36_21975_293   BR:mainline 2011-12-13
+ KERNEL pxe-boot/mfc-12.1-qa-36_21975_293/vmlinuz-bootflop-mfc-12.1-qa-36_21975_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-36_21975_293/rootflop-mfc-12.1-qa-36_21975_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-36_21975_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-35_21940_293
+ MENU LABEL mfc-12.1-qa-35_21940_293   BR:mainline 2011-12-09
+ KERNEL pxe-boot/mfc-12.1-qa-35_21940_293/vmlinuz-bootflop-mfc-12.1-qa-35_21940_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-35_21940_293/rootflop-mfc-12.1-qa-35_21940_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-35_21940_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-32_21830_293
+ MENU LABEL mfc-12.1-qa-32_21830_293   BR:mainline 2011-12-08
+ KERNEL pxe-boot/mfc-12.1-qa-32_21830_293/vmlinuz-bootflop-mfc-12.1-qa-32_21830_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-32_21830_293/rootflop-mfc-12.1-qa-32_21830_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-32_21830_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-31_21804_293
+ MENU LABEL mfc-12.1-qa-31_21804_293   BR:mainline 2011-12-08
+ KERNEL pxe-boot/mfc-12.1-qa-31_21804_293/vmlinuz-bootflop-mfc-12.1-qa-31_21804_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-31_21804_293/rootflop-mfc-12.1-qa-31_21804_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-31_21804_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-28_21675_293
+ MENU LABEL mfc-12.1-qa-28_21675_293   BR:mainline 2011-12-02
+ KERNEL pxe-boot/mfc-12.1-qa-28_21675_293/vmlinuz-bootflop-mfc-12.1-qa-28_21675_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-28_21675_293/rootflop-mfc-12.1-qa-28_21675_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-28_21675_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-27_21630_293
+ MENU LABEL mfc-12.1-qa-27_21630_293   BR:mainline 2011-12-01
+ KERNEL pxe-boot/mfc-12.1-qa-27_21630_293/vmlinuz-bootflop-mfc-12.1-qa-27_21630_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-27_21630_293/rootflop-mfc-12.1-qa-27_21630_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-27_21630_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-26_21616_293
+ MENU LABEL mfc-12.1-qa-26_21616_293   BR:mainline 2011-11-30
+ KERNEL pxe-boot/mfc-12.1-qa-26_21616_293/vmlinuz-bootflop-mfc-12.1-qa-26_21616_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-26_21616_293/rootflop-mfc-12.1-qa-26_21616_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-26_21616_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-25_21565_293
+ MENU LABEL mfc-12.1-qa-25_21565_293   BR:mainline 2011-11-30
+ KERNEL pxe-boot/mfc-12.1-qa-25_21565_293/vmlinuz-bootflop-mfc-12.1-qa-25_21565_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-25_21565_293/rootflop-mfc-12.1-qa-25_21565_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-25_21565_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-23_21498_293
+ MENU LABEL mfc-12.1-qa-23_21498_293   BR:mainline 2011-11-28
+ KERNEL pxe-boot/mfc-12.1-qa-23_21498_293/vmlinuz-bootflop-mfc-12.1-qa-23_21498_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-23_21498_293/rootflop-mfc-12.1-qa-23_21498_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-23_21498_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-22_21466_293
+ MENU LABEL mfc-12.1-qa-22_21466_293   BR:mainline 2011-11-25
+ KERNEL pxe-boot/mfc-12.1-qa-22_21466_293/vmlinuz-bootflop-mfc-12.1-qa-22_21466_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-22_21466_293/rootflop-mfc-12.1-qa-22_21466_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-22_21466_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-21_21424_293
+ MENU LABEL mfc-12.1-qa-21_21424_293   BR:mainline 2011-11-23
+ KERNEL pxe-boot/mfc-12.1-qa-21_21424_293/vmlinuz-bootflop-mfc-12.1-qa-21_21424_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-21_21424_293/rootflop-mfc-12.1-qa-21_21424_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-21_21424_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-20_21416_293
+ MENU LABEL mfc-12.1-qa-20_21416_293   BR:mainline 2011-11-22
+ KERNEL pxe-boot/mfc-12.1-qa-20_21416_293/vmlinuz-bootflop-mfc-12.1-qa-20_21416_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-20_21416_293/rootflop-mfc-12.1-qa-20_21416_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-20_21416_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-19_21394_293
+ MENU LABEL mfc-12.1-qa-19_21394_293   BR:mainline 2011-11-22
+ KERNEL pxe-boot/mfc-12.1-qa-19_21394_293/vmlinuz-bootflop-mfc-12.1-qa-19_21394_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-19_21394_293/rootflop-mfc-12.1-qa-19_21394_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-19_21394_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-18_21388_293
+ MENU LABEL mfc-12.1-qa-18_21388_293   BR:mainline 2011-11-21
+ KERNEL pxe-boot/mfc-12.1-qa-18_21388_293/vmlinuz-bootflop-mfc-12.1-qa-18_21388_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-18_21388_293/rootflop-mfc-12.1-qa-18_21388_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-18_21388_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-17_21335_293
+ MENU LABEL mfc-12.1-qa-17_21335_293   BR:mainline 2011-11-18
+ KERNEL pxe-boot/mfc-12.1-qa-17_21335_293/vmlinuz-bootflop-mfc-12.1-qa-17_21335_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-17_21335_293/rootflop-mfc-12.1-qa-17_21335_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-17_21335_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-16_21324_293
+ MENU LABEL mfc-12.1-qa-16_21324_293   BR:mainline 2011-11-17
+ KERNEL pxe-boot/mfc-12.1-qa-16_21324_293/vmlinuz-bootflop-mfc-12.1-qa-16_21324_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-16_21324_293/rootflop-mfc-12.1-qa-16_21324_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-16_21324_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-15_21240_293
+ MENU LABEL mfc-12.1-qa-15_21240_293   BR:mainline 2011-11-16
+ KERNEL pxe-boot/mfc-12.1-qa-15_21240_293/vmlinuz-bootflop-mfc-12.1-qa-15_21240_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-15_21240_293/rootflop-mfc-12.1-qa-15_21240_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-15_21240_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-14_21226_293
+ MENU LABEL mfc-12.1-qa-14_21226_293   BR:mainline 2011-11-16
+ KERNEL pxe-boot/mfc-12.1-qa-14_21226_293/vmlinuz-bootflop-mfc-12.1-qa-14_21226_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-14_21226_293/rootflop-mfc-12.1-qa-14_21226_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-14_21226_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-13_21200_293
+ MENU LABEL mfc-12.1-qa-13_21200_293   BR:mainline 2011-11-15
+ KERNEL pxe-boot/mfc-12.1-qa-13_21200_293/vmlinuz-bootflop-mfc-12.1-qa-13_21200_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-13_21200_293/rootflop-mfc-12.1-qa-13_21200_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-13_21200_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-12_21186_293
+ MENU LABEL mfc-12.1-qa-12_21186_293   BR:mainline 2011-11-15
+ KERNEL pxe-boot/mfc-12.1-qa-12_21186_293/vmlinuz-bootflop-mfc-12.1-qa-12_21186_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-12_21186_293/rootflop-mfc-12.1-qa-12_21186_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-12_21186_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-11_21171_293
+ MENU LABEL mfc-12.1-qa-11_21171_293   BR:mainline 2011-11-14
+ KERNEL pxe-boot/mfc-12.1-qa-11_21171_293/vmlinuz-bootflop-mfc-12.1-qa-11_21171_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-11_21171_293/rootflop-mfc-12.1-qa-11_21171_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-11_21171_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-10_21146_293
+ MENU LABEL mfc-12.1-qa-10_21146_293   BR:mainline 2011-11-14
+ KERNEL pxe-boot/mfc-12.1-qa-10_21146_293/vmlinuz-bootflop-mfc-12.1-qa-10_21146_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-10_21146_293/rootflop-mfc-12.1-qa-10_21146_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-10_21146_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-9_21134_293
+ MENU LABEL mfc-12.1-qa-9_21134_293    BR:mainline 2011-11-12
+ KERNEL pxe-boot/mfc-12.1-qa-9_21134_293/vmlinuz-bootflop-mfc-12.1-qa-9_21134_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-9_21134_293/rootflop-mfc-12.1-qa-9_21134_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-9_21134_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-8_21131_293
+ MENU LABEL mfc-12.1-qa-8_21131_293    BR:mainline 2011-11-11
+ KERNEL pxe-boot/mfc-12.1-qa-8_21131_293/vmlinuz-bootflop-mfc-12.1-qa-8_21131_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-8_21131_293/rootflop-mfc-12.1-qa-8_21131_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-8_21131_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-7_21113_293
+ MENU LABEL mfc-12.1-qa-7_21113_293    BR:mainline 2011-11-10
+ KERNEL pxe-boot/mfc-12.1-qa-7_21113_293/vmlinuz-bootflop-mfc-12.1-qa-7_21113_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-7_21113_293/rootflop-mfc-12.1-qa-7_21113_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-7_21113_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-6_21102_293
+ MENU LABEL mfc-12.1-qa-6_21102_293    BR:mainline 2011-11-10
+ KERNEL pxe-boot/mfc-12.1-qa-6_21102_293/vmlinuz-bootflop-mfc-12.1-qa-6_21102_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-6_21102_293/rootflop-mfc-12.1-qa-6_21102_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-6_21102_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-5_21087_293
+ MENU LABEL mfc-12.1-qa-5_21087_293    BR:mainline 2011-11-10
+ KERNEL pxe-boot/mfc-12.1-qa-5_21087_293/vmlinuz-bootflop-mfc-12.1-qa-5_21087_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-5_21087_293/rootflop-mfc-12.1-qa-5_21087_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-5_21087_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-4_21032_293
+ MENU LABEL mfc-12.1-qa-4_21032_293    BR:mainline 2011-11-08
+ KERNEL pxe-boot/mfc-12.1-qa-4_21032_293/vmlinuz-bootflop-mfc-12.1-qa-4_21032_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-4_21032_293/rootflop-mfc-12.1-qa-4_21032_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-4_21032_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-3_21005_293
+ MENU LABEL mfc-12.1-qa-3_21005_293    BR:mainline 2011-11-07
+ KERNEL pxe-boot/mfc-12.1-qa-3_21005_293/vmlinuz-bootflop-mfc-12.1-qa-3_21005_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-3_21005_293/rootflop-mfc-12.1-qa-3_21005_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-3_21005_293 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.1-qa-2_20985_293
+ MENU LABEL mfc-12.1-qa-2_20985_293    BR:mainline 2011-11-04
+ KERNEL pxe-boot/mfc-12.1-qa-2_20985_293/vmlinuz-bootflop-mfc-12.1-qa-2_20985_293
+ APPEND initrd=pxe-boot/mfc-12.1-qa-2_20985_293/rootflop-mfc-12.1-qa-2_20985_293.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.1-qa-2_20985_293 installopt=,accept-eula,
+ IPAPPEND 3

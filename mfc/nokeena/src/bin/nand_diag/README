@@ -1,0 +1,28 @@
+Compile:
+-------
+cc -o ndiag -g nand_diag.c
+
+Usage:
+-----
+./ndiag -d <device name> -b <disk block size in bytes>
+	-p <disk page size in bytes> -s <start block> -n <number of blocks>
+	-m <test mode> -o <log file>
+
+    <device name> - the device path
+    <block size> - size of the block to be used in bytes
+    <page size> - size of the page to be used in bytes
+    <start block> - the block number to start with
+    <number of blocks> - number of blocks to test
+    <test mode> - one of the following tests (0 - 4)
+	        0: SEQ_FIXED - Write/Read a fixed pattern sequentially
+		1: SEQ_RANDOM - Write address as data sequentially,
+				Verify all blocks.
+				Write the inverse of address as data
+					sequentially, Verify all blocks.
+		2: SEQ_RANDOM_1PASS - Write address as data sequentially,
+				Verify all blocks
+		3: RAN_FIXED - Write/Read address as data sequentially;
+		4: RAN_RANDOM - Write address as data on random blocks and
+				then verify all the blocks
+    <log file> - path of the file to write errors
+

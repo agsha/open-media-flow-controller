@@ -1,0 +1,33 @@
+<?
+#
+# Filename:  get-mon-resourcepool.tem,v $
+# Date:      2008/01/05
+# Author:    
+#
+# (C) Copyright 2008 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<?
+#
+# Target for AJAX status update on mon-resourcepool page
+#
+?>
+
+<INCLUDE "tms-utils">
+<INCLUDE "mon-resourcepool-common">
+
+<html>
+<head>
+  <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+  <META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+</head>
+<body>
+
+<MON-RESOURCEPOOL-BODY>
+
+</body>
+</html>
+

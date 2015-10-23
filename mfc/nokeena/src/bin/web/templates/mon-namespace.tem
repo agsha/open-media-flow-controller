@@ -1,0 +1,53 @@
+<?
+#
+# Filename:  $Source: mon-namespace.tem,v $
+# Date:      $Date: 2009/01/05$
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "mon-namespace-common">
+
+<TMS-PAGE "Namespace">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "namespace"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Namespace Counters">
+   <CFG-FORM -div_id "namespace">
+   <input type="hidden" name="template" value="mon-namespace.tem"> 
+   </CFG-FORM>
+
+<div id="cntrArea"></div>
+
+<noscript>
+<MON-NAMESPACE-BODY>
+</noscript>
+
+<script type="text/javascript">
+    function cntrWrapper() {
+        getAjaxText ('<?=$ajax_mon_namespace_url?>','cntrArea')
+        setTimeout(cntrWrapper, 3000);
+    }
+    cntrWrapper();
+
+</script>
+<script type="text/javascript">
+function popup(mylink, windowname)
+{
+if (! window.focus)return true;
+var href;
+if (typeof(mylink) == 'string')
+   href=mylink;
+else
+   href=mylink.href;
+window.open(href, windowname,'resizable=yes,scrollbars=yes');
+return false;
+}
+</script>
+
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

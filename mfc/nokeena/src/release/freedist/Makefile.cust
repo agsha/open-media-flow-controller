@@ -1,0 +1,50 @@
+# The makefile $PROD_TREE_ROOT/src/release/freedist/Makefile runs make using
+# this Makefile.cust.
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+-include ${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT_LC}/src/release/freedist/Makefile.inc
+
+PROD_CUSTOMER_SRC_ROOT=${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT_LC}/src
+
+FREEDIST_OUTPUT_DIR=${PROD_OUTPUT_DIR}/freedist
+FULL_BUILD_DIR=${FREEDIST_OUTPUT_DIR}/build
+FULL_INSTALL_DIR=${FREEDIST_OUTPUT_DIR}/install
+FULL_RELEASE_DIR=${FREEDIST_OUTPUT_DIR}/release
+
+.PHONY: build install dir_dist_release install_version_files release
+
+build:
+	@echo FULL_BUILD_DIR=${FULL_BUILD_DIR}
+	@echo FULL_INSTALL_DIR=${FULL_INSTALL_DIR}
+	@echo FULL_RELEASE_DIR=${FULL_RELEASE_DIR}
+
+install: install_version_files
+
+dir_dist_release:
+	@if [ ! -d        ${FULL_INSTALL_DIR}/dist/release ] ; then \
+	  mkdir -m 755 -p ${FULL_INSTALL_DIR}/dist/release ; fi
+
+install_version_files: dir_dist_release
+	@echo Makefile.cust install_version_files
+	@rm -f ${FULL_INSTALL_DIR}/dist/release/mfc_version.txt
+	@rm -f ${FULL_INSTALL_DIR}/mfc_version.txt
+	@grep ^RELEASE_VER= ${PROD_CUSTOMER_SRC_ROOT}/mk/build_settings.dot > ${FULL_INSTALL_DIR}/mfc_version.txt
+	@grep ^CENTOS_VER= ${PROD_CUSTOMER_SRC_ROOT}/mk/build_settings.dot >> ${FULL_INSTALL_DIR}/mfc_version.txt
+	@if [ -f ${PROD_BUILD_OUTPUT_DIR}/release/build_version.sh ] ; then \
+	  . ${PROD_BUILD_OUTPUT_DIR}/release/build_version.sh ; \
+	  echo ID_1=`echo $${BUILD_ID} | cut -f1 -d_` >> ${FULL_INSTALL_DIR}/mfc_version.txt ; \
+	  echo ID_2=`echo $${BUILD_ID} | cut -f2 -d_ | cut -f1 -d+` >> ${FULL_INSTALL_DIR}/mfc_version.txt ; \
+	  echo ID_3=`echo $${BUILD_ID} | cut -f2 -d+` >> ${FULL_INSTALL_DIR}/mfc_version.txt ; \
+	else \
+	  echo No ${PROD_BUILD_OUTPUT_DIR}/release/build_version.sh ; \
+          cd ${PROD_CUSTOMER_SRC_ROOT} ; echo ID_1=`svn info | grep ^Revision: | cut -c11-` >> ${FULL_INSTALL_DIR}/mfc_version.txt ; \
+          cd ${PROD_TREE_ROOT}/src ; echo ID_2=`svn info | grep ^Revision: | cut -c11-` >> ${FULL_INSTALL_DIR}/mfc_version.txt ; \
+          echo ID_3= >> ${FULL_INSTALL_DIR}/mfc_version.txt ; \
+	fi
+	@cat ${FULL_INSTALL_DIR}/mfc_version.txt > ${FULL_INSTALL_DIR}/dist/release/mfc_version.txt
+	cat ${FULL_INSTALL_DIR}/mfc_version.txt
+
+release:
+	@ echo Makefile.cust release -- nothing to be done
+
+

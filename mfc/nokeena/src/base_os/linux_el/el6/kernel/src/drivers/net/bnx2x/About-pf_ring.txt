@@ -1,0 +1,2 @@
+Refer to nokeena/src/thirdparty/binary/pf_ring/About.txt for where 
+pf_ring.sh came from, and the ifdef HAVE_PF_RING changes in bnx2x_cmn.c.

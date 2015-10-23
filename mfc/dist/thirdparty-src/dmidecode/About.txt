@@ -1,0 +1,66 @@
+Downloaded from http://download.savannah.gnu.org/releases/dmidecode/
+Version 2.11 is the latest as of 2013-02-10
+  dmidecode-2.11.tar.gz.sig 19-Jan-2011 15:00 96  
+  dmidecode-2.11.tar.gz     19-Jan-2011 15:00 65K 
+
+This source is also archived in 
+   /data/archive/thirdparty/src/dmidecode/
+
+Dmidecode reports information about the system's hardware as described
+in the system BIOS according to the SMBIOS/DMI standard.
+
+The README and LICENSE file in this directory are from the 2.11 source.
+
+GPL license.  Version 2.
+
+To build--
+1: Extract the source files from the tar.gz file.
+2: Change dir into the directory created.
+3: Just run "make" to build dmidecode.  It is placed in the same dir.
+4: Put the binary in MFC SVN as: nokeena/src/thirdparty/binary/dmidecode/6/dmidecode 
+
+ tar zxf dmidecode-2.11.tar.gz
+ cd dmidecode-2.11
+ make
+ cp dmidecode $PROD_CUSTOMER_ROOT/nokeena/src/thirdparty/binary/dmidecode/6/dmidecode 
+
+
+The 2.11 version has copyright notices in these files:
+biosdecode.c: Copyright (C) 2000-2002 Alan Cox <alan@redhat.com>
+biosdecode.c: Copyright (C) 2002-2008 Jean Delvare <khali@linux-fr.org>
+dmidecode.c:  Copyright (C) 2000-2002 Alan Cox <alan@redhat.com>
+dmidecode.c:  Copyright (C) 2002-2010 Jean Delvare <khali@linux-fr.org>
+dmidecode.h:  Copyright (C) 2005-2008 Jean Delvare <khali@linux-fr.org>
+dmioem.c:     Copyright (C) 2007-2008 Jean Delvare <khali@linux-fr.org>
+dmioem.h:     Copyright (C) 2007-2008 Jean Delvare <khali@linux-fr.org>
+dmiopt.c:     Copyright (C) 2005-2008 Jean Delvare <khali@linux-fr.org>
+dmiopt.h:     Copyright (C) 2005-2008 Jean Delvare <khali@linux-fr.org>
+ownership.c:  Copyright (C) 2003-2005 Jean Delvare <khali@linux-fr.org>
+util.c:       Copyright (C) 2002-2010 Jean Delvare <khali@linux-fr>
+util.h:       Copyright (C) 2003-2010 Jean Delvare <khali@linux-fr.org>
+vpddecode.c:  Copyright (C) 2003-2007 Jean Delvare <khali@linux-fr.org>
+vpdopt.c:     Copyright (C) 2005-2007 Jean Delvare <khali@linux-fr.org>
+
+The copyright text from the 2.11 version dmidecode.c is as follows:
+ *   Copyright (C) 2000-2002 Alan Cox <alan@redhat.com>
+ *   Copyright (C) 2002-2010 Jean Delvare <khali@linux-fr.org>
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *
+ *   For the avoidance of doubt the "preferred form" of this code is one which
+ *   is in an open unpatent encumbered format. Where cryptographic key signing
+ *   forms part of the process of creating an executable the information
+ *   including keys needed to generate an equivalently functional executable
+ *   are deemed to be part of the source code.

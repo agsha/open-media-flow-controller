@@ -1,0 +1,211 @@
+#!/bin/sh
+#  Copyright 2008-2010 Juniper Networks
+#  All rights reserved.
+# This runs when the boot/rootfloppy starts up.
+# 1: Make /tmp be a large RAM disk.
+# 2: Create the devices /dev/sde and higher.
+# 3: Get install options from the boot cmd line.
+# 4: Do the automatic install when indicated.
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export PATH
+
+# The root filesystem is too small for our needs.
+# /tmp is where we create log files and have the manufacture files,
+# so make it a separate filesystem.
+mount -t tmpfs -o size=100M,mode=0777 tmpfs /tmp
+# /var/tmp also needs more space.
+# In particular /sbin/tpkg_query.sh needs more space.
+mount -t tmpfs -o size=100M,mode=0777 tmpfs /var/tmp
+
+LOGF=/tmp/S30_mfc_install.log
+
+
+# Setting the kernel log deamon to suppress messages of level 4 and above
+# (with option "-c 4" prevents attempted mounting of the CD-ROM causing
+# "Unable to identify CD-ROM format." being printed on the console
+# when there is no CD-ROM.
+#define	LOG_EMERG	0	/* system is unusable */
+#define	LOG_ALERT	1	/* action must be taken immediately */
+#define	LOG_CRIT	2	/* critical conditions */
+#define	LOG_ERR		3	/* error conditions */
+#define	LOG_WARNING	4	/* warning conditions */
+#define	LOG_NOTICE	5	/* normal but significant condition */
+#define	LOG_INFO	6	/* informational */
+#define	LOG_DEBUG	7	/* debug-level messages */
+
+killall klogd
+/sbin/klogd -c 4
+
+# ####################################################
+# The PXE boot cmdline can have these additional special items:
+#
+# installfrom=/mfg/david-1 installopt=accept-eula ip=172.18.172.247:172.18.172.57:172.18.172.1:255.255.255.0 BOOTIF=01-00-13-72-3c-33-c9 
+# 
+# The "installfrom=..." and "installopt=..." are our own invention.
+# Put these on the "append" line in the pxe-boot spec to pass this information
+# to our install script.
+# About installfrom=
+# It can be set to the full URL to get the file from, e.g.:
+#   installfrom=http://172.18.172.57/Automatic/david-1/
+# Or it can be set to just the path part, and the ip address is
+# determined automatically to be the ip addr of the pxe-server.
+#   installfrom=/Automatic/david-1
+# Or it can be not specified, and both the IP addr of the server
+# is determined automatically and the path from the initrd= path.
+#
+# Items in the installopt= string are comma delimited and cannot have spaces.
+# setting are:
+#   accept-eula    -- Do not show the EULA menu.
+#   auto-eth       -- Automatically do eth-setup with the ethsetup= setting.
+#   auto-install   -- Completely automatic install, not even log in.
+#   auto-reboot    -- When install completes, automatically reboot.
+#   auto-halt      -- When install completes, automatically halts.
+#   ethsetup=<eth-setup parameter>
+#   init-cache     -- Automatically do the install with init-cache
+#   keep-cache     -- Automatically do the install with keep-cache
+#   show-pxe-menu  -- Show the URL menu when was pxe-booted.
+#   Special options for manufacture:
+#     disk-layout= -- Specify the named disk-layout to use
+#     root-dev=    -- Specify the root dev (and pdev)
+#     hdd2-dev=    -- Specify the second dev (and pdev) for raid.
+#     eusb-dev=    -- Specify the eusb boot dev (and pdev)
+#     boot-from=   -- Specify eusb, root or raid.
+#     max-fs=      -- Maximum filesystem size on root drive.
+#     buf-part=    -- size, grow-weight, max for /nkn partition.
+#     cache-part=  -- size, grow-weight, max for cache partition.
+#     log-part=    -- size, grow-weight, max for /log partition.
+#     coredump-part=  -- size, grow-weight, max for /coredump partition.
+#
+# When in the pxe-boot spec has "IPAPPEND 3", it automatically appends
+# "ip=..." and "BOOTIF=..." to the cmdline.   This is the format it uses:
+# ip=<client-ip>:<boot-server-ip>:<gw-ip>:<netmask>
+#
+# BOOTIF=<hardware-address-of-boot-interface>
+#   where there are dashes instead of colons.
+# It seems that there is an extra leading octet that nees to be stripped.
+#
+# Note:
+# The "initrd=..." is standard on the pxe-boot cmdline. 
+# It is the rootflop image file path name.  E.g.
+# initrd=Automatic/david-1/rootflop-mfc-2.0.4-11673_184.img
+#
+
+INSTALL_IP_INFO=
+IOP_INSTALL_FROM=
+IOP_INSTALL_OPT=
+IOP_MAC_ADDR=
+IOP_ROOT_IMAGE=
+
+for ITEM in `cat /proc/cmdline`
+do
+  case ${ITEM} in 
+  installfrom=*) IOP_INSTALL_FROM=`echo ${ITEM} | cut -f2- -d=` ;;
+  installopt=*)  IOP_INSTALL_OPT=`echo ${ITEM} | cut -f2- -d=` ;;
+  ip=*)          INSTALL_IP_INFO=`echo ${ITEM} | cut -f2- -d=` ;;
+  BOOTIF=*)      
+    IOP_MAC_ADDR=`echo ${ITEM} | cut -f2 -d= | sed s/-/:/g`
+    # See if too many octets, and strip off of front if so.
+    case ${IOP_MAC_ADDR} in
+    *:*:*:*:*:*:*)
+      IOP_MAC_ADDR=`echo ${IOP_MAC_ADDR} | cut -f2- -d:`
+      ;;
+    esac
+    ;;
+  initrd=*) IOP_ROOT_IMAGE=`echo ${ITEM} | cut -f2- -d=` ;;
+  esac
+done
+IOP_MY_IP=`echo ${INSTALL_IP_INFO}     | cut -f1 -d:`
+IOP_SERVER_IP=`echo ${INSTALL_IP_INFO} | cut -f2 -d:`
+IOP_GW_IP=`echo ${INSTALL_IP_INFO}     | cut -f3 -d:`
+IOP_NET_MASK=`echo ${INSTALL_IP_INFO}  | cut -f4 -d:`
+IOP_DEFAULT_URL=
+case _${IOP_INSTALL_FROM} in
+_http://*)
+  IOP_DEFAULT_URL=${IOP_INSTALL_FROM}
+  ;;
+_/*)       
+  if [ ! -z "${IOP_SERVER_IP}" ] ; then
+    IOP_DEFAULT_URL=http://${IOP_SERVER_IP}${IOP_INSTALL_FROM}
+  fi
+  ;;
+_[a-zA-Z0-9]*)       
+  if [ ! -z "${IOP_SERVER_IP}" ] ; then
+    IOP_DEFAULT_URL=http://${IOP_SERVER_IP}/${IOP_INSTALL_FROM}
+  fi
+  ;;
+_) # Generate URL from IOP_ROOT_IMAGE and IOP_SERVER_IP
+  if [ ! -z "${IOP_SERVER_IP}" ] ; then
+    case ${IOP_ROOT_IMAGE} in
+    */rootflop*.img)
+      IOP_DEFAULT_URL=http://${IOP_SERVER_IP}/`echo ${IOP_ROOT_IMAGE} | sed "s#/rootflop#/image#"`
+      ;;
+    esac
+  fi
+  ;;
+esac
+
+echo IOP_INSTALL_FROM=${IOP_INSTALL_FROM} > /tmp/install-options.txt
+echo IOP_INSTALL_OPT=${IOP_INSTALL_OPT}  >> /tmp/install-options.txt
+echo IOP_MAC_ADDR=${IOP_MAC_ADDR}        >> /tmp/install-options.txt
+echo IOP_ROOT_IMAGE=${IOP_ROOT_IMAGE}    >> /tmp/install-options.txt
+echo IOP_MY_IP=${IOP_MY_IP}              >> /tmp/install-options.txt
+echo IOP_SERVER_IP=${IOP_SERVER_IP}      >> /tmp/install-options.txt
+echo IOP_GW_IP=${IOP_GW_IP}              >> /tmp/install-options.txt
+echo IOP_NET_MASK=${IOP_NET_MASK}        >> /tmp/install-options.txt
+echo IOP_DEFAULT_URL=${IOP_DEFAULT_URL}  >> /tmp/install-options.txt
+
+/sbin/overlay-manuf.sh
+RV=${?}
+if [ ${RV} -eq 2 ] ; then
+  echo ==================================================
+  echo Internal error, overlay-manuf.sh failed with ${RV}
+  echo ==================================================
+  echo Continuing anyway...
+  sleep 10
+fi
+
+SHOW_PXE_MENU=no
+# When AUTO_MODE is zero, then not doing special automatic install.
+AUTO_MODE=0
+if [ ! -z "${IOP_INSTALL_OPT}" ] ; then
+  for ITEM in `echo "${IOP_INSTALL_OPT}" | sed 's/,/ /g'`
+  do
+    [ "${ITEM}" = "show-pxe-menu" ] && SHOW_PXE_MENU=yes
+    [ "${ITEM}" = "auto-install" ]  && AUTO_MODE=10
+  done
+fi
+if [ "${SHOW_PXE_MENU}" = "no" -a -x /sbin/ifconfig -a -x /sbin/dmidecode ] ; then
+  # See if is special MAC addr and UUID for special VM installations.
+  MAC_ADDR=`/sbin/ifconfig eth0 | grep HWaddr | sed "/.*HWaddr /s///" | cut -f1 -d' '`
+  SUUID=`/sbin/dmidecode -s system-uuid`
+  case ${SUUID} in
+  00000001-0001-0001-0001-*)
+    # For Xen virtual machines it is required that the first 3 pairs in the
+    # MAC address be the sequence '00:16:3e', while for QEMU or KVM virtual
+    # machines it must be '52:54:00'.
+    # When the first part matches 52:54:00:00:00: or 00:16:3e:00:00:, then
+    # set AUTO_MODE to the last hex digit.
+    case ${MAC_ADDR} in
+    52:54:00:00:00:*|00:16:3e:00:00:*)
+      AUTO_MODE=`echo ${MAC_ADDR} | cut -c17`
+      ;;
+    esac
+    ;;
+  esac
+fi
+if [ "${AUTO_MODE}" != "0" ] ; then
+  MY_TTY=`tty`
+  date                  >> /tmp/autoinstall.log
+  echo MY_TTY=${MY_TTY} >> /tmp/autoinstall.log
+  ps -ef                >> /tmp/autoinstall.log
+  ls -l /tmp            >> /tmp/autoinstall.log
+  if [ -f /tmp/install-running-on ] ; then
+    echo The installation is running on another terminal: `cat /tmp/install-running-on`
+  else
+    echo ${MY_TTY} >> /tmp/install-running-on
+    echo ${AUTO_MODE} > /tmp/unattended-install
+    sh /sbin/automatic-install.sh ${AUTO_MODE} >> /tmp/autoinstall.log 2>&1 &
+    sleep 5
+  fi
+fi

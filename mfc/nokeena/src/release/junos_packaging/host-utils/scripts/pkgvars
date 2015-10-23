@@ -1,0 +1,19 @@
+#
+# Jvae pkg build vars and functions
+#
+# Copyright (c) 2013 Juniper Networks, Inc.
+# All rights reserved.
+#
+SIGKEYDIR=/etc/jcerts
+if [ ! -r ${SIGKEYDIR}/JuniperRootCA.pem ] ; then
+  SIGKEYDIR=/tmp/jcerts
+fi
+PKGBUILDDIR=${TMP_DIR}/junos
+PKGSRCTOPDIR=${JUNOS_PACKAGING_TOP_DIR}
+PKGBLDOBJDIR=$PKGBUILDDIR/package-scripts
+PKGBLDSRCDIR=$PKGBUILDDIR/release/rootdir
+HOST_OBJTOP_JUNOS=${JUNOS_PACKAGING_TOP_DIR}/buildroot
+
+md5=$PKGSRCTOPDIR/host-utils/scripts/md5
+sha1=$PKGSRCTOPDIR/host-utils/scripts/sha1
+

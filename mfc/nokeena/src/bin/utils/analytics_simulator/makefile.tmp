@@ -1,0 +1,30 @@
+#Makefile for the simulator
+#Author: Hrushikesh Paralikar
+
+
+TARGET=analytics_simulator
+CC=gcc
+SOURCES=nkn_core_engine.c nkn_bm.c nkn_am.c nkn_dm2.c nkn_am_hotness.c log_parser.c config_parser.c
+OBJECTS=$(SOURCES:.c=.o) 
+LDFLAGS=-lpthread `pkg-config --cflags --libs glib-2.0 gthread-2.0`
+CFLAGS=-Wall -g
+CFLAGS += -I/usr/lib64/glib-2.0/include -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) $(SOURCES) -o $(TARGET) $(LDFLAGS)
+
+%.o:%.c
+	$(CC) $(CFLAGS) -c $*.c
+
+clean:
+	rm *.o
+nkn_core_engine.o: nkn_core_engine.h nkn_global_defs.h log_parser.h config_parser.h
+nkn_bm.o: nkn_bm_api.h nkn_global_defs.h
+nkn_am.o: nkn_am_api.h nkn_global_defs.h
+nkn_dm2.o: nkn_dm2_api.h nkn_global_defs.h
+nkn_am_hotness.o: nkn_am_api.h
+config_parser.o: config_parser.h
+log_parser.o: log_parser.h
+# DO NOT DELETe

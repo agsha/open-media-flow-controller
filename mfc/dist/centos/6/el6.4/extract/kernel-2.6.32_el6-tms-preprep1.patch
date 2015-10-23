@@ -1,0 +1,27 @@
+--- kernel-2.6.32/SPECS/kernel.spec	2011-07-31 13:37:44.000000000 -0700
++++ kernel-2.6.32/SPECS/kernel.spec.tms	2012-08-01 08:57:18.386569901 -0700
+@@ -510,7 +510,7 @@ Obsoletes: kernel-smp
+ BuildRequires: module-init-tools, patch >= 2.5.4, bash >= 2.03, sh-utils, tar
+ BuildRequires: bzip2, findutils, gzip, m4, perl, make >= 3.78, diffutils, gawk
+ BuildRequires: gcc >= 3.4.2, binutils >= 2.12, redhat-rpm-config
+-BuildRequires: net-tools, patchutils, rpm-build >= 4.8.0-7
++BuildRequires: net-tools, patchutils
+ BuildRequires: xmlto, asciidoc
+ %if %{with_sparse}
+ BuildRequires: sparse >= 0.4.1
+@@ -960,6 +960,7 @@ find . \( -name "*.orig" -o -name "*~" \
+ 
+ %if %{signmodules}
+ cp %{SOURCE19} .
++date
+ cat <<EOF
+ ###
+ ### Now generating a PGP key pair to be used for signing modules.
+@@ -981,6 +982,7 @@ cat <<EOF
+ ### Key pair generated.
+ ###
+ EOF
++date
+ # if there're external keys to be included
+ if [ -s %{SOURCE19} ]; then
+ 	gpg --homedir . --no-default-keyring --keyring kernel.pub --import %{SOURCE19}

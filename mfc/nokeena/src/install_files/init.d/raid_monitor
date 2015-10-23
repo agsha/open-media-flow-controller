@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# raid_monitor     Startup script to start monitoring RAID devices
+# Note: The file src/base_os/common/script_files/customer.sh
+# runs "chkconfig --add" for this in the "firstboot_graft_2()" function
+#
+# chkconfig: 3 26 14
+# description: Raid Monitor
+
+# Source function library
+#. /etc/rc.d/init.d/functions
+
+START_SCRIPT=/opt/nkn/bin/raid_monitor.sh
+LOG_BASE=raid_monitor
+MSG="Starting RAID devices monitoring "
+
+start() {
+	echo -n "${MSG}"
+	sh -x ${START_SCRIPT} > /log/init/${LOG_BASE}.out.$$ 2>&1
+	cnt=0
+	files=`ls -lt /log/init/${LOG_BASE}.out.* | awk '{print $9}'`
+	for f in $files; do
+	    (( cnt++ ))
+	    if (( $cnt > 5 )); then
+		rm -f $f
+	    fi
+	done
+	echo " - done."
+}
+
+RETVAL=0
+case "$1" in
+start|restart|reload) start ;;
+stop|status) : ;;
+*)  echo "Usage: $0 start"
+    RETVAL=1
+    ;;
+esac
+
+exit ${RETVAL}

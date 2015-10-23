@@ -1,0 +1,12 @@
+CLISP
+* http://sourceforge.net/projects/clisp/
+* http://sourceforge.net/projects/clisp/files/latest/download
+* http://downloads.sourceforge.net/project/clisp/clisp/2.49/clisp-2.49.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fclisp%2F&ts=1401825126&use_mirror=softlayer-dal
+
+tar xvf /data/archive/thirdparty/build-machine-src/clisp/clisp-2.49.tar.bz2 
+cd clisp-2.49/
+ulimit -s 20000
+./configure --ignore-absence-of-libsigsegv 
+cd src
+make
+sudo make install

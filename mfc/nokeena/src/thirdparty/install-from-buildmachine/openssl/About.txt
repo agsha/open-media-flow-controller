@@ -1,0 +1,79 @@
+Downloaded from http://www.openssl.org/source/
+
+The source is in the MFC source tree as:
+  dist/build-machine/build-machine-src/openssl/openssl-1.0.1p.tar.gz
+The source is archived locally as:
+  /data/archive/thirdparty/build-machine-src/openssl/openssl-1.0.1p.tar.gz
+
+The latest openssl version needs to be compiled and installed on each build machine.
+
+    License is "OpenSSL License", which is "Apache-like".
+    The source is downloaded from http://www.openssl.org/source/
+    The versions that we have used are archived in:
+        /data/archive/thirdparty/build-machine-src/openssl/ 
+
+Get the latest source if needed and archive it there and update this list and instructions.
+
+    https://www.openssl.org/source/openssl-1.0.1p.tar.gz  (released 2015-07) (Latest as of 2015-07-24)
+                                  MD5=7563e92327199e0067ccd0f79f436976
+    https://www.openssl.org/source/old/1.0.1/openssl-1.0.1o.tar.gz (released 2015-06)
+    https://www.openssl.org/source/old/1.0.1/openssl-1.0.1n.tar.gz (released 2015-06)
+    https://www.openssl.org/source/old/1.0.1/openssl-1.0.1m.tar.gz (released 2015-03)
+                                  MD5=d143d1555d842a069cb7cc34ba745a06
+    https://www.openssl.org/source/old/1.0.1/openssl-1.0.1l.tar.gz (released 2015-02) (latest as of 2015-02-24)
+                                  MD5=cdb22925fc9bc97ccbf1e007661f2aa6
+    https://www.openssl.org/source/old/1.0.1/openssl-1.0.1e.tar.gz (released 2013-02) (latest as of 2013-12-09)
+    https://www.openssl.org/source/old/1.0.1/openssl-1.0.1c.tar.gz (released 2012-05)
+    https://www.openssl.org/source/old/1.0.1/openssl-1.0.0d.tar.gz (released 2011-02) 
+
+Extract the tar file in a new temp directory and configure, build and install it.
+
+mkdir /tmp/openssl-build
+cd /tmp/openssl-build
+tar zxvf /data/archive/thirdparty/build-machine-src/openssl/openssl-1.0.1p.tar.gz
+cd openssl-1.0.1p
+./config --prefix=/usr/local/openssl --openssldir=/usr/local/openssl/openssl -fPIC
+make
+make install
+
+
+
+
+As of 2015-07-24 ==========================================================
+https://www.openssl.org/source/
+The table below lists the latest releases for every branch.
+Old releases can be found at https://www.openssl.org/source/old.
+
+Alternatively, you can find all distribution tarballs in our FTP area,
+ftp://ftp.openssl.org/source/. A list of FTP mirror sites can be found here.
+Development snapshots can be found at ftp://ftp.openssl.org/snapshot/.
+We also maintain a clone at GitHub, https://github.com/openssl/openssl.
+   Bytes      Timestamp       Filename
+________ ____________________ ____________________________
+ 4560208 Jul  9 12:42:53 2015 openssl-1.0.1p.tar.gz (MD5) (SHA1) (SHA256) (PGP sign)
+ 5295447 Jul  9 12:42:53 2015 openssl-1.0.2d.tar.gz (MD5) (SHA1) (SHA256) (PGP sign)  [LATEST]
+ 3826891 Jun 11 14:35:48 2015 openssl-0.9.8zg.tar.gz (MD5) (SHA1) (PGP sign)
+ 4102101 Jun 11 14:35:48 2015 openssl-1.0.0s.tar.gz (MD5) (SHA1) (PGP sign)
+ 1425056 Jan  4 23:50:26 2015 openssl-fips-2.0.9.tar.gz (MD5) (SHA1) (PGP sign)
+ 1404226 Jan  4 23:50:26 2015 openssl-fips-ecp-2.0.9.tar.gz (MD5) (SHA1) (PGP sign)
+
+
+
+https://www.openssl.org/source/old/1.0.1/
+Old 1.0.1 Releases
+The table below lists the outdated 1.0.1 releases.
+   Bytes      Timestamp       Filename
+________ ____________________ ____________________________
+ 4546659 Jun 12 15:30:51 2015 openssl-1.0.1o.tar.gz (MD5) (SHA1) (PGP sign)
+ 4545564 Jun 11 14:35:48 2015 openssl-1.0.1n.tar.gz (MD5) (SHA1) (PGP sign)
+ 4533406 Mar 19 13:53:47 2015 openssl-1.0.1m.tar.gz (MD5) (SHA1) (PGP sign)
+ 4429979 Jan 15 15:21:02 2015 openssl-1.0.1l.tar.gz (MD5) (SHA1) (PGP sign)
+ 4434910 Jan  8 15:01:56 2015 openssl-1.0.1k.tar.gz (MD5) (SHA1) (PGP sign)
+ 4432964 Oct 15 13:24:39 2014 openssl-1.0.1j.tar.gz (MD5) (SHA1) (PGP sign)
+ 4422117 Aug  6 21:56:45 2014 openssl-1.0.1i.tar.gz (MD5) (SHA1) (PGP sign)
+ 4475692 Jun  5 11:24:28 2014 openssl-1.0.1h.tar.gz (MD5) (SHA1) (PGP sign)
+ 4509047 Apr  7 17:21:29 2014 openssl-1.0.1g.tar.gz (MD5) (SHA1) (PGP sign)
+ 4509212 Jan  6 14:39:19 2014 openssl-1.0.1f.tar.gz (MD5) (SHA1) (PGP sign)
+ 4459777 Feb 11 15:34:23 2013 openssl-1.0.1e.tar.gz (MD5) (SHA1) (PGP sign)
+ 4459791 Feb  5 12:17:07 2013 openssl-1.0.1d.tar.gz (MD5) (SHA1) (PGP sign)
+ 4457113 May 10 15:20:24 2012 openssl-1.0.1c.tar.gz (MD5) (SHA1) (PGP sign)

@@ -1,0 +1,36 @@
+<?
+#
+# Filename:  dashboard-ns.tem
+# Date:      2009/04/09
+# Author:    Sasmita
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+
+#
+?>
+<INCLUDE "dashboard-layout">
+<TMS-PAGE "Namespace Report">
+<TMS-MENU "dashboard">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-DASHBOARD-MENU "ns-report"></TMS-DASHBOARD-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Namespace Report">
+
+
+<table border="0" width="100%"><tr><td>
+<table align="left" width="100%" border="1" cellpadding="1">
+    <tr><td>
+       <iframe src="\" width="900px" height="280px" frameborder="0" id="nsr_fr"></iframe>
+    </td></tr>
+</table>
+</td></tr></table>
+
+
+<script type="text/javascript">
+        startupdate_namespace_report();
+</script>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

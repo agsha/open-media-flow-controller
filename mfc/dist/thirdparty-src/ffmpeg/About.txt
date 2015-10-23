@@ -1,0 +1,23 @@
+FFMPEG svn revision 26402, downloaded 2009-07-21:
+1: Downloaded the source from the ffmpeg.org Subersion server:
+     svn checkout svn://svn.ffmpeg.org/ffmpeg/trunk .
+   This checked out revision 26402.
+2: Removed the .svn directories and put the downloaded tree into the subdir
+   "ffmpeg-r26402" and create the source archive ffmpeg-r26402.tgz from it.
+3: Copy ffmpeg-r26402.tgz (and the LICENSE and COPYING* files from it, and this
+   About.txt file) to the MFC SVN repository in dist/thirdparty-src/ffmpeg/
+4: Configured and built on the build machine:
+   ./configure --enable-static --disable-shared --enable-libx264 --enable-gpl --enable-pthreads --disable-indevs --disable-outdevs
+   make
+5: Copy the binary "ffmpeg" to the MFC SVN tree:
+     nokeena/src/thirdparty/binary/ffmpeg/
+6: Copy the "ffpresets/*" files there as well.
+
+----
+The license files (LICENSE and COPYING*) are from the ffmpeg-r26402.tgz
+----
+ffmpeg-r26402.tgz was created this way:
+ svn co svn://cmbu-svn01.juniper.net/thirdpartyall/vendors/ffmpeg/svn-r26402
+ find svn-r26402 -name .svn | xargs rm -rf
+ mv svn-r26402 ffmpeg-r26402
+ tar zcvf ffmpeg-r26402.tgz ffmpeg-r26402

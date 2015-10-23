@@ -1,0 +1,49 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-2.0.9
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-2.0.9-5_19425_247
+ MENU LABEL mfc-2.0.9-5_19425_247      BR:conejos 2011-09-16
+ KERNEL pxe-boot/mfc-2.0.9-5_19425_247/vmlinuz-bootflop-mfc-2.0.9-5_19425_247
+ APPEND initrd=pxe-boot/mfc-2.0.9-5_19425_247/rootflop-mfc-2.0.9-5_19425_247.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-2.0.9-5_19425_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.0.9-4_19240_247
+ MENU LABEL mfc-2.0.9-4_19240_247      BR:conejos 2011-09-12
+ KERNEL pxe-boot/mfc-2.0.9-4_19240_247/vmlinuz-bootflop-mfc-2.0.9-4_19240_247
+ APPEND initrd=pxe-boot/mfc-2.0.9-4_19240_247/rootflop-mfc-2.0.9-4_19240_247.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-2.0.9-4_19240_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.0.9-3_19094_247
+ MENU LABEL mfc-2.0.9-3_19094_247      BR:conejos 2011-08-31
+ KERNEL pxe-boot/mfc-2.0.9-3_19094_247/vmlinuz-bootflop-mfc-2.0.9-3_19094_247
+ APPEND initrd=pxe-boot/mfc-2.0.9-3_19094_247/rootflop-mfc-2.0.9-3_19094_247.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-2.0.9-3_19094_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.0.9-2_18819_247
+ MENU LABEL mfc-2.0.9-2_18819_247      BR:conejos 2011-08-22
+ KERNEL pxe-boot/mfc-2.0.9-2_18819_247/vmlinuz-bootflop-mfc-2.0.9-2_18819_247
+ APPEND initrd=pxe-boot/mfc-2.0.9-2_18819_247/rootflop-mfc-2.0.9-2_18819_247.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-2.0.9-2_18819_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.0.9-1_18710_247
+ MENU LABEL mfc-2.0.9-1_18710_247      BR:conejos 2011-08-18
+ KERNEL pxe-boot/mfc-2.0.9-1_18710_247/vmlinuz-bootflop-mfc-2.0.9-1_18710_247
+ APPEND initrd=pxe-boot/mfc-2.0.9-1_18710_247/rootflop-mfc-2.0.9-1_18710_247.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-2.0.9-1_18710_247 installopt=,accept-eula,
+ IPAPPEND 3

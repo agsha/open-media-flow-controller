@@ -1,0 +1,43 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-2.3.0
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-2.3.0-zm-9_19138_247
+ MENU LABEL mfc-2.3.0-zm-9_19138_247   BR:denali 2011-09-05
+ KERNEL pxe-boot/mfc-2.3.0-zm-9_19138_247/vmlinuz-bootflop-mfc-2.3.0-zm-9_19138_247
+ APPEND initrd=pxe-boot/mfc-2.3.0-zm-9_19138_247/rootflop-mfc-2.3.0-zm-9_19138_247.img        installfrom=pxe/pxe-boot/mfc-2.3.0-zm-9_19138_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.3.0-zm-8_19129_247
+ MENU LABEL mfc-2.3.0-zm-8_19129_247   BR:denali 2011-09-04
+ KERNEL pxe-boot/mfc-2.3.0-zm-8_19129_247/vmlinuz-bootflop-mfc-2.3.0-zm-8_19129_247
+ APPEND initrd=pxe-boot/mfc-2.3.0-zm-8_19129_247/rootflop-mfc-2.3.0-zm-8_19129_247.img        installfrom=pxe/pxe-boot/mfc-2.3.0-zm-8_19129_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.3.0-zm-7_19128_247
+ MENU LABEL mfc-2.3.0-zm-7_19128_247   BR:denali 2011-09-03
+ KERNEL pxe-boot/mfc-2.3.0-zm-7_19128_247/vmlinuz-bootflop-mfc-2.3.0-zm-7_19128_247
+ APPEND initrd=pxe-boot/mfc-2.3.0-zm-7_19128_247/rootflop-mfc-2.3.0-zm-7_19128_247.img        installfrom=pxe/pxe-boot/mfc-2.3.0-zm-7_19128_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.3.0-zm-6_19121_247
+ MENU LABEL mfc-2.3.0-zm-6_19121_247   BR:denali 2011-09-02
+ KERNEL pxe-boot/mfc-2.3.0-zm-6_19121_247/vmlinuz-bootflop-mfc-2.3.0-zm-6_19121_247
+ APPEND initrd=pxe-boot/mfc-2.3.0-zm-6_19121_247/rootflop-mfc-2.3.0-zm-6_19121_247.img        installfrom=pxe/pxe-boot/mfc-2.3.0-zm-6_19121_247 installopt=,accept-eula,
+ IPAPPEND 3

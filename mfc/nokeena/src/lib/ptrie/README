@@ -1,0 +1,21 @@
+#
+# Build 
+#  ptrie_test - Ptrie test cases
+#  dump_ptckpt - Dump Ptrie checkpoint file
+#
+
+1) Perform a standard build before executing the following.
+
+2) Insure ${PROD_CUSTOMER_ROOT} and $(PROD_OUTPUT_ROOT) are exported.
+
+3) MAKE -f Makefile-other
+
+# ptrie_test notes
+#   - ./ptrie_test -- Runs all unit tests.   
+#     Prior to starting the test issue the following "rm -rf CKP-*" command.
+#     Insure that this is run on a local file system (NFS killer) with
+#     at least 3 GB of freespace.
+#
+#   - ./ptrie_test -1 -- Reader/Update thread test
+#   - ./ptrie_test -2 -- Reader thread test
+#

@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# rpcbind         This shell script takes care of starting and stopping
+#                 rpcbind 
+#
+# chkconfig: 345 30 87
+# description: rpcbind port remap service
+# that is used to resolve host names to IP addresses.
+# probe: true
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+if [ -n "$ROOTDIR" ]; then
+   ROOTDIR=`echo $ROOTDIR | sed 's#//*#/#g;s#/$##'`;
+   rdl=`/usr/bin/readlink $ROOTDIR`;
+   if [ -n "$rdl" ]; then
+      ROOTDIR="$rdl";
+   fi;
+fi
+
+RETVAL=0
+rpcbind='rpcbind'
+prog=$rpcbind
+
+start() {
+
+	[ -x /sbin/$rpcbind ] || exit 5
+
+        # Start daemons.
+        echo -n $"Starting $rpcbind: "
+	if [ -n "`/sbin/pidof -o %PPID $rpcbind`" ]; then
+		echo -n $"$rpcbind: already running"
+		failure
+		echo
+		return 1
+	fi
+
+	daemon /sbin/$rpcbind
+	RETVAL=$?
+	return $RETVAL
+	echo
+	return $RETVAL
+}
+stop() {
+        # Stop daemons.
+        echo -n $"Stopping $rpcbind: "
+	killproc "$rpcbind" -TERM >/dev/null 2>&1
+
+	RETVAL=0
+	echo
+	return $RETVAL
+}
+
+restart() {
+        stop
+        start
+}
+
+reload() {
+        start
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        stop
+        start
+        ;;
+  reload)
+        reload
+        ;;
+  status)
+        lsmod
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|reload|restart}"
+        exit 1
+        ;;
+esac
+
+exit $?
+
+

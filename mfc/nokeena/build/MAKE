@@ -1,0 +1,65 @@
+:
+# Run make as root with the MFC or MFN build environment set up.
+#
+
+MY_DIR=`dirname "${0}"`
+case "${MY_DIR}" in
+/*)   ;;
+../*) MY_DIR=`pwd`/.. ;;
+.|./) MY_DIR=`pwd` ;;
+*) MY_DIR=`pwd`/"${MY_DIR}" ;;
+esac    
+
+# The mf_env_funcs.dot files defines the functions:
+#   Get_Env_Settings_From_File()
+#   Validate_PROD()
+#   Set_Defaults()
+#   Validate_PROD_TREE_ROOT_From_Source_Tree()
+#   Set_NKN_Env_From_Source_Tree()
+#   Make_ENVS()
+#   efVprint() -- used in Set_NKN_Env_From_Source_Tree()
+#      When VERBOSE_EFST=yes, then it logs extra info
+#      to stdout and the ${LOG_FILE}.
+#
+EF=${MY_DIR}/mf_env_funcs.dot
+if [ ! -f "${EF}" ] ; then
+    echo Error, no ${EF}
+    exit 1
+fi
+. ${EF}
+VERBOSE_EFST=no
+
+# Get settings from file :env.sh
+Get_Env_Settings_From_File
+
+# Set some default PROD_*, NKN_BUILD_*, BUILD_* and REAL_USER settings.
+Validate_PROD
+Set_Defaults
+Validate_PROD_TREE_ROOT_From_Source_Tree
+
+# The Set_NKN_Env_From_Source_Tree() functions sets:
+# Always sets:
+#   NKN_BUILD_SCM_INFO_SHORT
+#   NKN_BUILD_SCM_INFO
+# Sets if not already set:
+#   NKN_BUILD_PROD_RELEASE
+#   NKN_BUILD_ID
+#   NKN_BUILD_NUMBER
+Set_NKN_Env_From_Source_Tree
+
+# Create a string with all the PROD_*, NKN_BUILD_*, BUILD_* and REAL_USER
+# settings for the command line.
+Make_ENVS
+
+TF=/tmp/${REAL_USER}.$$.tmp
+VERBOSE=no
+ARG1=${1}
+if [ "_${ARG1}" = "_-v" ] ; then
+    shift
+    VERBOSE=yes
+fi
+ARG1=make
+
+COMMAND_LINE="${MY_DIR}/samara-sudo-env ${ENVS} ${ARG1} ${@}"
+[ "${VERBOSE}" = "yes" ] && echo sudo "${COMMAND_LINE}"
+sudo ${COMMAND_LINE}

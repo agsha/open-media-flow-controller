@@ -1,0 +1,76 @@
+<?
+# (C) Copyright 2015 Juniper Networks
+# All rights reserved.
+#
+# A place holder file that is meant to be replaced by one in the
+# customer directory .../tree/src/bin/web/templates/customer-defines.tem
+?>
+
+<SET color_page_header          #11ef11>
+<SET color_page_background      #ffffff>
+<SET color_main_pane         	#D3D3D3>
+<SET color_tab_unselected       $color_page_background>
+<SET color_tab_selected         $color_main_pane>
+<SET color_main_pane_dark1      #cacce6>
+<SET color_main_pane_dark2      #bdbdc6>
+<SET color_brown_text           #944507>
+<SET color_red_text             #ff5555>
+<SET color_sidebar_bg           #b2b2b2>
+<SET color_sidebar_text_sel     #ffffff>
+<SET color_sidebar_text_unsel   #000000>
+<SET color_sidebar_text         #5555ee>
+<SET color_error_text           #ee5555>
+<SET color_success_text         #228b22>
+<SET node_unsaved_changes       "/mgmtd/db/info/running/unsaved_changes">
+<SET width_form_indent          20>
+<SET graph_height               260>
+
+<SET autologout_url             "/admin/launch?script=rh&amp;template=logout&amp;action=logout&amp;auto=t">
+
+<SET logout_url                 "/admin/launch?script=rh&amp;template=logout&amp;action=logout">
+<SET logout_reboot_url          "/admin/launch?script=rh&amp;template=logout-reboot&amp;action=logout">
+<SET logout_shutdown_url        "/admin/launch?script=rh&amp;template=logout-reboot&amp;action=logout&amp;shutdown=t">
+<SET login_url                  "/admin/launch?script=rh&amp;template=login">
+<SET ajax_status_url            "/admin/launch?script=rh&template=get-cluster-status">
+<SET ajax_mon_summary_url       "/admin/launch?script=rh&template=get-mon-summary">
+<SET ajax_mon_stats_url         "/admin/launch?script=rh&template=get-mon-stats">
+<SET ajax_logging_url           "/admin/launch?script=rh&template=get-log-lines">
+<SET ajax_servicelog_url        "/admin/launch?script=rh&template=get-servicelog-lines">
+<SET ajax_cachelog_url          "/admin/launch?script=rh&template=get-cachelog-lines">
+<SET ajax_tracelog_url          "/admin/launch?script=rh&template=get-tracelog-lines">
+<SET ajax_streamlog_url         "/admin/launch?script=rh&template=get-streamlog-lines">
+<SET ajax_fuselog_url           "/admin/launch?script=rh&template=get-fuselog-lines">
+<SET ajax_fmsaccesslog_url      "/admin/launch?script=rh&template=get-fmsaccesslog-lines">
+<SET ajax_fmsedgelog_url        "/admin/launch?script=rh&template=get-fmsedgelog-lines">
+<SET ajax_errorlog_url          "/admin/launch?script=rh&template=get-errorlog-lines">
+<SET ajax_publishlog_url        "/admin/launch?script=rh&template=get-publishlog-lines">
+<SET reboot_url                 "/admin/launch?script=rh&amp;template=setup-reboot">
+<SET ajax_mon_resourcepool_url  "/admin/launch?script=rh&template=get-mon-resourcepool">
+<SET ajax_mon_namespace_url     "/admin/launch?script=rh&template=get-mon-namespace">
+<SET ajax_mon_ns_url		"/admin/launch?script=rh&template=get-mon-ns">
+<SET ajax_mfp_nfs_list_url	"/admin/launch?script=rh&template=mfp-nfs-list">
+
+<SET company_name               "Juniper Networks">
+<SET console_banner             "Media Flow Controller Management Console">
+<SET banner_logo_src            "/images/logo.jpg">
+<SET banner_logo_width          66>
+<SET banner_logo_height         66>
+
+<SET mon_main_tab               "mon-summary">
+<SET servicecfg_tab             "servicecfg-network">
+<SET dashboard_tab              "dashboard-dashboard">
+<SET reports_tab                "reports-intf">
+<SET mfp_tab			"mfp-config">
+<SET ref_ui_graph_ver 2>
+
+<?
+# These settings are for the copyright line at the bottom of the pages.
+# NOTE: When the Copyright Year Needs Changing, two files need updating.
+# These are:
+#   include/customer.h
+#   bin/web/templates/customer-defines.tem
+# See notes about "Copyright Year" changes in mk/customer.mk.
+?>
+<SET company_legal              "Juniper Networks, Inc.">
+<SET copyright_range            "2008-2015">
+<SET company_url                "http://www.juniper.net">

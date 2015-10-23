@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+#	File : clear_pbrs_from_router
+#	Purpose : Wrapper script for clear_filter_rules.py
+#
+#	Author : Sivakumar Gurumurthy
+#	
+#	(C) Copyright 2014 Juniper Networks, Inc.
+#	All Rights Reserved
+#
+
+# Local Environment Variables
+RETVAL=0;
+ROOT_DIR=/opt/dpi-analyzer
+SCRIPT_DIR=$ROOT_DIR/scripts
+	
+# Start the server process
+runserver() {
+	cd $ROOT_DIR; \
+	source bin/activate;\
+	export HOME=/var/home/root;\
+	cd $SCRIPT_DIR;\
+	python clear_filter_rules.py $1
+	RETVAL= $?
+}
+
+#
+# MAIN LOGIC BEGINS HERE
+#
+if [ $# -eq 1 ]; then
+	runserver $1
+fi
+
+exit $RETVAL
+
+
+# End of clear_pbrs_from_router

@@ -1,0 +1,34 @@
+#
+# Update package requirement review script
+#
+# The +REQUIRE script is created from these source parts:
+#  1. package-scripts/script-header
+#  2. package-scripts/script-func
+#  3. my-script-header
+#  4. This file
+
+# This flag tells us that the package has the new script-header -based
+# variable facility.
+
+%PRODUCTNAME%_works=1
+
+# We can only hope to be interoperable within a major release.
+%PRODUCTNAME%_major=%RELEASE%
+
+if [ -z "$PKG_SETUP_VARIABLES_ONLY" -a  -z "$PKG_BOOTSTRAP" ]; then
+    initialize "$@"
+
+    if [ "$instance" = "INSTALL" ] ; then
+       
+	 storage_check 2048 /packages
+        
+    fi
+
+    exit $fail
+fi
+
+#
+# There's should not be an exit statement here, since this file
+# is '.'d (using the dot_file function) by other packages'
+# REQUIRE and INSTALL scripts.
+#

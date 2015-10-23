@@ -1,0 +1,222 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE Menu: Developer builds
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL davey-scl66-0713
+ MENU LABEL davey-scl66-0713 mfc-15.0.0-30606_446+1-davey 2015-07-09
+ KERNEL pxe-boot/davey-scl66-0713/vmlinuz-bootflop-mfc-15.0.0-30606_446+1-davey
+ APPEND initrd=pxe-boot/davey-scl66-0713/rootflop-mfc-15.0.0-30606_446+1-davey.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/davey-scl66-0713 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL davey-scl66-071815
+ MENU LABEL davey-scl66-build-071815 mfc-15.0.0-000000_000+0-nobody 2015-07-18
+ KERNEL pxe-boot/davey-scl66-071815/vmlinuz-bootflop-mfc-15.0.0-000000_000+0-nobody
+ APPEND initrd=pxe-boot/davey-scl66-071815/rootflop-mfc-15.0.0-000000_000+0-nobody.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/davey-scl66-071815 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL davey-scl66-1-B1
+ MENU LABEL davey-scl66-1-B1 mfc-15.0.0-30590_439+1-davey 2015-06-29
+ KERNEL pxe-boot/davey-scl66-1-B1/vmlinuz-bootflop-mfc-15.0.0-30590_439+1-davey
+ APPEND initrd=pxe-boot/davey-scl66-1-B1/rootflop-mfc-15.0.0-30590_439+1-davey.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/davey-scl66-1-B1 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL davey-scl66-build
+ MENU LABEL davey-scl66-build mfc-15.0.0-000000_000+0-nobody 2015-07-14
+ KERNEL pxe-boot/davey-scl66-build/vmlinuz-bootflop-mfc-15.0.0-000000_000+0-nobody
+ APPEND initrd=pxe-boot/davey-scl66-build/rootflop-mfc-15.0.0-000000_000+0-nobody.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/davey-scl66-build installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL davey-scl66
+ MENU LABEL davey-scl66 mfc-15.0.0-30590_437+2-davey 2015-06-29
+ KERNEL pxe-boot/davey-scl66/vmlinuz-bootflop-mfc-15.0.0-30590_437+2-davey
+ APPEND initrd=pxe-boot/davey-scl66/rootflop-mfc-15.0.0-30590_437+2-davey.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/davey-scl66 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL dpeet-cve-2015-0235
+ MENU LABEL dpeet-cve-2015-0235 mfc-12.3.10-30481_402+3-dpeet 2015-01-29
+ KERNEL pxe-boot/dpeet-cve-2015-0235/vmlinuz-bootflop-mfc-12.3.10-30481_402+3-dpeet
+ APPEND initrd=pxe-boot/dpeet-cve-2015-0235/rootflop-mfc-12.3.10-30481_402+3-dpeet.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/dpeet-cve-2015-0235 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL dpeet-newer
+ MENU LABEL dpeet-newer mfc-12.3.10-30471_407+3-dpeet 2015-01-12
+ KERNEL pxe-boot/dpeet-newer/vmlinuz-bootflop-mfc-12.3.10-30471_407+3-dpeet
+ APPEND initrd=pxe-boot/dpeet-newer/rootflop-mfc-12.3.10-30471_407+3-dpeet.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/dpeet-newer installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+
+LABEL dpeet-pr
+ MENU LABEL dpeet-pr mfc-12.3.10-30450_402+4-dpeet 2014-12-15
+ KERNEL pxe-boot/dpeet-pr/vmlinuz-bootflop-mfc-12.3.10-30450_402+4-dpeet
+ APPEND initrd=pxe-boot/dpeet-pr/rootflop-mfc-12.3.10-30450_402+4-dpeet.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/dpeet-pr installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL dpeet-scl66-2
+ MENU LABEL dpeet-scl66-2 mfc-15.0.0-30591_437-dpeet 2015-06-26
+ KERNEL pxe-boot/dpeet-scl66-2/vmlinuz-bootflop-mfc-15.0.0-30591_437-dpeet
+ APPEND initrd=pxe-boot/dpeet-scl66-2/rootflop-mfc-15.0.0-30591_437-dpeet.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/dpeet-scl66-2 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL dpeet-scl66
+ MENU LABEL dpeet-scl66 mfc-15.0.0-30587_420+22-dpeet 2015-06-25
+ KERNEL pxe-boot/dpeet-scl66/vmlinuz-bootflop-mfc-15.0.0-30587_420+22-dpeet
+ APPEND initrd=pxe-boot/dpeet-scl66/rootflop-mfc-15.0.0-30587_420+22-dpeet.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/dpeet-scl66 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL jjeya-client_headers-final
+ MENU LABEL jjeya-client_headers-final mfc-12.3.7-29713_371+12-jjeya 2014-03-03
+ KERNEL pxe-boot/jjeya-client_headers-final/vmlinuz-bootflop-mfc-12.3.7-29713_371+12-jjeya
+ APPEND initrd=pxe-boot/jjeya-client_headers-final/rootflop-mfc-12.3.7-29713_371+12-jjeya.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/jjeya-client_headers-final installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL jjeya-client_headers
+ MENU LABEL jjeya-client_headers mfc-12.3.7-29713_371+12-jjeya 2014-03-01
+ KERNEL pxe-boot/jjeya-client_headers/vmlinuz-bootflop-mfc-12.3.7-29713_371+12-jjeya
+ APPEND initrd=pxe-boot/jjeya-client_headers/rootflop-mfc-12.3.7-29713_371+12-jjeya.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/jjeya-client_headers installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL jjeya-crawler-domain
+ MENU LABEL jjeya-crawler-domain mfc-12.3.8-30006_388+9-jjeya 2014-05-09
+ KERNEL pxe-boot/jjeya-crawler-domain/vmlinuz-bootflop-mfc-12.3.8-30006_388+9-jjeya
+ APPEND initrd=pxe-boot/jjeya-crawler-domain/rootflop-mfc-12.3.8-30006_388+9-jjeya.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/jjeya-crawler-domain installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL jjeya-dpiurlfilt
+ MENU LABEL jjeya-dpiurlfilt mfc-12.3.7uf-29894_371+6-jjeya 2014-04-12
+ KERNEL pxe-boot/jjeya-dpiurlfilt/vmlinuz-bootflop-mfc-12.3.7uf-29894_371+6-jjeya
+ APPEND initrd=pxe-boot/jjeya-dpiurlfilt/rootflop-mfc-12.3.7uf-29894_371+6-jjeya.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/jjeya-dpiurlfilt installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL jjeya-filt-counter-lite
+ MENU LABEL jjeya-filt-counter-lite mfc-12.3.8-30137_388+234-jjeya 2014-06-24
+ KERNEL pxe-boot/jjeya-filt-counter-lite/vmlinuz-bootflop-mfc-12.3.8-30137_388+234-jjeya
+ APPEND initrd=pxe-boot/jjeya-filt-counter-lite/rootflop-mfc-12.3.8-30137_388+234-jjeya.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/jjeya-filt-counter-lite installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL jjeya-filt-counter
+ MENU LABEL jjeya-filt-counter mfc-12.3.8-30136_388+23-jjeya 2014-06-24
+ KERNEL pxe-boot/jjeya-filt-counter/vmlinuz-bootflop-mfc-12.3.8-30136_388+23-jjeya
+ APPEND initrd=pxe-boot/jjeya-filt-counter/rootflop-mfc-12.3.8-30136_388+23-jjeya.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/jjeya-filt-counter installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL jjeya-jjtest
+ MENU LABEL jjeya-jjtest mfc-12.3.7-29740_388+7-jjeya 2014-03-15
+ KERNEL pxe-boot/jjeya-jjtest/vmlinuz-bootflop-mfc-12.3.7-29740_388+7-jjeya
+ APPEND initrd=pxe-boot/jjeya-jjtest/rootflop-mfc-12.3.7-29740_388+7-jjeya.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/jjeya-jjtest installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL jjeya-pacifica-res
+ MENU LABEL jjeya-pacifica-res resiliency_test 2015-01-22
+ KERNEL pxe-boot/jjeya-pacifica-res/vmlinuz-bootflop-mfc-12.3.10-30480_407+18-jjeya
+ APPEND initrd=pxe-boot/jjeya-pacifica-res/rootflop-mfc-12.3.10-30480_407+18-jjeya.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/jjeya-pacifica-res installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL jjeya-url-filt
+ MENU LABEL jjeya-url-filt mfc-12.3.8-30061_388+24-jjeya 2014-05-26
+ KERNEL pxe-boot/jjeya-url-filt/vmlinuz-bootflop-mfc-12.3.8-30061_388+24-jjeya
+ APPEND initrd=pxe-boot/jjeya-url-filt/rootflop-mfc-12.3.8-30061_388+24-jjeya.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/jjeya-url-filt installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL sarink-12.3.7-jcf-gw-D13
+ MENU LABEL sarink-12.3.7-jcf-gw-D13 mfc-12.3.7-29716_371+8-sarink 2014-02-25
+ KERNEL pxe-boot/sarink-12.3.7-jcf-gw-D13/vmlinuz-bootflop-mfc-12.3.7-29716_371+8-sarink
+ APPEND initrd=pxe-boot/sarink-12.3.7-jcf-gw-D13/rootflop-mfc-12.3.7-29716_371+8-sarink.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/sarink-12.3.7-jcf-gw-D13 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL sarink-12.3.7-jcf-gw-D14
+ MENU LABEL sarink-12.3.7-jcf-gw-D14 mfc-12.3.7-29716_371+8-sarink 2014-02-26
+ KERNEL pxe-boot/sarink-12.3.7-jcf-gw-D14/vmlinuz-bootflop-mfc-12.3.7-29716_371+8-sarink
+ APPEND initrd=pxe-boot/sarink-12.3.7-jcf-gw-D14/rootflop-mfc-12.3.7-29716_371+8-sarink.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/sarink-12.3.7-jcf-gw-D14 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL sarink-12.3.7-jcf-gw-D15
+ MENU LABEL sarink-12.3.7-jcf-gw-D15 mfc-12.3.7-29718_371+229-sarink 2014-02-27
+ KERNEL pxe-boot/sarink-12.3.7-jcf-gw-D15/vmlinuz-bootflop-mfc-12.3.7-29718_371+229-sarink
+ APPEND initrd=pxe-boot/sarink-12.3.7-jcf-gw-D15/rootflop-mfc-12.3.7-29718_371+229-sarink.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/sarink-12.3.7-jcf-gw-D15 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL sarink-13.2.0-jcf-gw-D15
+ MENU LABEL sarink-13.2.0-jcf-gw-D15 mfc-13.2.0-29702_384+7-sarink 2014-02-27
+ KERNEL pxe-boot/sarink-13.2.0-jcf-gw-D15/vmlinuz-bootflop-mfc-13.2.0-29702_384+7-sarink
+ APPEND initrd=pxe-boot/sarink-13.2.0-jcf-gw-D15/rootflop-mfc-13.2.0-29702_384+7-sarink.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/sarink-13.2.0-jcf-gw-D15 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL sgurumurthy-halbugfix
+ MENU LABEL sgurumurthy-halbugfix mfc-12.3.8-30034_388+16-sgurumurthy 2014-05-22
+ KERNEL pxe-boot/sgurumurthy-halbugfix/vmlinuz-bootflop-mfc-12.3.8-30034_388+16-sgurumurthy
+ APPEND initrd=pxe-boot/sgurumurthy-halbugfix/rootflop-mfc-12.3.8-30034_388+16-sgurumurthy.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/sgurumurthy-halbugfix installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL sgurumurthy-mfc-12.3.8-30034_388+16
+ MENU LABEL sgurumurthy-mfc-12.3.8-30034_388+16 mfc-12.3.8-30034_388+16-sgurumurthy 2014-05-22
+ KERNEL pxe-boot/sgurumurthy-mfc-12.3.8-30034_388+16/vmlinuz-bootflop-mfc-12.3.8-30034_388+16-sgurumurthy
+ APPEND initrd=pxe-boot/sgurumurthy-mfc-12.3.8-30034_388+16/rootflop-mfc-12.3.8-30034_388+16-sgurumurthy.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/sgurumurthy-mfc-12.3.8-30034_388+16 installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL sgurumurthy-mfc-s3-img
+ MENU LABEL sgurumurthy-mfc-s3-img mfc-s3-img 2013-11-13
+ KERNEL pxe-boot/sgurumurthy-mfc-s3-img/vmlinuz-bootflop-mfc-12.3.5v-29501_370+2-sgurumurthy
+ APPEND initrd=pxe-boot/sgurumurthy-mfc-s3-img/rootflop-mfc-12.3.5v-29501_370+2-sgurumurthy.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/sgurumurthy-mfc-s3-img installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL shreyak-enum
+ MENU LABEL shreyak-enum mfc-13.2.0-29528_371+248-shreyak 2014-03-11
+ KERNEL pxe-boot/shreyak-enum/vmlinuz-bootflop-mfc-13.2.0-29528_371+248-shreyak
+ APPEND initrd=pxe-boot/shreyak-enum/rootflop-mfc-13.2.0-29528_371+248-shreyak.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/shreyak-enum installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL shreyak-fmv
+ MENU LABEL shreyak-fmv mfc-13.2.0-29439_368+241-shreyak 2014-01-23
+ KERNEL pxe-boot/shreyak-fmv/vmlinuz-bootflop-mfc-13.2.0-29439_368+241-shreyak
+ APPEND initrd=pxe-boot/shreyak-fmv/rootflop-mfc-13.2.0-29439_368+241-shreyak.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/shreyak-fmv installopt=,accept-eula,
+ IPAPPEND 3
+
+
+LABEL shreyak-ingest1
+ MENU LABEL shreyak-ingest1 mfc-12.3.7-29672_371+235-shreyak 2014-04-07
+ KERNEL pxe-boot/shreyak-ingest1/vmlinuz-bootflop-mfc-12.3.7-29672_371+235-shreyak
+ APPEND initrd=pxe-boot/shreyak-ingest1/rootflop-mfc-12.3.7-29672_371+235-shreyak.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/shreyak-ingest1 installopt=,accept-eula,
+ IPAPPEND 3
+

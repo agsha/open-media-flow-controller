@@ -1,0 +1,26 @@
+# Installation script
+#
+# This script is run after the tar file has been unpacked into the /var
+# playpen area and before anything has actually been moved to the final
+# location, and then again after things have been moved into place.
+#
+# The +INSTALL script is created from these source parts:
+#  1. package-scripts/script-header
+#  2. package-scripts/script-func
+#  3. my-script-header
+#  4. This file
+#
+
+initialize "$@"
+
+trace "STAGE = $instance"
+trace "ORIGIN = $pkg_origin"
+
+if [ "$instance" = "PRE-INSTALL" ] ; then
+    package_pre_install
+elif [ "$instance" = "POST-INSTALL" ] ; then
+    package_post_install
+    sync
+fi
+
+exit $fail

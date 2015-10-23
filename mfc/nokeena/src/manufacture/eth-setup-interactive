@@ -1,0 +1,292 @@
+#! /bin/bash
+# Interactively specify the ethernet device to name mapping.
+#
+# Flash all the ethernet device LEDs in a certain order,
+# and ask user which ethN number should be used for it.
+# One parameter, to specify the order to go in:
+# 1: PCI device order.
+# 2: Current eth device order.
+# 3: Previously saved order. Default.
+#    When no previous saved order, or the saved order seems invalid then
+#    generate the default ordering with eth-reorder.sh and use that.
+# NOTE: Other scripts could have created the saved order.
+
+STOP_FILE=/tmp/stop.$$.tmp
+trap_int_handler()
+{
+  echo
+  echo "(Interrupt)"
+  echo
+  touch ${STOP_FILE}
+}
+trap "trap_int_handler" INT
+
+Exit_Clean()
+{
+  rm -f ${STOP_FILE}
+  exit ${1}
+}
+
+Exit_Not_Saving()
+{
+  echo
+  echo Not Saving.
+  Exit_Clean ${1}
+}
+
+case _${1} in
+_1) DO_ORDER=pci ;;
+_2) DO_ORDER=eth ;;
+_3) DO_ORDER=prev ;;
+_)  DO_ORDER=prev ;;
+*) echo When specified, the parameter must be 1, 2 or 3.
+   Exit_Clean 1
+   ;;
+esac
+
+export SUDO=
+ETH_X=`/sbin/ifconfig -a | grep ^eth | head -1 | cut -f1 -d' '`
+/sbin/ethtool -i ${ETH_X} > /dev/null 2>&1
+if [ ${?} -ne 0 ] ; then
+  SUDO=/usr/bin/sudo
+  if [ ! -x ${SUDO} ] ; then
+    echo No permission to use /sbin/ethtool.  Fail.
+    Exit_Clean 1
+  fi
+fi
+# For now, do not update the info file.  This was causing the
+# limited size filesystem to fill up when run multiple times.
+# To fix this requires using a RAM FS for the manufacture.tgz
+# extract, and then making the directory where the info file is
+# located a symlink into this RAM FS.
+#### Try to update the info file used by lspci.  This tries to
+#### download the latest version from the internet.  Ignore all errors.
+###${SUDO} /sbin/update-pciids > /dev/null 2> /dev/null
+
+CURRENT_INFO_FILE=/tmp/eth-info.out
+ETH_ORDER_FILE=/tmp/eth-order-eth.out
+PCI_ORDER_FILE=/tmp/eth-order-pci.out
+INP_ORDER_FILE=/tmp/eth-order-inp.out
+TMP_ORDER_FILE=/tmp/eth-order-tmp2.out
+NEW_ORDER_FILE=/tmp/eth-order-new.out
+rm -f ${CURRENT_INFO_FILE}
+rm -f ${ETH_ORDER_FILE}
+rm -f ${PCI_ORDER_FILE}
+rm -f ${INP_ORDER_FILE}
+rm -f ${TMP_ORDER_FILE}
+
+for ETH_NAME in `/sbin/ifconfig -a | grep ^eth | cut -f1 -d' '`
+do
+  BUS_INFO=`${SUDO} /sbin/ethtool -i ${ETH_NAME} | grep "^bus-info: " | cut -c11-`
+  HW_ADDR=`/sbin/ifconfig ${ETH_NAME} | grep HWaddr | cut -f2- -d: | sed -e "/Ethernet.*HWaddr /s///" | sed -e "/ /s///g"`
+  echo ${BUS_INFO},${HW_ADDR},${ETH_NAME} >> ${ETH_ORDER_FILE}
+done
+
+if [ ! -f ${NEW_ORDER_FILE} ] ; then
+  # Create the file with the default mapping.
+  bash eth-reorder.sh --force --outfile ${NEW_ORDER_FILE} > /dev/null 2> /dev/null
+fi
+
+case ${DO_ORDER} in
+pci)
+  sort ${ETH_ORDER_FILE} > ${PCI_ORDER_FILE}
+  IN=${PCI_ORDER_FILE}
+  ;;
+eth)
+  IN=${ETH_ORDER_FILE}
+  ;;
+prev)
+  L1=`cat ${NEW_ORDER_FILE} | wc -l`
+  L2=`cat ${ETH_ORDER_FILE} | wc -l`
+  if [ "${L1}" != "${L2}" ] ; then
+    rm -f ${NEW_ORDER_FILE}
+    echo Reset to default mapping
+    bash eth-reorder.sh --force --outfile ${NEW_ORDER_FILE} > /dev/null 2> /dev/null
+  fi
+  cp ${NEW_ORDER_FILE} ${INP_ORDER_FILE}
+  IN=${INP_ORDER_FILE}
+  ;;
+esac
+for i in `cat ${IN}`
+do
+  BUS_INFO=`echo ${i} | cut -f1 -d,`
+  HW_ADDR=` echo ${i} | cut -f2 -d,`
+  ETH_NAME=`echo ${i} | cut -f3 -d,`
+  USE_NAME=`grep ${BUS_INFO}, ${ETH_ORDER_FILE} | cut -f3 -d,`
+  INET_ADDR=`/sbin/ifconfig ${USE_NAME} | grep "inet addr" | cut -f2 -d: | cut -f1 -d' '`
+  INET6_ADDR=`/sbin/ifconfig ${USE_NAME} | grep "inet6 addr" | cut -f2- -d: | cut -f1 -d/`
+  EA_LINE=
+  if [ ! -z "${INET_ADDR}" ] ; then
+    EA_LINE="inet addr: ${INET_ADDR}"
+  fi
+  if [ ! -z "${INET6_ADDR}" ] ; then
+    if [ -z "${EA_LINE}" ] ; then
+      EA_LINE="inet6 addr:${INET6_ADDR} "
+    else
+      EA_LINE="${EA_LINE}   inet6 addr:${INET6_ADDR} "
+    fi
+  fi
+  DEVICE_INFO=`/sbin/lspci -s ${BUS_INFO} | cut -f3- -d: | sed -e "/^ /s///"`
+  echo ${ETH_NAME} >> ${CURRENT_INFO_FILE}
+  echo " PCI address: ${BUS_INFO}   HW address: ${HW_ADDR}" >> ${CURRENT_INFO_FILE}
+  [ ! -z "${EA_LINE}" ] && echo " ${EA_LINE}" >> ${CURRENT_INFO_FILE}
+  echo " ${DEVICE_INFO}" >> ${CURRENT_INFO_FILE}
+done
+
+Flash_LED()
+{
+  CNT=0
+  rm -f ${STOP_FILE}
+  while true
+  do
+    # Flash for 4 seconds.
+    ${SUDO} /sbin/ethtool -p ${1} 4
+    CNT=$(( ${CNT} + 1 ))
+    [ ${CNT} -gt ${2} ] && break
+    [ -f ${STOP_FILE} ] && break
+  done
+  rm -f ${STOP_FILE}
+  return
+}
+
+echo ==============================================================
+echo Current ethernet device naming:
+cat ${CURRENT_INFO_FILE}
+echo ==============================================================
+echo
+echo BEGIN update naming
+echo
+
+rm -f ${TMP_ORDER_FILE}
+touch ${TMP_ORDER_FILE}
+LINE_COUNT=0
+for LINE in `cat ${IN}`
+do
+  export ETH_NAME=`echo ${LINE} | cut -f3 -d,`
+  export BUS_INFO=`echo ${LINE} | cut -f1 -d,`
+  export HW_ADDR=`echo ${LINE} | cut -f2 -d,`
+  export THIS_INFO=${BUS_INFO},${HW_ADDR}
+  USE_NAME=`grep ${BUS_INFO}, ${ETH_ORDER_FILE} | cut -f3 -d,`
+  INET_ADDR=`/sbin/ifconfig ${USE_NAME} | grep "inet addr" | cut -f2 -d: | cut -f1 -d' '`
+  INET6_ADDR=`/sbin/ifconfig ${USE_NAME} | grep "inet6 addr" | cut -f2- -d: | cut -f1 -d/`
+  EA_LINE=
+  if [ ! -z "${INET_ADDR}" ] ; then
+    EA_LINE="inet addr: ${INET_ADDR}"
+  fi
+  if [ ! -z "${INET6_ADDR}" ] ; then
+    if [ -z "${EA_LINE}" ] ; then
+      EA_LINE="inet6 addr:${INET6_ADDR} "
+    else
+      EA_LINE="${EA_LINE}   inet6 addr:${INET6_ADDR} "
+    fi
+  fi
+  echo "PCI address: ${BUS_INFO}   HW addr: ${HW_ADDR}"
+  [ ! -z "${EA_LINE}" ] && echo " ${EA_LINE}"
+  /sbin/lspci -s ${BUS_INFO} | cut -f3- -d:
+  echo Currently assigned name: ${ETH_NAME}
+  READ_COUNT=0
+  while true
+  do
+    [ -f ${STOP_FILE} ] && Exit_Clean 1
+    # Just in case the stdin somehow is spewing, limit the number of loops.
+    READ_COUNT=$(( ${READ_COUNT} + 1 ))
+    [ ${READ_COUNT} -gt 100 ] && Exit_Clean 1
+    echo
+    echo Enter one of the following:
+    echo a: Keep the current name "(${ETH_NAME})"
+    echo b: Flash the LED for 4 seconds
+    echo c: Flash the LED for 16 seconds
+    echo d: Flash the LED for 64 seconds
+    echo e: Flash the LED for 128 seconds
+    echo The eth number you want for the name of this device.
+    read -p "> " ANS
+    T=0
+    USE=${ETH_NAME}
+    case _${ANS} in
+    _a) ;;
+    _b) T=1 ;;
+    _c) T=4 ;;
+    _d) T=16 ;;
+    _e) T=32 ;;
+    _[0-9]|_[0-9][0-9]) USE=eth${ANS} ;;
+    _q)
+      echo Not saving.
+      Exit_Clean 0
+      ;;
+    *)
+      echo
+      echo Invalid input. ------------------------------  Try again.
+      continue
+      ;;
+    esac
+    if [ ${T} -ne 0 ] ; then
+      if [ ${T} -eq 1 ] ; then 
+        echo Flashing the LED...
+      else
+        echo Flashing LED... '(^C to stop)'
+      fi
+      Flash_LED ${USE_NAME} ${T}
+      echo
+      echo '  ' Device ${THIS_INFO}, currently assigned ${ETH_NAME}
+      continue
+    fi
+    grep " "${USE}'$' ${TMP_ORDER_FILE} > /dev/null
+    if [ ${?} -eq 0 ] ; then
+      echo
+      echo Error, ${USE} already specified.
+      echo These are the specified mappings:
+      cat ${TMP_ORDER_FILE}
+      echo
+      echo Try again.
+      echo
+      echo '  ' Device ${THIS_INFO}, currently assigned ${ETH_NAME}
+      echo "Enter your selection again"
+      continue
+    fi
+    echo "${THIS_INFO}" ${USE} >> ${TMP_ORDER_FILE}
+    break
+  done
+done
+echo Done specifying the device to eth number mapping.
+grep "eth0$" ${TMP_ORDER_FILE} > /dev/null
+if [ ${?} -ne 0 ] ; then
+  echo
+  echo ERROR: No device is assigned eth0.
+  echo
+  echo "There must be an ethernet port named 'eth0'."
+  echo NOT saving this name to device mapping.
+  echo
+  Exit_Clean 0
+fi
+echo The new mapping is:
+for NUM in `cat ${TMP_ORDER_FILE} | cut -f2 -d' ' | cut -c4-  | sort -n`
+do
+  grep "eth${NUM}$" ${TMP_ORDER_FILE} 
+done
+echo
+READ_COUNT=0
+while true
+do
+  [ -f ${STOP_FILE} ] && Exit_Not_Saving 1
+  # Just in case the stdin somehow is spewing, limit the number of loops.
+  READ_COUNT=$(( ${READ_COUNT} + 1 ))
+  [ ${READ_COUNT} -gt 20 ] && Exit_Not_Saving 1
+  read -p "Use this mapping? (y/n) " ANS
+  case ${ANS} in
+  y)
+    echo 
+    echo Saving...
+    rm -f ${NEW_ORDER_FILE}
+    for NUM in `cat ${TMP_ORDER_FILE} | cut -f2 -d' ' | cut -c4-  | sort -n`
+    do
+      grep "eth${NUM}$" ${TMP_ORDER_FILE} | sed -e "/ /s//,/" >> ${NEW_ORDER_FILE}
+    done
+    Exit_Clean 0
+    ;;
+  n)
+    Exit_Not_Saving 0
+    ;;
+  esac
+  echo Enter y or n
+done
+Exit_Clean 1

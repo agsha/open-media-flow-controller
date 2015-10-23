@@ -1,0 +1,119 @@
+#!/bin/sh
+#
+# firstboot_action
+# Note: The file ./base_os/common/script_files/customer.sh
+# runs "chkconfig --add" for this in the "firstboot_graft_2()" function
+#
+# chkconfig: 3 49 00
+# description:
+#    1: When running on a VM with a particular host id, then install the
+#       ssl licenses for that host id.
+#    2: Check for special flag file that specifies that the machine
+#    is to be powered off, halted or rebooted at this point during the
+#    first boot after installation.
+#    If so, delete that file and do the indicated thing.
+#    This is useful during automated installs on VMs.
+LOG_FILE=/log/init/firstboot.log
+if [ -f /config/nkn/vm_cloudvm -a ! -f ${LOG_FILE} ] ; then
+  sleep 2
+  echo vm_cloudvm | tee -a ${LOG_FILE}
+  set >> ${LOG_FILE}
+  export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/opt/tms/bin:/usr/X11R6/bin:/var/home/root/bin
+  CNT=0
+  # The samara backend might not be up yet, so delay until it is up.
+  while true
+  do
+    date >> ${LOG_FILE}
+    echo +++++++++++++++++++++++++++++ >> ${LOG_FILE}
+    /opt/tms/bin/cli -t "show version" 2>&1 >> ${LOG_FILE}
+    echo +++++++++++++++++++++++++++++ >> ${LOG_FILE}
+    MY_HOST_ID=`/opt/tms/bin/cli -t "show version" 2> /dev/null | grep "^Host ID:" | awk '{print $3}'`
+    [ ! -z "${MY_HOST_ID}" ] && break
+    CNT=`expr ${CNT} + 1`
+    [ ${CNT} -gt 10 ] && break
+    echo wait
+    sleep 5
+  done
+  /opt/tms/bin/cli -t "show version" 2>&1
+  date >> ${LOG_FILE}
+  if [ -z "${MY_HOST_ID}" ] ; then
+    MY_HOST_ID=00000001-0001-0001-0001-000000000001
+    echo "Warning: Failed to get Host ID.  Using ${MY_HOST_ID}" | tee -a ${LOG_FILE}
+  fi
+  case ${MY_HOST_ID} in
+  00000001-0001-0001-0001-000000000001)
+    LIC_S=LK2-SSL-44HT-1G60-Q30C-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-Q30C-1G60-Q30C-1H81-GT3J-AFX2-3HK6-MHKV-G11C-NYHW-H3RL
+    ;;
+  00000001-0001-0001-0001-000000000002)
+    LIC_S=LK2-SSL-44HT-1G60-Q30C-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-Q30C-1G60-Q30C-1J81-GT25-W35B-XJ3T-59VU-V1M9-GGFY-29V9
+    ;;
+  00000001-0001-0001-0001-000000000003)
+    LIC_S=LK2-SSL-44HT-1G60-Q30C-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-Q30C-1G60-Q30C-1K81-GT45-V1L1-YK8J-NFGW-XA9Q-RHWH-39EV
+    ;;
+  00000001-0001-0001-0001-000000000004)
+    LIC_S=LK2-SSL-44HT-1G60-Q30C-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-Q30C-1G60-Q30C-1L81-GT3E-FVYJ-NVHF-M1K1-C5VA-FPDN-2WB3
+    ;;
+  00000001-0001-0001-0001-000000000005)
+    LIC_S=LK2-SSL-44HT-1G60-Q30C-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-Q30C-1G60-Q30C-1M81-GT7Q-HJHC-8KME-T9HH-GTGN-WWL3-FHW3
+    ;;
+  00000001-0001-0001-0001-000000000006)
+    LIC_S=LK2-SSL-44HT-1G60-Q30C-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-Q30C-1G60-Q30C-1N81-GT0W-X01Q-187T-7V4V-9PBV-H0MA-87BJ
+    ;;
+  00000001-0001-0001-0001-000000000007)
+    LIC_S=LK2-SSL-44HT-1G60-Q30C-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-Q30C-1G60-Q30C-1P81-GT2W-UGJF-2MMP-6PDF-4NF7-R43F-768F
+    ;;
+  00000001-0001-0001-0001-000000000008)
+    LIC_S=LK2-SSL-44HT-1G60-Q30C-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-Q30C-1G60-Q30C-1Q81-GT5E-DAVF-BJD2-C2R2-6A4B-C6H4-RJ3F
+    ;;
+  00000001-0001-0001-0001-000000000009)
+    LIC_S=LK2-SSL-44HT-1G60-Q30C-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-QJTC-1G60-Q30C-1G60-Q30C-1R81-GT6M-3X1U-N0L3-0384-7V9K-0TNW-N4QU
+    ;;
+  *) LIC_S=no ; echo Non-standard VM host id: ${MY_HOST_ID} | tee -a ${LOG_FILE}
+    ;;
+  esac
+  if [ "${LIC_S}" != "no" ] ; then
+    /opt/tms/bin/cli -m config -t "show license" | grep ^License | grep -q ": LK2-SSL-"
+    if [ ${?} -ne 0 ] ; then
+      echo Install SSL license for ${MY_HOST_ID} | tee -a ${LOG_FILE}
+      /opt/tms/bin/cli -m config -t "license install ${LIC_S}" 2>&1 | tee -a ${LOG_FILE}
+    fi
+    /opt/tms/bin/cli -m config -t "show license" 2>&1 | tee -a ${LOG_FILE}
+  fi
+  # Minimal network setup in the VM situation.
+  echo                      "CLI>interface eth0 dhcp"     | tee -a ${LOG_FILE}
+  /opt/tms/bin/cli -m config -t "interface eth0 dhcp"     | tee -a ${LOG_FILE}
+  /opt/tms/bin/cli -m config -t "show interface eth0"     | tee -a ${LOG_FILE}
+  echo                      "CLI>service restart mod-ssl" | tee -a ${LOG_FILE}
+  /opt/tms/bin/cli -m config -t "service restart mod-ssl" | tee -a ${LOG_FILE}
+  echo                      "CLI>telnet-server enable"    | tee -a ${LOG_FILE}
+  /opt/tms/bin/cli -m config -t "telnet-server enable"    | tee -a ${LOG_FILE}
+  /opt/tms/bin/cli -m config -t "show telnet"             | tee -a ${LOG_FILE}
+  echo                      "CLI>write mem"               | tee -a ${LOG_FILE}
+  /opt/tms/bin/cli -m config -t "write mem"               | tee -a ${LOG_FILE}
+fi
+if [ "${1}" = "start" -a -f /config/nkn/firstboot_action ] ; then
+  S=`head -1 /config/nkn/firstboot_action`
+  rm -f /config/nkn/firstboot_action
+  if [ ! -z "${S}" ] ; then
+     case "${S}" in
+     poweroff) OPT="-P" ;;
+     halt)     OPT="-H" ;;
+     reboot)   OPT="-r" ;;
+     *)        OPT=""   ;;
+     esac
+     echo
+     if [ -z "${OPT}" ] ; then
+       echo "Firstboot action: unexpected value: ${S}"
+     else
+       sync
+       sleep 5
+       # The -P option means to power off the system.
+       # The -H option means to halt the system.
+       # The -r option means to reboot the system.
+       echo "Firstboot ${S}" | tee -a ${LOG_FILE}
+       shutdown ${OPT} now  "Firstboot ${S}"
+       sleep 30
+     fi
+  fi
+fi
+

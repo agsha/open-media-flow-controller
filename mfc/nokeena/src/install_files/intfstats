@@ -1,0 +1,127 @@
+#!/bin/sh
+
+if [ $# == 4 ] ;
+then
+filename=$1
+backup=$2
+latestfile=$3
+extn=$4
+else
+filename=/tmp/tmpintfdetail
+backup=/tmp/tmpbkintfdetail
+extn=info
+latestfile=/tmp/tmpintflatestdetail
+fi
+
+#mdreq -s query iterate subtree /net/interface | grep "bytes" > 
+/opt/tms/bin/mdreq -s query iterate subtree /net/interface | grep "bytes" > /tmp/curnodes_$extn
+count=`cat /tmp/curnodes_$extn | wc -l`
+if [ $count -eq 0 ] 
+then
+  exit
+fi
+
+# RX Bytes Calculation 
+cat /tmp/curnodes_$extn | grep "rx" | cut -d'/' -f5 > /tmp/rxint_$extn
+cat /tmp/curnodes_$extn | grep "rx" | cut -d' ' -f3 > /tmp/rxval_$extn
+
+cat /tmp/curnodes_$extn | grep "tx" | cut -d'/' -f5 > /tmp/txint_$extn
+cat /tmp/curnodes_$extn | grep "tx" | cut -d' ' -f3 > /tmp/txval_$extn
+
+
+if [ $extn = "day" ] ;
+then
+    int_cnt=`cat /tmp/rxint_$extn | wc -l`
+    lines=`expr $int_cnt \* 29`
+    tail -$lines $latestfile > /tmp/temp_$extn
+    mv /tmp/temp_$extn $latestfile
+else
+    int_cnt=`cat /tmp/rxint_$extn | wc -l`
+    lines=`expr $int_cnt \* 23`
+    tail -$lines $latestfile > /tmp/temp_$extn
+    mv /tmp/temp_$extn $latestfile
+fi
+
+
+if [ -f $backup ]
+then
+
+    # If last backed up data is not available , then what has to be done to avoid negative numbers ? 
+    cat $backup | cut -d',' -f2 > /tmp/rxlastval_$extn
+    cat $backup | cut -d',' -f3 > /tmp/txlastval_$extn
+    paste -d',' /tmp/rxint_$extn /tmp/rxval_$extn /tmp/rxlastval_$extn /tmp/txval_$extn /tmp/txlastval_$extn > /tmp/curval_$extn
+
+    rm /tmp/rxlastval_$extn
+    rm /tmp/txlastval_$extn
+
+    while read line
+    do
+        intf=`echo $line | cut -d',' -f1`
+        rxcurval=`echo $line | cut -d',' -f2`
+        rxlastval=`echo $line | cut -d',' -f3`
+        rxdiff=`expr $rxcurval - $rxlastval`
+        if [ $rxdiff -le 0 ]
+        then
+            echo "What"
+            rxdiff=`expr $rxcurval - 0`
+        fi
+        txcurval=`echo $line | cut -d',' -f4`
+        txlastval=`echo $line | cut -d',' -f5`
+        txdiff=`expr $txcurval - $txlastval`
+        if [ $txdiff -le 0 ]
+        then
+            txdiff=`expr $txcurval - 0`
+        fi
+        echo "`date +\"%d-%b-%Y %H:%M:%S\"` $intf $rxdiff $txdiff" >> $filename 
+    
+    done < /tmp/curval_$extn
+
+else
+
+    paste -d',' /tmp/rxint_$extn /tmp/rxval_$extn /tmp/txval_$extn > /tmp/curval_$extn
+
+    while read line
+    do
+        intf=`echo $line | cut -d',' -f1`
+        rxcurval=`echo $line | cut -d',' -f2`
+        rxdiff=`expr $rxcurval - 0`
+        txcurval=`echo $line | cut -d',' -f3`
+        txdiff=`expr $txcurval - 0`
+        echo "`date +\"%d-%b-%Y %H:%M:%S\"` $intf $rxdiff $txdiff" >> $filename
+    
+    done < /tmp/curval_$extn
+fi
+
+paste -d',' /tmp/rxint_$extn /tmp/rxval_$extn /tmp/txval_$extn > $backup
+
+if [ $extn = "day" ] ;
+then
+    instance=96
+else
+    instance=4
+fi
+
+if [ -f $filename ]
+then
+    count=`cat $filename | wc -l`
+    intf_count=`cat $filename | cut -f3 -d' ' | sort | uniq | wc -l`
+    intfs=`cat $filename | cut -f3 -d' ' | sort | uniq`
+    checkcount=`expr $intf_count \* $instance`
+    if [ $count -ge $checkcount ] 
+    then
+        for intf in $intfs ; 
+        do
+            rxdiff=`cat $filename | grep "$intf" | cut -f4 -d' '| awk '{sum+=$1} END {print sum}'`
+            txdiff=`cat $filename | grep "$intf" | cut -f5 -d' '| awk '{sum+=$1} END {print sum}'`
+            echo "`date +\"%d-%b-%Y %H:%M:%S\"` $intf $rxdiff $txdiff" >> $latestfile
+        done
+        rm $filename
+    fi
+
+fi 
+rm /tmp/curval_$extn
+rm /tmp/rxint_$extn
+rm /tmp/rxval_$extn
+rm /tmp/txint_$extn
+rm /tmp/txval_$extn
+rm /tmp/curnodes_$extn

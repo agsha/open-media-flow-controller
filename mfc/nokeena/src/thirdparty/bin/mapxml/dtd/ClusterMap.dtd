@@ -1,0 +1,10 @@
+<!-- ClusterMap 1.0 DTD, Copyright (c) 2010 by Juniper Networks, Inc -->
+<!ELEMENT ClusterMap (Header*, ClusterMapEntry*)>
+<!ELEMENT Header (Version, Application)>
+<!ELEMENT Version (#PCDATA)>
+<!ELEMENT Application (#PCDATA)>
+<!ELEMENT ClusterMapEntry (Node, IP, Port, Options?)>
+<!ELEMENT Node (#PCDATA)>
+<!ELEMENT IP (#PCDATA)>
+<!ELEMENT Port (#PCDATA)>
+<!ELEMENT Options (#PCDATA)>

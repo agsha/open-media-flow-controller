@@ -1,0 +1,39 @@
+wget rev 1.13.4 was released September 2011.
+The MFC crawler application requires a wget version of 1.13.4 or above which
+is why we use this version.
+
+The source is modified with a patch.
+
+The original source was downloaded this way:
+  wget http://ftp.gnu.org/gnu/wget/wget-1.13.4.tar.gz
+The unmodified source is in this MFC source tree
+  dist/thirdparty-src/wget/wget-1.13.4.tar.gz
+
+wget is licensed under the GNU Lesser General Public License version 3 (GPLv3).
+The licensing and other information for wget is available at
+http://www.gnu.org/software/wget/
+
+We have a source patch to change the functionality so wget treats https
+requests as http requests.  All we use is the wget binary.
+
+To generate the wget binary, the patch, wget-1.13.4.nkn.patch, was applied
+to original source and a build was done by hand.
+
+Steps to create the binary:
+1. Untar wget-1.13.4.tar.gz
+2. Copy the patch file to the wget-1.13.4/src directory.
+2. Cd into the src directory and apply the patch
+    cd wget-1.13.4/src
+    patch -p2 -i wget-1.13.4.nkn.patch
+3. Cd back to where the configure.ac file is, and
+   configure and build the software:
+    cd ..
+    ./configure --without-ssl
+    make
+4. The built binary file we need is:
+     src/wget
+
+This binary was put in the MFC source tree as
+  nokeena/src/thirdparty/binary/wget/wget
+The Makefile in that directory installs the wget binary on the
+  target machine in /opt/nkn/bin/.

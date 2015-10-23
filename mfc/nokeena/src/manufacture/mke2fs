@@ -1,0 +1,244 @@
+:
+# This is a front-end to /sbin/mke2fs, so that we can print out useful info
+# to let the user know what is going on.
+
+# The first call to mke2fs from writeimage.sh is test to see if
+# the "-O ^resize_inode" option works:
+#     mke2fs -n -O ^resize_inode -q -F /tmp/tmf.$$
+# If that succeeds, then that option is used for all the rest of the calls.
+
+# Typical args for ext3 filesystems:
+#   mke2fs -O ^resize_inode -q -L ${label} -j ${dev} 
+# (ext2 does not have the -j option)
+
+# Typical args for virtual partition:
+#   mke2fs -O ^resize_inode -q -L ${label} -m -0 -N ${inode_cnt} -f ${vp_path}
+
+# MAYBE: Remove the "-q" option. (and put in the "+v" option ???)
+
+ARG_LIST=
+DEVICE_NAME=notspecifiedyet
+FORCE_BLOCK_COUNT=
+SKIP_TIMING=noskip
+TINY_SIZE=26000
+LAST_ARG=none
+LABEL=
+for THIS_ARG in ${*}
+do
+    case "${THIS_ARG}" in
+    DMRAW)   
+        # When doing the DMRAW partition, only make a small filesystem
+        # to save time, because the filesystem is not actually used.
+        THIS_BEL=DMRAW
+        FORCE_BLOCK_COUNT=${TINY_SIZE}
+        SKIP_TIMING=skip
+        ;;
+    /*)    
+        DEVICE_NAME="${THIS_ARG}"
+        ;;
+    [0-9]*)
+        # When we are forcing a block count, do not use the specified count
+        [ ! -z "${FORCE_BLOCK_COUNT}" ] && THIS_ARG=
+        ;;
+    esac
+    case "${LAST_ARG}" in
+    -L) LABEL="${THIS_ARG}" ;;
+    esac
+    LAST_ARG="${THIS_ARG}"
+    ARG_LIST="${ARG_LIST} ${THIS_ARG}"
+done
+if [ -z "${LABEL}" ] ; then
+    for LABEL in 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
+    do
+        TIME_OUTPUT_FILE=/tmp/mke2fs.time.${LABEL}.txt
+        [ -f ${TIME_OUTPUT_FILE} ] && continue
+        break;
+    done
+else
+    TIME_OUTPUT_FILE=/tmp/mke2fs.time.${LABEL}.txt
+fi
+LOG_FILE=/tmp/mke2fs.log
+
+START_TIME=`date +%Y-%m-%d_%H:%M:%S`
+echo "# START_TIME=${START_TIME}" >> ${LOG_FILE}
+echo "${*}" >> ${LOG_FILE}
+
+THIS_BLOCKS=0
+if [ ! -z "${FORCE_BLOCK_COUNT}" ] ; then
+    echo "# FORCE_BLOCK_COUNT=${FORCE_BLOCK_COUNT}" >> ${LOG_FILE}
+    ARG_LIST="${ARG_LIST} ${FORCE_BLOCK_COUNT}"
+    THIS_BLOCKS=${FORCE_BLOCK_COUNT}
+fi
+
+[ ! -b ${DEVICE_NAME} ] && SKIP_TIMING=skip
+if [ "${SKIP_TIMING}" = "skip"  ] ; then
+    /sbin/mke2fs ${ARG_LIST}
+    RV=${?}
+    END_TIME=`date +%Y-%m-%d_%H:%M:%S`
+    echo "# RV=${RV}"             >> ${LOG_FILE}
+    echo "# END_TIME=${END_TIME}" >> ${LOG_FILE}
+    exit ${RV}
+fi
+
+# The "time" command in the manufacturing environment is supplied by "busybox",
+# and does support POSIX options, only the "-v" option.  This is makes it hard.
+TIME_EXE=`which time`
+
+ESTIMATE_KBLOCKS_PER_SEC=0
+ESTIMATE_SECS=0
+PREV_KBLOCKS=0
+PREV_SECS=0
+
+THIS_DEVICE=`basename ${DEVICE_NAME}`
+echo "# THIS_DEVICE=${THIS_DEVICE}" >> ${LOG_FILE}
+DR=${THIS_DEVICE%%[0-9]*}
+CUMULATIVE_FILE=/tmp/mke2fs.cumulative.${DR}.txt
+
+if [ ${THIS_BLOCKS} -eq 0 ] ; then
+    # Get the partition size
+    grep "${THIS_DEVICE}" /proc/partitions >> ${LOG_FILE}
+    THIS_BLOCKS=`grep " ${THIS_DEVICE}"'$' /proc/partitions | awk '{print $3}'`
+    if [ "_${THIS_BLOCKS}" = "_" ] ; then
+        THIS_BLOCKS=`grep "/${THIS_DEVICE}"'$' /proc/partitions | awk '{print $3}'`
+        [ "_${THIS_BLOCKS}" = "_" ] && THIS_BLOCKS=0
+    fi
+fi
+ACTUAL_KBLOCKS=$(( THIS_BLOCKS / 1000 ))
+echo "# THIS_BLOCKS=${THIS_BLOCKS}" >> ${LOG_FILE}
+echo "# ACTUAL_KBLOCKS=${ACTUAL_KBLOCKS}" >> ${LOG_FILE}
+
+if [ -f /tmp/mke2fs-verbose ] ; then
+  VERBOSE=yes
+else
+  VERBOSE=no
+fi
+ 
+# Based on previous cumulative info, calculate estimated time
+PRINT_ESTIMATE=no
+if [ ${ACTUAL_KBLOCKS} -ne 0 ] ; then
+    ESTIMATE_KBLOCKS_PER_SEC=3000
+    if [ -f ${CUMULATIVE_FILE} ] ; then
+        PREV_KBLOCKS=`cat ${CUMULATIVE_FILE} | cut -f 1 -d:`
+        PREV_SECS=`cat ${CUMULATIVE_FILE} | cut -f 2 -d:`
+        echo "# PREV_KBLOCKS=${PREV_KBLOCKS}" >> ${LOG_FILE}
+        echo "# PREV_SECS=${PREV_SEC}" >> ${LOG_FILE}
+        if [ "_${PREV_KBLOCKS}" != "_" -a "_${PREV_SECS}" != "_" ] ; then
+          if [ ${PREV_SECS} -ne 0 ] ; then
+              ESTIMATE_KBLOCKS_PER_SEC=`expr ${PREV_KBLOCKS} / ${PREV_SECS}`
+          fi
+        fi
+    fi
+    echo "# ESTIMATE_KBLOCKS_PER_SEC=${ESTIMATE_KBLOCKS_PER_SEC}" >> ${LOG_FILE}
+    if [ ${ESTIMATE_KBLOCKS_PER_SEC} -le 1000 ] ; then
+        echo "## ALERT: Estimated rate ${ESTIMATE_KBLOCKS_PER_SEC} seems slow" >> ${LOG_FILE}
+    fi
+    ESTIMATE_SECS=`expr ${ACTUAL_KBLOCKS} / ${ESTIMATE_KBLOCKS_PER_SEC}`
+    [ ${ESTIMATE_SECS} -eq 0 ] && ESTIMATE_SECS=1
+    echo "# ESTIMATE_SECS=${ESTIMATE_SECS}" >> ${LOG_FILE}
+    MIN=$(( ESTIMATE_SECS / 60 ))
+    SEC=$(( ESTIMATE_SECS - ( MIN * 60 ) ))
+    [ ${SEC} -lt 10 ] && SEC=0${SEC}
+    ESTIMATE_MIN_SEC=${MIN}:${SEC}
+    echo "# ESTIMATE_MIN_SEC=${ESTIMATE_MIN_SEC}" >> ${LOG_FILE}
+    # Print out the estimate if it is more than 15 seconds AND when 5GB fs or larger.
+    if [ ${ESTIMATE_SECS} -gt 15 -a ${ACTUAL_KBLOCKS} -gt 5000 ] ; then
+        PRINT_ESTIMATE=yes
+    fi
+    if [ "${VERBOSE}" = "yes" ] ; then
+        PRINT_ESTIMATE=yes
+    fi
+    if [ "${PRINT_ESTIMATE}" = "yes" ] ; then
+        if [ ${ESTIMATE_SECS} -lt 60 ] ; then
+            echo "   "Estimated time for ${ACTUAL_KBLOCKS}k blocks: ${ESTIMATE_SECS} seconds
+        else
+            echo "   "Estimated time for ${ACTUAL_KBLOCKS}k blocks: ${ESTIMATE_MIN_SEC}
+        fi
+    fi
+fi
+
+rm -f ${TIME_OUTPUT_FILE}
+
+# Filter out what time prints to stderr, so the user does not see it.
+echo /sbin/mke2fs ${ARG_LIST} >> ${LOG_FILE}
+${TIME_EXE} -v /sbin/mke2fs ${ARG_LIST} 2> ${TIME_OUTPUT_FILE}
+cat ${TIME_OUTPUT_FILE} | grep -v "^	.*:"
+RV=`grep "Exit status: " ${TIME_OUTPUT_FILE} | cut -f2 -d:`
+RV=`echo ${RV}`
+echo "# RV=${RV}" >> ${LOG_FILE}
+# Filter out the stderr
+cat ${TIME_OUTPUT_FILE} | grep -v "^	.*:"
+E=`grep "Elapsed " ${TIME_OUTPUT_FILE} | cut -f5 -d:`
+E1=`echo ${E} | awk '{print $1}'`
+E2=`echo ${E} | awk '{print $2}'`
+case "${E2}" in
+*s)
+     MIN=`echo ${E1} | cut -f1 -dm`
+     SEC=`echo ${E2} | cut -f1 -d.`
+     TIMED_SECS=`expr ${MIN} '*' 60`
+     TIMED_SECS=`expr ${TIMED_SECS} + ${SEC}`
+     ;;
+*h)  HRS=`echo ${E1} | cut -f1 -dh`
+     MIN=`echo ${E2} | cut -f1 -dm`
+     SEC=`echo ${E3} | cut -f1 -d.`
+     TIMED_MIN=`expr ${HRS} '*' 60`
+     TIMED_MIN=`expr ${TIMED_MIN} + ${MIN}`
+     TIMED_SECS=`expr ${TIMES_MIN} '*' 60`
+     TIMED_SECS=`expr ${TIMED_SECS} + ${SEC}`
+     ;;
+esac
+END_TIME=`date +%Y-%m-%d_%H:%M:%S`
+
+DIFF_SECS=0
+if [ ${RV} -eq 0 -a ${ACTUAL_KBLOCKS} -ne 0 ] ; then
+    if [ ${PREV_KBLOCKS} -lt ${ACTUAL_KBLOCKS} ] ; then
+        PREV_KBLOCKS=${ACTUAL_KBLOCKS}
+        PREV_SECS=${TIMED_SECS}
+    else
+        PREV_KBLOCKS=`expr ${PREV_KBLOCKS} + ${ACTUAL_KBLOCKS}`
+        PREV_SECS=`expr ${PREV_SECS} + ${TIMED_SECS}`
+    fi
+    echo "${PREV_KBLOCKS}:${PREV_SECS}" > ${CUMULATIVE_FILE}
+    echo "# Cumulative: ${PREV_KBLOCKS}:${PREV_SECS}" >> ${LOG_FILE}
+    [ ${ESTIMATE_SECS} -ne 0 ] && DIFF_SECS=`expr ${ESTIMATE_SECS} - ${TIMED_SECS}`
+fi
+echo "# TIMED_SECS=${TIMED_SECS}" >> ${LOG_FILE}
+echo "# DIFF_SECS=${DIFF_SECS}"   >> ${LOG_FILE}
+MIN=$(( TIMED_SECS / 60 ))
+SEC=$(( TIMED_SECS - ( MIN * 60 ) ))
+[ ${SEC} -lt 10 ] && SEC=0${SEC}
+ACTUAL_MIN_SEC=${MIN}:${SEC}
+echo "# ACTUAL_MIN_SEC=${ACTUAL_MIN_SEC}" >> ${LOG_FILE}
+if [ ${TIMED_SECS} -ne 0 ] ; then
+  ACTUAL_KBLOCKS_PER_SEC=`expr ${ACTUAL_KBLOCKS} / ${TIMED_SECS}`
+else
+  ACTUAL_KBLOCKS_PER_SEC=unknown
+fi
+echo "# ACTUAL_KBLOCKS_PER_SEC=${ACTUAL_KBLOCKS_PER_SEC}" >> ${LOG_FILE}
+echo "# Time ${LABEL} ${THIS_DEVICE} ${ACTUAL_KBLOCKS}k blocks: ${ACTUAL_MIN_SEC} (${ACTUAL_KBLOCKS_PER_SEC} kblks/sec)" >> ${LOG_FILE}
+
+PRINTED_ACTUAL=no
+if [ "${VERBOSE}" = "yes" ] ; then
+    echo "    "Time for ${ACTUAL_KBLOCKS}k blocks: ${ACTUAL_MIN_SEC} "(${ACTUAL_KBLOCKS_PER_SEC} kblks/sec)"
+    PRINTED_ACTUAL=yes
+elif [ "${PRINT_ESTIMATE}" = "yes" ] ; then
+    # We printed the estimate, so now if off by more than 15 secs,
+    # then print the actual value.
+    if [ ${DIFF_SECS} -gt 15 -o ${DIFF_SECS} -lt -15 ] ; then
+        echo "    "actual ${ACTUAL_MIN_SEC}
+        PRINTED_ACTUAL=yes
+    fi
+fi
+# Print out a note about the slow rate if the elapsed time is more than
+# 15 seconds AND when over 16GB (so it will not print about formatting
+# the eUSB, because that is known to be slow).
+if [ ${ACTUAL_KBLOCKS_PER_SEC} -lt 1000 ] ; then
+  if [ ${TIMED_SECS} -gt 15 -a ${ACTUAL_KBLOCKS} -gt 16000 ] ; then
+        echo "## ALERT: Actual ${ACTUAL_KBLOCKS_PER_SEC} seems slow" >> ${LOG_FILE}
+        if [ "${PRINTED_ACTUAL}" = "no" ] ; then
+            echo "    "Elapsed time ${ACTUAL_MIN_SEC}
+        fi
+        echo "    "NOTE: ${ACTUAL_KBLOCKS_PER_SEC}k blocks/sec
+    fi
+fi
+echo "# END_TIME=${END_TIME}" >> ${LOG_FILE}
+exit ${RV}

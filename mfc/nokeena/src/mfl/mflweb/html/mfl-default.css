@@ -1,0 +1,248 @@
+/*
+ *
+ * Filename:  $Source: mfl-default.css
+ * Revision:  $Revision: 1.0
+ * Date:      $Date: 2011/03/02
+ * Author:    $Author: 
+ *
+ * (C) Copyright 2007-2011 Juniper Networks, Inc.  
+ * All rights reserved.
+ *
+ */
+
+body {
+  background-color : #d8d8d8;
+  color: #4b4b4b; /* #000;*/
+  font-family: arial, sans-serif;
+  font-size: 12px;
+  padding:0 0 10px 0; 
+  margin:0px; 
+}
+
+.container 
+{
+  margin:0px auto; 
+  width:950px; _width:986px; 
+  background-color:#ffffff; 
+  position:relative; 
+  border-left:19px solid #fff; 
+  border-right:19px solid #fff; 
+  _border-left:18px solid #fff;  
+  _border-right:18px solid #fff;
+}
+
+#preamble { 
+  float: left;
+  clear: both;
+  width: 100%;
+  padding: 5px 5px 5px 5px;
+  background-color: #d9d9d9;
+  padding: 0px;
+  margin-top: 5px;
+  margin-bottom: 7px;
+  border: 0px;
+  min-height: 2ex;
+  white-space: nowrap;
+}
+
+
+#logo_area { 
+  float: left;
+  clear: right;
+  background-color: #ffffff;
+  background-image: url("/images/logo.jpg");
+  background-repeat:  no-repeat;
+  background-position: 5px center;
+  color: #000;
+  padding: 1px;
+  font-weight: bold;
+  vertical-align: middle;
+  text-align: left;
+  height: 50px;
+  width: 200px;
+}
+
+#message_area { 
+  float: none;
+  left: 0px;
+  margin-right: 10px;
+  margin-left: 10px;
+  margin-top: 5px;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  text-align: center;
+  vertical-align: middle;
+  font-weight: bold;
+  font-size: large;
+}
+
+#banner { 
+  float: right;
+  clear: both;
+  color: #000;
+  font-size: large;
+  font-weight: bold;
+  text-align: right;
+}
+
+#pageContent { 
+  margin-top: 2px;
+  margin-left: 0em;
+ /* height: 1%;*/
+  padding-top: 4px;
+  padding-right: 1em;
+  padding-left: 2px;
+  padding-bottom: 2px;
+}
+
+#pageTitle { 
+  font-size: large;
+  font-weight: bold;
+  font-style: italic;
+  padding-top: 4px;
+  margin: 0px;
+}
+
+
+h1 { 
+ /* margin-left: 76px;*/
+  color: #944507;
+}
+
+h2 { 
+  color: #000;
+  background-color: #d8d8d8; /* #ebe7db;*/
+}
+
+.ajaxButton { 
+  cursor: pointer;
+  padding: 0.125em 0.5em;
+  background-color: #6699aa; /*e5e6e8;*/
+  border-color: #ddd;
+  border-width: 2px;
+  border-style: outset;
+  margin-left: 0.5em;
+}
+.ajaxButtonDisabled { 
+  cursor: default;
+  padding: 0.125em 0.5em;
+  color: #c3c3c3;
+  background-color: #efefef;
+  border-color: #ddd;
+  border-width: 1px;
+  border-style: outset;
+  margin-left: 0.5em;
+}
+
+.ajaxButton:hover { 
+  background-color: #ccc;
+  border-color: #ddd;
+  border-width: 2px;
+  border-style: inset;
+}
+.ajaxButtonDisabled:hover { 
+}
+
+#ajaxStatus { 
+  float: left;
+  clear: both;
+  color: #000;
+  text-align: left;
+  overflow: hidden;
+}
+
+
+#analyzer_info_ptitle1{
+  padding-top:3px;
+  padding-bottom:3px;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 75%;
+  background-color:#6699aa; /*6699cc; /*97d0ff; /*aaccff;*/
+}
+
+#list_even{
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 75%;
+  background-color:#ffffff; /*eecccc;*/
+}
+#list_odd{
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 75%;
+  background-color:#d8d8d8; /*ddffdd;*/
+}
+#list_small{
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 70%;
+}
+
+/* file-size and resp_code related style */
+table.fsize_table{
+	font-family: Helvetica, Arial, sans-serif;
+	border-width: 0px;
+	background-color: #eeeeee;
+	vertical-align: middle;
+	height: 175px;
+	background-image: url("/images/la_bg_big.gif");
+	background-repeat:  repeat;
+}
+table.fsize_table tr{
+	/*border-width: 1px solid #000;*/
+	border:  1px solid #000;
+	margin-bottom:1px;
+	font-size: 70%;
+	text-align: center;
+	vertical-align: bottom;
+}
+table.fsize_table tr.label{
+	font-size: 55%;
+	/*border-width: 1px solid #ffffff;*/
+	border: 1px solid #ffffff;
+	margin-bottom:2px;
+	background-color: #cccccc;
+	text-align: center;
+ 	font-style: italic; 
+	height: 16px;
+}
+
+table.rcode_table{
+  font-family: Helvetica, Arial, sans-serif;
+  border-width: 0px;
+  background-color: #eeeeee;
+  vertical-align: middle;
+  height: 175px;
+  background-image: url("/images/la_bg_big.gif");
+  background-repeat:  repeat;
+}
+table.rcode_table tr{
+  /*border-width: 1px solid #000;*/
+  border: 1px solid #000;
+  margin-bottom:1px;
+  font-size: 70%;
+  text-align: center;
+  vertical-align: bottom;
+}
+table.rcode_table tr.label{
+  font-size: 75%;
+  /*border-width: 1px solid #ffffff;*/
+  border: 1px solid #ffffff;
+  margin-bottom:2px;
+  background-color: #cccccc;
+  text-align: center;
+  font-style: italic;
+  height: 16px;
+}
+table.al_params{
+	border-width: 0px;
+/*	background-color:  #ebe7db; /*#aaaaaa;*/
+	vertical-align: middle;
+	/*width: 500px;*/
+}
+table.al_params td.value{
+	font-size: 90%;
+}
+table.al_params td.img{
+	font-size: 90%;
+}
+
+
+

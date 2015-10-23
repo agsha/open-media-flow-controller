@@ -1,0 +1,7 @@
+openssl pkcs7 -in cert.p7b -inform DER -out mycompany-license-temp.pem -outform PEM -print_certs
+
+openssl pkcs12 -export -inkey client.key -in mycompany-license-temp.pem -out mycompany-license.pfx -passin pass:satheesh -passout pass:satheesh
+
+openssl x509 -in mycompany-license-temp.pem -inform PEM -out mycompany-license.pem -outform PEM
+
+openssl x509 -in mycompany-license.pem -inform PEM -out mycompany-license.der -outform DER

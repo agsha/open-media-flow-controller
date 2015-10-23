@@ -1,0 +1,33 @@
+Source: smartmontools-5.40-fix1.tar.gz
+has a fix to one line in file atacmds.cpp
+The original file is atacmds.cpp.orig.
+$ diff atacmds.cpp.orig atacmds.cpp
+1960c1960,1961
+<       unsigned milliseconds = (unsigned)(rawvalue >> 32);
+---
+> // FIX: The following line changed from ">> 32" to ">> 24".
+>       unsigned milliseconds = (unsigned)(rawvalue >> 24);
+
+To build:
+  ./configure
+  make
+  
+We only use the binary: smartctl
+
+* Copyright Bruce Allen, GPL, http://smartmontools.sourceforge.net.
+* This tool is a part of the Samara CentOS platform if we define
+  PROD_FEATURE_SMARTD=1 in mk/customer.mk then
+     smartmontools-5.36-4.el5.x86_64.rpm
+  gets installed.  But we need the most recent version to get support
+  for Megaraid disk controllers, which is not yet been picked up by CentOS.
+* The 5.40 source was released on 2010-10-16: smartmontools-5.40.tar.gz 
+* Downloaded fromi
+  http://sourceforge.net/projects/smartmontools/files/smartmontools/5.40/smartmontools-5.40.tar.gz/download
+* License: (from the README file in the source):
+<pre>
+Copyright (C) 2002-9 Bruce Allen <smartmontools-support@lists.sourceforge.net>
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2, or (at your option) any later
+version.
+</pre>

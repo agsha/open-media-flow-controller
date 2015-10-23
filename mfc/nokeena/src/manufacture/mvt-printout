@@ -1,0 +1,56 @@
+#! /bin/bash
+# Print out the results of the Manufacturing tests.
+echo Manufacturing Validation Test - v1.0
+ERR=0
+if [ ! -f /tmp/mfg-test.txt ] ; then
+  echo Installation not done.
+  exit 1
+fi
+
+cat /tmp/mfg-test.txt
+
+echo "Install Detail ->"
+. /etc/build_version.sh
+echo "Version: ${BUILD_PROD_RELEASE} ${BUILD_ID}"
+if [ ! -f /tmp/disks-found.log ] ; then
+  echo Installation not completed: disk test result not found.
+  ERR=1
+else
+  cat /tmp/disks-found.log
+  if [ ! -f /tmp/eusb-disk.info ] ; then
+    echo
+    echo Note: Internal Flash drive not being used.
+    echo
+  else
+    echo Internal Flash drive is `cat /tmp/eusb-disk.info | cut -f3 -d/`
+  fi
+fi
+
+if [ ! -f /tmp/imgverify.out ] ; then
+  echo Installation failed.  No checksum verify output file.
+  ERR=1
+else
+  echo Checksum test results:
+  cat /tmp/imgverify.out | grep "== Using layout"
+  cat /tmp/imgverify.out | grep "== Image"
+fi
+
+if [ ! -f /tmp/eth-order-new.out ] ; then
+  echo Error, some problems with having the proper ethernet devices.
+  ERR=1
+else
+  echo Ethernet devices found:
+  cat /tmp/eth-order-new.out
+fi
+if [ -f /tmp/ethlooptest.dir/ethtest-eth0-*.log ] ; then
+  P_CNT=`grep "Result : PASS" /tmp/ethlooptest.dir/ethtest-*-*.log | wc -l | awk '{ print $1 }'`
+  F_CNT=`grep "Result : FAIL" /tmp/ethlooptest.dir/ethtest-*-*.log | wc -l | awk '{ print $1 }'`
+  echo Ethernet loop tests passed: ${P_CNT}, failed: ${F_CNT}
+else
+  echo Ethernet loop tests were not done.
+fi
+if [ ${ERR} -ne 0 ] ; then
+  echo Test failed
+  exit 1
+fi
+exit 0

@@ -1,0 +1,513 @@
+<?
+#
+# Filename:  servicecfg-uri.tem,v $
+# Date:      2009/05/20
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Namespace Configuration">
+<?
+	set config_type [tms::get-param query "type"]
+	if { [string length $config_type] == 0} {
+		set config_type "uri"
+	}
+?>
+<?
+      set ns_name_posted [tms::get-param query "nmname"]
+      set ns_prefix "/nkn/nvsd/namespace"
+      set ns_ids [tms::iterate-config $ns_prefix]
+      set ns_list {}
+      foreach ns_id $ns_ids {
+        set prefix_len [string length "$ns_prefix/"]
+        set ns_name [string range $ns_id $prefix_len end]
+	if { [string length $ns_name_posted] == 0} {
+	 set ns_name_posted $ns_name
+	}
+        lappend ns_list "$ns_name $ns_name"
+        }
+
+?>
+<?
+  set osvr_http_host 1
+  set osvr_http_abs_url 2
+  set osvr_http_follow_header 3
+  set osvr_http_desp_ip 4
+  set osvr_http_server_map 5
+  set osvr_nfs_host 6
+  set osvr_nfs_server_map 7
+
+  set os_http_host "true"
+  set os_http_abs_url "false"
+  set os_http_follow_header "false"
+  set os_http_desp_ip "false"
+  set os_http_server_map "false"
+  set os_nfs_host "false"
+  set os_nfs_server_map "false"
+ 
+
+?>
+<TMS-BODY>
+<TMS-PAGE-CONTENT "Namespace Configuration">
+<h2 align="center"> Namespace : <?=$ns_name_posted?> </h2>
+<CFG-FORM -action "config-form-nsconfig" -div_id "addnm_1">
+  <h2>Origin Server Configuration</h2>
+  <TMS-TABLE -div_id "nm_table_1">
+    <TMS-TABLE-ENTRY "HTTP Origin ">
+      <CFG-RADIO -id "originserver"
+      			-caps "set_privileged"
+			-checked "$os_http_host" -value "oshttphost"
+			-span_id "oshttphost">
+	Hostname			
+      <CFG-TEXTBOX -id "httphostname"
+                   -errname "httphostname" -caps "set_basic" -required "true"
+                   -type "string" -cols "16" -span_id "add_om_httphostname"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/origin-server/http/host/name">
+     <td width 1>
+     Port
+      <CFG-TEXTBOX -id "httpport"
+                   -errname "http port" -caps "set_basic" -required "false"
+                   -type "uint16" -cols "16" 
+                   -span_id "add_om_http_port"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/origin-server/http/host/port">
+     <td width 1>
+     <td width 1>
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "">
+      <CFG-RADIO -id "originserver"
+      			-caps "set_privileged"
+			-checked "$os_http_server_map" -value "oshttpservermap"
+			-span_id "httphost">
+      Server-map
+      <CFG-TEXTBOX -id "httpservermap"
+                   -errname "httpservermap" -caps "set_basic"
+                   -type "string" -cols "16" -required "false"
+                   -span_id "add_om_nfshostname" 
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/origin-server/http/server-map">
+     <td width 1>
+     <td width 1>
+     <td width 1>
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "">
+      <CFG-RADIO -id "originserver"
+      			-caps "set_privileged"
+			-checked "$os_http_abs_url" -value "oshttpabsurl"
+			-span_id "httphost"
+			-name "/nkn/nvsd/namespace/$ns_name_posted/origin-server/http/absolute-url">
+      Absolute-URL
+     <td width 1>
+     <td width 1>
+     <td width 1>
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "">
+      <CFG-RADIO -id "originserver"
+      			-caps "set_privileged"
+			-checked "$os_http_follow_header" -value "oshttpfollowheader"
+			-span_id "httphost">
+      Follow-Header
+      <CFG-TEXTBOX -id "httpfollowheader"
+                   -errname "http-followheader" -caps "set_basic"
+                   -type "string" -cols "16" -required "false"
+                   -span_id "add_om_nfshostname"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/origin-server/http/follow/header">
+
+     <td width 1>
+     <td width 1>
+     <td width 1>
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "NFS Origin">
+      <CFG-RADIO -id "originserver"
+      			-caps "set_privileged"
+			-checked "$os_nfs_host" -value "osnfshost"
+			-span_id "httphost">
+      Hostname
+      <CFG-TEXTBOX -id "nfshost"
+                   -errname "nfshostname" -caps "set_basic"
+                   -type "string" -cols "16" -required "false"
+                   -span_id "add_om_nfshostname"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/origin-server/nfs/host">
+     <td width 1>
+     Port
+      <CFG-TEXTBOX -id "nfsport"
+                   -errname "nfsport" -caps "set_basic" -required "false"
+                   -type "uint16" -cols "16" -span_id "add_om_nfsport"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/origin-server/nfs/port">
+     <td width 1>
+     <td width 1>
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "">
+      <CFG-RADIO -id "originserver"
+      			-caps "set_privileged"
+			-checked "$os_nfs_server_map" -value "osnfsservermap"
+			-span_id "httphost">
+      Server-map
+      <CFG-TEXTBOX -id "nfsservermap"
+                   -errname "nfsservermap" -caps "set_basic"
+                   -type "string" -cols "16" -required "false"
+                   -span_id "add_om_nfshostname"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/origin-server/nfs/server-map">
+     <td width 1>
+     <td width 1>
+     <td width 1>
+    <td width 4>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Domain">
+      <CFG-RADIO -id "domainname"
+      			-caps "set_privileged"
+			-checked "true" -value "host"
+			-span_id "host">
+	Host
+      <CFG-TEXTBOX -id "host"
+                   -errname "domain-host" -caps "set_basic"
+                   -type "string" -cols "16" -required "true"
+                   -span_id "add_domainname"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/domain/host">
+     <td width 1>
+     <td width 1>
+     <td width 1>
+     <td width 4>
+     </TMS-TABLE-ENTRY>	
+     <TMS-TABLE-ENTRY "">
+      <CFG-RADIO -id "domainname"
+      			-caps "set_privileged"
+			-checked "false" -value "regex"
+			-span_id "host">
+	Regex
+      <CFG-TEXTBOX -id "regex"
+                   -errname "domain-regex" -caps "set_basic"
+                   -type "string" -cols "16" -required "true"
+                   -span_id "add_domainname"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/domain/regex">
+     <td width 1>
+     <td width 1>
+     <td width 1>
+     <td width 4>
+     </TMS-TABLE-ENTRY>	
+</TMS-TABLE>
+  <input type="hidden" name="f_namespace" value="<?=$ns_name_posted?>">
+  <CFG-BUTTON -type "add" -text "Apply" -caps "set_basic"
+              -span_id "namespace_add_1">
+</CFG-FORM>	      
+<CFG-FORM -action "config-form-nsconfig" -div_id "namespace_config_2">
+	<h2>HTTP  Match Details </h2>
+	<?
+		set precedence_list [list 0 1 2 3 4 5 6 7 8 9 10]
+	?>
+	<TMS-TABLE -div_id "namespace_table_2">
+	<TMS-TABLE-ENTRY "Precedence">
+	<select name="f_precedence" size="1">
+	        <FOREACH precedence $precedence_list>
+		<option value="<?=$precedence?>"><?=$precedence?></option>
+		</FOREACH>
+	</select>
+	     	<td width 1>
+		<td width 1>
+		<td width 1>
+		<td width 4>
+	</TMS-TABLE-ENTRY>
+	<TMS-TABLE-ENTRY "URI">
+		<CFG-RADIO -id "matchtype"
+      			-caps "set_privileged"
+			-checked "true" -value "uriname"
+			-span_id "httphost">
+	      	  uri-name
+	      	<CFG-TEXTBOX -id "uriname"
+                   -errname "uriname" -caps "set_basic"
+                   -type "string" -cols "16" -required "true"
+                   -span_id "add_name"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/match/uri/uri_name">
+	     	<td width 1>
+		<td width 1>
+		<td width 1>
+		<td width 4>
+	</TMS-TABLE-ENTRY>
+	<TMS-TABLE-ENTRY "">
+		<CFG-RADIO -id "matchtype"
+      			-caps "set_privileged"
+			-checked "false" -value "uriregex"
+			-span_id "httphost">
+	      	  uri-regex
+	      	<CFG-TEXTBOX -id "uriregex"
+                   -errname "uriregex" -caps "set_basic"
+                   -type "string" -cols "16" -required "true"
+                   -span_id "add_name"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/match/uri/regex">
+	     	<td width 1>
+		<td width 1>
+		<td width 1>
+		<td width 4>
+	</TMS-TABLE-ENTRY>
+	<TMS-TABLE-ENTRY "Header">
+		<CFG-RADIO -id "matchtype"
+      			-caps "set_privileged"
+			-checked "false" -value "headernamevalue"
+			-span_id "httphost">
+	      	header-name
+	      	<CFG-TEXTBOX -id "headername"
+                   -errname "header-name" -caps "set_basic"
+                   -type "string" -cols "16" -required "true"
+                   -span_id "add_name"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/match/header/name">
+		header-value
+	      	<CFG-TEXTBOX -id "headervalue"
+                   -errname "header-value" -caps "set_basic"
+                   -type "string" -cols "16" -required "true"
+                   -span_id "add_name"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/match/header/value">
+	     	<td width 1>
+		<td width 1>
+		<td width 1>
+		<td width 4>
+	</TMS-TABLE-ENTRY>
+	<TMS-TABLE-ENTRY "">
+		<CFG-RADIO -id "matchtype"
+      			-caps "set_privileged"
+			-checked "false" -value "headerregex"
+			-span_id "httphost">
+	      	 header-regex
+	      	<CFG-TEXTBOX -id "headerregex"
+                   -errname "header-regex" -caps "set_basic"
+                   -type "string" -cols "16" -required "true"
+                   -span_id "add_name"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/match/header/regex">
+	     	<td width 1>
+		<td width 1>
+		<td width 1>
+		<td width 4>
+	</TMS-TABLE-ENTRY>
+	<TMS-TABLE-ENTRY "Query-string">
+		<CFG-RADIO -id "matchtype"
+      			-caps "set_privileged"
+			-checked "false" -value "querynamevalue"
+			-span_id "httphost">
+	      	query-name
+	      	<CFG-TEXTBOX -id "queryname"
+                   -errname "query-name" -caps "set_basic"
+                   -type "string" -cols "16" -required "true"
+                   -span_id "add_name"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/match/query-string/name">
+		query-value
+	      	<CFG-TEXTBOX -id "queryvalue"
+                   -errname "query-value" -caps "set_basic"
+                   -type "string" -cols "16" -required "true"
+                   -span_id "add_name"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/match/query-string/value">
+	     	<td width 1>
+		<td width 1>
+		<td width 1>
+		<td width 4>
+	</TMS-TABLE-ENTRY>
+	<TMS-TABLE-ENTRY "">
+		<CFG-RADIO -id "matchtype"
+      			-caps "set_privileged"
+			-checked "false" -value "queryregex"
+			-span_id "httphost">
+	      	 query-regex
+	      	<CFG-TEXTBOX -id "queryregex"
+                   -errname "queryregex" -caps "set_basic"
+                   -type "string" -cols "16" -required "true"
+                   -span_id "add_name"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/match/query-string/regex">
+	     	<td width 1>
+		<td width 1>
+		<td width 1>
+		<td width 4>
+	</TMS-TABLE-ENTRY>
+	<TMS-TABLE-ENTRY "Virtual-host">
+		<CFG-RADIO -id "matchtype"
+      			-caps "set_privileged"
+			-checked "false" -value "virtualip"
+			-span_id "httphost">
+	      	virtual-IP
+	      	<CFG-TEXTBOX -id "virtualip"
+                   -errname "virtual-ip" -caps "set_basic"
+                   -type "ipv4addr" -cols "16" -required "true"
+                   -span_id "add_name">
+		virtual-port
+	      	<CFG-TEXTBOX -id "virtualport"
+                   -errname "virtual-ip-port" -caps "set_basic"
+                   -type "uint16" -cols "16" -required "true"
+                   -span_id "add_name">
+	     	<td width 1>
+		<td width 1>
+		<td width 1>
+		<td width 4>
+	</TMS-TABLE-ENTRY>
+	</TMS-TABLE>
+  <input type="hidden" name="f_namespace" value="<?=$ns_name_posted?>">
+  <CFG-BUTTON -type "matchadd" -text "Apply" -caps "set_basic"
+              -span_id "namespace_add_1">
+</CFG-FORM>
+
+
+<CFG-FORM  -div_id "namespace_config_2">
+  <h2> Parameters </h2>
+  <TMS-TABLE -div_id "namespace_table_2">
+
+    <TMS-TABLE-ENTRY "Cache Inherit">
+      <CFG-TEXTBOX -id "cache_inherit" -errname "Cache Inherit" 
+                   -caps "set_basic" -required "true"
+                   -type "string" -span_id "set_cache_inherit"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/cache_inherit">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Status Active">
+      <CFG-CHECKBOX -id "status/active" -errname "status active" 
+                   -caps "set_basic" 
+                   -type "bool" -span_id "set_status"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/status/active">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Virtual Player">
+      <CFG-TEXTBOX -id "virtual_player" -errname "Virtual Player" 
+                   -caps "set_basic" -required "true"
+                   -type "string" -span_id "set_vp"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/virtual_player">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Delivery Protocol">
+      <CFG-CHECKBOX -id "httpproto" 
+                   -errname "delivery protocol http" 
+                   -caps "set_basic" -type "bool" 
+                   -span_id "add_delivery_protocol_http"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/delivery/proto/http">
+      http
+      <CFG-CHECKBOX -id "rtspproto" 
+                   -errname "delivery protocol rtsp" 
+                   -caps "set_basic" -type "bool" 
+                   -span_id "add_delivery_protocol_rtsp"
+		   -name "/nkn/nvsd/namespace/$ns_name_posted/delivery/proto/rtsp">
+      rtsp
+    </TMS-TABLE-ENTRY>
+    <!--
+    <TMS-TABLE-ENTRY "Proxy Mode">
+      <CFG-DROPDOWN -id "proxy-mode" -errname "Proxy Mode" 
+                   -caps "set_basic" -required "false"
+                   -type "string" -span_id "set_pm" -options { {"reverse" "reverse"} {"mid-tier" "mid-tier"} {"virtual" "virtual"} }>
+    </TMS-TABLE-ENTRY>
+    -->
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+  <CFG-BUTTON -type "add" -text "Apply" -caps "set_basic"
+              -span_id "vp_apply_1">
+</CFG-FORM>
+
+  <h2>Pre-Stage User Configuration</h2>
+  <?
+       set  nm_id "/nkn/nvsd/namespace/$ns_name_posted"	
+       set ftp_user [tms::get-config "$nm_id/prestage/user/$ns_name_posted"]
+       set ftp_user_suffix "_ftpuser"
+       set ftp_user "$ns_name_posted$ftp_user_suffix"
+       set passwd_node "$nm_id/prestage/user/$ftp_user/password"
+       lappend ftpuser_list "$ftp_user $ftp_user"
+   ?>
+   <h3>Configure Password for <?= $ftp_user ?> </h3>
+<CFG-FORM -action "password" -div_id "addnm_1">
+    <TMS-TABLE -div_id "ftpusers_table_1">
+      <TMS-TABLE-ENTRY "New Password">
+        <CFG-PASSWORDBOX -id "password" -caps "set_privileged" -cols "20"
+                         -span_id "users_pass">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Confirm Password">
+        <CFG-PASSWORDBOX -id "confirm" -caps "set_privileged" -cols "20"
+                         -span_id "password_confirm">
+      </TMS-TABLE-ENTRY>
+      <CFG-SET -id "account" -value "$ftp_user" -span_id "users_account">
+    <TMS-TABLE-SPACE>
+    </TMS-TABLE>
+    <CFG-BUTTON -type "apply" -text "Change Password" -caps "set_privileged"
+                -span_id "users_apply_1">
+</CFG-FORM>
+<CFG-FORM  -div_id "namespace_config_1">
+  <h2> Origin Fetch Configuration </h2>
+  <h3> HTTP Origin Fetch Configuration </h3>
+  <TMS-TABLE -div_id "namespace_table_1">
+    <TMS-TABLE-ENTRY "Cache Age Default">
+      <CFG-TEXTBOX -id "cache-age/default" -errname "Cache Age" 
+                   -caps "set_basic" -required "false"
+                   -type "uint32" -span_id "set_cache_age"
+	-name "/nkn/nvsd/origin_fetch/config/$ns_name_posted/cache-age/default">
+    </TMS-TABLE-ENTRY>
+
+
+    <TMS-TABLE-ENTRY "Date Header Modify Enable">
+      <CFG-CHECKBOX -id "date-header/modify" -errname "Date Header" 
+                   -caps "set_basic"
+                   -type "bool" -span_id "set_datehdr"
+	-name "/nkn/nvsd/origin_fetch/config/$ns_name_posted/date-header/modify">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Cache Directive">
+      <CFG-DROPDOWN -id "cache-directive/no-cache" -errname "Cache Directive" 
+                   -caps "set_basic" 
+                   -type "string" -span_id "set_status" -options 
+                    { {"follow" "follow"}
+                      {"override" "override" }}
+	-name "/nkn/nvsd/origin_fetch/config/$ns_name_posted/cache-directive/no-cache">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Content Store Media Cache Age Threshold">
+      <CFG-TEXTBOX -id "content-store/media/cache-age-threshold" 
+                   -errname "content store" -required "false"
+                   -caps "set_basic"
+                   -type "uint32" -span_id "set_cntstore"
+	-name "/nkn/nvsd/origin_fetch/config/$ns_name_posted/content-store/media/cache-age-threshold">
+    </TMS-TABLE-ENTRY>
+
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "add" -text "Apply" -caps "set_basic"
+              -span_id "vp_apply_1">
+</CFG-FORM>
+
+<CFG-FORM  -div_id "namespace_config_1">
+  <h3> RTSP Origin Fetch Configuration </h3>
+  <TMS-TABLE -div_id "namespace_table_1">
+    <TMS-TABLE-ENTRY "Cache Age Default">
+      <CFG-TEXTBOX -id "cache-age/default" -errname "Cache Age" 
+                   -caps "set_basic" -required "false"
+                   -type "uint32" -span_id "set_cache_age"
+	-name "/nkn/nvsd/origin_fetch/config/$ns_name_posted/rtsp/cache-age/default">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Cache Directive">
+      <CFG-DROPDOWN -id "cache-directive/no-cache" -errname "Cache Directive" 
+                   -caps "set_basic" 
+                   -type "string" -span_id "set_status" -options 
+                    { {"follow" "follow"}
+                      {"override" "override" }}
+	-name "/nkn/nvsd/origin_fetch/config/$ns_name_posted/rtsp/cache-directive/no-cache">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Content Store Media Cache Age Threshold">
+      <CFG-TEXTBOX -id "content-store/media/cache-age-threshold" 
+                   -errname "content store" -required "false"
+                   -caps "set_basic"
+                   -type "uint32" -span_id "set_cntstore"
+	-name "/nkn/nvsd/origin_fetch/config/$ns_name_posted/rtsp/content-store/media/cache-age-threshold">
+    </TMS-TABLE-ENTRY>
+
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "add" -text "Apply" -caps "set_basic"
+              -span_id "vp_apply_1">
+</CFG-FORM>
+<INPUT type="button" value="Done" onclick="window.close()">
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

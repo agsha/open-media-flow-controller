@@ -1,0 +1,1135 @@
+#!/bin/bash
+#
+# /etc/rc.d/rc.sysinit - run once at boot time
+#
+# Taken in part from Miquel van Smoorenburg's bcheckrc.
+#
+
+HOSTNAME=$(/bin/hostname)
+
+set -m
+
+########## Tall Maple Systems notes ##########
+#
+# Substantial changes of ours below have a banner like this one around
+# them.  Changes which disable some base functionality are done by
+# adding the test:
+#
+#    "tms" = "=== DISABLED ==="
+#
+# ... around the functionality in question.  This is done to help reduce
+# the diffs we have compared with the approaches of removing or
+# commenting out the undesired code.
+#
+##########
+
+if [ "tms" = "=== DISABLED ===" -a -f /etc/sysconfig/network ]; then
+    . /etc/sysconfig/network
+fi
+if [ -z "$HOSTNAME" -o "$HOSTNAME" = "(none)" ]; then
+    HOSTNAME=localhost
+fi
+
+if [ ! -e /proc/mounts ]; then
+	mount -n -t proc /proc /proc
+	mount -n -t sysfs /sys /sys >/dev/null 2>&1
+fi
+if [ ! -d /proc/bus/usb ]; then
+	modprobe usbcore >/dev/null 2>&1 && mount -n -t usbfs /proc/bus/usb /proc/bus/usb
+else
+	mount -n -t usbfs /proc/bus/usb /proc/bus/usb
+fi
+
+. /etc/init.d/functions
+
+########## Tall Maple Systems addition: build version ##########
+. /etc/build_version.sh
+##########
+
+PLYMOUTH=
+[ -x /bin/plymouth ] && PLYMOUTH=yes
+
+# Check SELinux status
+SELINUX_STATE=
+if [ -e "/selinux/enforce" ] && [ "$(cat /proc/self/attr/current)" != "kernel" ]; then
+	if [ -r "/selinux/enforce" ] ; then
+		SELINUX_STATE=$(cat "/selinux/enforce")
+	else
+		# assume enforcing if you can't read it
+		SELINUX_STATE=1
+	fi
+fi
+
+if [ -n "$SELINUX_STATE" -a -x /sbin/restorecon ] && __fgrep " /dev " /proc/mounts >/dev/null 2>&1 ; then
+	/sbin/restorecon -R -F /dev 2>/dev/null
+fi
+
+disable_selinux() {
+	echo $"*** Warning -- SELinux is active"
+	echo $"*** Disabling security enforcement for system recovery."
+	echo $"*** Run 'setenforce 1' to reenable."
+	echo "0" > "/selinux/enforce"
+}
+
+relabel_selinux() {
+    # if /sbin/init is not labeled correctly this process is running in the
+    # wrong context, so a reboot will be required after relabel
+    AUTORELABEL=
+    . /etc/selinux/config
+    echo "0" > /selinux/enforce
+    [ -n "$PLYMOUTH" ] && plymouth --hide-splash
+
+    if [ "$AUTORELABEL" = "0" ]; then
+	echo
+	echo $"*** Warning -- SELinux ${SELINUXTYPE} policy relabel is required. "
+	echo $"*** /etc/selinux/config indicates you want to manually fix labeling"
+	echo $"*** problems. Dropping you to a shell; the system will reboot"
+	echo $"*** when you leave the shell."
+#####	start rcS-emergency
+
+    else
+	echo
+	echo $"*** Warning -- SELinux ${SELINUXTYPE} policy relabel is required."
+	echo $"*** Relabeling could take a very long time, depending on file"
+	echo $"*** system size and speed of hard drives."
+
+	/sbin/fixfiles -F restore > /dev/null 2>&1
+    fi
+    rm -f  /.autorelabel
+    echo $"Unmounting file systems"
+    umount -a
+    mount -n -o remount,ro /
+    echo $"Automatic reboot in progress."
+    reboot -f
+}
+
+# Print a text banner.
+echo -e $"\nStarting: ${BUILD_PROD_VERSION}"
+if [ "tms" = "=== DISABLED ===" ]; then
+# TMS disabled starts
+echo -en $"\t\tWelcome to "
+read -r system_release < /etc/system-release
+if [[ "$system_release" == *"Red Hat"* ]]; then
+ [ "$BOOTUP" = "color" ] && echo -en "\\033[0;31m"
+ echo -en "Red Hat"
+ [ "$BOOTUP" = "color" ] && echo -en "\\033[0;39m"
+ PRODUCT=$(sed "s/Red Hat \(.*\) release.*/\1/" /etc/system-release)
+ echo " $PRODUCT"
+elif [[ "$system_release" == *Fedora* ]]; then
+ [ "$BOOTUP" = "color" ] && echo -en "\\033[0;34m"
+ echo -en "Fedora"
+ [ "$BOOTUP" = "color" ] && echo -en "\\033[0;39m"
+ PRODUCT=$(sed "s/Fedora \(.*\) \?release.*/\1/" /etc/system-release)
+ echo " $PRODUCT"
+elif [[ "$system_release" =~ "CentOS" ]]; then
+ [ "$BOOTUP" = "color" ] && echo -en "\\033[0;36m"
+ echo -en "CentOS"
+ [ "$BOOTUP" = "color" ] && echo -en "\\033[0;39m"
+ PRODUCT=$(sed "s/CentOS \(.*\) \?release.*/\1/" /etc/system-release)
+ echo " $PRODUCT"
+else
+ PRODUCT=$(sed "s/ release.*//g" /etc/system-release)
+ echo "$PRODUCT"
+fi
+fi # TMS disabled ends
+
+# Only read this once.
+cmdline=$(cat /proc/cmdline)
+
+# Initialize hardware
+if [ -f /proc/sys/kernel/modprobe ]; then
+   if ! strstr "$cmdline" nomodules && [ -f /proc/modules ] ; then
+       sysctl -w kernel.modprobe="/sbin/modprobe" >/dev/null 2>&1
+   else
+       # We used to set this to NULL, but that causes 'failed to exec' messages"
+       sysctl -w kernel.modprobe="/bin/true" >/dev/null 2>&1
+   fi
+fi
+
+touch /dev/.in_sysinit >/dev/null 2>&1
+
+# Set default affinity
+if [ -x /bin/taskset ]; then
+   if strstr "$cmdline" default_affinity= ; then
+     for arg in $cmdline ; do
+         if [ "${arg##default_affinity=}" != "${arg}" ]; then
+             /bin/taskset -p ${arg##default_affinity=} 1
+         fi
+     done
+   fi
+fi
+
+nashpid=$(pidof nash 2>/dev/null)
+[ -n "$nashpid" ] && kill $nashpid >/dev/null 2>&1
+unset nashpid
+/sbin/start_udev
+
+# Load other user-defined modules
+if [ "tms" = "=== DISABLED ===" ]; then
+# TMS disabled starts
+for file in /etc/sysconfig/modules/*.modules ; do
+  [ -x $file ] && $file
+done
+fi # TMS disabled ends
+
+# Load modules (for backward compatibility with VARs)
+if [ -f /etc/rc.modules ]; then
+	/etc/rc.modules
+fi
+
+mount -n /dev/pts >/dev/null 2>&1
+[ -n "$SELINUX_STATE" ] && restorecon -F /dev/pts >/dev/null 2>&1
+
+# Configure kernel parameters
+update_boot_stage RCkernelparam
+apply_sysctl
+
+
+########## Tall Maple Systems change: reset invalid times  ##########
+TDATE=$(date -u '+%Y%m%d')
+if [ -z "${TDATE}" ]; then
+    TDATE=19020101
+fi
+if [ ${TDATE} -ge 20380119 -o ${TDATE} -lt 19700101 ]; then
+    date -u '010100001970'
+    action $"Resetting invalid clock to: `date`" /bin/true
+fi
+unset TDATE
+
+##########
+
+# Set the hostname.
+update_boot_stage RChostname
+action $"Setting hostname ${HOSTNAME}: " hostname ${HOSTNAME}
+[ -n "${NISDOMAIN}" ] && domainname ${NISDOMAIN}
+
+# Sync waiting for storage.
+{ rmmod scsi_wait_scan ; modprobe scsi_wait_scan ; rmmod scsi_wait_scan ; } >/dev/null 2>&1
+
+# Device mapper & related initialization
+if ! __fgrep "device-mapper" /proc/devices >/dev/null 2>&1 ; then
+       modprobe dm-mod >/dev/null 2>&1
+fi
+
+if [ -f /etc/crypttab ]; then
+    init_crypto 0
+fi
+
+if ! strstr "$cmdline" nompath && [ -f /etc/multipath.conf -a \
+		-x /sbin/multipath ]; then
+	modprobe dm-multipath > /dev/null 2>&1
+	/sbin/multipath -v 0
+	if [ -x /sbin/kpartx ]; then
+		/sbin/dmsetup ls --target multipath --exec "/sbin/kpartx -a -p p" >/dev/null
+	fi
+fi
+
+if ! strstr "$cmdline" nodmraid && [ -x /sbin/dmraid ]; then
+	modprobe dm-mirror >/dev/null 2>&1
+	dmraidsets=$(LC_ALL=C /sbin/dmraid -s -c -i)
+	if [ "$?" = "0" ]; then
+		for dmname in $dmraidsets; do
+			if [[ "$dmname" == isw_* ]] && \
+			   ! strstr "$cmdline" noiswmd; then
+				continue
+			fi
+			/sbin/dmraid -ay -i --rm_partitions -p "$dmname" >/dev/null 2>&1
+			/sbin/kpartx -a -p p "/dev/mapper/$dmname"
+		done
+	fi
+fi
+
+# Start any MD RAID arrays that haven't been started yet
+[ -r /proc/mdstat -a -r /dev/md/md-device-map ] && /sbin/mdadm -IRs
+
+if [ -x /sbin/lvm ]; then
+	action $"Setting up Logical Volume Management:" /sbin/lvm vgchange -a y --sysinit
+fi
+
+if [ -f /etc/crypttab ]; then
+    init_crypto 0
+fi
+
+if [ -f /fastboot ] || strstr "$cmdline" fastboot ; then
+	fastboot=yes
+fi
+
+if [ -f /fsckoptions ]; then
+	fsckoptions=$(cat /fsckoptions)
+fi
+
+if [ -f /forcefsck ] || strstr "$cmdline" forcefsck ; then
+	fsckoptions="-f $fsckoptions"
+elif [ -f /.autofsck ]; then
+	[ "tms" = "=== DISABLED ===" -a -f /etc/sysconfig/autofsck ] && . /etc/sysconfig/autofsck
+	if [ "$AUTOFSCK_DEF_CHECK" = "yes" ]; then
+		AUTOFSCK_OPT="$AUTOFSCK_OPT -f"
+	fi
+	if [ -n "$AUTOFSCK_SINGLEUSER" ]; then
+		[ -n "$PLYMOUTH" ] && plymouth --hide-splash
+		echo
+		echo $"*** Warning -- the system did not shut down cleanly. "
+		echo $"*** Dropping you to a shell; the system will continue"
+		echo $"*** when you leave the shell."
+		[ -n "$SELINUX_STATE" ] && echo "0" > /selinux/enforce
+#####		start rcS-emergency
+		[ -n "$SELINUX_STATE" ] && echo "1" > /selinux/enforce
+		[ -n "$PLYMOUTH" ] && plymouth --show-splash
+	fi
+	fsckoptions="$AUTOFSCK_OPT $fsckoptions"
+fi
+
+if [ "$BOOTUP" = "color" ]; then
+	fsckoptions="-C $fsckoptions"
+else
+	fsckoptions="-V $fsckoptions"
+fi
+
+READONLY=
+if [ "tms" = "=== DISABLED ===" -a -f /etc/sysconfig/readonly-root ]; then
+	. /etc/sysconfig/readonly-root
+fi
+if strstr "$cmdline" readonlyroot ; then
+	READONLY=yes
+	[ -z "$RW_MOUNT" ] && RW_MOUNT=/var/lib/stateless/writable
+	[ -z "$STATE_MOUNT" ] && STATE_MOUNT=/var/lib/stateless/state
+fi
+if strstr "$cmdline" noreadonlyroot ; then
+	READONLY=no
+fi
+
+########## Tall Maple Systems change: set READONLY setting ##########
+READONLY=no
+TEMPORARY_STATE=no
+##########
+
+if [ "$READONLY" = "yes" -o "$TEMPORARY_STATE" = "yes" ]; then
+
+	mount_empty() {
+		if [ -e "$1" ]; then
+			echo "$1" | cpio -p -vd "$RW_MOUNT" &>/dev/null
+			mount -n --bind "$RW_MOUNT$1" "$1"
+		fi
+	}
+
+	mount_dirs() {
+		if [ -e "$1" ]; then
+			mkdir -p "$RW_MOUNT$1"
+			find "$1" -type d -print0 | cpio -p -0vd "$RW_MOUNT" &>/dev/null
+			mount -n --bind "$RW_MOUNT$1" "$1"
+		fi
+	}
+
+	mount_files() {
+		if [ -e "$1" ]; then
+			cp -a --parents "$1" "$RW_MOUNT"
+			mount -n --bind "$RW_MOUNT$1" "$1"
+		fi
+	}
+
+	# Common mount options for scratch space regardless of
+	# type of backing store
+	mountopts=
+
+	# Scan partitions for local scratch storage
+	rw_mount_dev=$(blkid -t LABEL="$RW_LABEL" -l -o device)
+
+	# First try to mount scratch storage from /etc/fstab, then any
+	# partition with the proper label.  If either succeeds, be sure
+	# to wipe the scratch storage clean.  If both fail, then mount
+	# scratch storage via tmpfs.
+	if mount $mountopts "$RW_MOUNT" > /dev/null 2>&1 ; then
+		rm -rf "$RW_MOUNT" > /dev/null 2>&1
+	elif [ x$rw_mount_dev != x ] && mount $rw_mount_dev $mountopts "$RW_MOUNT" > /dev/null 2>&1; then
+		rm -rf "$RW_MOUNT"  > /dev/null 2>&1
+	else
+		mount -n -t tmpfs $RW_OPTIONS $mountopts none "$RW_MOUNT"
+	fi
+
+	for file in /etc/rwtab /etc/rwtab.d/* /dev/.initramfs/rwtab ; do
+		is_ignored_file "$file" && continue
+	[ -f $file ] && cat $file | while read type path ; do
+			case "$type" in
+				empty)
+					mount_empty $path
+					;;
+				files)
+					mount_files $path
+					;;
+				dirs)
+					mount_dirs $path
+					;;
+				*)
+					;;
+			esac
+			[ -n "$SELINUX_STATE" -a -e "$path" ] && restorecon -R "$path"
+		done
+	done
+
+	# Use any state passed by initramfs
+	[ -d /dev/.initramfs/state ] && cp -a /dev/.initramfs/state/* $RW_MOUNT
+
+	# In theory there should be no more than one network interface active
+	# this early in the boot process -- the one we're booting from.
+	# Use the network address to set the hostname of the client.  This
+	# must be done even if we have local storage.
+	ipaddr=
+	if [ "$HOSTNAME" = "localhost" -o "$HOSTNAME" = "localhost.localdomain" ]; then
+		ipaddr=$(ip addr show to 0.0.0.0/0 scope global | awk '/[[:space:]]inet / { print gensub("/.*","","g",$2) }')
+		for ip in $ipaddr ; do
+			HOSTNAME=
+			eval $(ipcalc -h $ip 2>/dev/null)
+			[ -n "$HOSTNAME" ] && { hostname ${HOSTNAME} ; break; }
+		done
+	fi
+	
+	# Clients with read-only root filesystems may be provided with a
+	# place where they can place minimal amounts of persistent
+	# state.  SSH keys or puppet certificates for example.
+	#
+	# Ideally we'll use puppet to manage the state directory and to
+	# create the bind mounts.  However, until that's all ready this
+	# is sufficient to build a working system.
+
+	# First try to mount persistent data from /etc/fstab, then any
+	# partition with the proper label, then fallback to NFS
+	state_mount_dev=$(blkid -t LABEL="$STATE_LABEL" -l -o device)
+	if mount $mountopts $STATE_OPTIONS "$STATE_MOUNT" > /dev/null 2>&1 ; then
+		/bin/true
+	elif [ x$state_mount_dev != x ] && mount $state_mount_dev $mountopts "$STATE_MOUNT" > /dev/null 2>&1;  then
+		/bin/true
+	elif [ ! -z "$CLIENTSTATE" ]; then
+		# No local storage was found.  Make a final attempt to find
+		# state on an NFS server.
+
+		mount -t nfs $CLIENTSTATE/$HOSTNAME $STATE_MOUNT -o rw,nolock
+	fi
+
+	if [ -w "$STATE_MOUNT" ]; then
+
+		mount_state() {
+			if [ -e "$1" ]; then
+				[ ! -e "$STATE_MOUNT$1" ] && cp -a --parents "$1" "$STATE_MOUNT"
+				mount -n --bind "$STATE_MOUNT$1" "$1"
+			fi
+		}
+
+		for file in /etc/statetab /etc/statetab.d/* ; do
+			is_ignored_file "$file" && continue
+			[ ! -f "$file" ] && continue
+
+			if [ -f "$STATE_MOUNT/$file" ] ; then
+				mount -n --bind "$STATE_MOUNT/$file" "$file"
+			fi
+
+			for path in $(grep -v "^#" "$file" 2>/dev/null); do
+				mount_state "$path"
+				[ -n "$SELINUX_STATE" -a -e "$path" ] && restorecon -R "$path"
+			done
+		done
+
+		if [ -f "$STATE_MOUNT/files" ] ; then
+			for path in $(grep -v "^#" "$STATE_MOUNT/files" 2>/dev/null); do
+				mount_state "$path"
+				[ -n "$SELINUX_STATE" -a -e "$path" ] && restorecon -R "$path"
+			done
+		fi
+	fi
+fi
+
+########## Tall Maple Systems addition: layout and set our readonly ##########
+
+# Make sure we listen to anything image_layout.sh may have to say
+. /etc/image_layout.sh
+. /etc/layout_settings.sh
+. /etc/image_layout.sh
+
+eval 'ROOT_IS_READ_ONLY="${IL_LO_'${IL_LAYOUT}'_ROOT_RDONLY}"'
+if [ -z "$ROOT_IS_READ_ONLY" ]; then
+    ROOT_IS_READ_ONLY=0
+fi
+
+##########
+
+if [[ " $fsckoptions" != *" -y"* ]]; then
+########## Tall Maple Systems addition: fsck auto attempt fixing (part 1/2) ##########
+        fsckoptions_no_dash_a="$fsckoptions"
+##########
+	fsckoptions="-a $fsckoptions"
+fi
+
+_RUN_QUOTACHECK=0
+if [ -f /forcequotacheck ] || strstr "$cmdline" forcequotacheck ; then
+	_RUN_QUOTACHECK=1
+fi
+if [ -z "$fastboot" -a "$READONLY" != "yes" ]; then
+
+        STRING=$"Checking filesystems"
+	echo $STRING
+	fsck -T -t noopts=_netdev -A $fsckoptions
+	rc=$?
+
+########## Tall Maple Systems addition: fsck auto attempt fixing (part 2/2) ##########
+        # A return of 4 or higher means there were serious problems.
+	if [ "$rc" -ge "4" ]; then
+                echo $"*** An error occurred during the file system check."
+                echo $"*** Trying auto recovery."
+                fsck -T -A -y $fsckoptions_no_dash_a
+                rc=$?
+        fi
+##########
+
+	if [ "$rc" -eq "0" ]; then
+		success "$STRING"
+		echo
+	elif [ "$rc" -eq "1" ]; then
+	        passed "$STRING"
+		echo
+	elif [ "$rc" -eq "2" -o "$rc" -eq "3" ]; then
+		echo $"Unmounting file systems"
+		umount -a
+		mount -n -o remount,ro /
+		echo $"Automatic reboot in progress."
+		reboot -f
+        fi
+	
+        # A return of 4 or higher means there were serious problems.
+	if [ $rc -gt 1 ]; then
+		[ -n "$PLYMOUTH" ] && plymouth --hide-splash
+
+		failure "$STRING"
+		echo
+		echo
+		echo $"*** An error occurred during the file system check."
+		echo $"*** The system will reboot."
+#####		echo $"*** Dropping you to a shell; the system will reboot"
+#####		echo $"*** when you leave the shell."
+
+                str=$"(Repair filesystem)"
+		PS1="$str \# # "; export PS1
+		[ "$SELINUX_STATE" = "1" ] && disable_selinux
+#####		start rcS-emergency
+
+		echo $"Unmounting file systems"
+		umount -a
+		mount -n -o remount,ro /
+		echo $"Automatic reboot in progress."
+		reboot -f
+	elif [ "$rc" -eq "1" ]; then
+		_RUN_QUOTACHECK=1
+	fi
+fi
+
+remount_needed() {
+  local state oldifs
+  [ "$READONLY" = "yes" ] && return 1
+  state=$(LC_ALL=C awk '/ \/ / && ($3 !~ /rootfs/) { print $4 }' /proc/mounts)
+  oldifs=$IFS
+  IFS=","
+  for opt in $state ; do
+	if [ "$opt" = "rw" ]; then
+		IFS=$oldifs
+		return 1
+	fi
+  done
+  IFS=$oldifs
+  return 0
+}
+
+# Remount the root filesystem read-write.
+update_boot_stage RCmountfs
+if remount_needed ; then
+  action $"Remounting root filesystem in read-write mode: " mount -n -o remount,rw /
+fi
+
+# Clean up SELinux labels
+if [ -n "$SELINUX_STATE" ]; then
+   restorecon /etc/mtab /etc/ld.so.cache /etc/blkid/blkid.tab /etc/resolv.conf >/dev/null 2>&1
+fi
+
+# If relabeling, relabel mount points.
+if [ -n "$SELINUX_STATE" -a "$READONLY" != "yes" ]; then
+    if [ -f /.autorelabel ] || strstr "$cmdline" autorelabel ; then
+	restorecon $(awk '!/^#/ && $4 !~ /noauto/ && $2 ~ /^\// { print $2 }' /etc/fstab) >/dev/null 2>&1
+    fi
+fi
+
+if [ "$READONLY" != "yes" ] ; then
+	# Clear mtab
+	(> /etc/mtab) &> /dev/null
+
+	# Remove stale backups
+	rm -f /etc/mtab~ /etc/mtab~~
+
+	# Enter mounted filesystems into /etc/mtab
+	mount -f /
+	mount -f /proc >/dev/null 2>&1
+	mount -f /sys >/dev/null 2>&1
+	mount -f /dev/pts >/dev/null 2>&1
+	mount -f /dev/shm >/dev/null 2>&1
+        if [ -d /proc/bus/usb ]; then
+            mount -f /proc/bus/usb >/dev/null 2>&1
+        fi
+fi
+
+########## Tall Maple Systems additions: make mount points #####
+# A few hard-coded ones we don't want to miss
+mkdir -p -m 755 /boot
+mkdir -p -m 755 /bootmgr
+mkdir -p -m 755 /config
+mkdir -p -m 755 /var
+mkdir -p -m 755 /proc
+mkdir -p -m 755 /sys
+mkdir -p -m 755 /vtmp
+# All the ones we think are "real" mount points
+for mountpt in $(LC_ALL=C awk '!/^#/ && $1 != "none" && $1 ~ /^LABEL=|^\// && $2 ~ /\// && $4 !~ /noauto/ { print $2 }' /etc/fstab) ; do
+    mountpt="$(fstab-decode echo "$mountpt")"
+    mkdir -p -m 755 "${mountpt}"
+done
+
+###### Juniper Encore Specific additions start #######
+FW_UPGRADE_LOG_FILE=/firmware_upgrade_log/firmware_upgrade.log
+# SSD/SATA DIMM firmware update function.
+update_ssd_firmware() {
+
+    SSD_FIRMWARE_DIRECTORY=/tmp/config/firmware_upgrade_dir/
+    num_update_files=`ls $SSD_FIRMWARE_DIRECTORY | wc -l`
+
+    if [ $num_update_files != "0" ]; then
+
+	files=`ls $SSD_FIRMWARE_DIRECTORY`
+	echo "Starting SSD Firmware update for $files"
+
+	for file in $files; do
+
+	    UPGRADE_MODEL_NUM=`echo $file|cut -d "_" -f 2`
+	    # Go over all the drives and if the model matches the model name in
+	    #	the file, update the firmware with the provided one.
+	    # There is no check to see if we downgrade or upgrade. All the drives
+	    #     will be flashed with the provided firmware
+
+	    for device in sda sdb sdc sdd sde sdf sdg sdh sdi sdj sdk sdl sdm sdn sdo sdp; do
+		echo Update File - $file for Device - $UPGRADE_MODEL_NUM >> $FW_UPGRADE_LOG_FILE
+		MODEL_STRING=`/opt/nkn/bin/smartctl -d sat -i /dev/$device |grep "Device Model"`
+		echo Device $device Model - $MODEL_STRING >> $FW_UPGRADE_LOG_FILE
+		MODEL=`echo $MODEL_STRING |awk '{print $3}'`
+
+		if [ "$MODEL" = "$UPGRADE_MODEL_NUM" ]; then
+		    FIRMWARE_STRING=`/opt/nkn/bin/smartctl -d sat -i /dev/$device |grep "Firmware Version" `
+		    echo Current FW Version - $FIRMWARE_STRING >> $FW_UPGRADE_LOG_FILE
+		    FIRMWARE_VERSION=`echo $FIRMWARE_STRING |awk '{print $3}'`
+		    echo "Found valid device /dev/$device with firmware $FIRMWARE_VERSION"
+		    echo -n "Starting firmware update...."
+
+		    `/opt/nkn/bin/hdparm --fwdownload-mode7 $SSD_FIRMWARE_DIRECTORY/$file --yes-i-know-what-i-am-doing --please-destroy-my-drive /dev/$device &>> $FW_UPGRADE_LOG_FILE`
+		    ret_val=$?
+		    if [ $ret_val != "0" ]; then
+			echo "Failed"
+		    else
+			echo "Done"
+		    fi
+
+		    FIRMWARE_STRING=`/opt/nkn/bin/smartctl -d sat -i /dev/$device |grep "Firmware Version" `
+		    echo Updated FW Version - $FIRMWARE_STRING >> $FW_UPGRADE_LOG_FILE
+		    FIRMWARE_VERSION=`echo $FIRMWARE_STRING |awk '{print $3}'`
+		    echo "Updated version for device /dev/$device to $FIRMWARE_VERSION"
+		fi
+    
+	    done
+	    rm -rf $SSD_FIRMWARE_DIRECTORY$file
+	done
+    fi
+}
+
+## PACIFICA Specific Changes (ramanandn@juniper.net) Pacifica ##
+
+depmod -a # Primarily needed when booting Fedora kernel
+
+# We need to check if we are running in Pacifica
+# For now we just check for CaveCreek and Broadcom BCM57840
+CAVECREEK_EXISTS=0;
+BCM57840_EXISTS=0;
+
+lspci | grep DH8900CC > /dev/null && CAVECREEK_EXISTS=1;
+lspci | grep BCM57840 > /dev/null && BCM57840_EXISTS=1;
+
+if [ $CAVECREEK_EXISTS -eq 1 ] || [ $BCM57840_EXISTS -eq 1 ]; then
+    RAMDISK_PARTITIONS=0;
+    IS_FIRSTTIME=0;
+
+    SWAP_DEVICE=/dev/sda1
+    CONFIG_DEVICE=/dev/sda2
+    VAR_DEVICE=/dev/sda3
+    COREDUMP_DEVICE=/dev/sda5
+    NKN_DEVICE=/dev/sda6
+    LOG_DEVICE=tmpfs
+    LOG_DEVICE_SIZE=2048M
+    BOOTMGR_DEVICE_SIZE=32M
+    BOOT_DEVICE_SIZE=32M
+
+    # Check if we have an /dev/sda
+    sfdisk -l /dev/sda > /dev/null 2>&1
+    if [ $? == 0 ]; then 
+        # Found disk, now check if we have the partitions
+        e2label /dev/sda2 2> /dev/null | grep CONFIG > /dev/null;
+        if [ $? == 0 ]; then
+	    # create a log directory for fw upgrade logs/failures
+	    mkdir /firmware_upgrade_log 2> /dev/null
+	    # we have the config partition. Mount it to a temporary directory to
+	    # to see if we need to update the firmware
+	    mkdir /config 2> $FW_UPGRADE_LOG_FILE
+	    mount /dev/sda2 /config 2>> $FW_UPGRADE_LOG_FILE
+
+	    mkdir -p /tmp/config/firmware_upgrade_dir/ 2>> $FW_UPGRADE_LOG_FILE
+	    mv /config/firmware_upgrade_dir/* /tmp/config/firmware_upgrade_dir/. 2>> $FW_UPGRADE_LOG_FILE
+
+	    # Cleanup so normal process can resume
+	    umount /config 2>> $FW_UPGRADE_LOG_FILE
+	    rmdir /config 2>> $FW_UPGRADE_LOG_FILE
+
+	    # Check and update SSD firmware
+	    update_ssd_firmware
+
+            echo "Device /dev/sda is already partitioned, hence mounting ...";
+        else
+            echo "Partitions not found on /dev/sda, hence creating them ..."
+            temp_ptable=/tmp/ptable-sfdisk-DISK;
+
+	    # Creating the ptable file to use with sfdisk to create partitions
+	    # sda1 : swap
+	    # sda2 : config
+	    # sda3 : var
+	    # sda5 : coredump
+	    # sda6 : nkn
+	    # sda7 : DM2 cache FS
+	    # sda8 : DM2 cache RAW
+            cat  > ${temp_ptable} <<EOF
+,9215,82,
+,64,83,
+,1024,83,
+,,0f,
+,51200,83,
+,20480,83,
+,16524,83,
+,,,
+EOF
+            # Use sfdisk to create the partitions
+            echo "=== Writing partition table to /dev/sda"
+            cat ${temp_ptable} | sfdisk -uM /dev/sda ;
+            if [ $? == 0 ]; then 
+                # Now format and apply the label
+		sleep 5;
+		sync;
+                /sbin/mkswap ${SWAP_DEVICE}
+                /sbin/mke2fs -O ^resize_inode -q -L CONFIG -j ${CONFIG_DEVICE}
+                /sbin/mke2fs -O ^resize_inode -q -L VAR -j ${VAR_DEVICE}
+                /sbin/mke2fs -O ^resize_inode -q -L COREDUMP -j ${COREDUMP_DEVICE}
+                /sbin/mke2fs -O ^resize_inode -q -L NKN -j ${NKN_DEVICE}
+    		IS_FIRSTTIME=1;
+            else
+                echo "Warning: failed to create partitions in sda, hence going with RAMDISK";
+                RAMDISK_PARTITIONS=1;
+            fi
+        fi
+    else
+        # No DIMMs hence going RAMDISK
+        RAMDISK_PARTITIONS=1;
+    	IS_FIRSTTIME=1;
+        echo "Warning: no disks/dimms found in this system"
+    fi
+
+    # If first time then rename /config, /nkn and /var  that is there in rootfs
+    # After mounting these partitions on sda or tmpfs move the content into the
+    # mounted partition
+    if [ $IS_FIRSTTIME == 1 ]; then
+        # Rename the directories
+	mv /config /config.local
+	mv /var /var.local
+
+	# Make new empty directories for mounting
+	mkdir /config /var
+    fi
+
+    # We need to move /bootmgr and /boot to tmpfs partitions
+    # As a a first step rename them 
+    mv /bootmgr /bootmgr.local
+    mv /boot /boot.local
+    mkdir /bootmgr /boot
+    sync
+
+    # Mount the partitions
+    # First mount the standard tmpfs partitions
+    echo "Creating RAMDISK for BOOTMGR, BOOT, and LOG ...";
+    mount -t tmpfs -o size=${BOOTMGR_DEVICE_SIZE} tmpfs /bootmgr
+    mount -t tmpfs -o size=${BOOT_DEVICE_SIZE} tmpfs /boot
+    mount -t tmpfs -o size=${LOG_DEVICE_SIZE} tmpfs /log
+
+    # Now based on availability of sda mount the rest
+    if [ $RAMDISK_PARTITIONS == 1 ]; then
+        # Create RAMDISK partitions 
+        echo "Creating RAMDISK for CONFIG, VAR, and NKN ...";
+        mount -t tmpfs -o size=64M tmpfs /config
+        mount -t tmpfs -o size=512M tmpfs /var
+        mount -t tmpfs -o size=512M tmpfs /nkn
+
+        # Touch file to indicate pacifica with ramdisk
+        touch /etc/.pacifica.ramdisk
+    else
+        # Mount the partitions on /dev/sda and tmpfs
+        swapon ${SWAP_DEVICE}
+        mount -L CONFIG /config
+        mount -L VAR /var
+        mount -L COREDUMP /coredump
+        mount -L NKN /nkn
+
+	# We have /var/log symlinked to /log/varlog hence creating /log/varlog
+	# First time, fixup.sh will create the symlink but when already have
+	# /var, /var/log will be a symlink to /log/varlog 
+	mkdir /log/varlog
+
+	# Add the new partitions to  /etc/fstab 
+	cat  >> etc/fstab <<EOF
+LABEL=CONFIG    /config     ext3    defaults,noatime  1 2
+LABEL=VAR       /var        ext3    defaults,noatime  1 2
+LABEL=COREDUMP  /coredump   ext3    defaults,noatime  1 2
+LABEL=NKN       /nkn        ext3    defaults,noatime  1 2
+EOF
+
+        # Display the mounts
+        mount
+	df
+    fi
+
+    # Move the /bootmgr and /boot files into the tmpfs partitions
+    mv /bootmgr.local/* /bootmgr
+    mv /boot.local/* /boot
+    rm -rf /bootmgr.local /boot.local
+
+    # If first time we need to move the contents in the original /config
+    # /nkn and /var into the new mounted partitions
+    if [ $IS_FIRSTTIME == 1 ]; then
+        mv /config.local/* /config
+        mv /var.local/* /var
+
+	rm -rf /config.local /var.local
+
+	# If we are booting for first time on sda then we need the following
+	if [ ! -d /config/mfg ]; then
+	    mkdir /config/mfg
+	fi
+    fi
+
+fi
+
+####### END of PACIFICA Specific Changes (ramanandn@juniper.net) Pacifica ##
+###### Juniper Encore Specific additions start #######
+
+# Mount all other filesystems (except for NFS and /proc, which is already
+# mounted). Contrary to standard usage,
+# filesystems are NOT unmounted in single user mode.
+# The 'no' applies to all listed filesystem types. See mount(8).
+if [ "$READONLY" != "yes" ] ; then
+	action $"Mounting local filesystems: " mount -a -t nonfs,nfs4,smbfs,ncpfs,cifs,gfs,gfs2 -O no_netdev
+else
+	action $"Mounting local filesystems: " mount -a -n -t nonfs,nfs4,smbfs,ncpfs,cifs,gfs,gfs2 -O no_netdev
+fi
+
+########## Tall Maple Systems additions: mount /dev/shm if it should be mounted and is not #####
+# If /dev/shm is in /etc/fstab but not mounted, mount it now.  This is
+# conditionalized, as /dev/shm might have been mounted by an initrd or
+# other early startup mechanism like udev (which the base system does
+# not have), and likewise /dev/shm might have been removed from the
+# fstab.
+DEV_SHM_MOUNTED=`cat /proc/mounts | awk '$2 ~ /^\/dev\/shm$/ {has_shm=1} END { printf "%d\n", has_shm}'`
+DEV_SHM_IN_FSTAB=`cat /etc/fstab | awk '$2 ~ /^\/dev\/shm$/ {has_shm=1} END { printf "%d\n", has_shm}'`
+if [ "${DEV_SHM_IN_FSTAB}" = "1" -a "${DEV_SHM_MOUNTED}" != "1" ]; then
+    mount -t tmpfs tmpfs /dev/shm
+fi
+unset DEV_SHM_MOUNTED
+unset DEV_SHM_IN_FSTAB
+##########
+
+# Update quotas if necessary
+if [ X"$_RUN_QUOTACHECK" = X1 -a -x /sbin/quotacheck ]; then
+	action $"Checking local filesystem quotas: " /sbin/quotacheck -anug
+fi
+
+if [ -x /sbin/quotaon ]; then
+    action $"Enabling local filesystem quotas: " /sbin/quotaon -aug
+fi
+
+# Check to see if a full relabel is needed
+if [ -n "$SELINUX_STATE" -a "$READONLY" != "yes" ]; then
+    if [ -f /.autorelabel ] || strstr "$cmdline" autorelabel ; then
+	relabel_selinux
+    fi
+else
+    if [ -d /etc/selinux -a "$READONLY" != "yes" ]; then
+        [ -f /.autorelabel ] || touch /.autorelabel
+    fi
+fi
+
+########## Tall Maple Systems additions: vpart, var fixups, and hostname #####
+
+if [ -x /sbin/vpart.sh ]; then
+    action $"Running vpart script: " /sbin/vpart.sh -r
+fi
+
+# Some files are required to be present, or startup does not go so well.
+# Make sure some version of these is present.  mdinit should cause mgmtd
+# to overwrite all of these later in startup.
+# 
+# Filenames are like : S15-k-base_var.tgz
+#                 S${start_order}-${extract_style}-${skel_name}.${extract_type}
+#
+# where the extract_style is:
+#     'u' means unconditional (normal) extraction
+#     'k' means keep existing files, but extract if not present
+# and where the extract_type is:
+#     'tgz' 'tbz' or 'tar'
+
+if [ -d /etc/fskel ]; then
+    echo -n $"Applying file system skeletons:"
+    for skel in /etc/fskel/fskel-??-*-*.* ; do
+        if [ ! -f ${skel} ]; then
+            continue
+        fi
+        skel_bn=$(basename ${skel})
+        start_order=$(echo ${skel_bn}   | sed 's/^fskel-\([0-9][0-9]\)-\([^-]*\)-\([^-\.]*\)\.\([^\.\-]*\)$/\1/')
+        extract_style=$(echo ${skel_bn} | sed 's/^fskel-\([0-9][0-9]\)-\([^-]*\)-\([^-\.]*\)\.\([^\.\-]*\)$/\2/')
+        skel_name=$(echo ${skel_bn}     | sed 's/^fskel-\([0-9][0-9]\)-\([^-]*\)-\([^-\.]*\)\.\([^\.\-]*\)$/\3/')
+        extract_type=$(echo ${skel_bn}  | sed 's/^fskel-\([0-9][0-9]\)-\([^-]*\)-\([^-\.]*\)\.\([^\.\-]*\)$/\4/')
+
+        tar_flags=
+        case "${extract_type}" in
+            tgz) tar_flags="${tar_flags} -z" ;;
+            tbz) tar_flags="${tar_flags} -j" ;;
+            tar) ;;
+            *) echo "Ignoring bad fskel extract type ${extract_type}"; ;;
+        esac
+        case "${extract_style}" in
+            k) tar_flags="${tar_flags} -k" ;;
+            u) ;;
+            *) echo "Ignorning bad fskel extract style ${extract_style}"; ;;
+        esac
+        echo -n $" ${skel_name}"
+        tar ${tar_flags} -C / -xpf ${skel} >/dev/null 2>&1
+
+    done
+    echo " ."
+fi
+mkdir -m  755 -p /var/home/root
+
+# XXX we should regenerate the ssh host keys if required
+
+# Set the hostname before we launch syslog, etc.
+if [ -s /var/opt/tms/output/hostname ]; then
+    THOSTNAME=`cat /var/opt/tms/output/hostname`
+    hostname ${THOSTNAME}
+fi
+
+##########
+
+# Initialize pseudo-random number generator
+if [ -f "/var/lib/random-seed" ]; then
+	cat /var/lib/random-seed > /dev/urandom
+else
+	[ "$READONLY" != "yes" ] && touch /var/lib/random-seed
+fi
+if [ "$READONLY" != "yes" ]; then
+	chmod 600 /var/lib/random-seed
+	dd if=/dev/urandom of=/var/lib/random-seed count=1 bs=512 2>/dev/null
+fi
+
+if [ -f /etc/crypttab ]; then
+    init_crypto 1
+fi
+
+# Configure machine if necessary.
+if [ "tms" = "=== DISABLED ===" -a -f /.unconfigured ]; then
+
+    if [ -x /bin/plymouth ]; then
+        /bin/plymouth quit
+    fi
+
+    if [ -x /usr/bin/system-config-keyboard ]; then
+	/usr/bin/system-config-keyboard
+    fi
+    if [ -x /usr/bin/passwd ]; then
+        /usr/bin/passwd root
+    fi
+    if [ -x /usr/sbin/system-config-network-tui ]; then
+	/usr/sbin/system-config-network-tui
+    fi
+    if [ -x /usr/sbin/timeconfig ]; then
+	/usr/sbin/timeconfig
+    fi
+    if [ -x /usr/sbin/authconfig-tui ]; then
+	/usr/sbin/authconfig-tui --nostart
+    fi
+    if [ -x /usr/sbin/ntsysv ]; then
+	/usr/sbin/ntsysv --level 35
+    fi
+
+    # Reread in network configuration data.
+    if [ -f /etc/sysconfig/network ]; then
+	. /etc/sysconfig/network
+
+	# Reset the hostname.
+	action $"Resetting hostname ${HOSTNAME}: " hostname ${HOSTNAME}
+    fi
+
+    rm -f /.unconfigured
+fi
+
+########## Tall Maple Systems additions: firstboot ##########
+
+# Do some post-install steps if this is our first boot
+if [ -f /etc/.firstboot ]; then
+    action $"Running firstboot script" /sbin/firstboot.sh
+    rm -f /etc/.firstboot
+
+    # Do not need to create .usewizard file here, because it is always
+    # created by firstboot.sh when needed.
+fi
+
+mount -t tmpfs -o size=64M tmpfs /vtmp
+
+##########
+
+# Clean out /.
+rm -f /fastboot /fsckoptions /forcefsck /.autofsck /forcequotacheck /halt \
+	/poweroff /.suspended &> /dev/null
+
+# Do we need (w|u)tmpx files? We don't set them up, but the sysadmin might...
+_NEED_XFILES=
+[ -f /var/run/utmpx -o -f /var/log/wtmpx ] && _NEED_XFILES=1
+
+# Clean up /var.
+rm -rf /var/lock/cvs/* /var/run/screen/*
+find /var/lock /var/run ! -type d -exec rm -f {} \;
+rm -f /var/lib/rpm/__db* &> /dev/null
+rm -f /var/gdm/.gdmfifo &> /dev/null
+
+[ "$PROMPT" != no -a -n "$PLYMOUTH" ] && plymouth watch-keystroke --command "touch /var/run/confirm" --keys=Ii &
+
+# Clean up utmp/wtmp
+> /var/run/utmp
+touch /var/log/wtmp
+chgrp utmp /var/run/utmp /var/log/wtmp
+chmod 0664 /var/run/utmp /var/log/wtmp
+if [ -n "$_NEED_XFILES" ]; then
+  > /var/run/utmpx
+  touch /var/log/wtmpx
+  chgrp utmp /var/run/utmpx /var/log/wtmpx
+  chmod 0664 /var/run/utmpx /var/log/wtmpx
+fi
+[ -n "$SELINUX_STATE" ] && restorecon /var/run/utmp* /var/log/wtmp* >/dev/null 2>&1
+
+# Clean up various /tmp bits
+[ -n "$SELINUX_STATE" ] && restorecon /tmp
+rm -f /tmp/.X*-lock /tmp/.lock.* /tmp/.gdm_socket /tmp/.s.PGSQL.*
+rm -rf /tmp/.X*-unix /tmp/.ICE-unix /tmp/.font-unix /tmp/hsperfdata_* \
+       /tmp/kde-* /tmp/ksocket-* /tmp/mc-* /tmp/mcop-* /tmp/orbit-*  \
+       /tmp/scrollkeeper-*  /tmp/ssh-* \
+       /dev/.in_sysinit
+
+########## Tall Maple Systems addition: TMS-specific clean ##########
+
+# XXX/EMT: TMS-specific cleanup should be elsewhere, and/or we should
+# consolidate out temporary files into one subdirectory of /tmp so we
+# can get everything without having to list each individual file pattern.
+rm -f /tmp/proc-output-* /tmp/mm-temp-* /tmp/afail-out-tmp-*
+rm -f /tmp/sysdump_body-* /tmp/email_body-*
+rm -f /var/stmp/key-*
+rm -f /var/tmp/lcgi_tmp_file_*
+rm -f /var/opt/tms/output/rhdebug
+rm -rf /var/tmp/wiw
+
+# NET-SNMP doesn't handle it right if MIBs are added, unless we clear this.
+# It is regenerated automatically.
+rm -f /var/net-snmp/_usr_share_snmp_mibs_index
+
+rm -rf /tmp/gcl-socks
+rm -rf /vtmp/gcl-socks
+mkdir -m 1777 -p /vtmp/gcl-socks
+chown root:root /vtmp/gcl-socks
+
+##########
+
+# Make ICE directory
+mkdir -m 1777 -p /tmp/.ICE-unix >/dev/null 2>&1
+chown root:root /tmp/.ICE-unix
+[ -n "$SELINUX_STATE" ] && restorecon /tmp/.ICE-unix >/dev/null 2>&1
+
+# Start up swapping.
+update_boot_stage RCswap
+action $"Enabling /etc/fstab swaps: " swapon -a -e
+if [ "$AUTOSWAP" = "yes" ]; then
+	curswap=$(awk '/^\/dev/ { print $1 }' /proc/swaps | while read x; do get_numeric_dev dec $x ; echo -n " "; done)
+	swappartitions=$(blkid -t TYPE=swap -o device)
+	if [ x"$swappartitions" != x ]; then
+		for partition in $swappartitions ; do
+			[ ! -e $partition ] && continue
+			majmin=$(get_numeric_dev dec $partition)
+			echo $curswap | grep -qw "$majmin" || action $"Enabling local swap partitions: " swapon $partition
+		done
+	fi
+fi
+
+# Set up binfmt_misc
+/bin/mount -t binfmt_misc none /proc/sys/fs/binfmt_misc > /dev/null 2>&1
+
+# Boot time profiles. Yes, this should be somewhere else.
+if [ -x /usr/sbin/system-config-network-cmd ]; then
+  if strstr "$cmdline" netprofile= ; then
+    for arg in $cmdline ; do
+        if [ "${arg##netprofile=}" != "${arg}" ]; then
+	    /usr/sbin/system-config-network-cmd --profile ${arg##netprofile=}
+        fi
+    done
+  fi
+fi
+
+# Now that we have all of our basic modules loaded and the kernel going,
+# let's dump the syslog ring somewhere so we can find it later
+[ -f /var/log/dmesg ] && mv -f /var/log/dmesg /var/log/dmesg.old
+dmesg -s 131072 > /var/log/dmesg
+
+# create the crash indicator flag to warn on crashes, offer fsck with timeout
+touch /.autofsck &> /dev/null
+
+########## Tall Maple Systems addition: reset password, and readonly root ##########
+
+if strstr "$cmdline" reset_button= ; then
+    rbarg=0
+    for arg in $cmdline ; do
+        if [ "${arg##reset_button=}" != "${arg}" ]; then
+            rbarg="${arg##reset_button=}"
+            if [ -z "${rbarg}" ]; then
+                rbarg=0
+            fi
+        fi
+    done
+    if [ "${rbarg}" = "1" ]; then
+        /sbin/resetpw.sh
+    fi
+fi
+
+
+if [ "$ROOT_IS_READ_ONLY" -eq 1 ]; then
+    action $"Remounting root filesystem in read-only mode: " mount -o remount,ro /
+fi
+
+##########
+
+[ "$PROMPT" != no -a -n "$PLYMOUTH" ] && plymouth --ignore-keystroke=Ii
+if strstr "$cmdline" confirm ; then
+	touch /var/run/confirm
+fi
+
+# Let rhgb know that we're leaving rc.sysinit
+if [ -x /bin/plymouth ]; then
+    /bin/plymouth --sysinit
+fi
+

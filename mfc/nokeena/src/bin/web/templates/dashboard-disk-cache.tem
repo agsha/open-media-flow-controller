@@ -1,0 +1,55 @@
+<?
+#
+# Filename:  dashboard-disk-cache.tem
+# Date:      2009/04/09
+# Author:    Sasmita
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+
+#
+?>
+<INCLUDE "dashboard-layout">
+<TMS-PAGE "Disk Cache">
+<TMS-MENU "dashboard">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-DASHBOARD-MENU "disk-cache"></TMS-DASHBOARD-MENU></TMS-SIDEBAR>
+<TMS-SIDEBAR> </TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Disk Cache">
+
+<table border="0" width="100%"><tr><td>
+<table align="left" border="1" cellpadding="1" id="outer_table_2"><tr><td>
+    <table border="0">
+        <tr><td><img class="img_class" src=""
+	    alt="Bandwidth" id="cache_th_img" height="250px" /></td></tr>
+        <tr><td><img class="img_class" src=""
+            alt="Disk Usage" id="disk_usage" height="250px" /></td></tr>
+    </table></td></tr>
+</table> <!-- outer table -->
+</tr></td></table>
+
+
+<div style={test-align:left;}>
+        <!--put the button here to update the interval -->
+        <input type="text" id="page" name="page" value="disk_cache" style="display:none">
+        <br />
+        <span>Refresh Interval:</span>
+        <input type="text"  id="db_refreshinterval" size="6" name="db_refreshinterval" maxlength="4" value="5" />
+        <span>Sec.</span>
+        <input type="button" id="updatebutton" class="ajaxButton" value="Reload" name="updatebutton" onclick="buttoncheck()" />
+</div>
+
+
+
+<script type="text/javascript">
+	document.getElementById('db_refreshinterval').value = update_interval;
+        buttoncheck();
+
+        //startupdate_disk_cache();
+
+</script>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

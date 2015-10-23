@@ -1,0 +1,49 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfm-2.0.3
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfm-2.0.3-5_109_227
+ MENU LABEL mfm-2.0.3-5_109_227        BR:mainline 2010-11-10
+ KERNEL pxe-boot/mfm-2.0.3-5_109_227/vmlinuz-bootflop-mfm-2.0.3-5_109_227
+ APPEND initrd=pxe-boot/mfm-2.0.3-5_109_227/rootflop-mfm-2.0.3-5_109_227.img        installfrom=pxe/pxe-boot/mfm-2.0.3-5_109_227 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfm-2.0.3-4_108_227
+ MENU LABEL mfm-2.0.3-4_108_227        BR:mainline 2010-11-08
+ KERNEL pxe-boot/mfm-2.0.3-4_108_227/vmlinuz-bootflop-mfm-2.0.3-4_108_227
+ APPEND initrd=pxe-boot/mfm-2.0.3-4_108_227/rootflop-mfm-2.0.3-4_108_227.img        installfrom=pxe/pxe-boot/mfm-2.0.3-4_108_227 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfm-2.0.3-3_107_227
+ MENU LABEL mfm-2.0.3-3_107_227        BR:mainline 2010-11-04
+ KERNEL pxe-boot/mfm-2.0.3-3_107_227/vmlinuz-bootflop-mfm-2.0.3-3_107_227
+ APPEND initrd=pxe-boot/mfm-2.0.3-3_107_227/rootflop-mfm-2.0.3-3_107_227.img        installfrom=pxe/pxe-boot/mfm-2.0.3-3_107_227 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfm-2.0.3-2_106_227
+ MENU LABEL mfm-2.0.3-2_106_227        BR:mainline 2010-11-03
+ KERNEL pxe-boot/mfm-2.0.3-2_106_227/vmlinuz-bootflop-mfm-2.0.3-2_106_227
+ APPEND initrd=pxe-boot/mfm-2.0.3-2_106_227/rootflop-mfm-2.0.3-2_106_227.img        installfrom=pxe/pxe-boot/mfm-2.0.3-2_106_227 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfm-2.0.3-1_103_214
+ MENU LABEL mfm-2.0.3-1_103_214        BR:mainline 2010-10-28
+ KERNEL pxe-boot/mfm-2.0.3-1_103_214/vmlinuz-bootflop-mfm-2.0.3-1_103_214
+ APPEND initrd=pxe-boot/mfm-2.0.3-1_103_214/rootflop-mfm-2.0.3-1_103_214.img        installfrom=pxe/pxe-boot/mfm-2.0.3-1_103_214 installopt=,show-pxe-menu,
+ IPAPPEND 3

@@ -1,0 +1,17 @@
+
+CFLAGS=-I${PROD_CUSTOMER_ROOT}/nokeena/src/include/ -g
+
+LIB_PROTO_HTTP=$(PROD_OUTPUT_ROOT)/product-nokeena-x86_64/build/image/custlib/proto_http/libproto_HTTP.a
+
+PROTO_HTTP_TEST_LDFLAGS=-L/usr/local/lib ${LIB_PROTO_HTTP} -lc -lpthread
+
+all:	proto_http_test
+
+proto_http_test:	proto_http_test.o
+	 cc -o proto_http_test proto_http_test.o ${PROTO_HTTP_TEST_LDFLAGS}
+
+proto_http_test.c:	proto_http_test.o
+	cc ${CFLAGS} -c proto_http_test.c
+
+clean:
+	rm -rf proto_http_test proto_http_test.o

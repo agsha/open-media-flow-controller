@@ -1,0 +1,9 @@
+<!-- OriginRoundRobinMap 1.0 DTD, Copyright (c) 2011 by Juniper Networks, Inc -->
+<!ELEMENT OriginRoundRobinMap (Header*, OriginRoundRobinMapEntry*)>
+<!ELEMENT Header (Version, Application)>
+<!ELEMENT Version (#PCDATA)>
+<!ELEMENT Application (#PCDATA)>
+<!ELEMENT OriginRoundRobinMapEntry (Origin, Port, Options?)>
+<!ELEMENT Origin (#PCDATA)>
+<!ELEMENT Port (#PCDATA)>
+<!ELEMENT Options (#PCDATA)>

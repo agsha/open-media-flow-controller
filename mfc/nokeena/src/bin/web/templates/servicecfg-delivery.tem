@@ -1,0 +1,555 @@
+<?
+#
+# Filename:  servicecfg-delivery.tem,v $
+# Date:      2009/02/06 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Delivery Protocol">
+<TMS-MENU "servicecfg">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SERVICECFG-MENU "delivery"></TMS-SERVICECFG-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Delivery Protocol Configuration">
+<CFG-FORM -action "config-form-delivery" -div_id "http_param_1" >
+  <h2>Set HTTP Listen Port </h2>
+  <TMS-TABLE -div_id "http_cfg_1">
+
+    <TMS-TABLE-ENTRY "Listen Port">
+      <CFG-TEXTBOX -id "listenport" -errname "port" -caps "set_basic"
+                   -type "string" -span_id "configure_port">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+  <CFG-BUTTON -type "add" -text "Apply" -caps "set_basic"
+              -span_id "delivery_http_apply_1">
+
+</CFG-FORM>
+<!--
+<CFG-FORM -div_id "http_param_2" >
+  <h2>Configure Rate Control </h2>
+  <TMS-TABLE -div_id "http_cfg">
+
+    <TMS-TABLE-ENTRY "Rate Control">
+      <CFG-TEXTBOX -id "ratecontrol" -errname "ratectrl" -caps "set_basic"
+                   -type "uint64" -span_id "configure_ratectrl"
+                    -name "/nkn/nvsd/http/config/rate_control">
+    </TMS-TABLE-ENTRY>
+
+  </TMS-TABLE>
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "delivery_http_apply_1">
+</CFG-FORM>
+-->
+  <h2>Configure /Add Selected HTTP Listen Interfaces</h2>
+  <CFG-FORM -action "config-form-delivery" -div_id "http_2">
+  <?
+    set cur_line 0
+    set iface_prefix "/net/interface/config"
+    set iface_ids [tms::iterate-config $iface_prefix]
+  ?>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        Interface Name</td>
+    </tr>
+    <FOREACH iface_id $iface_ids>
+    <?
+    set prefix_len [string length "$iface_prefix/"]
+    set iface_name [string range $iface_id $prefix_len end]
+    ?>
+
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "$iface_name" -caps "set_basic" -type "bool"
+                         -value "$iface_name" -span_id "iface_cbox_2"></td>
+      <td>
+        <?=$iface_name?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Listen Interfaces 
+      <SET priv DISABLED_set_basic>
+    <ELSE>
+      <SET priv set_basic>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+  <CFG-BUTTON -type "intfadd" -text "Add"
+              -caps "set_basic" -span_id "iface_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+  </p></td></CFG-FORM></tr></table>
+
+  <h2> HTTP Listen Interfaces</h2>
+  <CFG-FORM -action "config-form-list" -div_id "http_2">
+  <?
+    set cur_line 0
+    set iface_prefix "/nkn/nvsd/http/config/interface"
+    set iface_ids [tms::iterate-config $iface_prefix]
+  ?>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        Interface Name</td>
+    </tr>
+    <FOREACH iface_id $iface_ids>
+    <?
+    set prefix_len [string length "$iface_prefix/"]
+    set iface_name [string range $iface_id $prefix_len end]
+    ?>
+
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                         -value "$iface_id" -span_id "iface_cbox_2"></td>
+      <td>
+        <?=$iface_name?></td>
+    </tr>
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          Default (All configured interfaces) 
+      <SET priv DISABLED_set_basic>
+    <ELSE>
+      <SET priv set_basic>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps "set_basic" -span_id "iface_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+  </p></td></CFG-FORM></tr></table>
+ 
+  <h2> HTTP Listen Ports</h2>
+  <CFG-FORM -action "config-form-array" -div_id "http_2">
+  <?
+    set cur_line 0
+    set port_prefix "/nkn/nvsd/http/config/server_port"
+    set port_ids [tms::iterate-config $port_prefix]
+  ?>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        HTTP Port</td>
+    </tr>
+    <FOREACH port_id $port_ids>
+    <?
+    set prefix_len [string length "$port_prefix/"]
+    set row_id [string range $port_id $prefix_len end]
+    set port_name [tms::get-config "$port_id/port"]
+    ?>
+
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                         -value "$port_id" -span_id "port_cbox_2"></td>
+      <td>
+        <?=$port_name?></td>
+    </tr>
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Listen Interfaces 
+      <SET priv DISABLED_set_basic>
+    <ELSE>
+      <SET priv set_basic>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+  <input type="hidden" name="f_array_root" value="/nkn/nvsd/http/config/server_port">
+  <input type="hidden" name="f_array_shift" value="true">
+  <input type="hidden" name="f_array_custom_buttons" value="remove">
+  <CFG-BUTTON -type "remove" -text "Remove Selected Port"
+              -caps "set_basic" -span_id "port_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+  </p></td></CFG-FORM></tr></table>
+
+
+<!--
+<CFG-FORM -action "config-form-list" -div_id "file_2">
+<h2> File-Type/Content-Type Associations </h2>
+  <?
+    set cur_line 0
+    set file_prefix "/nkn/nvsd/http/config/content/type"
+    set file_ids [tms::iterate-config $file_prefix]
+  ?>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        File Type</td>
+      <td>
+        Content Type</td>
+    </tr>
+    <FOREACH file_id $file_ids>
+    <?
+    set prefix_len [string length "$file_prefix/"]
+    set file_type [string range $file_id $prefix_len end]
+    set content_type [tms::get-config "$file_id/mime"]
+    ?>
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_privileged"
+                         -value "$file_id"
+                         -span_id "file_cbox_1">
+      </td>
+      <td>
+        <?=$file_type?></td>
+      <td>
+        <?=$content_type?></td>
+    </tr>
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No File Types Configured.
+      <SET priv DISABLED_set_privileged>
+    <ELSE>
+      <SET priv set_privileged>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps "set_privileged" -span_id "file_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+
+    </p></td>
+ </CFG-FORM>
+ </tr></table>
+
+<CFG-FORM -action "config-form-list" -div_id "http_param_2">
+  <h2>Add File-Type/Content-Type Association</h2>
+  <TMS-TABLE -div_id "http_content">
+
+    <TMS-TABLE-ENTRY "File Type">
+      <CFG-TEXTBOX -id "filetype" -errname "File Type" -caps "set_basic"
+                   -type "string" -span_id "configure_filetype"
+                    >
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Content Type">
+      <CFG-TEXTBOX -id "mime" -errname "Content Type" 
+                   -caps "set_basic"
+                   -type "string" -span_id "configure_contenttype">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+    </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/nkn/nvsd/http/config/content/type">
+  <input type="hidden" name="f_list_index" value="filetype">
+  <input type="hidden" name="f_list_children" value="mime">
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "delivery_http_apply_2">
+</CFG-FORM>
+-->
+<!--
+<h2>HTTP Appended Header Entries</h2>
+<CFG-FORM -action "config-form-list" -div_id "append_2">
+  <?
+    set cur_line 0
+    set append_prefix "/nkn/nvsd/http/config/response/header/append"
+    set append_ids [tms::iterate-config $append_prefix]
+  ?>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        Header Name</td>
+      <td>
+        Value</td>
+    </tr>
+    <FOREACH append_id $append_ids>
+    <?
+    set prefix_len [string length "$append_prefix/"]
+    set append_name [string range $append_id $prefix_len end]
+    set value [tms::get-config "$append_id/value"]
+    ?>
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_privileged"
+                         -value "$append_id"
+                         -span_id "append_cbox_1">
+      </td>
+      <td>
+        <?=$append_name?></td>
+      <td>
+        <?=$value?></td>
+    </tr>
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Additional Headers Appended.
+      <SET priv DISABLED_set_privileged>
+    <ELSE>
+      <SET priv set_privileged>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps "set_privileged" -span_id "append_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+
+    </p></td>
+ </CFG-FORM>
+ </tr></table>
+
+<CFG-FORM -action "config-form-list" -div_id "http_param_3">
+  <h2>Add Append Header</h2>
+  <TMS-TABLE -div_id "http_append">
+
+    <TMS-TABLE-ENTRY "Header Name ">
+      <CFG-TEXTBOX -id "hdrname" -errname "Header Name" -caps "set_basic"
+                   -type "string" -span_id "configure_hdr">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Value ">
+      <CFG-TEXTBOX -id "value" -errname "Header Value" -caps "set_basic"
+                   -type "string" -span_id "configure_hdr_val">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+    </TMS-TABLE>
+
+ <input type="hidden" name="f_list_root" value="/nkn/nvsd/http/config/response/header/append">
+  <input type="hidden" name="f_list_index" value="hdrname">
+  <input type="hidden" name="f_list_children" value="value">
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "delivery_http_apply_3">
+
+</CFG-FORM>
+
+<CFG-FORM -action "config-form-list" -div_id "suppress_2">
+<h2>HTTP Suppressed Header Entries</h2>
+  <?
+    set cur_line 0
+    set suppress_prefix "/nkn/nvsd/http/config/response/header/supress"
+    set suppress_ids [tms::iterate-config $suppress_prefix]
+  ?>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        Header Name</td>
+    </tr>
+    <FOREACH suppress_id $suppress_ids>
+    <?
+    set prefix_len [string length "$suppress_prefix/"]
+    set suppress_name [string range $suppress_id $prefix_len end]
+    ?>
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_privileged"
+                         -value "$suppress_id"
+                         -span_id "suppress_cbox_1">
+      </td>
+      <td>
+        <?=$suppress_name?></td>
+    </tr>
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Suppressed Headers 
+      <SET priv DISABLED_set_privileged>
+    <ELSE>
+      <SET priv set_privileged>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps "set_privileged" -span_id "suppress_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+
+    </p></td>
+ </CFG-FORM>
+ </tr></table>
+
+<CFG-FORM -action "config-form-list" -div_id "http_param_4">
+  <h2>Add Suppress Header</h2>
+  <TMS-TABLE -div_id "http_suppress">
+
+    <TMS-TABLE-ENTRY "Header Name ">
+      <CFG-TEXTBOX -id "hdrname" -errname "Header Name" -caps "set_basic"
+                   -type "string" -span_id "configure_hdr">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+    </TMS-TABLE>
+
+ <input type="hidden" name="f_list_root" value="/nkn/nvsd/http/config/response/header/supress">
+  <input type="hidden" name="f_list_index" value="hdrname">
+  <input type="hidden" name="f_list_children" value="">
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "delivery_http_apply_4">
+
+</CFG-FORM>
+
+<h2>HTTP Set Header Entries</h2>
+<CFG-FORM -action "config-form-list" -div_id "set_2">
+  <?
+    set cur_line 0
+    set set_prefix "/nkn/nvsd/http/config/response/header/set"
+    set set_ids [tms::iterate-config $set_prefix]
+  ?>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        Header Name</td>
+      <td>
+        Value</td>
+    </tr>
+    <FOREACH set_id $set_ids>
+    <?
+    set prefix_len [string length "$set_prefix/"]
+    set set_name [string range $set_id $prefix_len end]
+    set value [tms::get-config "$set_id/value"]
+    ?>
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_privileged"
+                         -value "$set_id"
+                         -span_id "set_cbox_1">
+      </td>
+      <td>
+        <?=$set_name?></td>
+      <td>
+        <?=$value?></td>
+    </tr>
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Set Headers 
+      <SET priv DISABLED_set_privileged>
+    <ELSE>
+      <SET priv set_privileged>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps "set_privileged" -span_id "set_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+
+    </p></td>
+ </CFG-FORM>
+ </tr></table>
+
+<CFG-FORM -action "config-form-list" -div_id "http_param_5">
+  <h2>Add Set Header</h2>
+  <TMS-TABLE -div_id "http_set">
+
+    <TMS-TABLE-ENTRY "Header Name ">
+      <CFG-TEXTBOX -id "hdrname" -errname "Header Name" -caps "set_basic"
+                   -type "string" -span_id "configure_hdr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Value ">
+      <CFG-TEXTBOX -id "value" -errname "Set Value" -caps "set_basic"
+                   -type "string" -span_id "configure_set_val">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+    </TMS-TABLE>
+
+ <input type="hidden" name="f_list_root" value="/nkn/nvsd/http/config/response/header/set">
+  <input type="hidden" name="f_list_index" value="hdrname">
+  <input type="hidden" name="f_list_children" value="value">
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "delivery_http_apply_5">
+
+-->
+</CFG-FORM>
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

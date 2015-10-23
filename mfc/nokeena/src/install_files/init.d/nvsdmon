@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# nvsdmon     Startup script for nvsdmon.sh
+#
+# chkconfig: 3 50 14
+# description:  This script starts nvsdmon, which monitors the base nvsd daemon
+# and enables/disables bgp neighbors based on the result.  It also provides the
+# file /tmp/nvsd-fail in the event the system is in a bad state (down or pre-read)
+# and is used by the cgi script mfc-monitor.sh
+
+# Source function library
+
+. /etc/rc.d/init.d/functions
+SCRIPT=/opt/nkn/bin/nvsdmon.sh
+NAME=nvsdmon
+
+# See how we were called.
+case "$1" in
+  start)
+	${SCRIPT} > /dev/null 2> /dev/null1 &
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/${NAME}
+	pid=`fuser ${SCRIPT} | cut -f2 -d':'`
+        if [ "x$pid" != "x" ] ; then
+		echo $pid > /var/run/${NAME}.pid
+	fi
+	;;
+  stop)
+	pid=`fuser ${SCRIPT} | cut -f2 -d':'`
+	RETVAL=0
+        if [ "x$pid" != "x" ] ; then
+            echo -n "Shutting down ${NAME}: "
+            kill $pid
+	    RETVAL=$?
+        fi
+        echo
+        [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/name /var/run/${NAME}.pid
+        ;;
+esac
+

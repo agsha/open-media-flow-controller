@@ -1,0 +1,144 @@
+diff -rupN PF_RING-6.0.0.orig/kernel/linux/pf_ring.h PF_RING-6.0.0.mod/kernel/linux/pf_ring.h
+--- PF_RING-6.0.0.orig/kernel/linux/pf_ring.h	2014-04-14 10:42:20.000000000 -0700
++++ PF_RING-6.0.0.mod/kernel/linux/pf_ring.h	2014-05-26 19:49:11.000000000 -0700
+@@ -86,6 +86,7 @@
+ #define SO_LOCK_CLUSTER_OBJECT           137
+ #define SO_UNLOCK_CLUSTER_OBJECT         138
+ #define SO_SET_CUSTOM_BOUND_DEV_NAME     139
++#define SO_SET_STACK_IP_ADDRESS	         140
+ 
+ /* Get */
+ #define SO_GET_RING_VERSION              170
+diff -rupN PF_RING-6.0.0.orig/kernel/pf_ring.c PF_RING-6.0.0.mod/kernel/pf_ring.c
+--- PF_RING-6.0.0.orig/kernel/pf_ring.c	2014-04-06 16:12:33.000000000 -0700
++++ PF_RING-6.0.0.mod/kernel/pf_ring.c	2014-05-26 19:49:23.000000000 -0700
+@@ -153,6 +153,7 @@
+ /* ************************************************* */
+ 
+ const static ip_addr ip_zero = { IN6ADDR_ANY_INIT };
++static ip_addr ip_stack = { IN6ADDR_ANY_INIT };
+ 
+ static u_int8_t pfring_enabled = 1;
+ 
+@@ -4422,6 +4423,8 @@ static int skb_ring_handler(struct sk_bu
+   ring_cluster_element *cluster_ptr;
+   u_int16_t ip_id = 0;
+   u_int8_t first_fragment = 0, second_fragment = 0;
++  struct ethhdr *eth;
++  struct iphdr *iph;
+ 
+   *skb_reference_in_use = 0;
+ 
+@@ -4431,6 +4434,12 @@ static int skb_ring_handler(struct sk_bu
+   if(ring_table_size == 0)
+     return(0);
+ 
++  eth = (struct ethhdr *)skb_mac_header(skb);
++  iph = (struct iphdr *)((char *)eth + ETH_HLEN); 
++    
++  if (unlikely(iph->daddr == ip_stack.v4)) {
++    return 0;
++  }
+   // prefetch(skb->data);
+ 
+   if(recv_packet) {
+@@ -7709,6 +7718,12 @@ static int ring_setsockopt(struct socket
+     ret = 0;
+     break;
+ 
++  case SO_SET_STACK_IP_ADDRESS:
++    if(copy_from_user(&ip_stack, optval, optlen))
++      return(-EFAULT);
++
++    ret = 0;
++
+   case SO_SET_APPL_NAME:
+     if(optlen >
+        sizeof(applName) /* Names should not be too long */ )
+Binary files PF_RING-6.0.0.orig/userland/lib/libpfring.a and PF_RING-6.0.0.mod/userland/lib/libpfring.a differ
+diff -rupN PF_RING-6.0.0.orig/userland/lib/pfring.c PF_RING-6.0.0.mod/userland/lib/pfring.c
+--- PF_RING-6.0.0.orig/userland/lib/pfring.c	2014-02-15 09:42:33.000000000 -0800
++++ PF_RING-6.0.0.mod/userland/lib/pfring.c	2014-05-26 19:10:53.000000000 -0700
+@@ -709,6 +709,15 @@ int pfring_set_application_name(pfring *
+ 
+ /* **************************************************** */
+ 
++int pfring_set_stack_ip(pfring *ring, ip_addr *stack_addr) {
++  if(ring && ring->set_stack_ip)
++    return ring->set_stack_ip(ring, stack_addr);
++
++  return(PF_RING_ERROR_NOT_SUPPORTED);
++}
++
++/* **************************************************** */
++
+ int pfring_set_application_stats(pfring *ring, char *stats) {
+   if(ring && ring->set_application_stats)
+     return ring->set_application_stats(ring, stats);
+diff -rupN PF_RING-6.0.0.orig/userland/lib/pfring.h PF_RING-6.0.0.mod/userland/lib/pfring.h
+--- PF_RING-6.0.0.orig/userland/lib/pfring.h	2014-02-15 09:42:33.000000000 -0800
++++ PF_RING-6.0.0.mod/userland/lib/pfring.h	2014-05-26 19:11:30.000000000 -0700
+@@ -199,6 +199,7 @@ struct __pfring {
+   int       (*set_channel_id)               (pfring *, u_int32_t);
+   int       (*set_channel_mask)             (pfring *, u_int32_t);
+   int       (*set_application_name)         (pfring *, char *);
++  int       (*set_stack_ip)		    (pfring *, ip_addr *);
+   int       (*set_application_stats)        (pfring *, char *);
+   char*     (*get_appl_stats_file_name)     (pfring *ring, char *path, u_int path_len);
+   int       (*bind)                         (pfring *, char *);
+@@ -522,6 +523,14 @@ int pfring_set_channel_mask(pfring *ring
+ int pfring_set_application_name(pfring *ring, char *name);
+ 
+ /**
++ * Tell PF_RING the local ip address. Packets to the local ip address will be forwarded to stack
++ * @param ring The PF_RING handle to enable. 
++ * @param stack_addr ip address of stack
++ * @return 0 on success, a negative value otherwise.
++ */
++int pfring_set_stack_ip(pfring *ring, ip_addr *stack_addr);
++
++/**
+  * Set custom application statistics. 
+  * @param ring The PF_RING handle.
+  * @param stats The application stats.
+diff -rupN PF_RING-6.0.0.orig/userland/lib/pfring_mod.c PF_RING-6.0.0.mod/userland/lib/pfring_mod.c
+--- PF_RING-6.0.0.orig/userland/lib/pfring_mod.c	2014-02-15 09:42:33.000000000 -0800
++++ PF_RING-6.0.0.mod/userland/lib/pfring_mod.c	2014-05-26 19:12:17.000000000 -0700
+@@ -200,6 +200,7 @@ int pfring_mod_open(pfring *ring) {
+   ring->set_channel_id = pfring_mod_set_channel_id;
+   ring->set_channel_mask = pfring_mod_set_channel_mask;
+   ring->set_application_name  = pfring_mod_set_application_name;
++  ring->set_stack_ip  = pfring_mod_set_stack_ip;
+   ring->set_application_stats = pfring_mod_set_application_stats;
+   ring->get_appl_stats_file_name = pfring_mod_get_appl_stats_file_name;
+   ring->bind = pfring_mod_bind;
+@@ -274,6 +275,18 @@ int pfring_mod_set_application_name(pfri
+ 
+ /* ******************************* */
+ 
++int pfring_mod_set_stack_ip(pfring *ring, ip_addr *stack_ip) {
++#if !defined(SO_SET_STACK_IP_ADDRESS)
++  return(-1);
++#else
++  return(setsockopt(ring->fd, 0, SO_SET_STACK_IP_ADDRESS, stack_ip, sizeof(ip_addr)));
++#endif
++}
++
++/* ******************************* */
++
++/* ******************************* */
++
+ int pfring_mod_set_application_stats(pfring *ring, char *stats) {
+ #if !defined(SO_SET_APPL_STATS)
+   return(-1);
+diff -rupN PF_RING-6.0.0.orig/userland/lib/pfring_mod.h PF_RING-6.0.0.mod/userland/lib/pfring_mod.h
+--- PF_RING-6.0.0.orig/userland/lib/pfring_mod.h	2014-02-15 09:42:33.000000000 -0800
++++ PF_RING-6.0.0.mod/userland/lib/pfring_mod.h	2014-05-26 19:12:30.000000000 -0700
+@@ -29,6 +29,7 @@ int pfring_mod_remove_hw_rule(pfring *ri
+ int pfring_mod_set_channel_id(pfring *ring, u_int32_t channel_id);
+ int pfring_mod_set_channel_mask(pfring *ring, u_int32_t channel_mask);
+ int pfring_mod_set_application_name(pfring *ring, char *name);
++int pfring_mod_set_stack_ip(pfring *ring, ip_addr *stack_ip);
+ int pfring_mod_set_application_stats(pfring *ring, char *stats);
+ char* pfring_mod_get_appl_stats_file_name(pfring *ring, char *path, u_int path_len);
+ int pfring_mod_bind(pfring *ring, char *device_name);

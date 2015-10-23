@@ -1,0 +1,42 @@
+<?
+#
+# Filename:  $Source: mon-stats.tem,v $
+# Date:      $Date: 2009/01/05$
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "mon-stats-common">
+
+<TMS-PAGE "Statistics">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "stats"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Statistics Summary">
+   <CFG-FORM -action "mgmt-action" -div_id "reset">
+   <input type="hidden" name="action-binding" value="/stat/nkn/actions/reset-counter">
+   <input type="hidden" name="template" value="mon-stats.tem"> 
+   <CFG-BUTTON -type "apply" -text "Reset Counter" -caps "set_basic"
+	 	-span_id "log_apply">
+   </CFG-FORM>
+
+<div id="cntrArea"></div>
+
+<noscript>
+<MON-STATS-BODY>
+</noscript>
+
+<script type="text/javascript">
+    function cntrWrapper() {
+        getAjaxText ('<?=$ajax_mon_stats_url?>','cntrArea')
+        setTimeout(cntrWrapper, 3000);
+    }
+    cntrWrapper();
+
+</script>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

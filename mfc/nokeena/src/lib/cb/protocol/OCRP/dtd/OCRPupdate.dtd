@@ -1,0 +1,8 @@
+<!-- OCRPupdate 1.0 DTD, Copyright (c) 2012 by Juniper Networks, Inc -->
+<!ELEMENT OCRPupdate ((Entry*, DeleteEntry*)|(DeleteEntry*, Entry*))>
+<!ELEMENT Entry (H, K, A*, L)>
+<!ELEMENT H (#PCDATA)>
+<!ELEMENT K (#PCDATA)>
+<!ELEMENT A (#PCDATA)>
+<!ELEMENT L (#PCDATA)>
+<!ELEMENT DeleteEntry (H, K)>

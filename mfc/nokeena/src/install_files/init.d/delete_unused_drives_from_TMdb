@@ -1,0 +1,42 @@
+#!/bin/sh
+#
+# delete_unused_drives_from_TMdb     Startup script to cleanup TMdb
+# Note: The file src/base_os/common/script_files/customer.sh
+# runs "chkconfig --add" for this in the "firstboot_graft_2()" function
+#
+# chkconfig: 3 25 14
+# description: Nokeena Media Server Tall Maple DB cleanup routine
+#
+# This file must be run after 'initdisks'
+
+# Source function library
+#. /etc/rc.d/init.d/functions
+
+START_SCRIPT=/etc/rc.d/init.d/delete_unused_drives_from_TMdb.sh
+LOG_BASE=delete_unused_drives_from_TMdb
+MSG="Cleaning up drives db "
+
+start() {
+	echo -n "${MSG}"
+	sh -x ${START_SCRIPT} > /log/init/${LOG_BASE}.out.$$ 2>&1
+	cnt=0
+	files=`ls -lt /log/init/${LOG_BASE}.out.* | awk '{print $9}'`
+	for f in $files; do
+	    (( cnt++ ))
+	    if (( $cnt > 5 )); then
+		rm -f $f
+	    fi
+	done
+	echo " - done."
+}
+
+RETVAL=0
+case "$1" in
+start|restart|reload) start ;;
+stop|status) : ;;
+*)  echo "Usage: $0 start"
+    RETVAL=1
+    ;;
+esac
+
+exit ${RETVAL}

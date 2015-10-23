@@ -1,0 +1,44 @@
+<?
+#
+# Filename:  setup-restart.tem,v $
+# Date:      2010/12/06 
+# Author:    Varsha Rajagopalan
+#
+# (C) Copyright 2010 Juniper Networks, Inc.
+# All rights reserved.
+# The template file has been added to provide a 
+# page for restarting MFC related service The template file has been added to provide a 
+# page for restarting MFC related servicess
+#
+?>
+
+<INCLUDE "tms-layout">
+<TMS-PAGE "Restart Services">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "restart"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Restart Services">
+<CFG-FORM -action "restart" -div_id "restart_1">
+  <TMS-TABLE -div_id "service_restart">
+  <TMS-TABLE-ENTRY "Service Name">
+      <CFG-DROPDOWN -id "processname" -errname "servicename" 
+                   -caps "set_basic"
+                   -type "string" -span_id "configure_servicename" -options {
+                    {"mod-delivery" "nvsd"}
+                    {"mod-ftp" "ftpd"}
+                    {"mod-oom" "nknoomgr"}
+                    {"mod-log" "nknlogd"}
+                    } >
+  </TMS-TABLE-ENTRY>
+   <tr>
+     <td height="8">
+  </TMS-TABLE>
+  <CFG-BUTTON -type "ok" -text "Restart" 
+          -caps "action_privileged"
+          -span_id "restart_ok_1">
+</CFG-FORM>
+
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

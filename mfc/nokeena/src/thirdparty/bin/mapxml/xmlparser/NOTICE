@@ -1,0 +1,17 @@
+RelEng Ident Type: BSD License
+Product Info: xmlParser v2.26
+
+========================================================================
+==  NOTICE file corresponding to the BSD License, in this case for the==
+==  XMLParser, version 2.26                                           ==
+========================================================================
+
+RelEng Ident Content: 
+
+XML.c - implementation file for basic XML parser written in ANSI C++
+for portability. It works by using recursion and a node tree for breaking
+down the elements of an XML document.
+
+    @version     V2.26
+    @author      Frank Vanden Berghen
+

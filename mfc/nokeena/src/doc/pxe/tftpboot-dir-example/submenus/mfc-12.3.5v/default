@@ -1,0 +1,37 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-12.3.5v
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-12.3.5v-3_29532_371
+ MENU LABEL mfc-12.3.5v-3_29532_371    BR:vmfc 2013-11-22
+ KERNEL pxe-boot/mfc-12.3.5v-3_29532_371/vmlinuz-bootflop-mfc-12.3.5v-3_29532_371
+ APPEND initrd=pxe-boot/mfc-12.3.5v-3_29532_371/rootflop-mfc-12.3.5v-3_29532_371.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.5v-3_29532_371 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.5v-2_29530_371
+ MENU LABEL mfc-12.3.5v-2_29530_371    BR:vmfc 2013-11-21
+ KERNEL pxe-boot/mfc-12.3.5v-2_29530_371/vmlinuz-bootflop-mfc-12.3.5v-2_29530_371
+ APPEND initrd=pxe-boot/mfc-12.3.5v-2_29530_371/rootflop-mfc-12.3.5v-2_29530_371.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.5v-2_29530_371 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.5v-1_29529_371
+ MENU LABEL mfc-12.3.5v-1_29529_371    BR:vmfc 2013-11-21
+ KERNEL pxe-boot/mfc-12.3.5v-1_29529_371/vmlinuz-bootflop-mfc-12.3.5v-1_29529_371
+ APPEND initrd=pxe-boot/mfc-12.3.5v-1_29529_371/rootflop-mfc-12.3.5v-1_29529_371.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.5v-1_29529_371 installopt=,accept-eula,
+ IPAPPEND 3

@@ -1,0 +1,471 @@
+<?
+#
+# Filename:  $Source: setup-interface.tem $
+# Date:      $Date: 2010/11/30 22:26:38 $
+# Author:    $Author: Varsha Rajagopalan $
+#
+# (C) Copyright  Juniper Networks, Inc.
+# All rights reserved.
+# This file overrides the setup-interface.tem of the Tall Maple. 
+# The file has been re-written to provide a link for restaring the
+# mod-delivery when interface settings are changed. 
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Network Interface Setup">
+
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "interface"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Network Interfaces">
+<p>Please click the link to  restart mod-delivery
+   <A href="/admin/launch?script=rh&amp;template=setup-restart">
+           Restart Services</A>
+
+<TAG IF_STATE_ROW left_label left_value right_label right_value>
+  <tr>
+    <td width="15"></td>
+    <td><b><?=$left_label?></b></td>
+    <td width="6"></td>
+    <td><?=$left_value?></td>
+    <td width="25"></td>
+    <td><b><?=$right_label?></b></td>
+    <td width="6"></td>
+    <td><?=$right_value?></td>
+</TAG>
+
+  <?
+    set real_if_list [list]
+    set found_if_config "false"
+    set if_info [tms::get-if-info]
+    set if_count [llength $if_info]
+  ?>
+
+  <FOREACH if_rec $if_info>
+  <?
+  set do_config "false"
+  set dhcp_node ""
+  set dhcp ""
+  set found_if_config "true"
+  set iface [lindex $if_rec 0]
+
+  if {[string compare $iface "lo"] == 0} {
+       continue
+  }
+
+  set if_display [tms::get-config "/net/interface/config/$iface/display"]
+  if {[string compare $if_display "false"] == 0} {
+      continue
+  }
+  set if_state "/net/interface/state/$iface"
+  set if_cfg "/net/interface/config/$iface"
+  set if_cfg_exists [tms::get-config "$if_cfg"]
+  if {[string length $if_cfg_exists] != 0} {
+    set do_config "true"
+    set dhcp_node "/net/interface/config/$iface/addr/ipv4/dhcp"
+    set dhcp [tms::get-config "$dhcp_node"]
+  }
+  set if_admin_up [tms::get-config "$if_state/flags/oper_up"]
+  if {[string compare $if_admin_up "true"] == 0} {
+    set if_status "Admin up"
+  } else {
+    set if_status "Admin down"
+  }
+  set if_link_up [tms::get-config "$if_state/flags/link_up"]
+  if {[string compare $if_link_up "true"] == 0} {
+    set if_status "$if_status, link up"
+  } else {
+    set if_status "$if_status, link down"
+  }
+  set if_ipaddr [tms::get-config "$if_state/addr/ipv4/1/ip"]
+  set if_masklen [tms::get-config "$if_state/addr/ipv4/1/mask_len"]
+  set if_netmask [tms::masklen-to-mask $if_masklen]
+  set item_type [lindex $if_rec 1]
+  set if_type [lindex $if_rec 2]
+
+  set if_devsource [tms::get-config "$if_state/devsource"]
+  if {[string compare $if_devsource "physical"] == 0} {
+      set if_type_devsource "$if_type"
+  } else {
+      set if_type_devsource "$if_type / $if_devsource"
+  }
+
+  if {[string compare $item_type "interface"] == 0} {
+    lappend real_if_list [list $iface $iface]
+    set if_speed [tms::get-config "$if_state/type/ethernet/speed"]
+    set if_duplex [tms::get-config "$if_state/type/ethernet/duplex"]
+    set if_mtu [tms::get-config "$if_state/mtu"]
+    set if_hwaddr [tms::get-config "$if_state/type/ethernet/mac"]
+  } else {
+    set if_speed ""
+    set if_duplex ""
+    set if_mtu ""
+    set if_hwaddr ""
+    if {[string length $if_ipaddr] == 0} {
+      set if_status "Down"
+    } else {
+      set if_status "Up"
+    }
+  }
+
+  if {[string length $if_hwaddr] == 0 || [string compare $if_hwaddr "N/A"] == 0} {
+     set if_hwaddr [tms::get-config "$if_state/hwaddr"]
+  }
+
+  if {[string length $dhcp] == 0} {
+        tms::set-param post replace "f_mode_$iface" "false"
+  }
+  ?>
+
+  <TMS-TABLE -div_id "if_table_1">
+    <tr>
+      <td colspan="99">
+        <h2><?= $iface ?> state</h2>
+      </td>
+    </tr>
+
+<!-- ==================================================
+     = We need a custom processing function to make the 
+     = "Configure Interface" button work.
+     ================================================== -->
+
+<CFG-FORM -action "config-form-interface" -div_id "interface_1">
+
+<!-- ==================================================
+     = Interface state
+     ================================================== -->
+
+    <IF {[string compare $item_type "interface"] == 0}>
+      <IF_STATE_ROW Status $if_status Speed $if_speed>
+      <IF_STATE_ROW {IP address} $if_ipaddr Duplex $if_duplex>
+      <IF_STATE_ROW Netmask $if_netmask MTU $if_mtu>
+      <IF_STATE_ROW Type $if_type_devsource {HW addr} $if_hwaddr>
+
+      <?
+        set alias_list [lindex $if_rec 3]
+        if {[llength $alias_list] > 0} {
+          set alias_list_str ""
+          foreach alias_name $alias_list {
+            set alias_list_str "$alias_list_str $alias_name <br>"
+          }
+      ?>
+          <IF_STATE_ROW Aliases $alias_list_str "" "">
+      <?
+        }
+      ?>
+    <ELSE>
+      <IF_STATE_ROW "Status" $if_status "" "">
+      <IF_STATE_ROW "IP address" $if_ipaddr "" "">
+      <IF_STATE_ROW "Netmask" $if_netmask "" "">
+      <IF_STATE_ROW "Type" $if_type "" "">
+    </IF>
+
+    <tr>
+      <td height="10">
+
+<!-- ==================================================
+     = Interface configuration: enabled flag / speed
+     ================================================== -->
+
+  <IF {[string compare $do_config "true"] == 0}>
+    <tr>
+      <td colspan="99">
+        <h2><?= $iface ?> configuration</h2>
+
+    <tr>
+      <td>
+      <td colspan="3">
+        <CFG-CHECKBOX -id "enable_iface_$iface" -caps "set_restricted"
+                      -name "$if_cfg/enable" -type "bool"
+                      -span_id "if_cbox_1_$iface">
+        Enabled
+      <td>
+
+    <IF {[string compare $item_type "interface"] == 0 && [string compare $if_type "ib"] != 0}>
+      <td>
+        Speed
+      <td>
+      <td>
+
+<?
+
+  set speeds [tms::iterate-config-last "$if_state/type/ethernet/supported/speeds"]
+
+  if {[llength $speeds] > 0} {
+    set speed_opts [list {"Auto" "auto"}]
+    foreach speed_opt $speeds {
+      lappend speed_opts [list "${speed_opt} MB/s" "${speed_opt}"]
+    }
+  } else {
+    set speed_opts [list {"Auto" "auto"} {"10000 Mb/s" "10000"} {"1000 Mb/s" "1000"} {"100 Mb/s" "100"} {"10 Mb/s" "10"}]
+  }
+
+?>
+
+        <CFG-DROPDOWN -id "speed_$iface" -caps "set_restricted" 
+                      -name "$if_cfg/type/ethernet/speed"
+                      -type "string" -options $speed_opts
+                      -span_id "if_speed_$iface">
+
+    <CFG-RADIO-GROUP -id "mode_$iface" -errname "$iface Mode" -setname "$dhcp_node" 
+                     -type "bool">
+    </IF>
+
+<!-- ==================================================
+     = Interface configuration: DHCP enabled / duplex
+     ================================================== -->
+
+    <!-- Conditional on PROD_FEATURE_DHCP_CLIENT... -->
+    <IF {[string compare [tms::have-prod-feature dhcp_client] "true"] == 0}>
+      <SET dhcp_caps set_restricted>
+      <SET dhcp_prompt "Obtain IP Address Automatically (DHCP)">
+    <ELSE>
+      <SET dhcp_caps set_restricted_DISABLED>
+      <SET dhcp_prompt "DHCP (not available)">
+    </IF>
+
+    <IF {[string compare $item_type "interface"] == 0}>
+    <tr>
+      <td>
+      <td colspan="3">
+        <CFG-RADIO -id "mode_$iface" -caps $dhcp_caps
+                   -name "$dhcp_node" -value "true" -span_id "if_mode_$iface">
+        <?=$dhcp_prompt?>
+      <td>
+
+      <IF {[string compare $if_type "ib"] != 0}>
+        <td>
+          Duplex
+        <td>
+        <td>
+          <CFG-DROPDOWN -id "duplex_$iface" -caps "set_restricted"
+                        -name "$if_cfg/type/ethernet/duplex"
+                        -type "string" -options { {"Auto" "auto"}
+                         {"Full" "full"} {"Half" "half"} }
+                        -span_id "if_duplex_$iface">
+      </IF>
+
+<!-- ==================================================
+     = Interface configuration: DHCP disabled / MTU
+     ================================================== -->
+
+    <tr>
+      <td>
+      <td colspan="3">
+        <CFG-RADIO -id "mode_$iface" -caps $dhcp_caps -name "$dhcp_node"
+                   -value "false" -span_id "if_dhcp_$iface">
+        Specify IP Address Manually
+      <td>
+      <td>
+        MTU
+      <td>
+      <td>
+        <CFG-TEXTBOX -id "mtu_$iface" -errname "$iface Interface MTU" -caps "set_restricted" 
+                     -name "$if_cfg/mtu" -type "uint16" -cols 5
+                     -span_id "if_mtu_$iface">
+
+  </IF>
+
+<!-- ==================================================
+     = Interface configuration: IP address and netmask
+     ================================================== -->
+
+    <tr>
+      <td>
+      <td colspan="3">
+        <table border="0" cellpadding="0" cellspacing="4">
+          <tr>
+    <IF {[string compare $item_type "interface"] == 0}>
+            <td width="30">
+    </IF>
+            <td>
+              IP address
+            <td width="4">
+            <td>
+              <CFG-IPV4 -id "ip_$iface" -errname "$iface IP address"
+                        -caps "set_restricted"
+                        -name "$if_cfg/addr/ipv4/static/1/ip"
+                        -type "ipv4addr" -span_id "if_ip_$iface">
+
+          <tr>
+    <IF {[string compare $item_type "interface"] == 0}>
+            <td>
+    </IF>
+            <td>
+              Netmask
+            <td width="4">
+            <td>
+              <CFG-IPV4 -id "mask_$iface" -errname "$iface net mask"
+                        -caps "set_restricted"
+                        -name "$if_cfg/addr/ipv4/static/1/mask_len"
+                        -type "uint8" -ctype "ipv4addr"
+                        -span_id "if_mask_$iface">
+
+        </table>
+<!-- ==================================================
+     = Interface configuration: comment
+     ================================================== -->
+
+    <tr>
+      <td>
+      <td colspan="99">
+        Comment:
+        <CFG-TEXTBOX -id "comment_$iface" -errname "$iface comment"
+                     -caps "set_restricted" -name "$if_cfg/comment"
+                     -type "string" -cols 40 -span_id "if_comment_$iface">
+
+    <tr>
+      <td height="8">
+
+
+  </IF>
+
+  </table>
+
+  <input type="hidden" name="interface_name" value="<?=$iface?>">
+
+  <IF {[string compare $do_config "true"] == 0}>
+    <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+                -span_id "interface_apply_1">
+    <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+                -span_id "interface_cancel_1">
+    <IF {[string compare $item_type "alias"] == 0}>
+      <CFG-BUTTON -type "remove" -text "Remove Alias" -caps "set_restricted"
+                  -span_id "alias_remove_1">
+    </IF>
+  <ELSE>
+    <SET iface_virt [tms::get-config "/net/interface/state/$iface/from_virt"]>
+    <IF {[string compare $iface_virt "true"] != 0}>
+      <CFG-BUTTON -type "create" -text "Configure Interface"
+                  -caps "set_restricted" -span_id "interface_create_1">
+    </IF>
+  </IF>
+
+</CFG-FORM>
+
+  <br>
+  <hr>
+
+  </FOREACH>
+
+<!-- ==================================================
+     = DHCP primary interface
+     ================================================== -->
+
+<!-- Conditional on PROD_FEATURE_DHCP_CLIENT... -->
+<IF {[string compare [tms::have-prod-feature dhcp_client] "true"] == 0}>
+
+<CFG-FORM>
+  <TMS-TABLE>
+    <tr>
+      <td colspan="99">
+        <h2>DHCP Primary Interface</h2>
+
+    <tr>
+      <td width="15">
+      <td>
+        Configured primary
+      <td width="5">
+      <td>
+        <CFG-DROPDOWN -id "dhcp_primary_ifname" -caps "set_restricted" 
+                      -name "/net/general/config/overlay_ifname" -type "string"
+                      -options $real_if_list>
+
+    <tr>
+      <td>
+      <td>
+        Acting primary
+      <td>
+      <td>
+<?
+    set acting_ifname [tms::get-config "/net/general/state/acting_overlay_ifname"]
+    if {[string length $acting_ifname] == 0} {
+        set acting_ifname "(none)"
+    }
+    tms::puts "$acting_ifname"
+?>
+
+    <tr>
+      <td height="10">
+
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted">
+</CFG-FORM>
+
+<br>
+<hr>
+
+</IF>
+
+
+<!-- ==================================================
+     = Interface Aliases
+     ================================================== -->
+
+<CFG-FORM -action "config-form-interface" -div_id "interface_1">
+  <TMS-TABLE -div_id "if_table_alias">
+    <tr>
+      <td colspan="99">
+        <h2>Add new interface alias</h2>
+
+    <tr>
+      <td width="15">
+      <td>
+        Interface name
+      <td width="5">
+      <td>
+        <CFG-DROPDOWN -id "newalias_ifname" -caps "set_restricted" 
+                      -options $real_if_list>
+
+    <tr>
+      <td>
+      <td>
+        Alias index
+      <td>
+      <td>
+        <CFG-TEXTBOX -id "newalias_index" -errname "Alias index"
+                      -caps "set_restricted" -cols 16>
+
+    <tr>
+      <td>
+      <td>
+        IP address
+      <td>
+      <td>
+        <CFG-TEXTBOX -id "newalias_ipaddr" -errname "Alias IP address"
+                      -caps "set_restricted" -cols 16>
+
+    <tr>
+      <td>
+      <td>
+        Netmask
+      <td>
+      <td>
+        <CFG-TEXTBOX -id "newalias_netmask" -errname "Alias netmask"
+                      -caps "set_restricted" -cols 16>
+
+    <tr>
+      <td height="10">
+
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "addalias" -text "Apply" -caps "set_restricted"
+              -span_id "interface_apply_2">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -span_id "interface_cancel_2">
+</CFG-FORM>
+
+    <IF {$if_count == 0}>
+      <span class="red">
+        <br>
+        No Interfaces Available.
+      </span>
+    </IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

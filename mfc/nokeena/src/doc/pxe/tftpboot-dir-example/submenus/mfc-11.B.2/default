@@ -1,0 +1,55 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-11.B.2
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-11.B.2-qa-55_22303_292
+ MENU LABEL mfc-11.B.2-qa-55_22303_292 BR:everett 2011-12-27
+ KERNEL pxe-boot/mfc-11.B.2-qa-55_22303_292/vmlinuz-bootflop-mfc-11.B.2-qa-55_22303_292
+ APPEND initrd=pxe-boot/mfc-11.B.2-qa-55_22303_292/rootflop-mfc-11.B.2-qa-55_22303_292.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.B.2-qa-55_22303_292 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.B.2-qa-54_22302_292
+ MENU LABEL mfc-11.B.2-qa-54_22302_292 BR:everett 2011-12-27
+ KERNEL pxe-boot/mfc-11.B.2-qa-54_22302_292/vmlinuz-bootflop-mfc-11.B.2-qa-54_22302_292
+ APPEND initrd=pxe-boot/mfc-11.B.2-qa-54_22302_292/rootflop-mfc-11.B.2-qa-54_22302_292.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.B.2-qa-54_22302_292 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.B.2-qa-53_22295_292
+ MENU LABEL mfc-11.B.2-qa-53_22295_292 BR:everett 2011-12-26
+ KERNEL pxe-boot/mfc-11.B.2-qa-53_22295_292/vmlinuz-bootflop-mfc-11.B.2-qa-53_22295_292
+ APPEND initrd=pxe-boot/mfc-11.B.2-qa-53_22295_292/rootflop-mfc-11.B.2-qa-53_22295_292.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.B.2-qa-53_22295_292 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.B.2-qa-52_22294_292
+ MENU LABEL mfc-11.B.2-qa-52_22294_292 BR:everett 2011-12-26
+ KERNEL pxe-boot/mfc-11.B.2-qa-52_22294_292/vmlinuz-bootflop-mfc-11.B.2-qa-52_22294_292
+ APPEND initrd=pxe-boot/mfc-11.B.2-qa-52_22294_292/rootflop-mfc-11.B.2-qa-52_22294_292.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.B.2-qa-52_22294_292 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.B.2-qa-51_22276_292
+ MENU LABEL mfc-11.B.2-qa-51_22276_292 BR:everett 2011-12-25
+ KERNEL pxe-boot/mfc-11.B.2-qa-51_22276_292/vmlinuz-bootflop-mfc-11.B.2-qa-51_22276_292
+ APPEND initrd=pxe-boot/mfc-11.B.2-qa-51_22276_292/rootflop-mfc-11.B.2-qa-51_22276_292.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.B.2-qa-51_22276_292 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-11.B.2-qa-50_22272_292
+ MENU LABEL mfc-11.B.2-qa-50_22272_292 BR:everett 2011-12-24
+ KERNEL pxe-boot/mfc-11.B.2-qa-50_22272_292/vmlinuz-bootflop-mfc-11.B.2-qa-50_22272_292
+ APPEND initrd=pxe-boot/mfc-11.B.2-qa-50_22272_292/rootflop-mfc-11.B.2-qa-50_22272_292.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-11.B.2-qa-50_22272_292 installopt=,accept-eula,
+ IPAPPEND 3

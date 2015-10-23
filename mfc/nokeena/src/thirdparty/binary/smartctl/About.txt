@@ -1,0 +1,38 @@
+Local copy of source:
+  (storage01):/data/thirdparty/src/smartmon/smartmontools-5.40-fix1.tar.gz
+  (storage01):/data/thirdparty/src/smartmon/smartmontools-5.42-fix1.tar.gz
+These have a one line fix in file atacmds.cpp (original is saved as atacmd.cpp.orig).
+To make the 64 bit version:
+  ./configure && make
+To make the 32 bit version:
+  CC="gcc -m32" CXX="g++ -m32 " ./configure && make
+This make creates the file "smartctl" in the same directory.
+Binaries checked in:
+64bit: svn:/nkn/appliance/trunk/nokeena/src/thirdparty/binary/smartctl/smartctl
+32bit: svn:/nkn/appliance/trunk/nokeena/src/thirdparty/binary/smartctl/smartctl.32
+
+To see what version a binary is and if 32 bit or 64 bit, use the "--version"
+command line parameter.
+
+This tool is a part of the Samara CentOS platform, if we define
+   PROD_FEATURE_SMARTD=1 in mk/customer.mk then
+smartmontools-5.36-4.el5.x86_64.rpm gets installed. But we need the most
+recent version to get support for Megaraid disk controllers, which is not
+yet been picked up by CentOS, so we build it ourselves.
+Plus we want to have a 32 bit binary for use during manufacturing.
+
+Original source:
+* The 5.40 source was released on 2010-10-16: smartmontools-5.40.tar.gz
+* The 5.42 source was released on 2011-10-20: smartmontools-5.42.tar.gz 
+Downloaded from
+  http://sourceforge.net/projects/smartmontools/files/smartmontools/5.40/smartmontools-5.40.tar.gz/download
+  http://sourceforge.net/projects/smartmontools/files/smartmontools/5.42/smartmontools-5.42.tar.gz/download
+
+Copyright and License
+  Copyright Bruce Allen, GPL, http://smartmontools.sourceforge.net
+  License and copyright text from the README file in the source:
+    Copyright (C) 2002-9 Bruce Allen <smartmontools-support@lists.sourceforge.net>
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the Free
+    Software Foundation; either version 2, or (at your option) any later
+    version.

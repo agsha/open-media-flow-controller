@@ -1,0 +1,348 @@
+:
+# Do the PXE install specific pre-installation tasks.
+# Exiting with 0 means indicates success.
+# Exiting with 1 means faiure, perhaps temporary.
+# Exiting with 2 means failure, no hope of trying again.
+DRY_RUN=no
+QUIET=no
+AUTOMATIC=no
+THIS_URL=none
+LOGF=/tmp/pxe-install.log
+date > ${LOGF}
+rm -f /tmp/failure.txt
+
+Fail_Print()
+{
+  echo "${@}"
+  echo "${@}" >> /tmp/failure.txt
+  echo "${@}" >> ${LOGF}
+}
+
+Log()
+{
+  echo "${@}" >> ${LOGF}
+}
+
+Text()
+{
+  echo "${@}"
+}
+
+CPrint()
+{
+  echo "${@}"
+}
+
+VPrint()
+{
+  [ "${QUIET}" != "quiet" ] && echo "${@}"
+}
+
+rm -f /tmp/img.url
+
+Usage()
+{
+  if [ "${AUTOMATIC}" = "no" ] ; then
+    CPrint You must specify a URL for the .img or .tgz filename or directory
+    CPrint of the install.img and manufacture.tgz file.
+  else
+    Fail_Print The pxe-boot specification was incorrect or not complete enough
+    Fail_Print to allow automatic installation.
+  fi
+  if [ ! -z "${IOP_DEFAULT_URL}" ] ; then
+    CPrint Default URL=${IOP_DEFAULT_URL}
+  fi
+}
+
+# The install-options.txt file sets the following from the boot command line:
+IOP_INSTALL_FROM=
+IOP_INSTALL_OPT=
+IOP_MAC_ADDR=
+IOP_ROOT_IMAGE=
+IOP_MY_IP=
+IOP_SERVER_IP=
+IOP_GW_IP=
+IOP_NET_MASK=
+IOP_DEFAULT_URL=
+# See S30_mfc_install for format and explanations.
+if [ -f /tmp/install-options.txt ] ; then
+  . /tmp/install-options.txt
+fi
+
+# See if we can deduce the URL from the install-options.txt settings.
+if [ -z "${IOP_MY_IP}" ] ; then
+    VPrint Note: IPAPPEND 3 was not used in the pxe-boot spec.
+fi
+
+Make_Sure_Eth_Is_Configured()
+{
+  MATCH_MAC=no-mac
+  MATCH_IPA=no-ipa
+  # Make sure that DHCP assigned an address to the pxe-boot interface.
+  INET_INFO=`ifconfig | grep "inet addr"`
+  if [ -z "${IOP_MAC_ADDR}" -o -z "${IOP_MY_IP}" ] ; then
+    if [ -z ${INET_INFO} ] ; then
+      Fail_Print No network interface has an IP address and the pxe-boot spec
+      Fail_Print did not have IPAPPEND 3 so cannot complete installation.
+      exit 1
+    else
+      Fail_Print Warning the pxe-boot spec did not have IPAPPEND 3 so might
+      Fail_Print have problems completing installation.
+      return
+    fi
+  fi #
+  # At this point we know that both IOP_MAC_ADDR and IOP_MY_IP are set.
+  # Find the device with that MAC and the device with that IP address assigned.
+  # When everything is working normally they will be the same.
+  for ETH_NAME in `ifconfig -a | grep ^eth | cut -f1 -d' '`
+  do
+    HW_ADDR=`ifconfig ${ETH_NAME} | grep HWaddr | cut -f2- -d: \
+      | sed -e "/Ethernet.*HWaddr /s///" | sed -e "/ /s///g" | tr A-Z a-z`
+    INET_ADDR=`ifconfig ${ETH_NAME} | grep "inet addr" | head -n 1 \
+      | cut -f2 -d: | cut -f1 -d' '`
+    [ "${IOP_MAC_ADDR}" = "${HW_ADDR}" ] && MATCH_MAC=${ETH_NAME}
+    [ "${IOP_MY_IP}"  = "${INET_ADDR}" ] && MATCH_IPA=${ETH_NAME}
+  done
+  if [ "${MATCH_MAC}" = "${MATCH_IPA}" ] ; then
+    # All good.  Just return
+    return
+  fi #
+  if [ "${MATCH_MAC}" = "no-mac" ] ; then
+    echo "${IOP_MAC_ADDR}" > /tmp/no-eth-device.txt
+    Fail_Print Error, PXE boot device not found, so cannot complete installation.
+    Fail_Print "No driver for the network device with MAC address ${IOP_MAC_ADDR}"
+    exit 1
+  fi #
+  # At this point we have identifed the device that we need to use
+  # to complete installation.
+  # We know that this device does NOT have the needed IP address assigned.
+  # See if it is assigned to another device. This should never be the case
+  # but need to make sure.
+  if [ "${MATCH_IPA}" != "no-ipa" ] ; then
+    # This case is not expected to ever happen.  The IP address is on the
+    # wrong device. 
+    Fail_Print Error, PXE boot error.
+    Fail_Print The PXE boot interface ${MY_MAC_ADDRESS} should have ${IOP_MY_IP} assigned,
+    Fail_Print but this address is assigned to another interface ${IOP_MAC_ADDR}.
+    Fail_Print There might be problems completing installation.
+    return
+  fi #
+  Log ifconfig ${MATCH_MAC} ${IOP_MY_IP} netmask ${IOP_NET_MASK}
+  ifconfig ${MATCH_MAC} ${IOP_MY_IP} netmask ${IOP_NET_MASK}
+  Log ifconfig ${MATCH_MAC} up
+  ifconfig ${MATCH_MAC} up
+}
+Make_Sure_Route_Is_Configured()
+{
+  # Busybox "route" command prints this when no route set (minus the leading "#")
+  #Kernel IP routing table
+  #Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+
+  # And when a route is set, it prints something like:
+  #Kernel IP routing table
+  #Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+  #192.168.0.64    *               255.255.255.192 U     0      0        0 eth2
+  #default         192.168.0.126   0.0.0.0         UG    0      0        0 eth2
+
+  ROUTE_INFO=`route | grep default`
+  if [ -z "${IOP_GW_IP}" ] ; then
+    if [ -z "${ROUTE_INFO}" ] ; then
+      Fail_Print No network gateway has been automatically set and the pxe-boot
+      Fail_Print spec did not have IPAPPEND 3 so cannot complete installation.
+      exit 1
+    else
+      Fail_Print Warning the pxe-boot spec did not have IPAPPEND 3 so might
+      Fail_Print have problems completing installation.
+      return
+    fi
+  fi #
+  # At this point we know that IOP_GW_IP is set to something.
+  if [ ! -z "${ROUTE_INFO}" ] ; then
+    # Verify that the default route goes through the specified device.
+    echo "${ROUTE_INFO}" | grep ${MATCH_MAC} > /dev/null
+    RV=${?}
+    if [ ${RV} -eq 0 ] ; then
+      # All good.  Just return.
+      return
+    else
+      # Note: This case is NOT expected to ever happen, but
+      #       need to hande it anwway.
+      Fail_Print "Warning: The default gateway route does not use the device used for PXE."
+      Fail_Print "Changing the default gateway route to use the pxe boot device."
+      Log "Before: ${ROUTE_INFO}"
+      Log route delete default gw
+      route delete default gw
+      Log route add default gw ${IOP_GW_IP}
+      route add default gw ${IOP_GW_IP}
+    fi
+  else
+    # No default route was set, so set it now.
+    Log route add default gw ${IOP_GW_IP}
+    route add default gw ${IOP_GW_IP}
+  fi
+}
+Make_Sure_Eth_Is_Configured
+Make_Sure_Route_Is_Configured
+Log ifconfig
+Log `ifconfig`
+
+THIS_URL=${IOP_DEFAULT_URL}
+for i in ${*}
+do
+    case "_${i}" in
+    _)         break ;;
+    _--quiet) QUIET=quiet ; continue ;;
+    _--automatic) AUTOMATIC=auto ; continue ;;
+    _--dryrun) DRY_RUN=dry_run ; continue ;;
+    _--help|_-h)  Usage; exit 1 ;;
+    _-*) Fail_Print Unknown option "${i}"
+         Usage
+         exit 1
+         ;;
+    _http://*)
+        THIS_URL="${i}"
+        ;;
+    _mfg/*)
+        # Undocumented shortcut, depreciated.
+        THIS_URL=http://172.19.172.52/"${i}"
+        ;;
+    _172.*)
+        # Undocumented shortcut, depreciated.
+        THIS_URL=http://"${i}"
+        ;;
+    *)
+        Fail_Print Invalid URL: ${i}
+        Usage
+        exit 1
+        ;;
+    esac
+done
+case ${THIS_URL} in
+none)
+  Usage
+  exit 1
+  ;;
+*/image*.img)
+  IMG_URL=${THIS_URL}
+  MFG_URL=`Text ${THIS_URL} | sed -e "s#/image-#/manufacture-#" | sed -e "s/\.img$/.tgz/"`
+  ;;
+*.img)
+  IMG_URL=${THIS_URL}
+  MFG_URL=`Text ${THIS_URL} | sed -e "s/\.img$/.tgz/"`
+  ;;
+*/manufacture*.tgz)
+  MFG_URL=${THIS_URL}
+  IMG_URL=`Text ${THIS_URL} | sed -e "s#/manufacture-#/img-#" | sed -e "s/\.tgz$/.img/"`
+  ;;
+*.tgz)
+  MFG_URL=${THIS_URL}
+  IMG_URL=`Text ${THIS_URL} | sed -e "s/\.tgz$/.img/"`
+  ;;
+*)
+  MFG_URL="${THIS_URL}"/manufacture.tgz
+  IMG_URL="${THIS_URL}"/image.img
+  ;;
+esac
+if [ -z ${IMG_URL} ] ; then
+  Fail_Print Error parsing image URL
+  exit 1
+fi
+if [ -z ${MFG_URL} ] ; then
+  Fail_Print Error parsing image URL
+  exit 1
+fi
+Text ${MFG_URL} > /tmp/mfg.url
+
+# Download the manufature.tgz file
+MFG_FILE=/var/tmp/manufacture.tgz
+wget -O ${MFG_FILE} ${MFG_URL} > /tmp/wget-mfg.log 2>&1
+if [ ${?} -ne 0 ] ; then
+  Fail_Print Error, failed to download ${MFG_URL}
+  cat /tmp/wget-mfg.log
+  exit 1
+fi
+
+SAVE_WD=`pwd`
+cd /tmp
+rm -rf manufacture
+mkdir manufacture
+cd manufacture
+# We want to see errors from tar, but not those about time stamp issues.
+tar zxf ${MFG_FILE} 2>&1 1>tgz.list | grep -v "time stamp"
+
+rm ${MFG_FILE}
+for i in `find * -type f`
+do
+  if [ -f /${i} -o -L /${i} ] ; then
+    if [ ! -f /${i}-orig -a ! -L /${i}-orig ] ; then
+      Log mv /${i} /${i}-orig
+      mv /${i} /${i}-orig
+    fi
+  fi
+  rm -f /${i}
+  D=`dirname /${i}`
+  [ ! -d ${D} ] && mkdir -p ${D}
+  Log ln -s `pwd`/${i} /${i}
+  ln -s `pwd`/${i} /${i}
+  chmod +x `pwd`/${i} /${i} > /dev/null 2> /dev/null
+done
+
+# Now copy symlinks
+for i in `find * -type l`
+do
+  if [ -f /${i} -o -L /${i} ] ; then
+    if [ ! -f /${i}-orig -a ! -L /${i}-orig ] ; then
+      Log mv /${i} /${i}-orig
+      mv /${i} /${i}-orig
+    fi
+  fi
+  rm -f /${i}
+  D=`dirname /${i}`
+  [ ! -d ${D} ] && mkdir -p ${D}
+  Log cp -d `pwd`/${i} /${i}
+  cp -d `pwd`/${i} /${i}
+done
+
+# Patch using patch files just installed.
+if [ -f /sbin/grub-install.rej ] ; then
+    echo
+    Fail_Print !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Fail_Print Cannot install because patch previously failed: /sbin/grub-install
+    Fail_Print !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    echo
+    exit 2
+fi
+if [ -f /sbin/grub-install.patch ] ; then
+  if [ -f /sbin/grub-install.orig ]  ; then
+    echo Already Patched: /sbin/grub-install
+  else
+    cd /sbin
+    Log Patch /sbin/grub-install
+    rm -f grub-install.rej
+    patch < grub-install.patch >> ${LOGF} 2>&1
+    if [ -f grub-install.rej ] ; then
+      echo
+      Fail_Print !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      Fail_Print Cannot install because patch failed: /sbin/grub-install
+      Fail_Print !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      echo
+      exit 2
+    fi     
+  fi
+fi
+
+# Verify MFC image URL.
+rm -f /tmp/wget.err
+VAL=`wget -O - ${IMG_URL}  2> /tmp/wget.err | head | wc`
+grep -v "Connecting to " /tmp/wget.err > /tmp/wget.err2
+if [ -s /tmp/wget.err2 ] ; then
+  cat /tmp/wget.err
+  Fail_Print Error, failed to download ${IMG_URL}
+  exit 1
+fi
+Log ${IMG_URL} is accessable
+Text ${IMG_URL} > /tmp/img.url
+VPrint  Ready to install or restore:
+VPrint "  ${IMG_URL}"
+
+exit 0

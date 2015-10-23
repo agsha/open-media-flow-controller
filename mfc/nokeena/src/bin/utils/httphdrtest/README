@@ -1,0 +1,8 @@
+# HTTP header unit tests
+
+1) Edit local-Makefile and set NKN_INCLUDE to point to the include directory
+   in your build tree (absolute path).
+
+2) make -f local-Makefile
+
+3) ./test

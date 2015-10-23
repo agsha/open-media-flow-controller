@@ -1,0 +1,217 @@
+We have modified the glib2 library to support the functionality to control the default stack size of thread pool.
+
+Note: SCL 6.6 uses glib2-2.28.8-4.SCLC6_6.R1.0.1.src.rpm
+ ( Originally from /volume/ssd-linux-storage01/repo/ssdlinux-nfsmount/scl6/release/6.6.R1.0/srpm/glib2-2.28.8-4.SCLC6_6.R1.0.1.src.rpm )
+
+The modified new RPMs are archived in the following location:
+
+Location : cmbu-storage01.juniper.net:/data/archive/thirdparty/build-machine-modified/glib2-2.28.8-4.SCLC6_6.R1.0.1-modified-436/
+
+The same modified glib2 rpms are also MFC source, along with the patch files used and matching source.
+  dist/modified/glib2/patches/glib2-2.28.8-jnpr-2015-chainhash.patch
+  dist/modified/glib2/patches/glib2-2.28.8-jnpr-2015-stacksize.patch
+  dist/modified/glib2/src-rpm-unmodified/glib2-2.28.8-4.SCLC6_6.R1.0.1.src.rpm
+  dist/modified/SCL6/SRPMS/glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.src.rpm
+  dist/modified/SCL6/arch_x86_64/glib2-doc-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.noarch.rpm
+  dist/modified/SCL6/arch_x86_64/glib2-devel-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+  dist/modified/SCL6/arch_x86_64/glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+  dist/modified/SCL6/arch_x86_64/glib2-static-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+  dist/modified/SCL6/arch_x86_64/glib2-debuginfo-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+
++++++++++++++++++++
+Build machine note:
+We need to have glib2 and glib2-devel installed on the build machine.  Do it this way:
+  cd /data/archive/thirdparty/build-machine-modified/glib2-2.28.8-4.SCLC6_6.R1.0.1-modified-436
+  rpm -Uvh --force glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm glib2-devel-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+
+
+--------------------------------------------------------
+Text version of the wiki page "How to modify glib2 RPM"
+updated for only SCL glib2-2.28-8
+--------------------------------------------------------
+How to modify glib2 RPM
+
+Building a package from an rpm source package starts with the pristine sources from the developer, applies any patches from the package builder, and uses options in the SPEC file to compile and create the binary package.
+
+1 Location of the patch files
+
+In order to comply with releasing modified source, the patch files are maintained in the MFC source tree directory:
+
+  dist/modified/glib2/patches/glib2-2.28.8-jnpr-2015-chainhash.patch
+  dist/modified/glib2/patches/glib2-2.28.8-jnpr-2015-stacksize.patch
+
+and with a rule in the freedist Makefile to put the patches into the modified source release. That makefile is:
+
+  tree/src/release/freedist/Makefile (???)
+
+If the patches are changed or new ones added then the patch files in the MFC source must be updated. The patch files are not used during building the product. The patches must be applied by hand and a make of the binary rpm done by hand with the resulting binary rpm and new src rpm checked into the source tree in
+
+  dist/modified/SCL6/SRPMS/
+  dist/modified/SCL6/arch_x86_64/
+
+We have two patches: 1: The first patch file adds the two functions g_hash_table_foreach_remove_n() and g_thread_pool_set_default_stack_size() which fixes the "gthread stack size" problem. 2: The second patch file changes the hash table logic from open addressing to chained addressing.
+
+The first patch file for SCL 6.6 is archived as:
+  /data/archive/thirdparty/build-machine-modified/glib2-2.28.8/glib2-2.28.8-jnpr-2015-stacksize.patch
+
+It is in the MFC source tree as:
+  dist/modified/glib2/patches/glib2-2.28.8-jnpr-2015-stacksize.patch
+
+The second patch file for SCL 6.6 is archived as:
+  /data/archive/thirdparty/build-machine-modified/glib2-2.28.8/glib2-2.28.8-jnpr-2015-chainhash.patch
+
+It is in the MFC source tree as:
+  dist/modified/glib2/patches/glib2-2.28.8-jnpr-2015-chainhash.patch
+
+
+2 Location of the source RPM
+
+For SCL 6.6.R1.0, the original source is at:
+
+http://ssd-linux-inventory.juniper.net:8080/ssdlinux/scl6/release/6.6.R1.0/srpm/glib2-2.28.8-4.SCLC6_6.R1.0.1.src.rpm
+
+Copied to the /data filesystem as:
+
+  /data/archive/thirdparty/build-machine-modified/src-rpm-unmodified/glib2-2.28.8-4.SCLC6_6.R1.0.1.src.rpm
+
+It is in the MFC source tree as:
+  dist/modified/glib2/src-rpm-unmodified/glib2-2.28.8-4.SCLC6_6.R1.0.1.src.rpm
+
+
+3 How to build the glib2 binary rpm
+
+Install the source RPM. Create an alternate source location so you do not have to use /usr/src/redhat:
+
+3.1. Create ~/.rpmmacros specifying a top dir and tmp path of your choice. E.g.:
+
+%_topdir /tmp/rpm
+%_tmppath /tmp/tmprpm
+
+
+3.2. Create the needed structure where you specified %_topdir. E.g.
+
+LOC=`grep _topdir ~/.rpmmacros | cut -f2 -d' '`
+echo ${LOC}
+mkdir -p ${LOC}
+cd ${LOC}
+mkdir BUILD RPMS SOURCES SPECS SRPMS
+mkdir RPMS/x86_64
+
+3.3. Install the source rpm. For example from the /data/archive location
+
+rpm -ivh /data/archive/thirdparty/build-machine-modified/src-rpm-unmodified/glib2-2.28.8-4.SCLC6_6.R1.0.1.src.rpm
+
+3.4. Update ~/.rpmmacros to set the 'dist' setting to matches the dist part of the srpm, plus additional text to show that is it a modified version.
+E.g. for SCL6.6:
+
+%dist .SCLC6_6
+%scl_dist .R1.0.1_mfc.1
+%vendor SCL-MFC
+
+
+E.g. for el6:
+
+%dist .el6_mfc.1
+
+The above installs the source file archives in ${LOC}/SOURCES and the RPM spec file in ${LOC}/SPECS. Now we need create the full source tree using the following command :
+
+rpmbuild -bp ${LOC}/SPECS/glib2.spec
+
+This extracts the sources into ${LOC}/BUILD and applies any patches from the source package, but does not compile it or create a binary rpm package. This may tell you that other packages need to be installed. E.g. "gamin-devel". To install such a package, then as root use this command:
+
+ yum install gamin-devel
+
+
+3.5 Put the patch files in the SOURCES directory.
+
+Make a copy of the spec file glib2.spec as glib2.mfc.spec in the directory ${LOC}/SPECS
+
+cp glib2.spec glib2.mfc.spec
+
+3.6 Modify the new spec file to add the patch file entries.
+
+For SCL 6.6 to apply the two patches add these lines:
+
+Patch6: glib2-2.28.8-jnpr-2015-stacksize.patch
+Patch7: glib2-2.28.8-jnpr-2015-chainhash.patch
+
+Copy the two patch files to ${LOC}/SOURCES and make these changes to them:
+glib2-2.28.8-jnpr-2015-stacksize.patch
+
+    Add these three lines to the start of the file: 
+
+From: dpeet@juniper.net  Fri Jun 26 12:00:00 2015
+Subject: [PATCH] Juniper Stacksize patch
+---
+
+    Add this line to the end of the file: 
+
+--
+
+
+glib2-2.28.8-jnpr-2015-chainhash.patch
+
+    Add these three lines to the start of the file: 
+
+From: dpeet@juniper.net  Fri Jun 26 12:01:00 2015
+Subject: [PATCH] Juniper Chainhash patch
+---
+
+    Add this line to the end of the file: 
+
+--
+
+==Now apply the patches==
+
+Once the patch file is created and put in ${LOC}/SOURCES and the spec file changes are done, we are ready to recreate the RPMs.
+
+rpmbuild -ba ${LOC}/SPECS/glib2.mfc.spec
+
+This compiles the source and builds binary rpms, then places them in ${LOC}/RPMS/x86_64, and the new source rpm in ${LOC}/SRPMS
+
+Remove the %dist setting from ~/.rpmmacros
+
+
+==Upload to to source tree==
+
+For the glib2-2.28.8 (from SCL6.6)
+    $PROD_CUSTOMER_ROOT is the root of the MFC source tree. 
+    Rev 436 (in mfc trunk and samara current, has both patches applied)
+        $PROD_CUSTOMER_ROOT/dist/modified/SCL6/arch_x86_64/glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+        $PROD_CUSTOMER_ROOT/dist/modified/SCL6/SRPMS/glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.src.rpm
+        samara/current/tree/src/base_os/linux_el/el6/arch_x86_64/packages/pkg_bin_check.txt
+        samara/current/tree/src/base_os/linux_el/el6/arch_x86_64/packages/source_pkgs.inc
+        samara/current/tree/src/base_os/linux_el/el6/arch_x86_64/image_packages/Makefile
+        samara/current/tree/src/base_os/linux_el/el6/arch_x86_64/build_required.inc 
+
+Note: You update the line for the updated rpm in pkg_bin_check.txt file, using the output of the command:
+
+   lfi -tgunm {rpm file}
+
+
+==Upload to /data/archive/thirdparty/build-machine-modified/==
+
+The resulting rpms are also be copied to a directory under /data/archive/thirdparty/build-machine-modified/ and the instructions on setting up Build machines updated.
+
+For the version with both glib2-2.28.8-jnpr-2015-stacksize and glib2-2.28.8-jnpr-2015-chainhash patches, the patched rpm files were copied to
+
+    /data/archive/thirdparty/build-machine-modified/glib2-2.28.8-4.SCLC6_6.R1.0.1-modified-436 
+
+and the instruction on this wiki page updated:
+
+    http://cmbu-svn01.juniper.net/mediawiki/index.php/Build_Machine_Configuration_scl6#Modified_glib2_RPM 
+
+
+==Creating new patches==
+
+To create a new patch file, make a copy of the source tree in another location make the changes in the copied location.
+
+Then create the patch file using the following command, for example :
+
+diff -uNr <original path> <modified tree path> > glib2-2.28.8-jnpr-2015-chainhash.patch
+
+or use options "-rpu"
+
+Important: New Symbols
+Any added symbols needs to be added to glib/glib.symbols file and that needs to be done in the patch file. Typically, in the extracted source make a copy of glib/glib.symbols and then add the new symbols to it and the do a "diff -uNr" to get that patch and add to the end of the patch file. If one exists from the previous then you need to add this in addition to that. 
+

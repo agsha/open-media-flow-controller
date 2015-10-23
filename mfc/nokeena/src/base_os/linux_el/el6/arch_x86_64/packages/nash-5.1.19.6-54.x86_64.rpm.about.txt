@@ -1,0 +1,13 @@
+BinaryFile: nash-5.1.19.6-54.x86_64.rpm
+Description: CentOS 5.4 nash (Not in CentOS 6.3)
+From: CentOS 5.4
+Compiled from source: no
+Modified: no
+Copyright: 
+LicenseType:
+LicenseURL:
+BinaryDownloadedFrom: http://vault.centos.org/5.4/os/x86_64/CentOS/nash-5.1.19.6-54.x86_64.rpm
+BinaryLocalCopy: svn: nokeena/src/base_os/linux_el/el6/arch_x86_64/packages/nash-5.1.19.6-54.x86_64.rpm
+SourceDownloadedFrom: http://vault.centos.org/5.4/os/SRPMS/mkinitrd-5.1.19.6-54.src.rpm
+SourceLocalCopy:
+

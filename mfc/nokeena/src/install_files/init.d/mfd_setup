@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+# mfd_setup  Startup script for setting up network, fs and cpu for MFD use.
+# Note: The file ./base_os/common/script_files/customer.sh
+# runs "chkconfig --add" for this in the "firstboot_graft_2()" function
+#
+# chkconfig: 3 22 15
+# description: Configuring Network, FS and CPU settings
+
+START_SCRIPT=/opt/nkn/bin/mfd_setup.sh
+MSG="Configuring Network, FS and CPU settings"
+
+RETVAL=0
+case "${1}" in
+start)
+    echo "${MSG}"
+    ${START_SCRIPT}
+    ;;
+stop|status)
+    # Nothing to do
+    :
+    ;;
+*)
+    echo "Usage: $0 {start}"
+    RETVAL=1
+    ;;
+esac
+exit ${RETVAL}

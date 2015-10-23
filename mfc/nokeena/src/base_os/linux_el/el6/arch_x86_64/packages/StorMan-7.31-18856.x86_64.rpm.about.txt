@@ -1,0 +1,12 @@
+BinaryFile: StorMan-7.31-18856.x86_64.rpm
+Description: Adaptec Storage Manager
+From: Adaptec
+Compiled from source: no
+Modified: no
+Copyright: Adaptec
+LicenseType: Adaptec_Downloadable_Software_License
+LicenseURL:
+BinaryDownloadedFrom: http://www.adaptec.com/en-us/speed/raid/storage_manager/asm_linux_x64_v7_31_18856_tgz.htm
+BinaryLocalCopy: svn: nokeena/src/base_os/linux_el/el6/arch_x86_64/packages/StorMan-7.31-18856.x86_64.rpm
+SourceDownloadedFrom: None
+SourceLocalCopy: None

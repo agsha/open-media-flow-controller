@@ -1,0 +1,133 @@
+#! /bin/bash
+# Flash the ethernet port LEDs in order, over and over.
+
+STOP_FILE=/tmp/stop.$$.tmp
+trap_int_handler()
+{
+  touch ${STOP_FILE}
+}
+rm -f ${STOP_FILE}
+trap "trap_int_handler" INT
+
+LOOPS=10
+case _${1} in
+_[0-9]|_[0-9][0-9])
+  LOOPS=${1}
+  shift
+  ;;
+_-h|_--help)
+  echo 'Syntax: [<LoopCount>] [ + | <input-file> [ <ref-file> ] ]'
+  exit 1
+  ;;
+esac
+
+ETH_ORDER_FILE=/tmp/eth-order-eth.out
+NEW_ORDER_FILE=/tmp/eth-order-new.out
+
+case _${1} in
+_)
+  # Use the currrent settings.
+  INPUT_FILE=/tmp/eth-order-now.out
+  REF_FILE=none
+  rm -rf ${INPUT_FILE}
+  for i in `/sbin/ifconfig -a | grep ^eth | cut -f1 -d' '`
+  do
+    BUS_INFO=`${SUDO} /sbin/ethtool -i ${i} | grep "^bus-info: " | cut -c11-`
+    HWADDR=`/sbin/ifconfig ${i} | grep HWaddr | cut -f2- -d: | sed -e "/Ethernet.*HWaddr /s///" | sed -e "/ /s///g"`
+  
+    echo "${BUS_INFO},${HWADDR},${i}" >> ${INPUT_FILE}
+  done
+  ;;
+_+)
+  # Use the most recent ethernet manual or automatic configuration.
+  if [ ! -f ${ETH_ORDER_FILE} ] ; then
+    for ETH_NAME in `/sbin/ifconfig -a | grep ^eth | cut -f1 -d' '`
+    do
+      BUS_INFO=`${SUDO} /sbin/ethtool -i ${ETH_NAME} | grep "^bus-info: " | cut -c11-`
+      HW_ADDR=`/sbin/ifconfig ${ETH_NAME} | grep HWaddr | cut -f2- -d: | sed -e "/Ethernet.*HWaddr /s///" | sed -e "/ /s///g"`
+      echo ${BUS_INFO},${HW_ADDR},${ETH_NAME} >> ${ETH_ORDER_FILE}
+    done
+  fi
+  if [ ! -f ${NEW_ORDER_FILE} ] ; then
+    # Create the file with the default mapping.
+    bash eth-reorder.sh --force --outfile ${NEW_ORDER_FILE} > /dev/null 2> /dev/null
+  fi
+  INPUT_FILE=${NEW_ORDER_FILE}
+  REF_FILE=${ETH_ORDER_FILE}
+  ;;
+*)
+  # Specifiy an input file and optionally a ref file.
+  INPUT_FILE=${1}
+  if [ ! -f ${INPUT_FILE} ] ; then
+    echo No file ${INPUT_FILE}
+    exit 1
+  fi
+  REF_FILE=${2}
+  if [ -z "${REF_FILE}" ] ; then
+    REF_FILE=none
+  else
+    if [ ! -f ${REF_FILE} ] ; then
+      echo No file ${REF_FILE}
+      exit 1
+    fi
+  fi
+  ;;
+esac
+
+# The input file format has the eth name as the third field.
+
+F_SEC=3
+P_SEC=6
+
+echo Flashing eth leds in this order:
+cat ${INPUT_FILE}
+echo Flashing each for ${F_SEC} seconds, then a ${P_SEC} second pause, for ${LOOPS} times
+LOOP_COUNT=1
+while true
+do
+  [ ${LOOP_COUNT} -gt ${LOOPS} ] && break
+  echo Loop ${LOOP_COUNT}
+  LOOP_COUNT=$(( ${LOOP_COUNT} + 1 ))
+  READ_COUNT=0
+  cat ${INPUT_FILE} | while read LINE
+  do
+     [ -f ${STOP_FILE} ] && break
+     # Just in case much too big file is given as input, limit the number.
+     READ_COUNT=$(( ${READ_COUNT} + 1 ))
+     [ ${READ_COUNT} -gt 100 ] && break
+     ETH_NAME=`echo ${LINE} | cut -f3 -d,`
+     USE_NAME=${ETH_NAME}
+     case ${ETH_NAME} in
+     eth*)
+       if [ "${REF_FILE}" != "none" ] ; then
+         PCI_ADDR=`echo ${LINE} | cut -f1 -d,`
+         USE_NAME=`grep ${PCI_ADDR}, ${REF_FILE} | cut -f3 -d,`
+         case ${USE_NAME} in
+         eth*)
+           :
+           ;;
+         *)
+           echo invalid file format ${REF_FILE} ; exit 1
+           ;;
+         esac
+       fi
+       ;;
+     *)
+       echo invalid file format ; exit 1
+       ;;
+     esac
+     echo Flashing ${ETH_NAME}
+     ethtool -p ${USE_NAME} ${F_SEC}
+  done
+  [ -f ${STOP_FILE} ] && break
+  echo Pause
+  sleep ${P_SEC}
+done
+trap - INT
+if [ -f ${STOP_FILE} ] ; then
+  echo
+  echo "(Interupt)"
+  echo Stopped flashing LEDs
+  echo
+fi
+rm -f ${STOP_FILE}

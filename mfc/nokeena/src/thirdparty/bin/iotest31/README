@@ -1,0 +1,347 @@
+README file for IOtest version 2.31
+Richard Cooper   3/2/00
+revised 10/19/00   rbc
+revised 3/25/01     rbc
+
+
+This package of benchmarks, utilities, and exercisers should run on
+any SCSI disk.  It's designed to be run under the "root" account on
+a raw device.
+
+1. IOtest version 2.31:  This version uses a menu, and should test devices
+of any size.  It is written in ANSI C, but uses STDC_EXT extensions for large
+file support.
+
+
+INSTALLATION
+The program  consists of four "C" language source code files, and a ".h"
+file.  Edit the ".h" file as required.
+
+COMPILING
+Edit the makefile, removing the "#" for the appropriate line.
+Build the program by typing "make" to build a dynamically linked binary,
+or "make static" to build a static binary:
+
+
+COMPILE FLAGS:
+
+-D_LARGEFILE64_SOURCE	Needed for > 2.1 GB support
+
+-D_NO_ASK_ABOUT_WRITE      When run on the command line with "-q", the
+"ask about writing" question is inhibited. If you enable this option, and
+scrible on your root drive by mistake, don't call me.
+
+-D_DEFS		Enables printout of various OS specific flags.
+
+-D_LOOP_BM	A question will be asked during the benchmark test startup
+		about looping the test forever.  Handy for demos.
+
+-DDEBUG		Enables extended messages while the various tests are running.
+
+-D_BDRS		Enables Bus Device Reset test under the Maintenance Menu.  Only
+		under HPUX!
+
+-D_DO_QUICKIE	Surpresses transfer size, process count, sync, and block "0"
+		questions.  No menus!  Runs only a 8192 byte write and read
+		benchmark.  This is designed as an "installation verification
+		quick test"
+
+-D_NEW_OUTPUT_FORMAT  Revised benchmark output format for easy spreadsheet loading.
+
+
+
+#make                      ;(sample output)
+gcc -I. -O2 -c IOtest.c
+gcc -I. -O2 -c exercise.c
+gcc -I. -O2 -c maint.c
+gcc -I. -O2 -c benchmks.c
+gcc -I. -D NODEBUG -O2 -o IOtest IOtest.o exercise.o maint.o benchmks.o
+#
+
+The IOtest executable can be copied to /usr/local/bin; or wherever.
+
+
+RUNNING  IOTEST
+
+NOTE:  The random write benchmark, read/write benchmark,
+exerciser, and some of the maintenance tests will WRITE on the
+device under test, and are quaranteed to destroy all data! IOtest is
+designed to be run on a raw device.
+
+
+1.  IOtest version 2.31  Menu versions
+
+Login as "root" and run the program as follows:
+
+#./IOtest
+
+         Solid Data Systems IOtest V2.31
+
+Starting at: Sun Aug 22 12:08:54 1999
+
+Sysname: UNIX    Release: 7.6    Machine: 6350
+
+                Main Menu
+
+
+Quick Test                        1
+Random Read Benchmark             2
+Random Write Benchmark            3
+Random Read/Write Benchmark       4
+Exerciser                         5
+Maintenance tests                 6
+Help                              7
+Exit                              8
+
+
+Enter test number:2
+
+The program will prompt for the raw device name, and any other
+parameters.
+
+
+
+2.  IOtest can also by run from the command line:
+
+Login as "root" and run the program as follows:
+
+USAGE: IOtest -a XX|-r|-w|-x|-m|-v -d device -p processes [-f logfile]
+		[-i iterations]
+
+
+MANDATORY COMMAND LINE OPTIONS:
+
+One of the following must be specified:
+-r      read benchmark          random read benchmark (1 to 6 processes)
+-w      write benchmark         random write benchmark (1 to 6 processes)
+-a XX   read/write benchmark    read/write with adjustable duty cycle
+-x      exercise                random read/write exerciser
+-m      maintenance             various maintenance tests
+					1 reliability
+					2 quick read
+					3 write block numbers
+					4 scan block numbers
+                                        5 continuous write/scan block
+					6 block dump
+					7 byte editor
+					8 exit
+
+
+
+	NOTE:
+	The "-a" "-w" "-x" and "-m" options should only be used by a responsible
+	adult. They will destroy ALL data on the device under test.  No
+	checking is done to see if the device is mounted, has a file system
+	on it, or has any valid data whatsoever.
+
+	-r  A random read test is run on the drive.  In default mode,
+	the system is loaded with 1 to 6 processes.  The device must be
+	specified with the "-d" option.  Program output can be
+	directed to a file using "-f filename".
+
+	Sample output:
+
+	Beginning 1 process read test on /dev/sdd [10000 iterations]
+	 512 Byte reads  ET= 7.145 secs IOs/second = 1399  Data Rate = 0.716 MBs
+	1024 Byte reads  ET= 6.365 secs IOs/second = 1256  Data Rate = 1.287 MBs
+	2048 Byte reads  ET= 6.038 secs IOs/second = 1059  Data Rate = 2.170 MBs
+
+
+	-w  A random write test is run on the drive.  In default mode,
+	the system is loaded with 1 to 6 processes.  The device must be
+	specified with the "-d" option.  Program output can be
+	directed to a file using "-f filename".  This is a destructive
+	test.  All data on the device will be lost.
+
+	Sample output:
+
+	Beginning 1 process write test on /dev/sdd [10000 iterations]
+
+	 512 byte writes  ET= 6.789 secs IOs/second= 1472  Data Rate = 0.754 MBs
+	1024 byte writes  ET= 5.401 secs IOs/second= 1481  Data Rate = 1.516 MBs
+	2048 byte writes  ET= 4.320 secs IOs/second= 1481  Data Rate = 3.034 MBs
+
+
+	-a  A random read/write test is run on the drive.  On the
+	command line after the "-a", you must specify the read/write
+	duty cycle.  Valid values are from 10 to 90, indicating the
+	percentage of read vs writes.  For example:
+
+		./IOtest -a 75 -d /dev/sdd -i 5000 -p 6
+
+	This will run the read/write test with an initial iteration count
+	of 5000 and a read/write duty cyle of 75%.  The 75% means that there
+	is a 75% chance that the next IO will be a read and a 25% chance that
+	the next IO will be a write.  Due to "randomness", there will be
+	approximately 3750 reads and 1250 writes.  The total IO count will
+	be 5000.
+
+        Sample output:
+
+	Beginning 1 process Read/Write test on /dev/sdd
+         512 byte rdwr  ET=  6.250 secs  IOs/second= 1600  Data Rate= 0.819 MBs
+        1024 byte rdwr  ET=  5.658 secs  IOs/second= 1413  Data Rate= 1.447 MBs
+        2048 byte rdwr  ET=  5.379 secs  IOs/second= 1189  Data Rate= 2.436 MBs
+
+
+	-x The exerciser starts a write/read/compare test on the device under
+	test.  Transfer sizes are random between the MIN_TRANSFER_SIZE and
+	MAX_TRANSFER_SIZE limits.  These limits are set in IOtest.h. This test
+	runs until terminated with ^C.  All data on the device will be lost.
+	Errors are detected by comparing the data read back fronm the device
+	to the original write buffer.  The bad block in the read buffer is
+	dumped in HEX.  The bad block is then re-read from the device and
+	dumped a second time
+
+
+	-m  The maintenance package includes several functions used to
+	troubleshoot a SCSI disk.
+
+		#./IOtest -m -d /dev/rdsk/c1t1d0s2
+
+	These tests will also run on a file.
+
+		#./IOtest -m -d testfile
+
+	The write block and reliability tests may extend the size of
+	the file under test to complete the last write.
+
+	DETAILED TEST DESCRIPTIONS
+
+	TEST 1 RELIABILITY  The drive is written with 0's, read back,
+	and the data compared to what what was originally written.
+	The operation is repeated with 1's, A's, and 5's.  The test
+	will run until interupted with ^C. Transfer sizes are dependent
+	on the MIN_TRANSER_SIZE and MAX_TRANSFER_SIZE definitions in
+	IOtest.h.  Normally, all transfers are at MAX_TRANSFER_SIZE
+	bytes.  To use all values from MIN_TRANSFER_SIZE to
+	MAX_TRANSFER_SIZE, set _ALL_SIZES to "1" and re-compile.  To
+	do this, add "-D_ALL_SIZES" to the CFLAGS line in the makefile.
+
+	TEST 2 QUICK READ  All blocks on the drive are read one time.
+
+	TEST 3 WRITE BLOCK NUMBERS  Every block on the device under test
+	is written with its block number. Each 32 bit word in the
+	block gets written with the same number.  Use test 3 in
+	conjunction with test 4 to identify addressing problems.
+	The block number pattern has change in version 2.31.
+
+	TEST 4 SCAN BLOCKS  All blocks on the device are checked
+	for block numbers.  The device must be written with TEST 3
+	before SCAN BLOCKS is run.
+
+	TEST 5 CONTINUOUS WRITE/SCAN BLOCK Alternating write block/
+        scan block sequences.
+
+        TEST 6  BLOCK DUMP.  This test will dump any block on the
+	device or file in HEX or ASCII. When prompted, enter "n" for
+	the next block, "p" for the previous block, or "q" to quit.
+	Toggle between ASCII and HEX by pressing "a" or "h".
+
+	TEST 7 BYTE EDITOR  This test will dump any block in HEX and
+	allow you to change any byte.  When prompted, press "enter"
+	or "return" to repeat the same block, or enter a negative
+	block number to quit.
+
+-d device   Use the raw device name for the physical device.
+
+	EX:	/dev/rdsk/c1t0d0s2        SUN
+		/dev/rdsk/c12t0d0         HP
+		/dev/rrz10c               DEC UNIX
+		/dev/sdd                  LINUX
+
+	The device MUST be specified on the command line.
+
+
+OPTIONAL COMMAND LINE OPTIONS:
+
+	-f logfile    Name of a logfile in the current directory for the
+		      benchmark results. Handy when you are running on the
+		      system console; or when you want to print the results
+		      Only the "-r", "-a",  and "-w" tests can be logged.
+
+	-p processes  Number of processes to load the system. The range is
+		      from 1 to 30.  If the process number is not specified,
+		      it defaults to 6.  If you want to go higher than 30,
+		      change MAX_PROC_COUNT in IOtest.h, and re-compile.
+		      Implemented on "-r" and "-w" only.
+
+	-i iterations The number of iterations for the read and write
+		      benchmarks can be set with "-i".  The range is 100
+		      to 500000.  The default is set to 10000 in IOtest.h.
+
+	-q            Inhibit the "do you want to write" question.  If you
+                      use this option and write on the wrong drive by mistake,
+                      you're on you own.
+
+EXAMPLES:
+
+	# ./IOtest -r -d /dev/rdsk/c1t0d0s2 -p 20 -f results.log
+
+This will run a random read benchmark on /dev/rdsk/c1t0d0s2. The maximum process load will be 20, and a copy of the results will go in ./results.log.
+
+
+	# ./IOtest -w -d /dev/rdsk/c1t0d0s2 -i 1000
+
+This will run a random WRITE test on /dev/rdsk/c1t0d0s2.  The test will size
+the drive, and test up to (INT_MAX) bytes.  The maximum process load
+defaults to 6.  The iteration count for each test is set to 1000.  All data
+on /dev/rdsk/c1t0d0s2 will be destroyed.
+
+
+	# ./IOtest -a 60 -d /dev/sdd1 -i 2000
+
+This will run the random read/write test on device /dev/sdd1.  The
+initial iteration count is set to 2000.  There will be 1200 reads
+(2000 x 60%) and 800 writes (2000 x 40%).  Transfer sizes from
+MIN_TRANSFER_SIZE to MAX_TRANSFER_SIZE will be used.  The default process
+load is 6.
+
+
+	# ./IOtest -x -d /dev/sdd
+
+This will run the random read/write test on LINUX device /dev/sdd.  The
+entire drive will be tested, and all data on the drive will be destroyed.
+The test will run until terminated with ^C.
+
+
+
+	# ./IOtest -m -d /dev/sdd
+
+This will start the maintenance mode test on /dev/sdd. At this time,
+reliability, quick read, write block number, scan block number, block
+dump, and a byte editor are available.
+
+
+MISCELLANEOUS NOTES:
+
+1. SUN
+	NOTE!! If you run the write block/maintenance option under Solaris,
+	you will wipeout the label in block 0.  You will get the following
+	error when you re-start the test:
+
+	I/O error (Error opening device RDWR): No such device or address
+
+	You MUST re-label the drive using "format" before you can access the
+	drive again.  The driver uses the label information when you access
+	the "raw" device.
+
+2. Data General
+	Don't use the raw device under DGUX.  Use the "registered"
+	device name!
+
+3.  if you see the following error when compiling with the HP ANSI
+C compiler, add a "+DAportable" to the cc command line.
+
+sut8:/des> make
+        cc -I.  -c IOtest.c
+        cc -I.  -c exercise.c
+        cc -I.  -c maint.c
+        cc -I.  -c benchmks.c
+        cc -I. -D NODEBUG  -o IOtest IOtest.o exercise.o maint.o benchmks.o
+/usr/ccs/bin/ld: (Warning) At least one PA 2.0 object file (IOtest.o) was detec.
+sut8:/des>
+
+4.  Try adding "-Ofast=IP27" to the makefile for the IRIX MIPSPro C Compiler.
+    "-n32" can be used to force a 32 bit binary.
+

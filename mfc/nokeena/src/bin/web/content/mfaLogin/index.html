@@ -1,0 +1,30 @@
+<!--
+#
+# Filename:  $Source: /web/content/index.html,v $
+# Revision:  $Revision: 1.0 $
+# Date:      $Date: 2012/09/19 $
+# Author:    $Author: sasmita  $
+#
+This default login file will be available in MFC 12.2.3 and above
+-->
+
+<html>
+<head>
+  <title></title>
+</head>
+<body onLoad='doPageLocation();'>
+  <form name="dashboard" id="form1" method="post" action="/admin/launch?script=rh&amp;template=dashboard-dashboard">
+    <input type="hidden" name="d_user_id" value="user_id">
+    <input type="hidden" name="t_user_id" value="string">
+    <input type="hidden" name="c_user_id" value="string">
+    <input type="hidden" name="e_user_id" value="true">
+
+    <input type="hidden" name="f_user_id" id="user_id" size="10" id="user_id" value="monitor">
+    <input name="f_password" type="hidden">
+    <!--  <input type="submit" name="Login" value="Login"> -->
+  </form>
+<SCRIPT type="text/javascript">
+        document.dashboard.submit();
+</SCRIPT>
+</body>
+</html>

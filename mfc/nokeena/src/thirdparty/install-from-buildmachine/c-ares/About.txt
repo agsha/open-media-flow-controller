@@ -1,0 +1,67 @@
+c-ares is a C library that performs DNS requests and name resolves asynchronously.
+
+Note that "curl" depends on c-ares being installed on the build machine.
+
+Download from http://c-ares.haxx.se/
+Use the version that is on all the other build machines, or if there is a new version and the developers agree, then update all the build machines. It is important for all the build machines to have the same version.
+The latest version is 1.10.0 released 12-may-2013.  (as of 2015-07)
+We have been using 1.7.1 from http://c-ares.haxx.se/download/c-ares-1.7.1.tar.gz  (23-mar-2010)
+
+This is in the MFC source tree as:
+  dist/build-machine/build-machine-src/c-ares/c-ares-1.7.1.tar.gz 
+There is a copy of this on storage01:
+  /data/archive/thirdparty/build-machine-src/c-ares-1.7.1.tar.gz
+
+Built this way:
+Untar c-ares-1.7.1.tar.gz into a temporary directory.
+Create the directory /tmp/ca-src and extract the tar into it like this: 
+
+T=c-ares-1.7.1
+FROM=/data/archive/thirdparty/build-machine-src/c-ares
+rm -rf /tmp/ca-src
+mkdir /tmp/ca-src
+cd /tmp/ca-src
+tar zxvf ${FROM}/${T}.tar.gz
+
+    Build and install with these commands (as root) 
+
+cd /tmp/ca-src/c*
+find * -type f | sort > BEFORE_CONFIGURE.LIST
+./configure --prefix=/usr/local
+find * -type f | sort > BEFORE_MAKE.LIST
+make
+find * -type f | sort > AFTER_MAKE.LIST
+find /usr/local -type f | sort > BEFORE_INSTALL.LIST
+make install
+find /usr/local -type f | sort > AFTER_INSTALL.LIST
+diff BEFORE_INSTALL.LIST AFTER_INSTALL.LIST
+D=/root/`uname -n`
+mkdir ${D}/c-ares-install
+cp *.LIST ${D}/c-ares-install/
+
+These are the files installed:
+
+/usr/local/include/ares_build.h
+/usr/local/include/ares_dns.h
+/usr/local/include/ares.h
+/usr/local/include/ares_rules.h
+/usr/local/include/ares_version.h
+/usr/local/lib/libcares.a
+/usr/local/lib/libcares.la
+/usr/local/lib/libcares.so.2.0.0
+/usr/local/lib/pkgconfig/libcares.pc
+/usr/local/share/man/man3/ares_*.3
+
+c-ares license:
+
+Copyright 1998 by the Massachusetts Institute of Technology.
+
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted, provided that
+the above copyright notice appear in all copies and that both that copyright
+notice and this permission notice appear in supporting documentation, and that
+the name of M.I.T. not be used in advertising or publicity pertaining to
+distribution of the software without specific, written prior permission.
+M.I.T. makes no representations about the suitability of this software for any
+purpose.  It is provided "as is" without express or implied warranty.
+

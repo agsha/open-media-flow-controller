@@ -1,0 +1,33 @@
+<?
+#
+# Filename:  dashboard_layout.tem
+# Date:      2009/04/09
+# Author:    Sasmita
+#
+# Nokeena Networks Inc
+#
+?>
+
+<INCLUDE "tms-defines">
+<INCLUDE "tms-utils">
+<INCLUDE "tms-layout">
+<TAG TMS-DASHBOARD-MENU selected {arg ""} {arg_value ""}>
+  <?
+    set dashboard_options {
+        {dashboard Dashboard}
+        {disk-cache Disk&nbsp;Cache}
+        {bandwidth-savings Bandwidth&nbsp;Savings}
+    }
+    lappend options $dashboard_options
+       # {analytics Analytics}
+  ?>
+  <div id="tms_dashboard_menu">
+    <TMS-SIDEBAR-MENU $selected $options dashboard- $arg $arg_value>
+    </TMS-SIDEBAR-MENU>
+  </div> <!-- tms_dashboard_menu -->
+</TAG>
+
+<TAGEND TMS-DASHBOARD-MENU>
+    <!-- /TMS-DASHBOARD-MENU is deprecated -->
+</TAGEND>
+

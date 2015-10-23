@@ -1,0 +1,4 @@
+free_page = 0 0 0 0 
+total_page = 0 0 0 0
+time = 0:0
+ 

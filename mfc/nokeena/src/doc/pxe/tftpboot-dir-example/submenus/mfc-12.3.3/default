@@ -1,0 +1,31 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-12.3.3
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-12.3.3-2_29394_368
+ MENU LABEL mfc-12.3.3-2_29394_368     BR:halifax 2013-09-16
+ KERNEL pxe-boot/mfc-12.3.3-2_29394_368/vmlinuz-bootflop-mfc-12.3.3-2_29394_368
+ APPEND initrd=pxe-boot/mfc-12.3.3-2_29394_368/rootflop-mfc-12.3.3-2_29394_368.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.3-2_29394_368 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-12.3.3-1_29325_368
+ MENU LABEL mfc-12.3.3-1_29325_368     BR:halifax 2013-08-02
+ KERNEL pxe-boot/mfc-12.3.3-1_29325_368/vmlinuz-bootflop-mfc-12.3.3-1_29325_368
+ APPEND initrd=pxe-boot/mfc-12.3.3-1_29325_368/rootflop-mfc-12.3.3-1_29325_368.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-12.3.3-1_29325_368 installopt=,accept-eula,
+ IPAPPEND 3

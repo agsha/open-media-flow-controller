@@ -1,0 +1,71 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>MFL Log Analysis</title>
+<link title="default" rel="stylesheet" type="text/css" href="/mfl-default.css">   
+<script type="text/javascript" src="/mfl-utils.js"></script>
+</head>
+
+<body>
+<div class="container">
+   
+  <div id="preamble">
+  <div id="logo_area">
+  </div>
+  <div id="message_area">
+    Media Flow Logger
+    <div id="banner">
+    </div>
+  </div>
+  </div>
+
+  <div id="pageContent">
+    <div id="pageTitle">
+       Log Analysis
+    </div>
+    <br />
+
+    <iframe name="f3" src=" " style="width: 950px; height: 1px;" frameborder="0" allowtransparency="true"></iframe>  
+    <iframe name="f4" id="log_analysis_fr" src=" " style="width: 950px; height: 500px;" frameborder="0" allowtransparency="true"></iframe>
+    <div style="text-align:left;">
+      <input type="text" id="page" name="page" value="log_analysis" style="display:none">
+    </div>
+    <br />
+    <table width="960"><tr><td>
+      <table class="al_params" align="left">
+        <tr><td>Time in Hours:</td>
+        <td><input type="text"  id="la_thour" size="6" name="la_thour" maxlength="4" value="0" /> </td>
+        <td>Time in Minutes:</td>
+        <td><input type="text"  id="la_tmin" size="6" name="la_tmin" maxlength="4" value="30" /> </td>
+        <td>Number of Records:</td>
+        <td><input type="text"  id="la_records" size="6" name="la_records" maxlength="4" value="20" /> </td>
+        </tr>
+      </table></td><td>
+      <table align="right"><tr>
+	    <td><input type="button" id="la_analyze_btn" class="ajaxButton" value="Analyze Log Data" name="la_analyze_btn" onclick="load_la_page()" /></td>
+        <td><input type="button" id="la_resetbutton" class="ajaxButton" value="Reset Parameters" name="la_resetbutton" onclick="reset_la_param()" /></td>
+	    </tr>
+      </table></td></tr>
+  </table>
+  </div>
+
+<br />
+  <span id="copyright">                                                                                               
+     &copy; 2008-2010                                                                                       
+     <a href="http://www.juniper.net">Juniper Networks, Inc.</a>
+  </span>                                                                                                             
+<br /><br />
+</div>
+
+<script type="text/javascript">
+        document.getElementById('la_thour').value = 0;
+        document.getElementById('la_tmin').value = 30;
+        document.getElementById('la_records').value = 20;
+        load_la_page();
+</script>
+
+
+</body>
+</html> 
+
+

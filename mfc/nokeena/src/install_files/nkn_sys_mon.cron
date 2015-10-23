@@ -1,0 +1,3 @@
+# run the nkn_sys_mon.sh every one minute
+*/1 * * * * root /opt/nkn/bin/nkn_sys_mon.sh
+MAILTO=""

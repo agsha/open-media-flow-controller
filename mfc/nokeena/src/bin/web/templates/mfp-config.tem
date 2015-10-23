@@ -1,0 +1,189 @@
+<?
+#
+# Filename:  mfp-config.tem,v $
+# Date:       
+# Author:    Dhivyamanohary R
+#
+# (C) Copyright 2010 Juniper Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "mfp-layout">
+<TMS-PAGE "MFP">
+<TMS-MENU "mfp">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MFP-MENU "mfp"></TMS-MFP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Media Flow Publisher Configuration">
+<script type="text/javascript">
+function popup(mylink, windowname)
+{
+if (! window.focus)return true;
+var href;
+if (typeof(mylink) == 'string')
+   href=mylink;
+else
+   href=mylink.href;
+window.open(href, windowname,'resizable=yes,scrollbars=yes');
+return false;
+}
+</script>
+<?
+	set profile_prefix "/nkn/nvsd/mfp/config"
+	set profile_ids [tms::iterate-config $profile_prefix]
+	set prefix_len [string length "$profile_prefix/"]
+	set profile_list {}
+	lappend profile_list "(none) (none)"
+	foreach profile_bname $profile_ids {
+	set profile_id [string range $profile_bname $prefix_len end]
+	lappend profile_list "\"$profile_id\" \"$profile_id\""
+	}
+?>
+
+<CFG-FORM -action "config-form-action-mfp" -div_id "addmfp">
+  <h2>Create Session</h2>
+  <TMS-TABLE -div_id "mfp_table_1">
+    <TMS-TABLE-ENTRY "Session Name">
+      <CFG-TEXTBOX -id "streamname" -errname "streamname" -caps "set_basic"
+                -type "string" -span_id "add_stream" -required "true" >
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Media Source Type">
+    <CFG-RADIO -id "media"
+                        -caps "set_privileged" -checked "true"
+                        -value "File" -span_id "File">
+    File 
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <CFG-RADIO -id "media"
+                        -caps "set_privileged" -checked "false"
+                        -value "Live" -span_id "Live">
+    Live 
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Media Encapsulation Type">
+    <CFG-DROPDOWN -id "file-encapsulation" -errname "media-encap"
+                   -caps "set_basic"
+                   -type "string" -span_id "set_status" -options
+                    {
+		      {"Select File Encap type" "not_selected"}
+                      {"Smooth Streaming Package" "file_ssp_media_sbr"}
+                      {"Multi Rate MPEG-2 TS (H.264/AAC) Package" "file_spts_media_profile"}
+                      {"MP4 Package" "file_mp4"}}>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    <CFG-DROPDOWN -id "live-encapsulation" -errname "media-encap11"
+                   -caps "set_basic"
+                   -type "string" -span_id "set_status" -options
+                    {
+	 	      {"Select Live Encap type" "not_selected"}
+                      {"H.264/AAC - MPEG-2 TS/UDP (SPTS)" "live_spts_media_profile"}}>
+
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Copy from Session">
+    <CFG-DROPDOWN -id "stream-apply" -errname "media-encap11"
+                   -caps "set_basic"
+                   -type "string" -span_id "set_status" -options $profile_list >
+    </TMS-TABLE-ENTRY>
+
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+  <CFG-BUTTON -type "mfpadd" -text "Add" -caps "set_basic"
+              -span_id "add_stream">
+
+</CFG-FORM>
+
+<h2> Session List </h2>
+  <CFG-FORM -action "config-form-list-action" -div_id "mfp">
+
+  <?
+    set cur_line 0
+    set stream_prefix "/nkn/nvsd/mfp/config"
+    set stream_ids [tms::iterate-config $stream_prefix]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head"> 
+     <td></td>
+      <td> <b>Session Name</b> </td>
+      <td> <b>Media Source Type</b> </td>
+      <td> <b>Media Encapsulation Type</b> </td>
+      <td> <b>Publish status </b> </td>
+      <td> <b>Configure</b></td>
+    </tr>
+
+    <FOREACH stream_id $stream_ids>
+    <?
+    set prefix_len [string length "$stream_prefix/"]
+    set stream_name [string range $stream_id $prefix_len end]
+    set encap_type [tms::get-config "/nkn/nvsd/mfp/config/$stream_name/media-encap"]
+    set media_type [tms::get-config "/nkn/nvsd/mfp/config/$stream_name/media-type"]
+    set pub_status [tms::get-config "/nkn/nvsd/mfp/config/$stream_name/status"]
+    ?>
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                         -value "$stream_id" -span_id "nm_cbox_2"></td>
+      <td>
+        <?=$stream_name?></td>
+      <td>
+        <?=$media_type?></td>
+      <td>
+	<IF {$encap_type == "file_spts_media_profile" || $encap_type == "live_spts_media_profile"}>
+      	    <IF {$encap_type == "file_spts_media_profile"}>
+        	 Multi Rate MPEG-2 TS (H.264/AAC) Package
+       	    <ELSE>
+                 H.264/AAC - MPEG-2 TS/UDP (SPTS)
+            </IF>
+	<ELSEIF {$encap_type == "file_mp4"}>
+		MP4 Package
+        <ELSE>
+                Smooth Streaming Package
+        </IF>
+      </td>	
+      <td> <?=$pub_status?></td>
+      <td>
+      <IF {$encap_type == "file_ssp_media_sbr"} >
+        <a href="/admin/launch?script=rh&amp;template=servicecfg-filemfpconfig&amp;streamname=<?=$stream_name?>&amp;encaptype=<?=$encap_type?>&amp;mediatype=<?=$media_type?>" onClick="return popup(this, 'notes')">Configure </a>
+      <ELSEIF {$encap_type == "file_spts_media_profile"}>
+        <a href="/admin/launch?script=rh&amp;template=servicecfg-mfpfilespts&amp;streamname=<?=$stream_name?>&amp;encaptype=<?=$encap_type?>&amp;mediatype=<?=$media_type?>" onClick="return popup(this, 'notes')">Configure </a>
+      <ELSEIF {$encap_type == "file_mp4"}>
+        <a href="/admin/launch?script=rh&amp;template=servicecfg-mfpfilemp4&amp;streamname=<?=$stream_name?>&amp;encaptype=<?=$encap_type?>&amp;mediatype=<?=$media_type?>" onClick="return popup(this, 'notes')">Configure </a>
+	<ELSE>
+        <a href="/admin/launch?script=rh&amp;template=servicecfg-mfpconfig&amp;streamname=<?=$stream_name?>&amp;encaptype=<?=$encap_type?>&amp;mediatype=<?=$media_type?>" onClick="return popup(this, 'notes')">Configure </a>
+	</IF>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Streams
+      <SET priv DISABLED_set_basic>
+    <ELSE>
+      <SET priv set_basic>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove" -caps "set_basic"
+              -span_id "nm_disable_1">
+  </p></td></CFG-FORM>
+  </tr></table>
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

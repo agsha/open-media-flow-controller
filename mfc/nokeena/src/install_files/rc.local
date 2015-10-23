@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# This script will be executed *after* all the other init scripts.
+# You can put your own initialization stuff in here if you don't # want to do the full Sys V style init stuff.
+
+LOG_EXPORT_CHROOT="/log/logexport/chroot"
+if [ ! -d "${LOG_EXPORT_CHROOT}/home" ]
+then
+    /opt/nkn/bin/mkchroot.sh ${LOG_EXPORT_CHROOT} LogTransferUser 0755  >> /var/log/chrootlog 2>&1
+fi
+
+touch /var/lock/subsys/local

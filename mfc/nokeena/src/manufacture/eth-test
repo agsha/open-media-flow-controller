@@ -1,0 +1,96 @@
+#! /bin/bash
+
+if [ ! /sbin/ethlooptest ] ; then
+  echo Installation not completed.
+  echo Install the software before running this test.
+  exit 1
+fi
+OLD_ORDER_FILE=/tmp/eth-order-eth.out
+NEW_ORDER_FILE=/tmp/eth-order-new.out
+if [ ! -f ${OLD_ORDER_FILE} -o ! -f ${NEW_ORDER_FILE} ] ; then
+  echo Installation has not yet done the VXA ethernet configuration.
+  echo Cannot continue.
+  exit 1
+fi
+# The file /tmp/mfg.env is created by install-mfc and sets
+#   LOG_DEV    LOG_MNT
+#   CONFIG_DEV CONFIG_MNT
+#   ROOT1_DEV  ROOT1_MNT
+#   ROOT2_DEV  ROOT2_MNT
+# so that we can mount which parts of the installed filesystems we need.
+. /tmp/mfg.env
+export LOG_DEV LOG_MNT CONFIG_DEV CONFIG_MNT ROOT1_DEV ROOT1_MNT ROOT2_DEV ROOT2_MNT
+
+echo Test all ethernet port pairs.
+echo Pairs to be tested:
+# Create a file of the pairs with the info needed .
+TMP_FILE=/tmp/eth-pairs.list
+rm -f ${TMP_FILE}
+PREV=
+for ITEM in `cat ${NEW_ORDER_FILE}`
+do
+  # The line has three commoa delimited fields:
+  # PCI address, HWaddr, and ethname.
+  # The eth name has not yet the real name of the device,
+  # so we need to use the other info to get the current info.
+  PCIADDR=`echo ${ITEM} | cut -f1 -d,`
+  HSADDR=` echo ${ITEM} | cut -f2 -d,`
+  NEWNAME=`echo ${ITEM} | cut -f3 -d,`
+  OLDNAME=`grep ^${PCIADDR} ${OLD_ORDER_FILE} | cut -f3 -d,`
+  if [ -z "${PREV}" ] ; then
+    PREV=${NEWNAME},${OLDNAME}
+  else
+    echo ${PREV},${NEWNAME},${OLDNAME} >> ${TMP_FILE}
+    L=`echo ${PREV} | cut -f1 -d,`
+    echo ${L} ${NEWNAME}
+    PREV=
+  fi
+done
+echo
+echo Starting test
+cd /tmp
+rm -rf ethlooptest.dir
+mkdir ethlooptest.dir
+cd ethlooptest.dir
+for SET in `cat ${TMP_FILE}`
+do
+  A_NEW=`echo ${SET} | cut -f1 -d,`
+  A_OLD=`echo ${SET} | cut -f2 -d,`
+  B_NEW=`echo ${SET} | cut -f3 -d,`
+  B_OLD=`echo ${SET} | cut -f4 -d,`
+  echo "==${A_NEW} ${B_NEW}"
+  ifconfig ${A_OLD} up
+  ifconfig ${B_OLD} up
+  # This command creates the output file ethtest-${A_NEW}-${B_NEW}.log
+  /sbin/ethlooptest ${A_OLD} ${B_OLD} ${A_NEW} ${B_NEW}
+  RV=${?}
+  if [ ${RV} -ne 0 ] ; then
+    echo ${A_NEW}:${B_NEW} fail
+  fi
+  if [ ! -f ethtest-${A_NEW}-${B_NEW}.log ] ; then
+    echo Error, no test results for ${A_NEW}:${B_NEW}
+  fi
+done
+cat ethtest-*-*.log | grep "^Result"
+P_CNT=`grep ^Result ethtest-*-*.log | grep PASS | wc -l | awk '{ print $1 }'`
+F_CNT=`grep ^Result ethtest-*-*.log | grep FAIL | wc -l | awk '{ print $1 }'`
+
+# Save the test results.
+if [ ! -z "${LOG_MNT}" ] ; then
+  # Mount it if not already mounted
+  DID_MOUNT=no
+  if [ ! -d ${LOG_MNT}/lost+found ] ; then
+    mount ${LOG_DEV} ${LOG_MNT}
+    DID_MOUNT=yes
+  fi
+  [ ! -d ${LOG_MNT}/ethtestlog ] && mkdir ${LOG_MNT}/ethtestlog
+  rm -f ${LOG_MNT}/ethtestlog/ethtest-*.log
+  cp ethtest-*.log ${LOG_MNT}/ethtestlog
+  [ "${DID_MOUNT}" = "yes" ]  && umount ${LOG_MNT}
+fi
+
+if [ ${F_CNT} -ne 0 ] ; then
+  echo Test failed.
+  exit 1
+fi
+exit 0

@@ -1,0 +1,26 @@
+# Additional de-installation script
+#
+# This script is run at the various stages of the package deinstallation.
+#
+# The +DEINSTALL script is created from these source parts:
+#  1. package-scripts/script-header
+#  2. package-scripts/script-func
+#  3. my-script-header
+#  4. This file
+#
+initialize "$@"
+
+trace "STAGE = $instance"
+trace "ORIGIN = $pkg_origin"
+
+# Pass this to rm_symlinks to cleanup after itself
+SYMLINKDIR=%SYMLINKDIR%
+
+
+if [ "$instance" = "DEINSTALL" ] ; then
+    package_deinstall
+elif [ "$instance" = "POST-DEINSTALL" ] ; then
+    package_post_deinstall
+fi
+
+exit $fail

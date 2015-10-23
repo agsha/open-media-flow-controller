@@ -1,0 +1,147 @@
+diff -ru -U 5 --exclude='.config*' -r kernel-2.6.32/linux-2.6.32/Makefile kernel-2.6.32-tms/linux-2.6.32/Makefile
+--- kernel-2.6.32/linux-2.6.32/Makefile	2011-09-20 16:27:43.615740621 -0700
++++ kernel-2.6.32-tms/linux-2.6.32/Makefile	2011-09-20 16:29:41.250740538 -0700
+@@ -1,11 +1,12 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 32
+-EXTRAVERSION =
++EXTRAVERSION ?=
+ NAME = Man-Eating Seals of Antiquity
+ RHEL_MAJOR = 6
+ RHEL_MINOR = 4
+ RHEL_RELEASE = 357
++##### Changed by Tall Maple Systems: set EXTRAVERSION with ?=
+ 
+ # *DOCUMENTATION*
+ # To see a list of typical targets execute "make help"
+@@ -744,13 +745,14 @@
+ # Generate new vmlinux version
+ quiet_cmd_vmlinux_version = GEN     .version
+       cmd_vmlinux_version = set -e;                     \
+-	if [ ! -r .version ]; then			\
+-	  rm -f .version;				\
+-	  echo 1 >.version;				\
+-	else						\
+-	  mv .version .old_version;			\
+-	  expr 0$$(cat .old_version) + 1 >.version;	\
+-	fi;						\
++##### Commented out by Tall Maple Systems               \
++#	if [ ! -r .version ]; then			\
++#	  rm -f .version;				\
++#	  echo 1 >.version;				\
++#	else						\
++#	  mv .version .old_version;			\
++#	  expr 0$$(cat .old_version) + 1 >.version;	\
++#	fi;						\
+ 	$(MAKE) $(build)=init
+ 
+ # Generate System.map
+@@ -1192,14 +1194,15 @@
+ 	@rm -rf $(MODLIB)/kernel
+ 	@rm -f $(MODLIB)/source
+ 	@mkdir -p $(MODLIB)/kernel
+-	@ln -s $(srctree) $(MODLIB)/source
+ 	@if [ ! $(objtree) -ef  $(MODLIB)/build ]; then \
+ 		rm -f $(MODLIB)/build ; \
+-		ln -s $(objtree) $(MODLIB)/build ; \
+ 	fi
+ 	@cp -f $(objtree)/modules.order $(MODLIB)/
+ 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modinst
+ 
++##### Changed by Tall Maple Systems: Above we removed the two ln -s calls
++##### for source and build, as we don't want them in the final image
++
+ # This depmod is only for convenience to give the initial
+ # boot a modules.dep even before / is mounted read-write.  However the
+ # boot script depmod is the master version.
+diff -ru -U 5 --exclude='.config*' -r kernel-2.6.32/linux-2.6.32/scripts/Makefile.modinst kernel-2.6.32-tms/linux-2.6.32/scripts/Makefile.modinst
+--- kernel-2.6.32/linux-2.6.32/scripts/Makefile.modinst	2009-12-02 19:51:21.000000000 -0800
++++ kernel-2.6.32-tms/linux-2.6.32/scripts/Makefile.modinst	2011-09-20 16:18:32.360991751 -0700
+@@ -15,11 +15,14 @@
+ PHONY += $(modules)
+ __modinst: $(modules)
+ 	@:
+ 
+ quiet_cmd_modules_install = INSTALL $@
+-      cmd_modules_install = mkdir -p $(2); cp $@ $(2) ; $(mod_strip_cmd) $(2)/$(notdir $@)
++      cmd_modules_install = mkdir -m 755 -p $(2); install -c -m 755 $@ $(2) ; $(mod_strip_cmd) $(2)/$(notdir $@)
++
++##### Changed by Tall Maple Systems: explicitly set the perms on installed files
++
+ 
+ # Modules built outside the kernel source tree go into extra by default
+ INSTALL_MOD_DIR ?= extra
+ ext-mod-dir = $(INSTALL_MOD_DIR)$(subst $(patsubst %/,%,$(KBUILD_EXTMOD)),,$(@D))
+ 
+diff -ru -U 5 --exclude='.config*' -r kernel-2.6.32/linux-2.6.32/scripts/mkcompile_h kernel-2.6.32-tms/linux-2.6.32/scripts/mkcompile_h
+--- kernel-2.6.32/linux-2.6.32/scripts/mkcompile_h	2009-12-02 19:51:21.000000000 -0800
++++ kernel-2.6.32-tms/linux-2.6.32/scripts/mkcompile_h	2011-09-20 16:18:32.361990408 -0700
+@@ -24,32 +24,48 @@
+ 
+ # Fix the language to get consistent output
+ LC_ALL=C
+ export LC_ALL
+ 
+-if [ -z "$KBUILD_BUILD_VERSION" ]; then
+-	if [ -r .version ]; then
+-		VERSION=`cat .version`
+-	else
+-		VERSION=0
+-		echo 0 > .version
+-	fi
+-else
+-	VERSION=$KBUILD_BUILD_VERSION
++##### Commented out by Tall Maple Systems
++# if [ -z "$KBUILD_BUILD_VERSION" ]; then
++# 	if [ -r .version ]; then
++# 		VERSION=`cat .version`
++# 	else
++# 		VERSION=0
++# 		echo 0 > .version
++# 	fi
++# else
++# 	VERSION=$KBUILD_BUILD_VERSION
++# fi
++#
++# if [ -z "$KBUILD_BUILD_TIMESTAMP" ]; then
++# 	TIMESTAMP=`date`
++# else
++# 	TIMESTAMP=$KBUILD_BUILD_TIMESTAMP
++# fi
++#
++# UTS_VERSION="#$VERSION"
++# CONFIG_FLAGS=""
++# if [ -n "$SMP" ] ; then CONFIG_FLAGS="SMP"; fi
++# if [ -n "$PREEMPT" ] ; then CONFIG_FLAGS="$CONFIG_FLAGS PREEMPT"; fi
++# UTS_VERSION="$UTS_VERSION $CONFIG_FLAGS $TIMESTAMP"
++
++##### Start additions by Tall Maple Systems
++
++if [ ! -f ${PROD_BUILD_OUTPUT_DIR}/release/build_version.sh ]; then
++   echo "Error: no ${PROD_BUILD_OUTPUT_DIR}/release/build_version.sh"
++   exit 1
+ fi
+ 
+-if [ -z "$KBUILD_BUILD_TIMESTAMP" ]; then
+-	TIMESTAMP=`date`
+-else
+-	TIMESTAMP=$KBUILD_BUILD_TIMESTAMP
+-fi
++.  ${PROD_BUILD_OUTPUT_DIR}/release/build_version.sh
++VERSION="${BUILD_PROD_NAME} ${BUILD_PROD_RELEASE} #${BUILD_NUMBER} ${BUILD_DATE}"
++UTS_VERSION="$VERSION"
++if [ -n "$SMP" ] ; then UTS_VERSION="$UTS_VERSION SMP"; fi
++
++##### End additions by Tall Maple Systems
+ 
+-UTS_VERSION="#$VERSION"
+-CONFIG_FLAGS=""
+-if [ -n "$SMP" ] ; then CONFIG_FLAGS="SMP"; fi
+-if [ -n "$PREEMPT" ] ; then CONFIG_FLAGS="$CONFIG_FLAGS PREEMPT"; fi
+-UTS_VERSION="$UTS_VERSION $CONFIG_FLAGS $TIMESTAMP"
+ 
+ # Truncate to maximum length
+ 
+ UTS_LEN=64
+ UTS_TRUNCATE="cut -b -$UTS_LEN"

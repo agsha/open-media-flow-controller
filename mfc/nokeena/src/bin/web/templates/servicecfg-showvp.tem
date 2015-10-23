@@ -1,0 +1,629 @@
+<?
+#
+# Filename:  servicecfg-shownm.tem,v $
+# Date:      2009/09/04
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "VirtualPlayerList">
+<!-- <TMS-MENU "servicecfg"> -->
+<TMS-BODY>
+<!-- <TMS-SIDEBAR><TMS-SERVICECFG-MENU "showvp"></TMS-SERVICECFG-MENU></TMS-SIDEBAR> -->
+<TMS-PAGE-CONTENT "Details on Configured Virtual Player">
+
+<?
+  #set virtualplayer_name [tms::get-param post "f_name"]
+  set virtualplayer_name [tms::get-param query "vpname"]
+  set type [tms::get-config "/nkn/nvsd/virtual_player/config/$virtualplayer_name/type"]
+  set hash "/nkn/nvsd/virtual_player/config/$virtualplayer_name/hash_verify"
+  set full "/nkn/nvsd/virtual_player/config/$virtualplayer_name/full_download"
+  set fast "/nkn/nvsd/virtual_player/config/$virtualplayer_name/fast_start"
+  set afr "/nkn/nvsd/virtual_player/config/$virtualplayer_name/assured_flow"
+  set seek "/nkn/nvsd/virtual_player/config/$virtualplayer_name/seek"
+  set ratemap "/nkn/nvsd/virtual_player/config/$virtualplayer_name/rate_map"
+  set conn "/nkn/nvsd/virtual_player/config/$virtualplayer_name"
+  set reqauth "/nkn/nvsd/virtual_player/config/$virtualplayer_name/req_auth"
+  set health "/nkn/nvsd/virtual_player/config/$virtualplayer_name/health_probe"
+  set cache "/nkn/nvsd/virtual_player/config/$virtualplayer_name/video_id"
+  set quality  [tms::get-config "/nkn/nvsd/virtual_player/config/$virtualplayer_name/quality-tag"]
+  set fragment  [tms::get-config "/nkn/nvsd/virtual_player/config/$virtualplayer_name/fragment-tag"]
+  set segment [tms::get-config "/nkn/nvsd/virtual_player/config/$virtualplayer_name/segment-tag"]
+  set segment_delim  [tms::get-config "/nkn/nvsd/virtual_player/config/$virtualplayer_name/segment-delimiter-tag"]
+  set flash_fragment  [tms::get-config "/nkn/nvsd/virtual_player/config/$virtualplayer_name/flash-fragment-tag"]
+?>
+<!--
+<form method="post">
+  <?
+    set vp_prefix "/nkn/nvsd/virtual_player/config"
+    set vp_ids [tms::iterate-config $vp_prefix]
+    set virtualplayer_list {}
+    foreach vp_id $vp_ids {
+       set prefix_len [string length "$vp_prefix/"]
+       set vp_name [string range $vp_id $prefix_len end]
+       lappend virtualplayer_list "$vp_name $vp_name"
+    }
+
+  ?>
+
+  <TMS-TABLE -div_id "showvp_sel">
+    <TMS-TABLE-ENTRY "Select Virtual Player">
+     <CFG-DROPDOWN -id "name" -errname "name"
+                   -caps "set_basic" -required "true"
+                   -options $virtualplayer_list
+                   -type "string" -span_id "set_name">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+   </TMS-TABLE>
+  <CFG-BUTTON -type "add" -text "Show" -caps "set_basic" 
+              -span_id "showvp_sel_1">
+</form>
+-->
+<?
+  if {[string length $virtualplayer_name] != 0} {
+?>
+
+<CFG-FORM -div_id "disp_area">
+  <table>
+    <tr>
+      <td><b>Virtual Player : </b></td>
+      <td>  <b> <i> <?=$virtualplayer_name?> </i> </b> </td>
+    </tr>
+    <tr>
+       <td> &nbsp;&nbsp;&nbsp;&nbsp;Type : </td>
+       <?
+       		if { $type == 0} {
+	?>
+       <td>generic </td>
+       <?
+       }
+       		if { $type == 1} {
+	?>
+       <td>break </td>
+       <?
+       }
+       		if { $type == 2} {
+	?>
+       <td>qss-streamlet </td>
+       <?
+       }
+       		if { $type == 3} {
+	?>
+       <td>yahoo </td>
+       <?
+       }
+       		if { $type == 4} {
+	?>
+       <td>smoothflow </td>
+       <?
+       }
+       		if { $type == 5} {
+	?>
+       <td>youtube </td>
+       <?
+       }
+       		if { $type == 6} {
+	?>
+       <td>smoothstream-pub </td>
+       <?
+       }
+       ?>
+       <?
+       }
+       		if { $type == 7} {
+	?>
+       <td>flashstream-pub </td>
+       <?
+       }
+       ?>
+    </tr>
+
+    <? 
+    if { $type == 0 || $type == 1 || $type == 4} {
+    ?>
+    <tr> <td height="13"></td>
+    </tr>
+    
+    <tr>
+      <td> <b> Hash Verify Configuration : </b> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Enabled : </td>
+      <td> <?=[tms::get-config "$hash/active"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Digest : </td>
+      <td> <?=[tms::get-config "$hash/digest"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp; Expiry Time Verify :  </td>
+      <td> <?=[tms::get-config "$hash/expiry_time/epochtime"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;URL Format : </td>
+      <td> <?=[tms::get-config "$hash/url_type"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Match query string : </td>
+      <td> <?=[tms::get-config "$hash/match/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Shared secret :  </td>
+      <?
+        set shared_secret [tms::get-config "$hash/secret/type"] 
+        if {[string length $shared_secret] == 0} {
+      ?>
+      <td> ***** </td>
+     <?
+       }
+     ?>
+    </tr>
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 0 || $type == 1 || $type == 2 || $type == 3 || $type == 4 || $type == 5} {
+    ?>
+    <tr> <td height="13"></td>
+    </tr>
+
+    <tr> 
+     <td> <b> Connection Configuration :  </b> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Max Bandwidth : </td>
+      <td> <?=[tms::get-config "$conn/max_session_rate"]?> kbps </td>
+    </tr>
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 0 || $type == 1 || $type == 3 || $type == 4 || $type == 5} {
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Seek Configuration : </b>  </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Enabled : </td>
+      <td> <?=[tms::get-config "$seek/active"]?> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;URI Query : </td>
+      <td> <?=[tms::get-config "$seek/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Seek Length URI Query : </td>
+      <td> <?=[tms::get-config "$seek/length/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Seek FLV Type : </td>
+      <td> <?=[tms::get-config "$seek/flv-type"]?> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Seek MP4 Type : </td>
+      <td> <?=[tms::get-config "$seek/mp4-type"]?> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Tunnel Enabled : </td>
+      <td> <?=[tms::get-config "$seek/enable_tunnel"]?> </td>
+    </tr>
+
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 0 || $type == 1 || $type == 3 || $type == 5} {
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Assured Flow Configuration : </b> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Enabled : </td>
+      <td> <?=[tms::get-config "$afr/active"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Valid Type : </td>
+      <td> <?=[tms::get-config "$afr/valid"]?> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Rate : </td>
+      <td> <?=[tms::get-config "$afr/rate"]?> kbps </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;URI query : </td>
+      <td> <?=[tms::get-config "$afr/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Auto : </td>
+      <td> <?=[tms::get-config "$afr/auto"]?> </td>
+    </tr>
+
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 0 || $type == 1 || $type == 5} {
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Fast Start Configuration :  </b> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Enabled : </td>
+      <td> <?=[tms::get-config "$fast/active"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Valid Type : </td>
+      <td> <?=[tms::get-config "$fast/valid"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Size : </td>
+      <td> <?=[tms::get-config "$fast/size"]?> kBytes </td>
+    </tr>
+<!--
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;time : </td>
+      <td> <?=[tms::get-config "$fast/time"]?> secs </td>
+    </tr>
+-->
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;URI query : </td>
+      <td> <?=[tms::get-config "$fast/uri_query"]?> </td>
+    </tr>
+
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 0 } {
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Full Download Configuration : </b> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Enabled :</td>
+      <td> <?=[tms::get-config "$full/active"]?> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Always : </td>
+      <td> <?=[tms::get-config "$full/always"]?> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Match string : </td>
+      <td> <?=[tms::get-config "$full/match"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;URI query string :</td>
+      <td> <?=[tms::get-config "$full/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Header : </td>
+      <td> <?=[tms::get-config "$full/uri_hdr"]?> </td>
+    </tr>
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 2 } { 
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Rate-Map Configuration : </b> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Enabled : </td>
+      <td> <?=[tms::get-config "$ratemap/active"]?> </td>
+    </tr>
+    <tr> <td height="13"></td>
+    </tr>
+
+    <?
+      set match_prefix "$ratemap/match"
+      set match_ids [tms::iterate-config $match_prefix]
+    ?>
+    <FOREACH match_id $match_ids>
+      <tr>
+        <td> &nbsp;&nbsp;&nbsp;&nbsp;Match String : </td>
+        <td> <?=[tms::get-config "$match_id"]?> </td>
+      </tr>
+
+      <tr>
+        <td> &nbsp;&nbsp;&nbsp;&nbsp;Rate : </td>
+        <td> <?=[tms::get-config "$match_id/rate"]?> kbps</td>
+      </tr>
+      <!--
+      <tr>
+        <td> &nbsp;&nbsp;&nbsp;&nbsp;Query String : </td>
+        <td> <?=[tms::get-config "$match_id/query_string"]?> </td>
+      </tr>
+      <tr>
+        <td> &nbsp;&nbsp;&nbsp;&nbsp;URI Length : </td>
+        <td> <?=[tms::get-config "$match_id/uol/length"]?> </td>
+      </tr>
+      <tr>
+        <td> &nbsp;&nbsp;&nbsp;&nbsp;URI Offset : </td>
+        <td> <?=[tms::get-config "$match_id/uol/offset"]?> </td>
+      </tr>
+      -->
+      <tr> <td height="13"></td>
+      </tr>
+    </FOREACH>
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 3 } { 
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Request Auth Configuration : </b> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Enabled : </td>
+      <td> <?=[tms::get-config "$reqauth/active"]?> </td>
+    </tr>
+
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Digest Type : </td>
+      <td> <?=[tms::get-config "$reqauth/digest"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Stream-Id Query String : </td>
+      <td> <?=[tms::get-config "$reqauth/stream_id/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Auth-Id Query String : </td>
+      <td> <?=[tms::get-config "$reqauth/auth_id/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Shared Secret String : </td>
+      <td> <?=[tms::get-config "$reqauth/secret/value"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Time Interval : </td>
+      <td> <?=[tms::get-config "$reqauth/time_interval"]?> secs</td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Match Query String : </td>
+      <td> <?=[tms::get-config "$reqauth/match/uri_query"]?> </td>
+    </tr>
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 3 } { 
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Health Probe Configuration : </b> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Enabled : </td>
+      <td> <?=[tms::get-config "$health/active"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Query String : </td>
+      <td> <?=[tms::get-config "$health/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Match String : </td>
+      <td> <?=[tms::get-config "$health/match"]?> </td>
+    </tr>
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 4 } { 
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Control Point : <b> </td>
+      <td> <?=[tms::get-config "$conn/control_point"]?> </td>
+    </tr>
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 4 } { 
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Signals Configuration : </b> </td> 
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Enabled : </td>
+      <td> <?=[tms::get-config "$conn/signals/active"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Session-Id String : </td>
+      <td> <?=[tms::get-config "$conn/signals/session_id/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;State String : </td>
+      <td> <?=[tms::get-config "$conn/signals/state/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Profile String : </td>
+      <td> <?=[tms::get-config "$conn/signals/profile/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Chunk String : </td>
+      <td> <?=[tms::get-config "$conn/signals/chunk/uri_query"]?> </td>
+    </tr>
+
+    <?
+    }
+    ?>
+
+    <? 
+    if { $type == 5 } { 
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Cache Name Configuration : </b> </td> 
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Enabled : </td>
+      <td> <?=[tms::get-config "$cache/active"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Video-Id String : </td>
+      <td> <?=[tms::get-config "$cache/uri_query"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Format Tag : </td>
+      <td> <?=[tms::get-config "$cache/format_tag"]?> </td>
+    </tr>
+
+    <?
+    }
+    ?>
+    <? 
+    if { $type == 6 } { 
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Configuration : </b> </td> 
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Quality tag : </td>
+      <td> <?=$quality?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Fragment tag : </td>
+      <td> <?=$fragment?> </td>
+    </tr>
+    <?
+    }
+    ?>
+    <? 
+    if { $type == 7 } { 
+    ?>
+
+    <tr> <td height="13"></td>
+    </tr>
+    <tr>
+      <td> <b> Configuration : </b> </td> 
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Segment tag : </td>
+      <td> <?=$segment?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Fragment tag : </td>
+      <td> <?=$flash_fragment?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Segmentfragment delimiter : </td>
+      <td> <?=$segment_delim?> </td>
+    </tr>
+
+    <?
+    }
+    ?>
+
+  </table>
+
+<CFG-FORM>
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

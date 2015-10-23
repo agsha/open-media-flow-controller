@@ -1,0 +1,36 @@
+GPAC rev 0.4.5 was released December 2008 and is the current version as of May 2010.
+
+The source to libgpac and MP4Box is the MFC source tree as
+  dist/thirdparty-src/gpac/gpac-0.4.5.tgz
+We are not making any changes to the source, just doing a plain build (by hand),
+and putting the single binary file "MP4Box" and library "libgpac.so" in
+our tree so that the binary gets placed in the package under /opt/nkn/bin and
+the library libgpac.so needs to be in /usr/lib
+
+GPAC is licensed under the GNU Lesser General Public License 2.1. (LGPL-2.1)
+(See the file gpac/COPYING in the source tree)
+It was originally downloaded from http://gpac.sourceforge.net/home_download.php
+The original download was a "0.4.5" version which is not downloadable as such anymore.
+The file gpac-0.4.5.tgz was created from that download.
+
+The home page is in different place now: https://gpac.wp.mines-telecom.fr
+The latest source is currently available from sourceforge Subverison:
+  svn://svn.code.sf.net/p/gpac/code/trunk/gpac
+  svn://svn.code.sf.net/p/gpac/code/trunk/gpac_extra_libs
+
+Steps to create the binary & library
+1. Extract the source from gpac-0.4.5.tgz
+2. Cd into the source directory and build the software:
+   cd gpac-0.4.5/gpac
+   sh configure --disable-opengl
+   make lib
+   make apps
+3. The files we need are:
+     bin/gcc/MP4Box
+     bin/gcc/libgpac.so
+
+These two files that were built on CentOS 6.3 have been put into the
+source tree here
+  nokeena/src/thirdparty/binary/gpac/6/MP4Box
+  nokeena/src/thirdparty/binary/gpac/6/libgpac.so
+  

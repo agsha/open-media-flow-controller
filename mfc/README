@@ -1,0 +1,16 @@
+Open Media Flow Controller (OpenMFC, aka MFC)
+
+This is one part of the OpenMFC source tree.
+The other part of the OpenMFC source tree is the "Samara" tree.
+
+Unless otherwise stated, all files contained in this source tree are
+(C) Copyright 2015 Juniper Networks, Inc. All Rights reserved.
+and licensed with the MIT style license.  See the file License.txt
+-------------------------------------------------------------------------------
+You can obtain a copy of the MIT license at https://opensource.org/licenses/MIT
+-------------------------------------------------------------------------------
+
+Instructions for setting up a build machine is in
+  nokeena/build/setup-build-machine.txt
+Instructions for building MFC is in
+  nokeena/build/README.txt

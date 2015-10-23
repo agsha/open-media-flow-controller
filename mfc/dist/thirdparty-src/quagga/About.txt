@@ -1,0 +1,10 @@
+# Quaggaa
+#    http://www.quagga.net
+# GPL licensed.
+# We only use the unmodified source.
+
+The source was downloaded from
+http://download.savannah.gnu.org/releases/quagga/
+
+wget http://download.savannah.gnu.org/releases/quagga/quagga-0.99.18.tar.gz
+wget http://download.savannah.gnu.org/releases/quagga/quagga-0.99.18.tar.gz.asc

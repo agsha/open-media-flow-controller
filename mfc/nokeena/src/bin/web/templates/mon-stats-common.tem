@@ -1,0 +1,813 @@
+<?
+#
+# Filename:  mon-stats-common.tem,v $
+# Date:      2008/12/22 
+# Author:    
+#
+# (C) Copyright 2008 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+<TAG MON-STATS-BODY>
+<table width="100%" border="0" cellspacing="0" cellpadding="5">
+ <tr>
+ <td width="45%">
+
+  <?
+    set mb [expr 1024.0 * 1024.0]
+    set mem_cache_thruput [tms::get-config "/stat/nkn/nvsd/current/cache_byte_count"]
+    if {[string length $mem_cache_thruput] == 0} {
+      set mem_cache_thruput 0
+    }
+    set mem_cache_thruput [format "%2.2f" [expr $mem_cache_thruput / $mb]]
+
+    set tunnel_byte_count [tms::get-config "/stat/nkn/nvsd/current/tunnel_byte_count"]
+    if {[string length $tunnel_byte_count] == 0} {
+      set tunnel_byte_count 0
+    }
+    set tunnel_byte_count [format "%2.2f" [expr $tunnel_byte_count / $mb]]
+
+    set origin_cache_byte_count [tms::get-config "/stat/nkn/nvsd/current/origin_byte_count"]
+    if {[string length $origin_cache_byte_count] == 0} {
+      set origin_cache_byte_count 0
+    }
+    set origin_cache_byte_count [format "%2.2f" [expr $origin_cache_byte_count / $mb]]
+    set origin_cache_byte_count [expr  $origin_cache_byte_count + $tunnel_byte_count]
+
+    set disk_cache_thruput [tms::get-config "/stat/nkn/nvsd/current/disk_byte_count"]
+    if {[string length $disk_cache_thruput] == 0} {
+      set disk_cache_thruput 0
+    }
+    set disk_cache_thruput [format "%2.2f" [expr $disk_cache_thruput / $mb]]
+
+    set num_of_connections [tms::get-config "/stat/nkn/nvsd/num_connections"]
+    if {[string length $num_of_connections] == 0} {
+      set num_of_connections 0
+    }
+    set num_of_rtsp_connections [tms::get-config "/stat/nkn/nvsd/num_rtsp_connections"]
+    if {[string length $num_of_rtsp_connections] == 0} {
+      set num_of_rtsp_connections 0
+    }
+
+    set rtsp_byte_served [tms::get-config "/stat/nkn/nvsd/current/total_rtsp_byte_count"]
+    if {[string length $rtsp_byte_served] == 0} {
+      set rtsp_byte_served 0
+    }
+    set rtsp_byte_served [format "%2.2f" [expr $rtsp_byte_served / $mb]]
+
+    set rtsp_vod_byte_served [tms::get-config "/stat/nkn/nvsd/current/total_rtsp_vod_byte_count"]
+    if {[string length $rtsp_vod_byte_served] == 0} {
+      set rtsp_vod_byte_served 0
+    }
+    set rtsp_vod_byte_served [format "%2.2f" [expr $rtsp_vod_byte_served / $mb]]
+
+    set total_active_connections [expr $num_of_connections + $num_of_rtsp_connections]
+
+    set total_byte_served  [tms::get-config "/stat/nkn/nvsd/current/total_byte_count"]
+    if {[string length $total_byte_served] == 0} {
+      set total_byte_served 0
+    }
+    set total_byte_served [format "%2.2f" [expr $total_byte_served / $mb]]
+    set total_byte_served [expr  $total_byte_served + $tunnel_byte_count + $rtsp_byte_served + $rtsp_vod_byte_served]
+
+    set total_http_transactions [tms::get-config "/stat/nkn/nvsd/current/num_http_transaction"]
+    if {[string length $total_http_transactions] == 0} {
+      set total_http_transactions 0
+    }
+    set total_http_requests [tms::get-config "/stat/nkn/nvsd/current/num_http_req"]
+    if {[string length $total_http_requests] == 0} {
+      set total_http_requests 0
+    }
+    set total_http_200_res [tms::get-config "/stat/nkn/http/response/current/200/count"]
+    if {[string length $total_http_200_res] == 0} {
+      set total_http_200_res 0
+    }
+    set total_http_206_res [tms::get-config "/stat/nkn/http/response/current/206/count"]
+    if {[string length $total_http_206_res] == 0} {
+      set total_http_206_res 0
+    }
+    set total_http_304_res [tms::get-config "/stat/nkn/http/response/current/304/count"]
+    if {[string length $total_http_304_res] == 0} {
+      set total_http_304_res 0
+    }
+    set total_http_400_res [tms::get-config "/stat/nkn/http/response/current/400/count"]
+    if {[string length $total_http_400_res] == 0} {
+      set total_http_400_res 0
+    }
+    set total_http_404_res [tms::get-config "/stat/nkn/http/response/current/404/count"]
+    if {[string length $total_http_404_res] == 0} {
+      set total_http_404_res 0
+    }
+    set total_http_416_res [tms::get-config "/stat/nkn/http/response/current/416/count"]
+    if {[string length $total_http_416_res] == 0} {
+      set total_http_416_res 0
+    }
+    set total_http_500_res [tms::get-config "/stat/nkn/http/response/current/500/count"]
+    if {[string length $total_http_500_res] == 0} {
+      set total_http_500_res 0
+    }
+    set total_http_501_res [tms::get-config "/stat/nkn/http/response/current/501/count"]
+    if {[string length $total_http_501_res] == 0} {
+      set total_http_501_res 0
+    }
+    set total_http_503_res [tms::get-config "/stat/nkn/http/response/current/503/count"]
+    if {[string length $total_http_503_res] == 0} {
+      set total_http_503_res 0
+    }
+    set total_http_504_res [tms::get-config "/stat/nkn/http/response/current/504/count"]
+    if {[string length $total_http_504_res] == 0} {
+      set total_http_504_res 0
+    }
+    set total_http_timeouts [tms::get-config "/stat/nkn/http/response/current/timeouts"]
+    if {[string length $total_http_timeouts] == 0} {
+      set total_http_timeouts 0
+    }
+    set total_http_wellfinished [tms::get-config "/stat/nkn/http/aborts/current/tot_well_finished"]
+    if {[string length $total_http_wellfinished] == 0} {
+      set total_http_wellfinished 0
+    }
+    set total_http_aborts [expr $total_http_transactions - $total_http_wellfinished - $num_of_connections]
+    if {[string length $total_http_aborts] == 0} {
+      set total_http_aborts 0
+    }
+    set total_http_err_timeoutwithtask [tms::get-config "/stat/nkn/http/aborts/current/error_timeout_withtask"]
+    if {[string length $total_http_err_timeoutwithtask] == 0} {
+      set total_http_err_timeoutwithtask 0
+    }
+    set total_http_err_sched_getdata [tms::get-config "/stat/nkn/http/aborts/current/http_schd_err_get_data"]
+    if {[string length $total_http_err_sched_getdata] == 0} {
+      set total_http_err_sched_getdata 0
+    }
+    set total_http_mm_stat_err [tms::get-config "/stat/nkn/http/aborts/current/mm_stat_err"]
+    if {[string length $total_http_mm_stat_err] == 0} {
+      set total_http_mm_stat_err 0
+    }
+    set total_http_deadline_missed [tms::get-config "/stat/nkn/http/aborts/current/task_deadline_missed"]
+    if {[string length $total_http_deadline_missed] == 0} {
+      set total_http_deadline_missed 0
+    }
+    set total_http_cache_req_err [tms::get-config "/stat/nkn/http/aborts/current/cache_req_err"]
+    if {[string length $total_http_cache_req_err] == 0} {
+      set total_http_cache_req_err 0
+    }
+    set total_http_parse_errs [tms::get-config "/stat/nkn/proxy/current/http_err_parse"]
+    if {[string length $total_http_parse_errs] == 0} {
+      set total_http_parse_errs 0
+    }
+    set total_om_err_conn_failed [tms::get-config "/stat/nkn/proxy/current/om_err_conn_failed"]
+    if {[string length $total_om_err_conn_failed] == 0} {
+      set total_om_err_conn_failed 0
+    }
+    set total_ingest_fetch_cnt [tms::get-config "/stat/nkn/ingest/current/fetch_count"]
+    if {[string length $total_ingest_fetch_cnt] == 0} {
+      set total_ingest_fetch_cnt 0
+    }
+
+    set total_ingest_fetch_bytes [tms::get-config "/stat/nkn/ingest/current/fetch_bytes"]
+    if {[string length $total_ingest_fetch_bytes] == 0} {
+      set total_ingest_fetch_bytes 0
+    }
+    set total_ingest_fetch_bytes [format "%2.2f" [expr $total_ingest_fetch_bytes / $mb]]
+
+    set total_disk_read_cnt [tms::get-config "/stat/nkn/disk_global/current/read_count"]
+    if {[string length $total_disk_read_cnt] == 0} {
+      set total_disk_read_cnt 0
+    }
+    set total_disk_write_cnt [tms::get-config "/stat/nkn/disk_global/current/write_count"]
+    if {[string length $total_disk_write_cnt] == 0} {
+      set total_disk_write_cnt 0
+    }
+    set total_ssp_num_of_seeks [tms::get-config "/stat/nkn/ssp/current/num_of_seeks"]
+    if {[string length $total_ssp_num_of_seeks] == 0} {
+      set total_ssp_num_of_seeks 0
+    }
+    set total_ssp_hash_verif_failures [tms::get-config "/stat/nkn/ssp/current/hash_veri_errs"]
+    if {[string length $total_ssp_hash_verif_failures] == 0} {
+      set total_ssp_hash_verif_failures 0
+    }
+    set cur_proxy_rate [tms::get-config "/stat/nkn/proxy/cur_proxy_rate"]
+    if {[string length $cur_proxy_rate] == 0} {
+      set cur_proxy_rate 0
+    }
+    set cur_proxy_rate [format "%2.2f" [expr $cur_proxy_rate / $mb]]
+
+    set total_http_tunnel_conn [tms::get-config "/stat/nkn/http/tunnel/current/total_connections"]
+    if {[string length $total_http_tunnel_conn] == 0} {
+      set total_http_tunnel_conn 0
+    }
+    set total_http_tunnel_active_conn [tms::get-config "/stat/nkn/http/tunnel/active_connections"]
+    if {[string length $total_http_tunnel_active_conn] == 0} {
+      set total_http_tunnel_active_conn 0
+    }
+    set total_http_tunnel_errs [tms::get-config "/stat/nkn/http/tunnel/current/error_count"]
+    if {[string length $total_http_tunnel_conn] == 0} {
+      set total_http_tunnel_conn 0
+    }
+    set total_http_cache_hit [tms::get-config "/stat/nkn/http/current/cache_hit_count"]
+    if {[string length $total_http_cache_hit] == 0} {
+      set total_http_cache_hit 0
+    }
+    set dummy 0
+
+    set uptime [tms::get-nvsd-uptime]
+    set resettime [tms::get-config "/stat/nkn/nvsd/reset-counter/time"]
+
+  ?>
+
+  <h3>Counters ( in the last <?=$resettime?> ) </h3>
+<!--
+  <table class="tms_mon" width="100%" border="0" cellspacing="0" cellpaddding="1">
+-->
+  <table width="100%" border="0" cellspacing="0" cellpaddding="1">
+
+  <table class="tms_mon" width="100%" border="0" cellspacing="0" cellpaddding="1">
+  <tr> <td> <b>Cache Hierarchy</b> </td> </tr>
+  <tr>
+    <td class="label">Total Data Served(MBytes)</td>
+    <td><?=$total_byte_served?></td>
+  </tr>
+
+  <tr>
+    <td class="label">RAM cache Data Count(MBytes)</td>
+    <td><?=$mem_cache_thruput?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Disk cache Data Count(MBytes)</td>
+    <td><?=$disk_cache_thruput?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total Disk Read Count</td>
+    <td><?=$total_disk_read_cnt?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total Disk Write Count</td>
+    <td><?=$total_disk_write_cnt?></td>
+  </tr>
+ 
+  <tr>
+    <td class="label">Total Cache-Hit Count</td>
+    <td><?=$total_http_cache_hit?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total Cache-Miss Count</td>
+    <td><?=$total_http_mm_stat_err?></td>
+  </tr>
+<!--
+  </table>
+
+
+  <table class="tms_mon" width="100%" border="0" cellspacing="0" cellpaddding="1">
+-->
+  <tr> <td> <b>HTTP Origin</b> </td> </tr>
+
+  <tr>
+    <td class="label">Origin Data Count(MBytes)</td>
+    <td><?=$origin_cache_byte_count?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total Origin Manager Connection Failed Count</td>
+    <td><?=$total_om_err_conn_failed?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total OM Completed HTTP Transactions</td>
+    <td><?=$total_ingest_fetch_cnt?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Current Proxy Rate(MBytes/Sec)</td>
+    <td><?=$cur_proxy_rate?></td>
+  </tr>
+<!--
+  </table>
+
+   
+  <table class="tms_mon" width="100%" border="0" cellspacing="0" cellpaddding="1">
+-->
+  <tr> <td> <b>Virtual Player </b> </td> </tr>
+  <tr>
+    <td class="label">Virtual Player Number of Seeks</td>
+    <td><?=$total_ssp_num_of_seeks?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Virtual Player Number of profile changes</td>
+    <td><?=$dummy?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Virtual Player Hash Verification Failed Error Count</td>
+    <td><?=$total_ssp_hash_verif_failures?></td>
+  </tr>
+<!--
+</table>
+-->
+
+</table>
+
+  </td>
+  <td width="45%">
+
+  <table class="tms_mon" width="100%" border="0" cellspacing="0" cellpadding="1">
+  <tr> <td> <b>Connections</b> </td></tr>
+  <tr>
+    <td class="label">Total Number of Active Connections </td>
+    <td><?=$total_active_connections?></td>
+  </tr>
+  </table>
+
+  <table class="tms_mon" width="100%" border="0" cellspacing="0" cellpadding="1">
+  <tr> <td> <b>HTTP Delivery </b> </td> </tr>
+  <tr>
+    <td class="label">Total Number of HTTP Active Connections </td>
+    <td><?=$num_of_connections?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total HTTP Connections Accepted</td>
+    <td><?=$total_http_requests?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total HTTP Transactions</td>
+    <td><?=$total_http_transactions?></td>
+  </tr>
+  <tr>
+    <td class="label">Total HTTP 200 Responses</td>
+    <td><?=$total_http_200_res?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total HTTP 206 Responses</td>
+    <td><?=$total_http_206_res?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total HTTP 304 Responses</td>
+    <td><?=$total_http_304_res?></td>
+  </tr>
+  
+  <tr>
+    <td class="label">Total HTTP 400 Responses</td>
+    <td><?=$total_http_400_res?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total HTTP 404 Responses</td>
+    <td><?=$total_http_404_res?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total HTTP 416 Responses</td>
+    <td><?=$total_http_416_res?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total HTTP 500 Responses</td>
+    <td><?=$total_http_500_res?></td>
+  </tr>
+  <tr>
+    <td class="label">Total HTTP 501 Responses</td>
+    <td><?=$total_http_501_res?></td>
+  </tr>
+  <tr>
+    <td class="label">Total HTTP 503 Responses</td>
+    <td><?=$total_http_503_res?></td>
+  </tr>
+  <tr>
+    <td class="label">Total HTTP 504 Responses</td>
+    <td><?=$total_http_504_res?></td>
+  </tr>
+
+
+  <tr>
+    <td class="label">Total HTTP Timeouts</td>
+    <td><?=$total_http_timeouts?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total HTTP Well finished Tasks</td>
+    <td><?=$total_http_wellfinished?></td>
+  </tr>
+<!--
+  <tr>
+    <td class="label">Total HTTP Error Timeout with Tasks</td>
+    <td><?=$total_http_err_timeoutwithtask?></td>
+  </tr>
+-->
+
+  <tr>
+    <td class="label">Total Scheduler get data errors</td>
+    <td><?=$total_http_err_sched_getdata?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total HTTP Task Deadline Missed</td>
+    <td><?=$total_http_deadline_missed?></td>
+  </tr>
+<!--
+  <tr>
+    <td class="label">Total HTTP Aborts</td>
+    <td><?=$total_http_aborts?></td>
+  </tr>
+-->
+
+  <tr>
+    <td class="label">Total HTTP Parser Errors</td>
+    <td><?=$total_http_parse_errs?></td>
+  </tr>
+  
+  <tr> <td> <b>HTTP Tunnel</b> </td> </tr>
+  <tr>
+    <td class="label">Total Connections</td>
+    <td><?=$total_http_tunnel_conn?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Total Active Connections</td>
+    <td><?=$total_http_tunnel_active_conn?></td>
+  </tr>
+  <tr>
+    <td class="label">Total Data Served(MBytes)</td>
+    <td><?=$tunnel_byte_count?></td>
+  </tr>
+  <tr>
+    <td class="label">Total Errors</td>
+    <td><?=$total_http_tunnel_errs?></td>
+  </tr>
+
+  </table>
+
+  <table class="tms_mon" width="100%" border="0" cellspacing="0" cellpadding="1">
+  <tr> <td> <b>Real-Time Streaming Delivery</b> </td></tr>
+  <tr>
+    <td class="label">Total Number of RT-Stream Connections </td>
+    <td><?=$num_of_rtsp_connections?></td>
+  </tr>
+  </table>
+</td>
+</tr>
+
+
+</table>
+
+<h3>Statistics</h3>
+<table class="tms_mon">
+
+  <?
+    set total_bw [tms::get-config "/stats/state/chd/total_byte_rate/node/\\/stat\\/nkn\\/nvsd\\/total_byte_rate/last/value"]
+    if {[string length $total_bw] == 0} {
+      set total_bw 0
+    }
+    set mem_cache_bw [tms::get-config "/stats/state/chd/avg_cache_byte_rate/node/\\/stat\\/nkn\\/nvsd\\/avg_cache_byte_rate/last/value"]
+    if {[string length $mem_cache_bw] == 0} {
+      set mem_cache_bw 0
+    }
+    set origin_cache_bw [tms::get-config "/stats/state/chd/avg_origin_byte_rate/node/\\/stat\\/nkn\\/nvsd\\/avg_origin_byte_rate/last/value"]
+    if {[string length $origin_cache_bw] == 0} {
+      set origin_cache_bw 0
+    }
+    set disk_cache_bw [tms::get-config "/stats/state/chd/avg_disk_byte_rate/node/\\/stat\\/nkn\\/nvsd\\/avg_disk_byte_rate/last/value"]
+    if {[string length $disk_cache_bw] == 0} {
+      set disk_cache_bw 0
+    }
+    set connection_rate [tms::get-config "/stats/state/chd/connection_rate/node/\\/stat\\/nkn\\/nvsd\\/connection_rate/last/value"]
+    if {[string length $connection_rate] == 0} {
+      set connection_rate 0
+    }
+    set transaction_rate  [tms::get-config "/stats/state/chd/http_transaction_rate/node/\\/stat\\/nkn\\/nvsd\\/http_transaction_rate/last/value"]
+    if {[string length $transaction_rate] == 0} {
+      set transaction_rate 0
+    }
+    set proxy_rate  [tms::get-config "/stats/state/chd/peroriginbyte_rate/node/\\/stat\\/nkn\\/nvsd\\/peroriginbyte_rate/last/value"]
+    if {[string length $proxy_rate] == 0} {
+      set proxy_rate 0
+    }
+    set curcbw_rate [tms::get-config "/stats/state/chd/cache_byte_rate/node/\\/stat\\/nkn\\/nvsd\\/cache_byte_rate/last/value"]
+    if {[string length $curcbw_rate] == 0} {
+      set curcbw_rate 0
+    }
+    set curobw_rate [tms::get-config "/stats/state/chd/origin_byte_rate/node/\\/stat\\/nkn\\/nvsd\\/origin_byte_rate/last/value"]
+    if {[string length $curobw_rate] == 0} {
+      set curobw_rate 0
+    }
+    set curdbw_rate [tms::get-config "/stats/state/chd/disk_byte_rate/node/\\/stat\\/nkn\\/nvsd\\/disk_byte_rate/last/value"]
+    if {[string length $curdbw_rate] == 0} {
+      set curdbw_rate 0
+    }
+    set diskio_rate [tms::get-config "/stats/state/chd/disk_io/node/\\/system\\/vmstat\\/disk_io_kbytes_per_sec/last/value"]
+    if {[string length $diskio_rate] == 0} {
+      set diskio_rate 0
+    }
+    set intf_val [tms::get-config "/stats/state/chd/intf_util/node/\\/net\\/interface\\/global\\/state\\/stats\\/rxtx\\/bytes_per_sec/last/value"]
+    if {[string length $intf_val] == 0} {
+      set intf_val 0
+    }
+    set mem_val [tms::get-config "/stats/state/chd/memory_pct/node/\\/system\\/memory\\/physical\\/used_pct/last/value"]
+    if {[string length $mem_val] == 0} {
+      set mem_val 0
+    }
+    set cpu_util_val [tms::get-config "/stats/state/chd/cpu_util_ave/node/\\/system\\/cpu\\/all\\/busy_pct/last/value"]
+    if {[string length $cpu_util_val] == 0} {
+      set cpu_util_val 0
+    }
+    set paging_val [tms::get-config "/stats/state/sample/paging/node/\\/system\\/page_io/last/value"]
+    if {[string length $paging_val] == 0} {
+      set paging_val 0
+    }
+
+    set bw_err [tms::get-config "/stats/config/alarm/total_byte_rate/rising/error_threshold"]
+    if {[string length $bw_err] == 0} {
+      set bw_err 0
+    }
+    set bw_clear [tms::get-config "/stats/config/alarm/total_byte_rate/rising/clear_threshold"]
+    if {[string length $bw_clear] == 0} {
+      set bw_clear 0
+    }
+    set conn_err [tms::get-config "/stats/config/alarm/connection_rate/rising/error_threshold"]
+    if {[string length $conn_err] == 0} {
+      set conn_err 0
+    }
+    set conn_clear [tms::get-config "/stats/config/alarm/connection_rate/rising/clear_threshold"]
+    if {[string length $conn_clear] == 0} {
+      set conn_clear 0
+    }
+    set cbw_err [tms::get-config "/stats/config/alarm/avg_cache_byte_rate/rising/error_threshold"]
+    if {[string length $cbw_err] == 0} {
+      set cbw_err 0
+    }
+    set cbw_clear [tms::get-config "/stats/config/alarm/avg_cache_byte_rate/rising/clear_threshold"]
+    if {[string length $cbw_clear] == 0} {
+      set cbw_clear 0
+    }
+    set obw_err [tms::get-config "/stats/config/alarm/avg_origin_byte_rate/rising/error_threshold"]
+    if {[string length $obw_err] == 0} {
+      set obw_err 0
+    }
+    set obw_clear [tms::get-config "/stats/config/alarm/avg_origin_byte_rate/rising/clear_threshold"]
+    if {[string length $obw_clear] == 0} {
+      set obw_clear 0
+    }
+    set dbw_err [tms::get-config "/stats/config/alarm/avg_disk_byte_rate/rising/error_threshold"]
+    if {[string length $dbw_err] == 0} {
+      set dbw_err 0
+    }
+    set dbw_clear [tms::get-config "/stats/config/alarm/avg_disk_byte_rate/rising/clear_threshold"]
+    if {[string length $dbw_clear] == 0} {
+      set dbw_clear 0
+    }
+    set tran_err [tms::get-config "/stats/config/alarm/http_transaction_rate/rising/error_threshold"]
+    if {[string length $tran_err] == 0} {
+      set tran_err 0
+    }
+    set tran_clear [tms::get-config "/stats/config/alarm/http_transaction_rate/rising/clear_threshold"]
+    if {[string length $tran_clear] == 0} { 
+      set tran_clear 0
+    }
+    set pbw_err [tms::get-config "/stats/config/alarm/peroriginbyte_rate/rising/error_threshold"]
+    if {[string length $pbw_err] == 0} {
+      set pbw_err 0
+    }
+    set pbw_clear [tms::get-config "/stats/config/alarm/peroriginbyte_rate/rising/clear_threshold"]
+    if {[string length $pbw_clear] == 0} { 
+      set pbw_clear 0
+    }
+    set curcbw_err [tms::get-config "/stats/config/alarm/cache_byte_rate/rising/error_threshold"]
+    if {[string length $curcbw_err] == 0} {
+      set curcbw_err 0
+    }
+    set curcbw_clear [tms::get-config "/stats/config/alarm/cache_byte_rate/rising/clear_threshold"]
+    if {[string length $curcbw_clear] == 0} { 
+      set curcbw_clear 0
+    }
+    set curdbw_err [tms::get-config "/stats/config/alarm/disk_byte_rate/rising/error_threshold"]
+    if {[string length $curdbw_err] == 0} {
+      set curdbw_err 0
+    }
+    set curdbw_clear [tms::get-config "/stats/config/alarm/disk_byte_rate/rising/clear_threshold"]
+    if {[string length $curdbw_clear] == 0} { 
+      set curdbw_clear 0
+    }
+    set curobw_err [tms::get-config "/stats/config/alarm/origin_byte_rate/rising/error_threshold"]
+    if {[string length $curobw_err] == 0} {
+      set curobw_err 0
+    }
+    set curobw_clear [tms::get-config "/stats/config/alarm/origin_byte_rate/rising/clear_threshold"]
+    if {[string length $curobw_clear] == 0} { 
+      set curobw_clear 0
+    }
+    set diskio_err [tms::get-config "/stats/config/alarm/disk_io/rising/error_threshold"]
+    if {[string length $diskio_err] == 0} {
+      set diskio_err 0
+    }
+    set diskio_clear [tms::get-config "/stats/config/alarm/disk_io/rising/clear_threshold"]
+    if {[string length $diskio_clear] == 0} { 
+      set diskio_clear 0
+    }
+    set fsmnt_err [tms::get-config "/stats/config/alarm/fs_mnt/falling/error_threshold"]
+    if {[string length $fsmnt_err] == 0} {
+      set fsmnt_err 0
+    }
+    set fsmnt_clear [tms::get-config "/stats/config/alarm/fs_mnt/falling/clear_threshold"]
+    if {[string length $fsmnt_clear] == 0} { 
+      set fsmnt_clear 0
+    }
+    set intf_err [tms::get-config "/stats/config/alarm/intf_util/rising/error_threshold"]
+    if {[string length $intf_err] == 0} {
+      set intf_err 0
+    }
+    set intf_clear [tms::get-config "/stats/config/alarm/intf_util/rising/clear_threshold"]
+    if {[string length $intf_clear] == 0} { 
+      set intf_clear 0
+    }
+    set mem_err [tms::get-config "/stats/config/alarm/memory_pct_used/rising/error_threshold"]
+    if {[string length $mem_err] == 0} {
+      set mem_err 0
+    }
+    set mem_clear [tms::get-config "/stats/config/alarm/memory_pct_used/rising/clear_threshold"]
+    if {[string length $mem_clear] == 0} { 
+      set mem_clear 0
+    }
+    set cpu_util_err [tms::get-config "/stats/config/alarm/nkn_cpu_util_ave/rising/error_threshold"]
+    if {[string length $cpu_util_err] == 0} { 
+      set cpu_util_err 0
+    }
+    set cpu_util_clear [tms::get-config "/stats/config/alarm/nkn_cpu_util_ave/rising/clear_threshold"]
+    if {[string length $cpu_util_clear] == 0} {
+      set cpu_util_clear 0
+    }
+    set paging_err [tms::get-config "/stats/config/alarm/paging/rising/error_threshold"]
+    if {[string length $paging_err] == 0} {
+      set paging_err 0
+    }
+    set paging_clear [tms::get-config "/stats/config/alarm/paging/rising/clear_threshold"]
+    if {[string length $paging_clear] == 0} { 
+      set paging_clear 0
+    }
+
+    set mb [expr 1024.0 * 1024.0]
+    set total_bw [format "%2.2f" [expr $total_bw / $mb]]
+    set mem_cache_bw [format "%2.2f" [expr $mem_cache_bw / $mb]]
+    set disk_cache_bw [format "%2.2f" [expr $disk_cache_bw / $mb]]
+    set origin_cache_bw [format "%2.2f" [expr $origin_cache_bw / $mb]]
+    set proxy_rate [format "%2.2f" [expr $proxy_rate / $mb]]
+    set curcbw_rate [format "%2.2f" [expr $curcbw_rate / $mb]]
+    set curdbw_rate [format "%2.2f" [expr $curdbw_rate / $mb]]
+    set curobw_rate [format "%2.2f" [expr $curobw_rate / $mb]]
+    set intf_val [format "%2.2f" [expr $intf_val / $mb]]
+
+
+    set bw_err [format "%2.2f" [expr $bw_err / $mb]]
+    set bw_clear [format "%2.2f" [expr $bw_clear / $mb]]
+    set cbw_err [format "%2.2f" [expr $cbw_err / $mb]]
+    set cbw_clear [format "%2.2f" [expr $cbw_clear / $mb]]
+    set obw_err [format "%2.2f" [expr $obw_err / $mb]]
+    set obw_clear [format "%2.2f" [expr $obw_clear / $mb]]
+    set dbw_err [format "%2.2f" [expr $dbw_err / $mb]]
+    set dbw_clear [format "%2.2f" [expr $dbw_clear / $mb]]
+    set pbw_err [format "%2.2f" [expr $pbw_err / $mb]]
+    set pbw_clear [format "%2.2f" [expr $pbw_clear / $mb]]
+    set curcbw_err [format "%2.2f" [expr $curcbw_err / $mb]]
+    set curcbw_clear [format "%2.2f" [expr $curcbw_clear / $mb]]
+    set curdbw_err [format "%2.2f" [expr $curdbw_err / $mb]]
+    set curdbw_clear [format "%2.2f" [expr $curdbw_clear / $mb]]
+    set curobw_err [format "%2.2f" [expr $curobw_err / $mb]]
+    set curobw_clear [format "%2.2f" [expr $curobw_clear / $mb]]
+  ?>
+  <tr>
+    <td class="label"><b>Alarms</b></td>
+  </tr>
+  <!--
+  <tr>
+    <td width=150><b>Desc(Unit)</b></td>
+    <td width=150><b>Current Value</b></td> 
+    <td width=150><b>Alarm threshold</b></td>
+    <td width=150><b>Clear threshold</b></td>
+  </tr>
+  -->
+  <tr>
+  <tr>
+    <td width=450><b>Desc(Unit)</b></td>
+    <td width=100><b>Current Value</b></td> 
+    <td width=100><b>Alarm threshold</b></td>
+    <td width=100><b>Clear threshold</b></td>
+  </tr>
+  <tr>
+    <td class="label">Current Bandwidth (MB/Sec) </td>
+    <td><?=$total_bw?></td>
+    <td><?=$bw_err?></td>
+    <td><?=$bw_clear?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Average Cache Bandwidth (MB/Sec)</td>
+    <td><?=$mem_cache_bw?></td>
+    <td><?=$cbw_err?></td>
+    <td><?=$cbw_clear?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Average Disk Bandwidth (MB/Sec)</td>
+    <td><?=$disk_cache_bw?></td>
+    <td><?=$dbw_err?></td>
+    <td><?=$dbw_clear?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Average Origin Bandwidth (MB/Sec)</td>
+    <td><?=$origin_cache_bw?></td>
+    <td><?=$obw_err?></td>
+    <td><?=$obw_clear?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Average Connection Rate (per Sec)</td>
+    <td><?=$connection_rate?></td>
+    <td><?=$conn_err?></td>
+    <td><?=$conn_clear?></td>
+  </tr>
+
+  <tr>
+    <td class="label">Average HTTP Transaction Rate(per Sec)</td>
+    <td><?=$transaction_rate?></td>
+    <td><?=$tran_err?></td>
+    <td><?=$tran_clear?></td>
+  </tr>
+<!--
+  <tr>
+    <td class="label">Proxy Rate - Origin Manager(MB/Sec)</td>
+    <td><?=$proxy_rate?></td>
+    <!---
+    <td><?=$pbw_err?></td>
+    <td><?=$pbw_clear?></td>
+  </tr>
+-->
+  <tr>
+    <td class="label">Current Cache Bandwidth (MB/Sec)</td>
+    <td><?=$curcbw_rate?></td>
+    <td><?=$curcbw_err?></td>
+    <td><?=$curcbw_clear?></td>
+  </tr>
+  <tr>
+    <td class="label">Current Disk Bandwidth (MB/Sec)</td>
+    <td><?=$curdbw_rate?></td>
+    <td><?=$curdbw_err?></td>
+    <td><?=$curdbw_clear?></td>
+  </tr>
+  <tr>
+    <td class="label">Current Origin Bandwidth (MB/Sec)</td>
+    <td><?=$curobw_rate?></td>
+    <td><?=$curobw_err?></td>
+    <td><?=$curobw_clear?></td>
+  </tr>
+<!--
+  <tr>
+    <td class="label">Disk IO (KB/Sec)</td>
+    <td><?=$diskio_rate?></td>
+    <td><?=$diskio_err?></td>
+    <td><?=$diskio_clear?></td>
+  </tr>
+-->
+    <td class="label">Free Filesystem (%) </td>
+<!--
+    <td><?=$fsmnt_val?></td>
+-->
+    <td> - </td>
+    <td><?=$fsmnt_err?></td>
+    <td><?=$fsmnt_clear?></td>
+  </tr>
+<!--
+  <tr>
+    <td class="label">Network Utilization (MB/Sec)</td>
+    <td><?=$intf_val?></td>
+    <td><?=$intf_err?></td>
+    <td><?=$intf_clear?></td>
+  </tr>
+  <tr>
+    <td class="label">Memory in Use (%)</td>
+    <td><?=$mem_val?></td>
+    <td><?=$mem_err?></td>
+    <td><?=$mem_clear?></td>
+  </tr>
+-->
+  <tr>
+    <td class="label">Average CPU Utilization (%)</td>
+    <td><?=$cpu_util_val?></td>
+    <td><?=$cpu_util_err?></td>
+    <td><?=$cpu_util_clear?></td>
+  </tr>
+  <tr>
+    <td class="label">Paging</td>
+    <td><?=$paging_val?></td>
+    <td><?=$paging_err?></td>
+    <td><?=$paging_clear?></td>
+  </tr>
+
+</table>
+</TAG>

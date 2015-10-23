@@ -1,0 +1,8 @@
+#################################
+#  About mapxml/xmplarser
+#################################
+The code in this directory is for the mapxml binary.
+Except for the code in the xmlparser subdir, the source code here was written by Juniper.
+The code in the xmlparser directory (xmlParser.cpp and  xmlParser.h) is copyrighted by Frank Vanden Berghen.
+See the file xmlparser/Attribution-xmlparser.txt
+

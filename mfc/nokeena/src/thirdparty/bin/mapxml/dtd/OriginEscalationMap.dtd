@@ -1,0 +1,9 @@
+<!-- OriginEscalationMap 1.0 DTD, Copyright (c) 2010 by Juniper Networks, Inc -->
+<!ELEMENT OriginEscalationMap (Header*, OriginEscalationMapEntry*)>
+<!ELEMENT Header (Version, Application)>
+<!ELEMENT Version (#PCDATA)>
+<!ELEMENT Application (#PCDATA)>
+<!ELEMENT OriginEscalationMapEntry (Origin, Port, Options?)>
+<!ELEMENT Origin (#PCDATA)>
+<!ELEMENT Port (#PCDATA)>
+<!ELEMENT Options (#PCDATA)>

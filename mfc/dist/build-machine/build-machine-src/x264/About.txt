@@ -1,0 +1,19 @@
+The x264 library must be installed in order to compile ffmpeg.
+
+The source came from:
+
+    ftp://ftp.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20110126-2245.tar.bz2 
+
+It is archived at: /data/archive/thirdparty/build-machine-src/x264/x264-snapshot-20110126-2245.tar.bz2
+
+Extract this tar file in a new temp directory and configure, build and install it.
+
+mkdir /tmp/x286-build
+cd /tmp/x286-build
+bunzip2 -c  /data/archive/thirdparty/build-machine-src/x264/x264-snapshot-20110126-2245.tar.bz2 | tar xvf -
+cd x264-snapshot-20110126-2245
+./configure
+make
+make install
+
+Note that the license is GPL. The ffmpeg binary is linked with this so it gets infected with GPL. 

@@ -1,0 +1,36 @@
+<?
+#
+# Filename:  mfp_layout.tem
+# Date:      
+# Author:    Dhivyamanohary R
+#
+# Juniper Networks Inc
+#
+?>
+
+<INCLUDE "tms-defines">
+<INCLUDE "tms-utils">
+<INCLUDE "tms-layout">
+<TAG TMS-MFP-MENU selected {arg ""} {arg_value ""}>
+  <?
+    set mfp_options {
+        {dashboard Dashboard}
+        {config Configuration}
+        {nfsmount  NFSManager}
+    }
+    lappend options $mfp_options
+  ?>
+  <div id="mfp_menu">
+    <TMS-SIDEBAR-MENU $selected $options mfp- $arg $arg_value>
+    </TMS-SIDEBAR-MENU>
+ </div> <!-- mfp_menu -->
+</TAG>
+
+<TAGEND TMS-MFP-MENU>
+      <!-- /TMS-SERVICECFG-MENU is deprecated -->
+</TAGEND>
+
+<TAG SECTION-HEADER label>
+         <tr class="listing_header">
+         <td colspan="4"><h3><u><?=$label?></u></h3></td></tr>
+</TAG>

@@ -1,0 +1,49 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-2.0.4a
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-2.0.4a-qa-3_13279_223
+ MENU LABEL mfc-2.0.4a-qa-3_13279_223  BR:chisos 2010-11-12
+ KERNEL pxe-boot/mfc-2.0.4a-qa-3_13279_223/vmlinuz-bootflop-mfc-2.0.4a-qa-3_13279_223
+ APPEND initrd=pxe-boot/mfc-2.0.4a-qa-3_13279_223/rootflop-mfc-2.0.4a-qa-3_13279_223.img        installfrom=pxe/pxe-boot/mfc-2.0.4a-qa-3_13279_223 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.4a-qa-2_13274_223
+ MENU LABEL mfc-2.0.4a-qa-2_13274_223  BR:chisos 2010-11-11
+ KERNEL pxe-boot/mfc-2.0.4a-qa-2_13274_223/vmlinuz-bootflop-mfc-2.0.4a-qa-2_13274_223
+ APPEND initrd=pxe-boot/mfc-2.0.4a-qa-2_13274_223/rootflop-mfc-2.0.4a-qa-2_13274_223.img        installfrom=pxe/pxe-boot/mfc-2.0.4a-qa-2_13274_223 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.4a-qa-1_13273_223
+ MENU LABEL mfc-2.0.4a-qa-1_13273_223  BR:chisos 2010-11-11
+ KERNEL pxe-boot/mfc-2.0.4a-qa-1_13273_223/vmlinuz-bootflop-mfc-2.0.4a-qa-1_13273_223
+ APPEND initrd=pxe-boot/mfc-2.0.4a-qa-1_13273_223/rootflop-mfc-2.0.4a-qa-1_13273_223.img        installfrom=pxe/pxe-boot/mfc-2.0.4a-qa-1_13273_223 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.4a-dv-3_13127_223
+ MENU LABEL mfc-2.0.4a-dv-3_13127_223  BR:chisos 2010-11-02
+ KERNEL pxe-boot/mfc-2.0.4a-dv-3_13127_223/vmlinuz-bootflop-mfc-2.0.4a-dv-3_13127_223
+ APPEND initrd=pxe-boot/mfc-2.0.4a-dv-3_13127_223/rootflop-mfc-2.0.4a-dv-3_13127_223.img        installfrom=pxe/pxe-boot/mfc-2.0.4a-dv-3_13127_223 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.4a-dv-1_13045_223
+ MENU LABEL mfc-2.0.4a-dv-1_13045_223  BR:chisos 2010-10-29
+ KERNEL pxe-boot/mfc-2.0.4a-dv-1_13045_223/vmlinuz-bootflop-mfc-2.0.4a-dv-1_13045_223
+ APPEND initrd=pxe-boot/mfc-2.0.4a-dv-1_13045_223/rootflop-mfc-2.0.4a-dv-1_13045_223.img        installfrom=pxe/pxe-boot/mfc-2.0.4a-dv-1_13045_223 installopt=,show-pxe-menu,
+ IPAPPEND 3

@@ -1,0 +1,5 @@
+Downloaded from:
+http://sourceforge.net/projects/ant-contrib/files/ant-contrib/ant-contrib-0.6/ant-contrib-0.6-bin.zip/download
+http://sourceforge.net/projects/ant-contrib/files/ant-contrib/ant-contrib-0.6/ant-contrib-0.6-bin.tar.gz/download
+http://sourceforge.net/projects/ant-contrib/files/ant-contrib/ant-contrib-0.6/ant-contrib-0.6-src.tar.gz/download
+

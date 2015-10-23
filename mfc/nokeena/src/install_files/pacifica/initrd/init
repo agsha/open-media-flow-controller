@@ -1,0 +1,583 @@
+#!/bin/bash
+
+emergency_shell()
+{
+    echo "Bug in initramfs /init detected. Dropping to a shell. Good luck!"
+    echo
+    bash
+}
+trap "emergency_shell" 0 2
+
+format_disks()
+{
+    disk_list=`sfdisk -l | cut -f 1 -d ' ' | grep dev | cut -c-8 | uniq`
+    for i in $disk_list
+    do
+	sfdisk $i << EOF
+,,,
+EOF
+    done
+}
+
+# exit immediately if a command fails
+set -e
+
+export PATH=/sbin:/bin:/usr/bin
+
+exec < /dev/console > /dev/console 2>&1
+
+mount -n -t tmpfs -o mode=0755 udev /dev
+mknod /dev/console c 5 1
+mknod /dev/null c 1 3
+mknod /dev/kmsg c 1 11
+mkdir /dev/pts
+mkdir -m 1777 /dev/shm
+ln -s /proc/self/fd /dev/fd
+ln -s fd/0 /dev/stdin
+ln -s fd/1 /dev/stdout
+ln -s fd/2 /dev/stderr
+
+mount -n -t proc proc /proc
+mount -n -t sysfs sysfs /sys
+
+echo "" > /proc/sys/kernel/hotplug
+
+# Declare all variables here.. mostly for housekeeping
+#
+init="/sbin/init"
+root_ro=0
+root_rw=0
+root=""
+rootflags=""
+rootfstype=""
+quiet=0
+shell=0
+eshell=0
+live_ram=0
+check_iso=0
+live_locale=""
+overlay="off"
+mfcrootfs=""
+# Choose a method to boot from
+# Possible options:
+# method=tftp://<ip>[:port]/<path>
+# Future options
+# nfs://<ip>[:port]/<path>
+# http://<ip>[:port]/<path>
+method=""
+
+# These are internal vars
+TFTP=/usr/bin/tftp
+TFTP_ARGS="-v -m binary"
+HTTP="wget"
+HTTP_ARGS=""
+NFS=""
+NFS_ARGS=""
+
+METHOD=""
+HOST=""
+PORT=""
+FPATH=""
+
+# Parse kernel commandline options
+#
+for o in `cat /proc/cmdline` ; do
+    case $o in
+    init=*)
+        init=${o#init=}
+        ;;
+    ro)
+        root_ro=1
+        ;;
+    rw)
+        root_rw=1
+        ;;
+    quiet)
+        quiet=1
+        ;;
+    shell)
+        shell=1
+        ;;
+    eshell)
+        eshell=1
+        ;;
+    live_ram)
+        live_ram=1
+        ;;
+    live_locale=*)
+        live_locale=${o#live_locale=}
+        ;;
+    overlay)
+        overlay=auto
+        ;;
+    overlay=*)
+        overlay=${o#overlay=}
+        ;;
+    reset_overlay)
+        reset_overlay=1
+        ;;
+    check)
+        check_iso=1
+        ;;
+    blacklist=*)
+        blacklist=${o#blacklist=}
+	mkdir /etc/modprobe.d
+        echo "blacklist $blacklist" >> /etc/modprobe.d/nkn.conf
+        ;;
+    mfcrootfs=*)
+        mfcrootfs=${o#mfcrootfs=}
+        ;;
+    model=*)
+	model=${o#model=}
+	;;
+    method=*)
+        method=${o#method=}
+        ;;
+    *)
+        m=$(echo $o |cut -s -d . -f 1)
+        opt=$(echo $o |cut -s -d . -f 2-)
+        if [ -z "$m" -o -z "$opt" ]; then
+          continue
+        fi
+        p=$(echo $opt |cut -s -d = -f 1)
+        v=$(echo $opt |cut -s -d = -f 2-)
+        if [ -z "$p" -o -z "$v" ]; then
+          continue
+        fi
+	mkdir /etc/modprobe.d
+        echo "options $m $p=$v" >> /etc/modprobe.d/nkn.conf
+        ;;
+    esac
+done
+
+if [ "$quiet" != "1" ] ; then
+    echo "kernel commandline: `cat /proc/cmdline`"
+fi
+
+# First, read rootfs target from embedded /etc/fstab file
+#
+if [ -f /etc/fstab ] ; then
+    root=$(cat /etc/fstab | while read d m f o r; do if [ "$m" == "/" ] ; then echo $d; fi; done)
+    rootflags=$(cat /etc/fstab | while read d m f o r; do if [ "$m" == "/" ] ; then echo $o; fi; done)
+    rootfstype=$(cat /etc/fstab | while read d m f o r; do if [ "$m" == "/" ] ; then echo $f; fi; done)
+    if [ "$quiet" != "1" ] ; then
+        echo "fstab suggests root=$root"
+        echo "fstab suggests rootflags=$rootflags"
+        echo "fstab suggests rootfstype=$rootfstype"
+        # Handle the case with bogus /etc/fstab pointing to /dev/root
+        # which by definition does not exist...
+        #
+        if [ "$root" == "/dev/root" ] ; then
+            echo "WARNING: Bogus /etc/fstab file - cannot have /dev/root as the device for /"
+            root=""
+            rootflags=""
+            rootfstype=""
+        fi
+    fi
+fi
+
+# Users can override rootfs target on the kernel commandline
+#
+for o in `cat /proc/cmdline` ; do
+    case $o in
+    root=*)
+        root=${o#root=}
+        ;;
+    rootflags=*)
+        rootflags=${o#rootflags=}
+        ;;
+    rootfstype=*)
+        rootfstype=${o#rootfstype=}
+        ;;
+    esac
+done
+
+# Print out what we are going to do
+#
+if [ "$quiet" != "1" ] ; then
+    echo "init=$init"
+    echo "root=$root"
+    echo "rootflags=$rootflags"
+    echo "rootfstype=$rootfstype"
+    echo "root_ro=$root_ro"
+    echo "root_rw=$root_rw"
+    echo "mfcrootfs=$mfcrootfs"
+    echo "method=$method"
+    echo "model=$model"
+fi
+
+waitforsymlink=0
+# generate udev rules to generate /dev/root symlink
+if [ -z $root ] ; then
+    root=/dev/something
+else
+    thingtomount=$root
+fi
+
+echo "udev_log=\"error\"" >> /etc/udev/udev.conf
+
+# rules for loading modules
+#
+ echo -n "ACTION==\"add\", SUBSYSTEM==\"?*\", ENV{MODALIAS}==\"?*\", RUN+=\"/sbin/modprobe $" >> /etc/udev/rules.d/10-modprobe.rules
+ echo "env{MODALIAS}\"" >> /etc/udev/rules.d/10-modprobe.rules
+ echo "SUBSYSTEM==\"net\", ACTION==\"add\", BUS==\"pci\",KERNEL==\"eth*\", ID==\"0000:02:00.0\",NAME=\"eth0\",RUN+=\"/sbin/modprobe e1000e\"" >> /etc/udev/rules.d/10-modprobe.rules
+  echo "SUBSYSTEM==\"net\", ACTION==\"add\", BUS==\"pci\",KERNEL==\"eth*\", ID==\"0000:00:19.0\",NAME=\"eth1\",RUN+=\"/sbin/modprobe e1000e\"" >> /etc/udev/rules.d/10-modprobe.rules
+ echo "SUBSYSTEM==\"igb\", RUN+=\"/sbin/modprobe igb\"" >> /etc/udev/rules.d/10-modprobe.rules
+ echo "SUBSYSTEM==\"squashfs\", RUN+=\"/sbin/modprobe squashfs\"" >> /etc/udev/rules.d/10-modprobe.rules
+ echo "SUBSYSTEM==\"ext3\", RUN+=\"/sbin/modprobe ext3\"" >> /etc/udev/rules.d/10-modprobe.rules
+
+if [ "$quiet" != "1" ] ; then
+    echo "starting udevd"
+fi
+/sbin/udevd --daemon
+
+if [ "$quiet" != "1" ] ; then
+    echo "creating devices"
+fi
+/sbin/udevtrigger
+
+if [ "$quiet" != "1" ] ; then
+    echo "waiting for system to settle"
+fi
+/sbin/udevsettle --timeout=30 || :
+
+# Time to setup the network, hence sending DHCP request on eth0 first
+# If eth0 fails, then send request on eth1
+echo "info: sending DHCP request on eth0 ..."
+ifconfig eth0 up
+udhcpc -n -t 10 -i eth0 && echo "    DHCP configuration received on eth0"
+if [ $? != 0 ]; then
+    echo "warning: failed to receive DHCP response on eth0"
+    echo "info: sending DHCP request on eth1 ..."
+    ifconfig eth1 up
+    udhcpc -n -t 10 -i eth1 && echo "    DHCP configuration received on eth1"
+    if [ $? != 0 ]; then
+        echo "warning: failed to receive DHCP response on eth0"
+        echo "info: sending DHCP request on eth1 ..."
+	bash
+    fi
+
+fi
+
+echo ""
+echo ""
+set +e
+echo "Option to do Factory Reset (format all disks)..."
+echo -n "Do you want a factory reset if so press 'y' and 'Enter' within 30 seconds : "
+read -t 30 yn
+case $yn in
+    [Yy]* )format_disks;;
+    [Nn]* );;
+    * ) ;;
+esac
+echo ""
+echo ""
+set -e
+
+function ParseMethod()
+{
+    STR=$method
+    IDX=`/usr/bin/expr index $STR "://"`
+
+    METHOD=${STR:0:$IDX-1}
+    STR=${STR:$IDX+2}
+
+    IDX=`/usr/bin/expr index $STR ":"`
+
+    if [ ! "$IDX" == "0" ]
+    then
+	HOST=${STR:0:$IDX-1};
+	STR=${STR:$IDX}
+	IDX=`/usr/bin/expr index $STR "/"`
+	PORT=${STR:0:$IDX-1}
+	FPATH=${STR:$IDX-1}
+    else
+	IDX=`/usr/bin/expr index $STR "/"`
+	HOST=${STR:0:$IDX-1};
+	FPATH=${STR:$IDX-1}
+    fi
+}
+
+function do_tftp()
+{
+    if [ "$quiet" != "1" ] ; then
+	echo "TFTP	    = " $TFTP
+	echo "TFTP_ARGS = " $TFTP_ARGS
+	echo "HOST	    = " $HOST
+	echo "PORT	    = " $PORT
+	echo "FPATH     = " $FPATH
+    fi
+    ${TFTP} ${TFTP_ARGS} ${HOST} ${PORT} -c get ${FPATH} #$mfcrootfs
+    if [ $? != 0 ]; then
+	echo "TFTP failed, retrying one more time  ...  ";
+	sleep 10;
+	${TFTP} ${TFTP_ARGS} ${HOST} ${PORT} -c get ${FPATH} #$mfcrootfs
+	if [ $? != 0 ]; then
+	    echo "MFC root filesystem $mfcrootfs failed to download. Exiting to shell"
+	    echo
+	    bash
+	fi
+    fi
+}
+
+
+ParseMethod $method
+
+# Hack - $mfcrootfs is the same as $FPATH
+# So even if user were to specify a mfcrootfs= and method=, we always pick
+# method=
+mfcrootfs=$FPATH
+
+case $METHOD in
+    tftp)
+	do_tftp
+	;;
+    esac
+
+mv `basename $mfcrootfs` mfcrootfs.img
+
+if [ "$shell" == "1" ] ; then
+    echo "Shell requested on kernel commandline. Exit to continue booting."
+    echo
+    bash
+fi
+
+if [ "x$root_ro" == "x1" ] ; then
+   if [ -z $rootflags ] ; then
+       rootflags="ro"
+   else
+       rootflags="$rootflags,ro"
+   fi
+fi
+
+if [ "x$root_rw" == "x1" ] ; then
+   if [ -z $rootflags ] ; then
+       rootflags="rw"
+   else
+       rootflags="$rootflags,rw"
+   fi
+fi
+
+if [ -z $rootflags ] ; then
+    mountoptions=""
+else
+    mountoptions=" -o$rootflags"
+fi
+
+# Now get ready to leave the initramfs
+#
+
+# only pass kernel command line if we're launching /sbin/init
+if [ "$init" == "/sbin/init" ] ; then
+    initargs=$(cat /proc/cmdline)
+else
+    initargs=""
+fi
+
+# overlay setup helper function
+do_live_overlay() {
+    # create a sparse file for the overlay
+    # overlay: if non-ram overlay searching is desired, do it,
+    #              otherwise, create traditional overlay in ram
+    OVERLAY_LOOPDEV=$( losetup -f )
+
+    echo "using temporary overlay ... "
+    sleep 5
+
+    dd if=/dev/null of=/overlay bs=1024 count=1 seek=$((512*1024)) 2> /dev/null
+    losetup $OVERLAY_LOOPDEV /overlay
+
+    # set up the snapshot
+    echo 0 `blockdev --getsize $BASE_LOOPDEV` snapshot $BASE_LOOPDEV $OVERLAY_LOOPDEV p 8 | dmsetup create live-rw
+}
+
+# live cd helper function
+do_live_from_base_loop() {
+    do_live_overlay
+
+    # set up ext3 just in case
+    #modprobe ext3
+
+    # set up new /dev/root symlink
+    rm -f /dev/root
+    ln -s /dev/mapper/live-rw /dev/root
+
+    mount -n  /dev/mapper/live-rw /sysroot
+    # here you can modify the rw ext3 fs for testing if you don't want to
+    # respin the entire rootfs (which takes ages). Example
+    #
+    #  echo foo > /sysroot/etc/bar.conf
+    #
+    # We also use it to dynamically set the system locale from the boot
+    # menu on live cd's.
+    #
+    if [ "$live_locale" != "" ] ; then
+        echo "LANG=$live_locale" > /sysroot/etc/sysconfig/i18n
+    fi
+
+    # copy over module options
+    [ -f /etc/modprobe.d/nkn.conf ] && cat /etc/modprobe.d/nkn.conf >> /sysroot/etc/modprobe.d/nkn.conf
+
+    # add rules for loop devices created by this mayflower generated init
+    # i.e. /dev/live-osimg, /dev/live-osmin, /dev/live-overlay,
+    #      and /dev/live-squashed
+    if [ -b "$SQUASHED_LOOPDEV" ]; then
+        echo "KERNEL==\"${SQUASHED_LOOPDEV#/dev/}\" SYMLINK+=\"live-squashed\"" >> /sysroot/etc/udev/rules.d/50-udev*
+    fi
+    echo "KERNEL==\"${BASE_LOOPDEV#/dev/}\" SYMLINK+=\"live-osimg\"" >> /sysroot/etc/udev/rules.d/50-udev*
+    echo "KERNEL==\"${OVERLAY_LOOPDEV#/dev/}\" SYMLINK+=\"live-overlay\"" >> /sysroot/etc/udev/rules.d/50-udev*
+
+
+    # Override the default ruleset to avoid a "wait_for_sysfs" message in ioerr_cnt
+    cat > /sysroot/etc/udev/rules.d/05-udev-early.rules <<EOF
+# sysfs is populated after the event is sent
+ACTION=="add", DEVPATH=="/devices/*", ENV{PHYSDEVBUS}=="?*", WAIT_FOR_SYSFS="bus"
+ACTION=="add", SUBSYSTEM=="net", WAIT_FOR_SYSFS="address"
+ACTION=="add", SUBSYSTEM=="scsi", KERNEL=="[0-9]*:[0-9]*", WAIT_FOR_SYSFS="ioerr_cnt"
+
+# ignore these events until someone needs them
+SUBSYSTEM=="drivers",           OPTIONS="ignore_device"
+SUBSYSTEM=="module",            OPTIONS="ignore_device"
+
+ACTION=="add", SUBSYSTEM=="firmware", ENV{FIRMWARE}=="*", RUN="/sbin/firmware_helper", OPTIONS="last_rule"
+EOF
+
+    cat > /sysroot/etc/udev/rules.d/10-udev-bnx2x.rules <<EOF
+# Rules for loading Broadcom 57840 Driver on Pacifica
+SUBSYSTEM=="net", ACTION=="add", SYSFS{vendor}=="0x14e4", SYSFS{device}=="0x168d", RUN+="/sbin/modprobe bnx2x"
+
+# Rename rules: 2 BCM57840 -each BCM has 4 ports.
+# BCM-1: eth1x, BCM-2: eth2x
+
+#Rename eth3 -> eth10
+SUBSYSTEM=="net", ACTION=="add", BUS=="pci", ID=="0000:01:00.0", KERNEL=="eth*", NAME="eth10"
+# Rename eth4 -> eth11
+SUBSYSTEM=="net", ACTION=="add", BUS=="pci", ID=="0000:01:00.1", KERNEL=="eth*", NAME="eth11"
+# Rename eth5 -> eth12
+SUBSYSTEM=="net", ACTION=="add", BUS=="pci", ID=="0000:01:00.2", KERNEL=="eth*", NAME="eth12"
+# Rename eth6 -> eth13
+SUBSYSTEM=="net", ACTION=="add", BUS=="pci", ID=="0000:01:00.3", KERNEL=="eth*", NAME="eth13"
+
+# Rename eth7 -> eth20
+SUBSYSTEM=="net", ACTION=="add", BUS=="pci", ID=="0000:82:00.0", KERNEL=="eth*", NAME="eth20"
+# Rename eth8 -> eth21
+SUBSYSTEM=="net", ACTION=="add", BUS=="pci", ID=="0000:82:00.1", KERNEL=="eth*", NAME="eth21"
+# Rename eth9 -> eth22
+SUBSYSTEM=="net", ACTION=="add", BUS=="pci", ID=="0000:82:00.2", KERNEL=="eth*", NAME="eth22"
+# Rename eth10-> eth23
+SUBSYSTEM=="net", ACTION=="add", BUS=="pci", ID=="0000:82:00.3", KERNEL=="eth*", NAME="eth23"
+
+EOF
+
+
+    cat > /sysroot/etc/udev/rules.d/71-ethtool.rules <<EOF
+# Rules for loading Broadcom 57840 Driver on Pacifica
+
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth10", RUN+="/sbin/ethtool -s eth10 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth11", RUN+="/sbin/ethtool -s eth11 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth12", RUN+="/sbin/ethtool -s eth12 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth13", RUN+="/sbin/ethtool -s eth13 autoneg on"
+
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth20", RUN+="/sbin/ethtool -s eth20 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth21", RUN+="/sbin/ethtool -s eth21 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth22", RUN+="/sbin/ethtool -s eth22 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth23", RUN+="/sbin/ethtool -s eth23 autoneg on"
+
+
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth10", RUN+="/sbin/ethtool -A eth10 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth11", RUN+="/sbin/ethtool -A eth11 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth12", RUN+="/sbin/ethtool -A eth12 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth13", RUN+="/sbin/ethtool -A eth13 autoneg on"
+
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth20", RUN+="/sbin/ethtool -A eth20 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth21", RUN+="/sbin/ethtool -A eth21 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth22", RUN+="/sbin/ethtool -A eth22 autoneg on"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth23", RUN+="/sbin/ethtool -A eth23 autoneg on"
+
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth10", RUN+="/sbin/ethtool -s eth10 speed 10000 duplex full autoneg off"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth11", RUN+="/sbin/ethtool -s eth11 speed 10000 duplex full autoneg off"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth12", RUN+="/sbin/ethtool -s eth12 speed 10000 duplex full autoneg off"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth13", RUN+="/sbin/ethtool -s eth13 speed 10000 duplex full autoneg off"
+
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth20", RUN+="/sbin/ethtool -s eth20 speed 10000 duplex full autoneg off"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth21", RUN+="/sbin/ethtool -s eth21 speed 10000 duplex full autoneg off"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth22", RUN+="/sbin/ethtool -s eth22 speed 10000 duplex full autoneg off"
+SUBSYSTEM=="net", ACTION=="add", NAME=="eth23", RUN+="/sbin/ethtool -s eth23 speed 10000 duplex full autoneg off"
+
+
+
+EOF
+
+
+    mount -n -o rw,remount /sysroot
+}
+
+# we might have an embedded ext3 on squashfs to use as rootfs (compressed live)
+#
+if [ "$quiet" != "1" ] ; then
+    echo "checking for /mfcrootfs.img ..."
+fi
+
+if [ -e /mfcrootfs.img ]; then
+  SQUASHED="/mfcrootfs.img"
+fi
+
+if [ -e "$SQUASHED" ] ; then
+
+    if [ "$quiet" != "1" ] ; then
+        echo "setting up embedded squash -> ext3 fs "
+    fi
+
+    mkdir -p /dev/mapper
+    mknod /dev/mapper/control c 10 63
+    modprobe dm_snapshot
+    #modprobe loop
+
+
+    SQUASHED_LOOPDEV=$( losetup -f )
+    losetup -r $SQUASHED_LOOPDEV $SQUASHED
+    mkdir -p /squashfs
+    mount -n -t squashfs -o ro $SQUASHED_LOOPDEV /squashfs
+
+    BASE_LOOPDEV=$( losetup -f )
+    losetup -r $BASE_LOOPDEV /squashfs/LiveOS/ext3fs.img
+    
+    umount -l /squashfs
+
+    do_live_from_base_loop
+fi
+
+if [ "$eshell" == "1" ] ; then
+    echo "Shell requested on kernel commandline."
+    echo "Rootfs is mounted rw on /sysroot. Exit to continue booting."
+    echo
+    bash
+fi
+
+if [ -x /sysroot$init ] ; then
+
+    # Leave initramfs and transition to rootfs
+    kill `pidof udevd`
+    if [ "$quiet" != "1" ] ; then
+        echo "transfering control to $init"
+    fi
+
+
+    exec /sbin/run-init
+    echo "---------------------------------"
+    echo "WARNING: Error switching to real rootfs!"
+    echo "---------------------------------"
+    echo
+    echo "Dropping to a shell. Good luck!"
+    echo
+    bash
+else
+    echo "---------------------------------------------------------"
+    echo "WARNING: Requested $init binary does not exist on rootfs."
+    echo "---------------------------------------------------------"
+    echo
+    echo "Dropping to a shell. Good luck!"
+    echo
+    bash
+fi
+

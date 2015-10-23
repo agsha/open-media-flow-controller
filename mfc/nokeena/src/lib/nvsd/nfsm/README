@@ -1,0 +1,67 @@
+READ-ONLY NFS
+-------------
+This document describes the READ-ONLY NFS configuration. 
+
+URI to NFS mount mapping
+========================
+1. Configuration:
+        a. Namespace to mount point mapping: A namespace, also contained in the
+           incoming URI, is mapped to the following:
+                - IP address of NFS server.
+                - Directory in the NFS server.
+	b. Namespace protocol:
+		- The namespace has a 'proto' field which will be NFS or HTTP.
+		  In this case, it is NFS. 
+
+2. Mount:
+        a. When a namspace is mapped to an NFS server, the NFSM assigns/mounts
+           a new mount point to the tuple <ip-address, nfs server>.
+        b. The mapping between this mount point and the namespace is put is 
+	   stored.
+
+3. Temporary configuration
+ 	a. This will be the temporary way to use NFS provider. 
+	b. In the target machine, there is a configfile: /nkn/nknconfig.txt
+	c. Format: <prefix> <ip-address> <mountdir>
+	d. Look for example in: 172.19.172.14:/nkn/nfsconfig.txt
+	e. Eg: www.yahoo.com 172.19.172.50 /home/vikram/tmp
+	f. You can configure multiple mount points like this and nvsd will automatically mount
+	   these directories. 
+	g. Example wget from a client machine: wget http://172.19.172.14/home/vikram/tmp/vikram.flv
+
+NFS_stat
+======
+1. URI to namespace mapping:
+	a. The uri contains the key to the namespace. Partially compare the 
+	   uriname to the namespace name to get the mount point for the 
+	   content of the uri. 
+	b. The filename of the content of the uri is returned with the MM_stat.
+
+2. Uri-object-length
+	a. The URI request may be one for the whole video or just a part of it.
+	b. The stat function needs to hand back a hint pertaining to the UOL. 
+
+NFS_get
+=====
+1. Mapping:
+	a. Do MM_stat to get the path/file where the URI content is stored. 
+
+2. Output: 
+	a. Divide the data into multiple chunks of 2MB each and 
+	   send it back in an array of io vectors that are passed in.
+
+2. Uri-object-length
+	a. The URI request may be one for the whole video or just a part of it.
+	b. The get function needs to hand back only only 'length' amount of data
+	   from the 'offset' in the file. 
+
+
+Implementation
+==============
+1. Prefix to Mount point mapping database
+	- An entry is inserted when a new namespace is configured.
+	- An entry is deleted when the namespace is deleted or the protocol 
+	  has been changed. 
+
+  	
+

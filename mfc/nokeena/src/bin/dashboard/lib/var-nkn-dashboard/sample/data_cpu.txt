@@ -1,0 +1,3 @@
+idlecpu = 0  
+totalcpu = 0  
+time = 0:0 

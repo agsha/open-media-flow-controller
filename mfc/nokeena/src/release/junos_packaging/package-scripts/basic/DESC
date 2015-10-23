@@ -1,0 +1,5 @@
+JunOS %PRODUCTTAG% Package
+
+Software version:	%RELEASE%
+
+This package contains JunOS %PRODUCTTAG% components

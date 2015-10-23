@@ -1,0 +1,31 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-2.0.8
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-2.0.8-2_18184_247
+ MENU LABEL mfc-2.0.8-2_18184_247      BR:conejos 2011-07-10
+ KERNEL pxe-boot/mfc-2.0.8-2_18184_247/vmlinuz-bootflop-mfc-2.0.8-2_18184_247
+ APPEND initrd=pxe-boot/mfc-2.0.8-2_18184_247/rootflop-mfc-2.0.8-2_18184_247.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-2.0.8-2_18184_247 installopt=,accept-eula,
+ IPAPPEND 3
+
+LABEL mfc-2.0.8-1_17988_247
+ MENU LABEL mfc-2.0.8-1_17988_247      BR:conejos 2011-06-28
+ KERNEL pxe-boot/mfc-2.0.8-1_17988_247/vmlinuz-bootflop-mfc-2.0.8-1_17988_247
+ APPEND initrd=pxe-boot/mfc-2.0.8-1_17988_247/rootflop-mfc-2.0.8-1_17988_247.img panic=10 noexec=off console=tty0 ramdisk_size=61440 quiet loglevel=4 rw nodmraid pci=noaer installfrom=pxe/pxe-boot/mfc-2.0.8-1_17988_247 installopt=,accept-eula,
+ IPAPPEND 3

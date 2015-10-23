@@ -1,0 +1,2 @@
+ftp://ftp.pbone.net/mirror/download.fedora.redhat.com/pub/fedora/epel/5/x86_64/libatomic_ops-devel-1.2-2.el5.x86_64.rpm
+

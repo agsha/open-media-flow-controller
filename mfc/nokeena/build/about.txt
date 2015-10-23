@@ -1,0 +1,15 @@
+# The following list of files in this directory are used for building and
+# managing the built files of the Samara based product - Media Flow Controller
+# The files are to be installed into a directory that is on the search
+# path of the users.  E.g. /eng/build/bin
+bincp.sh
+build-mine.sh
+build-samara.sh
+CMD
+copyto-pxe.sh
+mf_env_funcs.dot
+MAKE
+samara-sudo-env
+SumImageDir
+sumtree.sh
+test-this.sh

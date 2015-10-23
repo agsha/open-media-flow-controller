@@ -1,0 +1,119 @@
+# Makefile for  eng/src/common directory
+# Modified on : 2008-09-05
+# Copyright (c) Nokeena Inc., 2008
+
+# Include Macros
+include ../Makefile.inc
+
+# Local Macros
+LIB_NKNCOMMON = $(PROJECTLIB)/libnkn_common.a
+LIB_NKNMGMTA = $(PROJECTLIB)/libnkn_mgmta.a
+LIB_NKNMEMALLOC = libnkn_memalloc.la
+LIB_NKNMEMALLOC_SO = libnkn_memalloc.so
+BIN_NKNSHELL = $(PROJECTBIN)/nknsh
+
+CFLAGS += -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -Werror
+
+SRCS = nkn_locmgr_glib_hash.c nkn_memmgr_glib_hash.c nkn_diskio_glib_hash.c nkn_sleeper_q_glib_hash.c \
+	nkn_util.c uri_mgr.c nkn_trace.c cpu_mgr.c mem_mgr.c nkn_elf.c \
+	nkn_debug.c fqueue.c http_header.c
+OBJS = $(SRCS:.c=.o)
+DEPS = $(SRCS:.c=.dep)
+
+NKNSH_SRCS = nkn_shell_main.c
+NKNSH_OBJS = $(NKNSH_SRCS:.c=.o)
+NKNSH_DEPS = $(NKNSH_SRCS:.c=.dep)
+
+MEMALLOC_SRCS = nkn_memalloc.c
+MEMALLOC_OBJS = $(MEMALLOC_SRCS:.c=.o)
+MEMALLOC_LOBJS = $(MEMALLOC_SRCS:.c=.lo)
+MEMALLOC_DEPS = $(MEMALLOC_SRCS:.c=.dep)
+
+
+# Rules 
+.PHONY: clean clean_self
+
+all: include $(LIB_NKNCOMMON) $(LIB_NKNMEMALLOC) $(BIN_NKNSHELL)
+	@echo
+	@echo "----------Common, Memalloc Libs and nknsh Build Completed---"
+	@echo
+
+$(PROJECTBIN):
+	@echo
+	mkdir -p $(PROJECTBIN)
+
+$(PROJECTLIB):
+	@echo
+	mkdir -p $(PROJECTLIB)
+
+$(PROJECTINC):
+	@echo
+	mkdir -p $(PROJECTINC)
+
+include: ${PROJECTINC}
+	$(CP) nkn_common_config.h $(PROJECTINC)
+	$(CP) nkn_defs.h $(PROJECTINC)
+	$(CP) nkn_errno.h $(PROJECTINC)
+	$(CP) nkn_hash_map.h $(PROJECTINC)
+	$(CP) nkn_trace.h $(PROJECTINC)
+	$(CP) nkn_util.h $(PROJECTINC)
+	$(CP) uri_mgr.h $(PROJECTINC)
+	$(CP) fqueue.h $(PROJECTINC)
+	$(CP) http_header.h $(PROJECTINC)
+	$(CP) nkn_debug.h $(PROJECTINC)
+
+lib: include $(LIB_NKNCOMMON) $(LIB_NKNMEMALLOC)
+
+bin:  $(BIN_NKNSHELL)
+
+$(LIB_NKNCOMMON): $(PROJECTLIB) $(OBJS)
+	$(AR) rv $@ $(OBJS)
+	ranlib $@
+
+$(MEMALLOC_OBJS): $(MEMALLOC_SRCS)
+	libtool --mode=compile $(CC) -g -O -c $?
+	$(CC) -MD -c $(CFLAGS) -o $@ $<
+	$(DOTP_FROM_DOTD)
+
+$(LIB_NKNMEMALLOC): $(PROJECTLIB)/$(LIB_NKNMEMALLOC)
+
+$(PROJECTLIB)/$(LIB_NKNMEMALLOC): $(MEMALLOC_OBJS)
+	libtool --mode=link $(CC) -g -O -o $(LIB_NKNMEMALLOC) \
+		$(MEMALLOC_LOBJS) -rpath /nkn/lib -lc
+	libtool --mode=install cp $(LIB_NKNMEMALLOC) \
+		`pwd`/$(PROJECTLIB)/$(LIB_NKNMEMALLOC)
+
+$(BIN_NKNSHELL): $(PROJECTBIN) $(NKNSH_OBJS) $(LIB_NKNMGMTA)
+	$(CC) $(LDFLAGS) -o $@ $(NKNSH_OBJS) $(LIB_NKNMGMTA)
+
+%.o : %.c
+	$(CC) -MD -c $(CFLAGS) -o $@ $<
+	$(DOTP_FROM_DOTD)
+
+clean: clean_self
+
+clean_self: 
+	$(RM) *.o *.d *.P *.~
+	$(RM) $(LIB_NKNCOMMON) $(BIN_NKNSHELL)
+	$(RM) $(PROJECTINC)/nkn_common_config.h
+	$(RM) $(PROJECTINC)/nkn_defs.h
+	$(RM) $(PROJECTINC)/nkn_errno.h
+	$(RM) $(PROJECTINC)/nkn_hash_map.h
+	$(RM) $(PROJECTINC)/nkn_trace.h
+	$(RM) $(PROJECTINC)/nkn_util.h
+	$(RM) $(PROJECTINC)/uri_mgr.h
+	$(RM) $(PROJECTINC)/fqueue.h
+	$(RM) $(PROJECTINC)/http_header.h
+	$(RM) $(PROJECTINC)/nkn_debug.h
+	-rmdir --ignore-fail-on-non-empty $(PROJECTINC)
+	libtool --mode=uninstall rm -f $(PROJECTLIB)/$(LIB_NKNMEMALLOC) \
+		$(PROJECTLIB)/$(LIB_NKNMEMALLOC_SO)
+	libtool --mode=clean rm -f $(LIB_NKNMEMALLOC) $(MEMALLOC_OBJS) \
+		$(MEMALLOC_LOBJS)
+	-rmdir --ignore-fail-on-non-empty $(PROJECTLIB) $(PROJECTBIN)
+
+# Include the dependency files 
+-include $(SRCS:.c=.P)
+-include $(MEMALLOC_SRCS:.c=.P)
+
+# End of Makefile

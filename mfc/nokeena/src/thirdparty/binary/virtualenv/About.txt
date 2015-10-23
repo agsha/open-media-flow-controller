@@ -1,0 +1,59 @@
+virtualenv - Virtual Python Environment
+(MFC is using the virtualenv for the "dpi-analyzer" feature.)
+
+This requires Python 2.7 to be installed.
+The file here python2.7.tar (which is Python 2.7.6) has the needed
+python run-time files for installing in the normal locations, but in
+a way to not change the standard Python 2.6 installation.
+
+The instructions for building Python 2.7 is on the wiki page:
+http://cmbu-svn01.juniper.net/mediawiki/index.php/Build_Machine_Configuration_scl6#Python_2.7
+http://cmbu-svn01.juniper.net/mediawiki/index.php/Build_Machine_Configuration#Python_2.7
+Original Source: https://www.python.org/ftp/python/2.7.6/Python-2.7.6.tgz
+------------------------------------------------------------------------------
+
+
+virtualenv is a tool to create isolated Python environments.
+ * Version 1.11.4 released 2014-02-21
+ * Info page: https://pypi.python.org/pypi/virtualenv/1.11.4
+ * Source: virtualenv-1.11.4.tar.gz
+ * From: https://pypi.python.org/packages/source/v/virtualenv/
+ * md5 checksum: 9accc2d3f0ec1da479ce2c3d1fdff06e
+ * License: MIT
+ * Author: Jannis Leidel, Carl Meyer and Brian Rosner
+ * Home Page: http://www.virtualenv.org
+
+
+(The following text is from http://www.virtualenv.org/en/latest/virtualenv.html#status-and-license)
+------------------------------------------------------------------------------
+Status and License
+
+virtualenv is a successor to workingenv, and an extension of virtual-python.
+
+It was written by Ian Bicking, sponsored by the Open Planning Project and is
+now maintained by a group of developers. It is licensed under an MIT-style
+permissive license.
+------------------------------------------------------------------------------
+
+A virtual env is used for the dpi-anaylzer feature.
+The virtual env was created using the following script way for use for the dpi-anaylzer feature:
+
+  cd /opt
+  virtualenv dpi-analyzer
+  cd dpi-analyzer
+  source bin/activate
+  pip install git+https://github.com/MrRagga-/ncclient.git
+  pip install junos-eznc
+  deactivate 
+  cd ..
+  tar -zcf dpi-analyzer.tgz dpi-analyzer
+
+This contains the following sub-directories
+    bin
+    include
+    lib 
+
+This tgz file is to be extracted under /opt in the MFC environment.
+Important: It must be in the same full path as it was created in!
+The Juniper written code to be under /opt/dpi-analyzer/scripts/.
+

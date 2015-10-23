@@ -1,0 +1,376 @@
+<? 
+#
+# Filename:  servicecfg-mfpconfig.tem,v $
+# Date:      
+# Author:    Dhivyamanohary R
+#
+# (C) Copyright Juniper Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Profile Configuration">
+
+<?
+	set stream_name_posted [tms::get-param query "streamname"]
+	set encap_type [ tms::get-param query "encaptype"]
+	set media_type [ tms::get-param query "mediatype"]
+	set status_type [ tms::get-config "/nkn/nvsd/mfp/config/$stream_name_posted/status"]
+?>
+<TMS-BODY>
+<script type="text/javascript">
+function setSmoothDelivery()
+{
+  document.mfp_form.f_smooth_delivery_url.value  =  document.getElementById('smooth/storage_url').value+'/<?= $stream_name_posted?>'+'-smooth/Manifest';
+}
+function setMobileDelivery()
+{
+  var storage_url = document.getElementById('mobile/storage_url').value;
+  var delivery_url = document.getElementById('mobile/delivery_url').value;
+  document.mfp_form.f_actual_delivery_url.value  =  storage_url+'/'+'<?= $stream_name_posted?>'+'-apple/'+ delivery_url;
+}
+function setInput(value)
+{
+  if(value=='true') {
+          document.getElementById('mobile/encrypt/kms_native').value  = 'true';
+	}
+  else if(value=='false') {
+          document.getElementById('mobile/encrypt/kms_native').value  = 'false';
+	}
+}
+</script>
+</script>
+<TMS-PAGE-CONTENT "Source and Publish Configuration">
+<b> Session Name :</b> <?=$stream_name_posted?> 
+<br>
+<b>	Media Type :</b> <?=$media_type?>
+<br>
+<b>	Encapsulation Type :</b>
+		MP4 Package
+<br>
+
+<table width="100%" border="0" cellspacing="0" cellpadding="5">
+	<tr>
+	<td width="45%" align="top" valign="top">
+	<table class="tms_mon" width="100%" border="0" cellspacing="0"cellpadding="1">
+	<!-- this table has 1 close in IF case and another in ELSE case -->
+	<SECTION-HEADER "Source Configuration" >
+	<CFG-FORM -action "config-form-array" -div_id "add_profile_0">
+			<TMS-TABLE-ENTRY "Input Fetch Protocol">
+				<CFG-DROPDOWN -id "protocol" -errname "protocol"
+				-caps "set_basic" -type "string" -span_id "add_profile"
+				-options {
+					{"nfs" "nfs" }
+					{"http" "http" }
+				}>
+			<TMS-TABLE-ENTRY "Source Filepath">
+				<CFG-TEXTBOX -id "source" -errname "source"
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "true">
+				*
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Bit Rate">
+			<CFG-TEXTBOX -id "bitrate" -errname "bitrate"
+				-caps "set_basic" -type "uint64" -span_id "add_profile" -required "false">
+				kbps (1 - 40000)
+			</TMS-TABLE-ENTRY>
+		<td height="8">
+		<td width 4>
+		<input type="hidden" name="f_array_root" value="/nkn/nvsd/mfp/config/<?=$stream_name_posted?>/media-encap/<?=$encap_type?>">
+		<input type="hidden" name="f_array_children" value="protocol,source,bitrate">
+		<CFG-BUTTON -type "add" -text "Add" -caps "set_basic" -span_id "add_profile">
+		</CFG-FORM>
+		</tr>
+	</table> <!--   Closure 1 -->
+	<p></p>
+	<CFG-FORM -action "config-form-array" -div_id "ntp_2">
+	<?
+		set cur_line 0
+		set mfp_profile_prefix "/nkn/nvsd/mfp/config/$stream_name_posted/media-encap/$encap_type"
+		set mfp_profile_ids [tms::iterate-config $mfp_profile_prefix]
+	?>
+	<table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing">
+	<tr><td>
+		<table width="100%" border="0" cellspacing="0" cellpadding="1">	
+		<tr class="listing_head">
+		<td></td>
+		<td><b>Profile</b></td>
+		<td><b>Source Filepath</b></td>
+		<td><b>Bit Rate</b></td>
+		</tr>
+		<FOREACH id $mfp_profile_ids>
+		<?
+			set id_len [string length "$mfp_profile_prefix/"]
+			set row_id [string range $id $id_len end]
+			set source [tms::get-config "$id/source"]
+			set bit [tms::get-config "$id/bitrate"]
+		?>
+		<tr class="<? if {[expr $cur_line % 2] == 0} {
+				tms::puts "listing_even"
+			} else {
+				tms::puts "listing_odd"	
+			}?>">
+
+		<td width="1%" align="left" valign="middle">
+		<CFG-CHECKBOX -id "row_$row_id" -caps "set_privileged"
+		-value "/nkn/nvsd/mfp/config/$stream_name_posted/media-encap/$encap_type/profile/$row_id"
+		-span_id "cbox_1">
+		</td>
+		<td><?=$row_id?></td>
+		<td><?=$source?></td>
+		<td><?=$bit?></td>
+		</tr>
+		<?
+			incr cur_line
+		?>
+		</FOREACH>
+	<IF {$cur_line == 0}>
+		<tr>
+		<td colspan="5"> No Profiles Configured.</td>
+		</tr>
+		<SET priv DISABLED_set_privileged>
+	<ELSE>
+		<SET priv set_privileged>
+	</IF>
+		</table> <!-- inner table -->
+	</td>
+	<tr>
+	<td width 1>
+	<CFG-FORM> 
+	<input type="hidden" name="f_array_root" value="/nkn/nvsd/mfp/config/<?=$stream_name_posted?>/media-encap/<?=$encap_type?>">
+	<input type="hidden" name="f_array_shift" value="true">
+	<input type="hidden" name="f_array_custom_buttons" value="remove">
+	<CFG-BUTTON -type "remove" -text "Remove Selected"
+	-caps "set_privileged" -span_id "cbox_1">
+	<img src="/images/em.gif" width="10" height="1">
+	</CFG-FORM>
+	</tr>
+	</table> <!-- outer table -->
+	</CFG-FORM>
+	</td>
+	<!-- td and table closed in IF and ELSE classes -->
+<td width="45%" align="top" valign="top">
+<table class="publish" width="100%" border="0" cellspacing="0" cellpadding="1">
+		<CFG-FORM -name "mfp_form" -action "config-form-action-mfp"  -div_id "add_profile_0">
+	<SECTION-HEADER "Publish Configuration" >
+		<SECTION-HEADER "Smooth Streaming" >
+			<TMS-TABLE-ENTRY "Status">
+				<CFG-DROPDOWN -id "smooth/status" -errname "smooth_status"
+				-caps "set_basic"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/smooth/status"
+				-type "bool" -span_id "set_status" -options
+				{
+					{"on" "true" }
+					{"off" "false" }
+				}>
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Storage URL">
+				<CFG-TEXTBOX -id "smooth/storage_url" -errname "smooth_storage"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/smooth/storage_url"
+				-onkeyup "setSmoothDelivery();"
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "false">/<?=$stream_name_posted?>-smooth*
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Delivery URL">
+				<CFG-TEXTBOX -id "smooth_delivery_url" -errname "smooth_delivery" -value "storage-url/Manifest" 
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "false" -disabled "true"
+				-cols "35">
+			</TMS-TABLE-ENTRY>
+		<SECTION-HEADER "Apple HTTP Streaming (HLS)" >
+			<TMS-TABLE-ENTRY "Status">
+				<CFG-DROPDOWN -id "mobile/status" -errname "mobile_status"
+				-caps "set_basic"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/status"
+				-type "bool" -span_id "set_status" -options
+				{
+				{"on" "true" }
+				{"off" "false" }
+				}>
+			</TMS-TABLE-ENTRY>
+
+			<TMS-TABLE-ENTRY "Segment Duration">
+				<CFG-TEXTBOX -id "mobile/keyframe" -errname "mobile_keyframe"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/keyframe"
+				-caps "set_basic" -type "uint32" -span_id "add_profile" -required "false">*
+				msec (2000 - 30000)
+			</TMS-TABLE-ENTRY>
+
+			<!--TMS-TABLE-ENTRY "Segment Start Index"-->	
+			<TMS-TABLE-ENTRY "">
+				<CFG-TEXTBOX -id "mobile/segment-start" -errname "mobile_segment-start"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/segment-start"
+				-caps "set_basic" -type "uint32" -span_id "add_profile" -required "false"
+				-hidden "yes"> <!--*-->
+			</TMS-TABLE-ENTRY>
+
+			<!--TMS-TABLE-ENTRY "Segment Index Precision"-->
+			<TMS-TABLE-ENTRY "">
+				<CFG-TEXTBOX -id "mobile/segment-precision" -errname "mobile_segment-precision"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/segment-precision"
+				-caps "set_basic" -type "uint32"
+				-span_id "add_profile" -required "false"
+				-hidden "yes"
+				> <!--*(2 - 10)-->
+			</TMS-TABLE-ENTRY>
+
+			<!--TMS-TABLE-ENTRY "Minimum Segments in Child Playlist"-->
+			<TMS-TABLE-ENTRY "">
+				<CFG-TEXTBOX -id "mobile/minsegsinchildplay" -errname "mobile_minsegsinchildplay"
+				-caps "set_basic" -type "uint32" -span_id "add_profile_i"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/minsegsinchildplay"
+				-hidden "yes">
+				<!--(3 - 30)-->
+			</TMS-TABLE-ENTRY>
+
+			<TMS-TABLE-ENTRY "Storage URL">
+				<CFG-TEXTBOX -id "mobile/storage_url" -errname "mobile_storage_url"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/storage_url"
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "false"
+				-onkeyup "setMobileDelivery();">/<?=$stream_name_posted?>-apple*
+			</TMS-TABLE-ENTRY>
+
+			<TMS-TABLE-ENTRY "Delivery URL">
+				<CFG-TEXTBOX -id "mobile/delivery_url" -errname "mobile_delivery_url"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/delivery_url"
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "false"
+				-onkeyup "setMobileDelivery();">*
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Actual Delivery URL">
+				<CFG-TEXTBOX -id "actual_delivery_url" -errname "mobile_delivery_url"
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "false"
+				-disabled "true" -value "combination of storage and delivery url" 
+				-cols "35">
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Encryption">
+				<CFG-DROPDOWN -id "mobile/encrypt/enable" -errname "encrypt_enable"
+				-caps "set_basic"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/enable"
+				-type "bool" -span_id "set_status" -options
+				{
+					{"on" "true" }
+					{"off" "false" }
+				}>
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Unique Key/Profile">
+				<CFG-DROPDOWN -id "mobile/encrypt/unique_key" -errname "unique_key_per_profile"
+				-caps "set_basic"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/unique_key"
+				-type "bool" -span_id "set_status" -options
+				{
+					{"on" "true" }
+					{"off" "false" }
+				}>
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Key Rotation Count">
+				<CFG-TEXTBOX -id "mobile/encrypt/key_rotation" -errname "key_rotation_interval"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/key_rotation"
+				-caps "set_basic" -type "uint32" -span_id "add_profile" -required "false">
+				segment(s)
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "KMS External">
+				<CFG-RADIO -id "kms_type"
+					-caps "set_privileged"  -onclick "setInput(this.value);"
+					-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/kms_native"
+					-value "false" -span_id "cacheable">
+			 
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "">
+				<CFG-TEXTBOX -id "mobile/encrypt/kms_native" -errname "key_rotation_interval"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/kms_native"
+				-caps "set_basic" -type "bool" -span_id "add_profile" -required "false" -hidden "yes">
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "External agent">
+				<CFG-DROPDOWN -id "mobile/encrypt/kms_external" -errname "kms_external"
+				-caps "set_basic" -required "false"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/kms_external"
+				-type "string" -span_id "set_status" -options
+				{
+					{"verimatrix" "verimatrix" }
+				}>
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "KMS Server Address">
+				<CFG-TEXTBOX -id "mobile/encrypt/kms_srvr" -errname "key_rotation_interval"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/kms_srvr"
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "false">
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "KMS Port">
+				<CFG-TEXTBOX -id "mobile/encrypt/kms_port" -errname "kms_port"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/kms_port"
+				-caps "set_basic" -type "uint32" -span_id "add_profile" -required "false">
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "KMS Native">
+				<CFG-RADIO -id "kms_type"
+					-caps "set_privileged"  -onclick "setInput(this.value);"
+					-value "true"  
+					-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/kms_native"
+					-span_id "cacheable">
+			 
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Key Filename Prefix">
+				<CFG-TEXTBOX -id "mobile/encrypt/kms_native_prefix" -errname "key_native_prefix"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/kms_native_prefix"
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "false">
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Key File DeliveryURL Prefix">
+				<CFG-TEXTBOX -id "mobile/encrypt/kms_storage_url" -errname "key_native_storage_url"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/mobile/encrypt/kms_storage_url"
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "false">
+			</TMS-TABLE-ENTRY>
+
+		<SECTION-HEADER "Flash HTTP Streaming (Future Release)" >
+			<TMS-TABLE-ENTRY "Status">
+				<CFG-DROPDOWN -id "status_1" -errname "status_1"
+				-caps "set_basic"  -disabled "true"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/flash/status"
+				-type "bool" -span_id "set_status" -options
+				{
+				{"on" "true" }
+				{"off" "false" }
+				}>
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Segment Duration">
+				<CFG-TEXTBOX -id "keyframe_1" -errname "keyframe_1"
+				 -disabled "true"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/flash/keyframe"
+				-caps "set_basic" -type "uint32" -span_id "add_profile" -required "false">*
+				msec (2000 - 30000)
+			</TMS-TABLE-ENTRY>
+			<TMS-TABLE-ENTRY "Storage URL">
+				<CFG-TEXTBOX -id "storage_1" -errname "storage_1"
+				 -disabled "true"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/flash/storage_url"
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "false">*
+			</TMS-TABLE-ENTRY>
+
+			<TMS-TABLE-ENTRY "Delivery URL">
+				<CFG-TEXTBOX -id "delivery_1" -errname "delivery_1"
+				 -disabled "true"
+				-name "/nkn/nvsd/mfp/config/$stream_name_posted/flash/delivery_url"
+				-caps "set_basic" -type "string" -span_id "add_profile" -required "false">*
+			</TMS-TABLE-ENTRY>
+	<td width 1>
+		<input type="hidden" name="f_mfp" value="<?=$stream_name_posted?>">
+  		<input type="hidden" name="f_list_root" value="/nkn/nvsd/mfp/config">
+		<input type="hidden" name="f_list_index" value="f_mfp">
+		<input type="hidden" name="f_list_children" value="smooth/status,smooth/storage_url,mobile/status,mobile/keyframe,mobile/segment-start,mobile/segment-precision,mobile/minsegsinchildplay,mobile/storage_url,mobile/delivery_url,mobile/encrypt/enable,mobile/encrypt/unique_key,mobile/encrypt/key_rotation,mobile/encrypt/kms_native,mobile/encrypt/kms_external,mobile/encrypt/kms_srvr,mobile/encrypt/kms_port,mobile/encrypt/kms_native_prefix,mobile/encrypt/kms_storage_url">
+
+	<CFG-BUTTON -type "mfpsave" -text "Save" -caps "set_basic"
+	-span_id "add_profile">
+	<!-- Publish action button. will save and publish-->
+	<IF {$status_type == "PUBLISH" || $status_type == "INIT" || $status_type == "SYNC" || $status_type == "RUNNING"}>
+		<CFG-BUTTON -type "publish" -text "Publish" -caps "set_basic"
+                -span_id "add_profile" -disabled "true">
+	<ELSE>
+                <CFG-BUTTON -type "publish" -text "Publish" -caps "set_basic"
+                -span_id "add_profile">
+	</IF>
+	<CFG-BUTTON -type "mfpclose" -text "Save&Close" -caps "set_basic" >
+	</CFG-FORM>
+	</table>
+</td>
+</tr>
+</table>
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

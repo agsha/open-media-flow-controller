@@ -1,0 +1,252 @@
+<?
+# (C) Copyright 2015 Juniper Networks
+# All rights reserved.
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "SNMP">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "snmp"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "SNMP">
+
+  <? #  ==================================================
+     #  General SNMP configuration
+     #  ==================================================
+  ?>
+
+  <h2>SNMP Configuration</h2>
+<CFG-FORM -div_id "snmp_1">
+  <TMS-TABLE -div_id "snmp_table_1">
+    <TMS-TABLE-ENTRY "Enable SNMP">
+      <CFG-CHECKBOX -id "snmp_enable" -caps "set_basic"
+                    -name "/pm/process/snmpd/auto_launch" -type "bool"
+                    -span_id "snmp_pm_enable">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enable SNMP communities">
+        <CFG-CHECKBOX -id "snmp_communities" -caps "set_basic"
+                      -name "/snmp/enable/communities" -type "bool"
+                      -span_id "snmp_communities">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enable SNMP traps">
+        <CFG-CHECKBOX -id "snmp_traps" -caps "set_basic"
+                      -name "/snmp/traps/enable" -type "bool"
+                      -span_id "snmp_traps">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Sys Contact">
+      <CFG-TEXTBOX -id "contact" -errname "system contact" 
+                   -caps "set_basic"
+                   -name "/snmp/syscontact" -type "string" -cols 30
+                   -span_id "snmp_contact">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Sys Location">
+      <CFG-TEXTBOX -id "location" -errname "system location" 
+                   -caps "set_basic" -name "/snmp/syslocation"
+                   -type "string" -cols 30 -span_id "snmp_loc">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Read-Only Community">
+      <CFG-TEXTBOX -id "rocommunity" -errname "community name" 
+                   -caps "set_basic" -name "/snmp/access/rocommunity"
+                   -type "string" -cols 30 -span_id "snmp_rocomm">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Default Trap Community">
+      <CFG-TEXTBOX -id "trapcommunity" -errname "trap community name"
+                   -caps "set_basic" -name "/snmp/traps/trap_community"
+                   -type "string" -cols 30 -span_id "snmp_trapcomm">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "snmp_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -span_id "snmp_cancel_1">
+</CFG-FORM>
+
+  <? # ==================================================
+     # SNMP v3 users
+     # ==================================================
+  ?>
+<!--
+  <h2>SNMP v3 admin user</h2>
+
+  <CFG-FORM -action "config-form-snmp" -div_id "snmp_1">
+    <TMS-TABLE -div_id "snmp_table_1">
+      <TMS-TABLE-ENTRY "Enable">
+        <CFG-CHECKBOX -id "snmp_enable_admin" -caps "set_basic"
+                      -name "/snmp/v3/users/admin/enable" -type "bool">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-ENTRY "Authentication type">
+        <CFG-DROPDOWN -id "authtype" -caps "set_basic" -type "string"
+                      -options {{"MD5" "md5"} {"SHA1" "sha"}}
+                      -name "/snmp/v3/users/admin/hash_type">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-ENTRY "Privacy type">
+        <CFG-DROPDOWN -id "privtype" -caps "set_basic" -type "string"
+                      -options {{"DES" "des"} {"AES-128" "aes-128"}}
+                      -name "/snmp/v3/users/admin/privacy_type">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-ENTRY "Authentication password">
+        <CFG-PASSWORDBOX -id "auth_pwd" -caps "set_basic" -cols "20">
+                      
+      <TMS-TABLE-ENTRY "Privacy password">
+        <CFG-PASSWORDBOX -id "priv_pwd" -caps "set_basic" -cols "20">
+                      
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-SPACE>
+    </TMS-TABLE>
+
+    <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+                -span_id "snmp_apply_2">
+    <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+                -span_id "snmp_cancel_2">
+
+  </CFG-FORM>
+-->
+  <? # ==================================================
+     # List of trap sinks
+     # ==================================================
+  ?>
+
+  <?
+    set cur_line 0
+    set sink_prefix "/snmp/trapsink/sink"
+    set trap_type [tms::get-param post "f_type"]
+    if {[string length $trap_type] == 0} {
+        tms::set-param post replace "f_type" "trap-v2c"
+    }
+  ?>
+
+  <h2>Trap Sinks</h2>
+<CFG-FORM -action "config-form-list" -div_id "snmp_2">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing">
+  <tr>
+  <td>
+  <table width="100%" border="0" cellspacing="0" cellpadding="5">
+ 
+    <tr class="listing_head"> 
+      <td></td>
+      <td>
+        Host</td>
+      <td>
+        Community</td>
+      <td>
+        Version</td>
+      <td>
+        Enabled</td>
+    </tr>
+
+   <FOREACH sink_id [tms::iterate-config $sink_prefix]>
+   <?
+   set prefix_len [string length "$sink_prefix/"]
+   set sink_host [string range $sink_id $prefix_len end]
+   set sink_comm [tms::get-config "$sink_prefix/$sink_host/community"]
+   set sink_type [tms::get-config "$sink_prefix/$sink_host/type"]
+   set sink_enable [tms::get-config "$sink_prefix/$sink_host/enable" "yes"]
+   ?>
+
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                         -value "$sink_id" -span_id "snmp_cbox_1">
+        </td>
+      <td>
+        <?=$sink_host?></td>
+      <td>
+        <?=$sink_comm?></td>
+      <td>
+        <?=$sink_type?></td>
+      <td>
+        <?=$sink_enable?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No trap sinks.
+    </IF>
+
+     <tr>
+       <td height="8">
+
+   </table>
+
+  <input type="hidden" name="f_list_custom_buttons" value="enable,disable">
+  <input type="hidden" name="f_list_button_enable_action" value="set">
+  <input type="hidden" name="f_list_button_enable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_enable_child_value" value="true">
+  <input type="hidden" name="f_list_button_disable_action" value="set">
+  <input type="hidden" name="f_list_button_disable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_disable_child_value" value="false">
+
+   <CFG-BUTTON -type "remove" -text "Remove Trap Sink" -caps "set_basic"
+               -span_id "snmp_remove_1">
+
+   <img src="/images/em.gif" width="10" height="1">
+
+   <CFG-BUTTON -type "enable" -text "Enable Trap Sink" -caps "set_basic"
+               -span_id "snmp_enable_1"> 
+   <img src="/images/em.gif" width="10" height="1">
+
+   <CFG-BUTTON -type "disable" -text "Disable Trap Sink" -caps "set_basic"
+               -span_id "snmp_disable_1"> 
+   </table>
+</CFG-FORM>
+
+  <? # ==================================================
+     # Add a new trap sink
+     # ==================================================
+  ?>
+
+<CFG-FORM -action "config-form-list" -div_id "snmp_3">
+  <h2>Add New Trap Sink</h2>
+  <TMS-TABLE -div_id "snmp_table_2">
+    <TMS-TABLE-ENTRY "Trap Sink IP">
+      <CFG-TEXTBOX -id "ipaddr" -errname "IP address" -caps "set_basic"
+                   -type "hostname" -cols 30 -span_id "snmp_trapsink">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Community">
+      <CFG-TEXTBOX -id "community" -errname "community" -caps "set_basic"
+                   -type "string" -cols 30 -span_id "snmp_comm">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Trap Type">
+      <CFG-DROPDOWN -id "type" -caps "set_basic" -type "string"
+                    -options {{"v1" "trap-v1"} {"v2c" "trap-v2c"}}
+                    -span_id "snmp_traptype">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/snmp/trapsink/sink">
+  <input type="hidden" name="f_list_index" value="ipaddr">
+  <input type="hidden" name="f_list_children" value="community,type">
+
+   <CFG-BUTTON -type "add" -text "Add New Trap Sink"
+                  -caps "set_basic" -span_id "snmp_add_1">
+   </td>
+</CFG-FORM>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

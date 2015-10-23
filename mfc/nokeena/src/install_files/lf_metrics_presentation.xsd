@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema version="1.0"
+	   targetNamespace="http://www.juniper.net/mfc/schema/lf" 
+	   xmlns="http://www.juniper.net/mfc/schema/lf"
+	   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	   elementFormDefault="qualified">
+  <xs:complexType name="cpu-usage-type">
+    <xs:attribute name="id" type="xs:nonNegativeInteger" use="required"/>
+    <xs:attribute name="util" type="xs:float" use="required"/>
+  </xs:complexType>
+  <xs:complexType name="disk-usage-type">
+    <xs:attribute name="id" type="xs:string" use="required"/>
+    <xs:attribute name="util" type="xs:float" use="required"/>
+  </xs:complexType>
+  <xs:complexType name="cpu-info">
+    <xs:sequence>
+      <xs:element name="cpu" type="cpu-usage-type" minOccurs="1"
+		  maxOccurs="unbounded">
+      </xs:element>	
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="disk-info">
+    <xs:sequence>
+      <xs:element name="disk" type="disk-usage-type" minOccurs="1"
+		  maxOccurs="unbounded">
+      </xs:element>	
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="system-type">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="hostName" type="xs:string"/>
+      <xs:element name="cpuInfo" type="cpu-info" minOccurs="1"
+		  maxOccurs="unbounded"/>
+      <xs:element name="maxCPUUsage" type="xs:nonNegativeInteger"/>
+      <xs:element name="ifBandwidth" type="xs:nonNegativeInteger"/>
+      <xs:element name="maxIfBandwidth" type="xs:nonNegativeInteger"/>
+      <xs:element name="diskInfo" type="disk-info" minOccurs="1"/>
+      <xs:element name="maxDiskUsage" type="xs:nonNegativeInteger"
+		  minOccurs="1"/> 
+      <xs:element name="httpTPS" type="xs:nonNegativeInteger"/>
+      <xs:element name="maxHttpTPS" type="xs:nonNegativeInteger"/> 
+      <xs:element name="tcpConnRate" type="xs:integer"/>
+      <xs:element name="maxTcpConnRate" type="xs:nonNegativeInteger"/>
+      <xs:element name="tcpActiveConn" type="xs:nonNegativeInteger"/>
+      <xs:element name="maxTcpActiveConn" type="xs:nonNegativeInteger"/> 
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="vma-type">
+    <xs:sequence>
+      <xs:element maxOccurs="unbounded" minOccurs="1" name="vmaName" type="xs:string"/>
+      <xs:element maxOccurs="unbounded" minOccurs="1" name="cpu" type="xs:float"/>
+      <xs:element maxOccurs="unbounded" minOccurs="1" name="maxCPU"
+		  type="xs:nonNegativeInteger"/> 
+      <xs:element maxOccurs="unbounded" minOccurs="1"
+		  name="ifBandwidth" type="xs:nonNegativeInteger"/> 
+      <xs:element maxOccurs="unbounded" minOccurs="1"
+		  name="maxIfBandwidth" type="xs:nonNegativeInteger"/> 
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="rp-list">
+    <xs:sequence>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="availability" type="xs:boolean"/>
+      <xs:element name="bandwidth" type="xs:nonNegativeInteger"/>
+      <xs:element name="maxBandwidth" type="xs:nonNegativeInteger"/>
+      <xs:element name="activeConn" type="xs:nonNegativeInteger"/>
+      <xs:element name="maxActiveConn" type="xs:nonNegativeInteger"/>
+      <xs:element name="nsMap" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="ns-match-type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="domain"/>
+      <xs:enumeration value="uri"/>
+      <xs:enumeration value="both"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="ns-list">
+    <xs:sequence>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="id" type="xs:short"/>
+      <xs:element name="matchType" type="ns-match-type"/>
+      <xs:element name="uriMatch" type="xs:string"/>
+      <xs:element name="domainMatch" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="disk-stat">
+    <xs:sequence>
+      <xs:element name="prereadState" type="xs:integer"/>
+      <xs:element name="diskUsage" type="xs:float"/>
+    </xs:sequence>
+    <xs:attribute name="tier" type="xs:string"/>
+  </xs:complexType>
+  <xs:complexType name="vip-list">
+    <xs:sequence>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="ip" type="xs:string"/>
+      <xs:element name="totSessions" type="xs:nonNegativeInteger"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="app-type-http">
+    <xs:sequence>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="namespace"
+		  type="ns-list"/> 
+      <xs:element maxOccurs="1" minOccurs="1"
+		  name="cpuUsage" type="xs:double"/> 
+      <xs:element maxOccurs="1" minOccurs="1"
+		  name="ramUsage" type="xs:double"/> 
+      <xs:element maxOccurs="unbounded" minOccurs="1" name="disk"
+		  type="disk-stat"/>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="vip"
+		  type="vip-list"/>
+      <xs:element maxOccurs="unbounded" minOccurs="0"
+		  name="resourcePool" type="rp-list"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="na-type">
+    <xs:sequence>
+      <xs:element name="http" type="app-type-http"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="loadSnapshot">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:element maxOccurs="1" name="system" type="system-type"/>
+	<xs:element maxOccurs="1" minOccurs="0" name="vma" type="vma-type"/>
+	<xs:element maxOccurs="1" name="na" type="na-type"/>
+      </xs:sequence>
+      <xs:attribute name="at" type="xs:dateTime" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -1,0 +1,21 @@
+@comment PLIST
+@cwd /
+@srcdir %SRCDIR%
+@option preserve
+@comment JUNOSV_APP_ENGINE
+@comment MXC_APPLICATION_SERVICE
+@name %PKGNAME%
+@owner root
+@group wheel
+
+@ignore_inst
+packages/%PKGFILE%
+@ignore_inst
+packages/%PKGFILE%.sha1
+@ignore_inst
+packages/%PKGFILE%.sig
+@ignore_inst
+packages/%PKGFILE%.certs
+@srcdir %OBJDIR%
+@ignore_inst
+%PKGNAME%.symlinks

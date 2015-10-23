@@ -1,0 +1,39 @@
+TRANSL_ENTRY(PREPEND_TRANS_STR"member-node*typebladedelivery-protocolhttpinterface*")
+TRANSL_NUM_NDS(1)
+TRANSL_NDS("/nkn/nvsd/http/config/interface/%s",
+	    TYPE_STR,
+	    ND_NORMAL,
+	    1,NULL,
+	    1,1,0,0)
+TRANSL_END_NDS
+TRANSL_ENTRY_END
+
+TRANSL_ENTRY(PREPEND_TRANS_STR"member-node*typebladedelivery-protocolhttptransparentinterface*")
+TRANSL_NUM_NDS(1)
+TRANSL_NDS("/nkn/nvsd/http/config/t-proxy/%s",
+	    TYPE_STR,
+	    ND_NORMAL,
+	    1,NULL,
+	    1,1,0,0)
+TRANSL_END_NDS
+TRANSL_ENTRY_END
+
+TRANSL_ENTRY(PREPEND_TRANS_STR"member-node*typevxa-standalonedelivery-protocolhttpinterface*")
+TRANSL_NUM_NDS(1)
+TRANSL_NDS("/nkn/nvsd/http/config/interface/%s",
+	    TYPE_STR,
+	    ND_NORMAL,
+	    1,NULL,
+	    1,1,0,0)
+TRANSL_END_NDS
+TRANSL_ENTRY_END
+
+TRANSL_ENTRY(PREPEND_TRANS_STR"member-node*typevxa-standalonedelivery-protocolhttptransparentinterface*")
+TRANSL_NUM_NDS(1)
+TRANSL_NDS("/nkn/nvsd/http/config/t-proxy/%s",
+	    TYPE_STR,
+	    ND_NORMAL,
+	    1,NULL,
+	    1,1,0,0)
+TRANSL_END_NDS
+TRANSL_ENTRY_END

@@ -1,0 +1,137 @@
+#!/bin/sh
+#
+# eth-reorder     Startup script to run eth-reorder.sh
+#
+# chkconfig: 3 14 85
+# description: Network interface renamer
+# Note: The file ./base_os/common/script_files/customer.sh
+# runs "chkconfig --add" for this in the "firstboot_graft_2()" function
+# Note: Make sure the "fixups" startup script is run before now,
+# because it determines if the system is VXA or not.
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+export PATH
+umask 022
+
+ETH_REORDER_EXE=/opt/nkn/bin/eth-reorder.sh
+VXA_ETH_SETUP=/opt/nkn/bin/vxa-eth-setup.sh
+LOG_INIT=/log/init
+
+OLD_USED_FILE=/config/nkn/eth-order-use.used
+USE_THIS_FILE=/config/nkn/eth-order-use.list
+PACIFICA_HW_FILE=/etc/pacifica_hw
+VXA_MODEL_FILE=/etc/vxa_model
+
+Discover()
+{
+  [ ! -d ${LOG_INIT} ] && mkdir -p ${LOG_INIT}
+  # Save the default eth device naming before any renaming is done.
+  DS=`date +%Y-%m-%d_%H:%M`
+  echo "${DS}" >> ${LOG_INIT}/boot-timestamp.txt
+  # Save the eth device mac and ethN name.  A space between the mac and eth name.
+  ifconfig -a | grep 'Ethernet.*HWaddr' \
+    | sed 's/^\([^ ]*\) .*HWaddr \(.*\)/\2 \1/' \
+    | tr -s ' ' \
+    | egrep -v '^.* [^:]*:.*$' \
+    | sed 's/ /,/' \
+    > /tmp/eth-list.tmp
+  if [ ! -f ${LOG_INIT}/eth-devices.0.txt ] ; then
+    CNT=0
+    echo "# ${CNT}:${DS}" >  ${LOG_INIT}/eth-devices.${CNT}.txt
+    cat /tmp/eth-list.tmp >> ${LOG_INIT}/eth-devices.${CNT}.txt
+    echo CNT=${CNT} > ${LOG_INIT}/eth-dcnt.txt
+  else
+    if [ ! -f ${LOG_INIT}/eth-dcnt.txt ] ; then
+      echo CNT=0 > ${LOG_INIT}/eth-dcnt.txt
+    fi
+    CNT=
+    eval `grep ^CNT= ${LOG_INIT}/eth-dcnt.txt`
+    [ -z "${CNT}" ] && CNT=0
+    S1=`cat ${LOG_INIT}/eth-devices.${CNT}.txt | grep -v "#" | sum`
+    S2=`cat /tmp/eth-list.tmp | sum`
+    if [ "${S1}" != "${S2}" ] ; then
+      CNT=$((CNT + 1))
+      echo "# ${CNT}:${DS}" >  ${LOG_INIT}/eth-devices.${CNT}.txt
+      cat /tmp/eth-list.tmp >> ${LOG_INIT}/eth-devices.${CNT}.txt
+      echo CNT=${CNT} > ${LOG_INIT}/eth-dcnt.txt
+    fi
+  fi
+}
+
+start()
+{
+  if [ -f ${PACIFICA_HW_FILE} ] ; then
+    # On Pacifica, so do not do renaming.
+    return 0
+  fi
+  [ ! -d ${LOG_INIT} ] && mkdir -p ${LOG_INIT}
+  echo -n "Initializing ethernet device order: "
+  if [ ! -f /config/nkn/eth-order-use.list ] ; then
+    if [ -f ${VXA_MODEL_FILE} ] ; then
+      ${VXA_ETH_SETUP} > ${LOG_INIT}/vxa-eth-setup.out 2>&1
+      RV=${?}
+      if [ ${RV} -eq 0 -a -f /tmp/eth-order-new.out ] ; then
+        cp /tmp/eth-order-new.out /config/nkn/eth-order-use.list
+      else
+        echo ${VXA_ETH_SETUP} returned ${RV} >> ${LOG_INIT}/vxa-eth-setup.out
+        if [ ! -f /tmp/eth-order-new.out ] ; then
+          echo "${VXA_ETH_SETUP} did not create /tmp/eth-order-new.out" \
+            >> ${LOG_INIT}/vxa-eth-setup.out
+        fi
+      fi
+      ls -l /tmp/eth-* \
+        >> ${LOG_INIT}/vxa-eth-setup.out 2>&1
+      cp /tmp/eth-* ${LOG_INIT}/
+    fi
+  fi
+  USE_OPT=
+  if [ -f /config/nkn/eth-order-use.list ] ; then
+    USE_OPT="--use /config/nkn/eth-order-use.list"
+    rm -f /config/nkn/ethreorder_options
+  fi
+  echo "${SH_X} ${ETH_REORDER_EXE} ${V_OPT} ${F_OPT} ${USE_OPT}" \
+    > ${LOG_INIT}/eth-reorder.out
+  ${SH_X} ${ETH_REORDER_EXE} ${V_OPT} ${F_OPT} ${USE_OPT} 2>&1 \
+    | tee -a ${LOG_INIT}/eth-reorder.out
+  if [ ! -z "${USE_OPT}" ] ; then
+    rm -f /config/nkn/eth-order-use.used
+    mv /config/nkn/eth-order-use.list /config/nkn/eth-order-use.used
+  fi
+  echo " done"
+}
+
+RETVAL=0
+SH_X=
+V_OPT=
+case "$1" in
+START|RELOAD)
+  SH_X="sh -x"
+  V_OPT="-v"
+  ;;
+Start|Reload)
+  V_OPT="-v -v -v"
+  ;;
+esac
+F_OPT=
+case "${1}" in
+start|Start|START)
+  Discover
+  start
+  ;;
+restart)
+  start
+  ;;
+reload|Reload|RELOAD)
+  F_OPT="-f"
+  start
+  ;;
+stop|status)
+  # Nothing to do
+  ;;
+*)
+  echo $"Usage: $0 {start}"
+  RETVAL=1
+  ;;
+esac
+
+exit ${RETVAL}

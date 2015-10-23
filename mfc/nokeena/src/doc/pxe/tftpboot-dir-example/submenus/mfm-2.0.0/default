@@ -1,0 +1,25 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfm-2.0.0
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfm-2.0.0-rc-3_99_156
+ MENU LABEL mfm-2.0.0-rc-3_99_156        BR:mainline  2010-06-09
+ KERNEL pxe-boot/mfm-2.0.0-rc-3_99_156/vmlinuz-bootflop-mfm-2.0.0-rc_3_99_156
+ APPEND initrd=pxe-boot/mfm-2.0.0-rc-3_99_156/rootflop-mfm-2.0.0-rc_3_99_156.img        installfrom=pxe/pxe-boot/mfm-2.0.0-rc-3_99_156 
+ IPAPPEND 3

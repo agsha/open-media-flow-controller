@@ -1,0 +1,59 @@
+<?
+#
+# Filename:  dashboard-cache-hit.tem
+# Date:      2011/01/24
+# Author:    Sasmita
+#
+# (C) Copyright 2008-2011 Juniper Networks, Inc.
+# All rights reserved.
+#
+
+#
+?>
+<INCLUDE "dashboard-layout">
+<TMS-PAGE "Cache Hit Rate">
+<TMS-MENU "dashboard">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-DASHBOARD-MENU "cache-hit"></TMS-DASHBOARD-MENU></TMS-SIDEBAR>
+<TMS-SIDEBAR> </TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Cache Hit Rate">
+
+<table border="0" width="100%"><tr><td>
+<table align="left"  border="0" cellpadding="1" id="outer_table"><tr>
+        <td><b>MFC Version: </b></td><td> &nbsp; &nbsp;</td>
+        <td><b><?= [tms::get-config "/system/version/composite"]?></b></td></tr>
+</table></td></tr>
+<tr><td>
+<table align="left" border="1" cellpadding="1" id="outer_table_2"><tr><td>
+    <table border="0">
+        <tr><td><img class="img_class" src=""
+	    alt="Cache Hit Rate" id="ch_rate_bw_img" height="250px" /></td></tr>
+        <tr><td><img class="img_class" src=""
+	    alt="ns bandwidth" id="ns_bandwidth" height="250px" /></td></tr>
+        <tr><td><img class="img_class" src=""
+	    alt="ns chr" id="ns_chr" height="250px" /></td></tr>
+    </table></td></tr>
+</table> <!-- outer table -->
+</tr></td></table>
+
+
+<div style={test-align:left;}>
+        <!--put the button here to update the interval -->
+        <input type="text" id="page" name="page" value="cache_hit_rate" style="display:none">
+        <br />
+        <span>Refresh Interval:</span>
+        <input type="text"  id="db_refreshinterval" size="6" name="db_refreshinterval" maxlength="4" value="5" />
+        <span>Sec.</span>
+        <input type="button" id="updatebutton" class="ajaxButton" value="Reload" name="updatebutton" onclick="buttoncheck()" />
+</div>
+
+
+
+<script type="text/javascript">
+	document.getElementById('db_refreshinterval').value = update_interval;
+        buttoncheck();
+</script>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

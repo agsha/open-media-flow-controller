@@ -1,0 +1,175 @@
+DEFAULT menu.c32
+PROMPT 0
+SERIAL 0 9600
+MENU WIDTH 80
+MENU ENDROW 24
+MENU MARGIN 2
+MENU PASSWORDROW 11
+MENU PASSWORDMARGIN 3
+MENU ROWS 17
+MENU TABMSGROW 21
+MENU CMDLINEROW 1
+MENU TIMEOUTROW 24
+MENU TITLE mfc-2.0.5a
+
+LABEL main
+  MENU LABEL Return to main menu
+  KERNEL menu.c32
+  APPEND pxelinux.cfg/default
+
+
+LABEL mfc-2.0.5a-qa-25_15143_240
+ MENU LABEL mfc-2.0.5a-qa-25_15143_240 BR:conejos 2011-01-31
+ KERNEL pxe-boot/mfc-2.0.5a-qa-25_15143_240/vmlinuz-bootflop-mfc-2.0.5a-qa-25_15143_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-25_15143_240/rootflop-mfc-2.0.5a-qa-25_15143_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-25_15143_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-24_15119_240
+ MENU LABEL mfc-2.0.5a-qa-24_15119_240 BR:conejos 2011-01-29
+ KERNEL pxe-boot/mfc-2.0.5a-qa-24_15119_240/vmlinuz-bootflop-mfc-2.0.5a-qa-24_15119_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-24_15119_240/rootflop-mfc-2.0.5a-qa-24_15119_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-24_15119_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-23_15116_240
+ MENU LABEL mfc-2.0.5a-qa-23_15116_240 BR:conejos 2011-01-29
+ KERNEL pxe-boot/mfc-2.0.5a-qa-23_15116_240/vmlinuz-bootflop-mfc-2.0.5a-qa-23_15116_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-23_15116_240/rootflop-mfc-2.0.5a-qa-23_15116_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-23_15116_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-22_15101_240
+ MENU LABEL mfc-2.0.5a-qa-22_15101_240 BR:conejos 2011-01-27
+ KERNEL pxe-boot/mfc-2.0.5a-qa-22_15101_240/vmlinuz-bootflop-mfc-2.0.5a-qa-22_15101_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-22_15101_240/rootflop-mfc-2.0.5a-qa-22_15101_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-22_15101_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-21_15093_240
+ MENU LABEL mfc-2.0.5a-qa-21_15093_240 BR:conejos 2011-01-27
+ KERNEL pxe-boot/mfc-2.0.5a-qa-21_15093_240/vmlinuz-bootflop-mfc-2.0.5a-qa-21_15093_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-21_15093_240/rootflop-mfc-2.0.5a-qa-21_15093_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-21_15093_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-19_15085_240
+ MENU LABEL mfc-2.0.5a-qa-19_15085_240 BR:conejos 2011-01-27
+ KERNEL pxe-boot/mfc-2.0.5a-qa-19_15085_240/vmlinuz-bootflop-mfc-2.0.5a-qa-19_15085_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-19_15085_240/rootflop-mfc-2.0.5a-qa-19_15085_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-19_15085_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-20_15081_240
+ MENU LABEL mfc-2.0.5a-qa-20_15081_240 BR:conejos 2011-01-27
+ KERNEL pxe-boot/mfc-2.0.5a-qa-20_15081_240/vmlinuz-bootflop-mfc-2.0.5a-qa-20_15081_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-20_15081_240/rootflop-mfc-2.0.5a-qa-20_15081_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-20_15081_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-18_15071_240
+ MENU LABEL mfc-2.0.5a-qa-18_15071_240 BR:conejos 2011-01-26
+ KERNEL pxe-boot/mfc-2.0.5a-qa-18_15071_240/vmlinuz-bootflop-mfc-2.0.5a-qa-18_15071_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-18_15071_240/rootflop-mfc-2.0.5a-qa-18_15071_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-18_15071_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-17_15071_240
+ MENU LABEL mfc-2.0.5a-qa-17_15071_240 BR:conejos 2011-01-26
+ KERNEL pxe-boot/mfc-2.0.5a-qa-17_15071_240/vmlinuz-bootflop-mfc-2.0.5a-qa-17_15071_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-17_15071_240/rootflop-mfc-2.0.5a-qa-17_15071_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-17_15071_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-16_15027_240
+ MENU LABEL mfc-2.0.5a-qa-16_15027_240 BR:conejos 2011-01-25
+ KERNEL pxe-boot/mfc-2.0.5a-qa-16_15027_240/vmlinuz-bootflop-mfc-2.0.5a-qa-16_15027_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-16_15027_240/rootflop-mfc-2.0.5a-qa-16_15027_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-16_15027_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-15_14961_240
+ MENU LABEL mfc-2.0.5a-qa-15_14961_240 BR:conejos 2011-01-24
+ KERNEL pxe-boot/mfc-2.0.5a-qa-15_14961_240/vmlinuz-bootflop-mfc-2.0.5a-qa-15_14961_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-15_14961_240/rootflop-mfc-2.0.5a-qa-15_14961_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-15_14961_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-14_14954_240
+ MENU LABEL mfc-2.0.5a-qa-14_14954_240 BR:conejos 2011-01-23
+ KERNEL pxe-boot/mfc-2.0.5a-qa-14_14954_240/vmlinuz-bootflop-mfc-2.0.5a-qa-14_14954_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-14_14954_240/rootflop-mfc-2.0.5a-qa-14_14954_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-14_14954_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-13_14953_240
+ MENU LABEL mfc-2.0.5a-qa-13_14953_240 BR:conejos 2011-01-22
+ KERNEL pxe-boot/mfc-2.0.5a-qa-13_14953_240/vmlinuz-bootflop-mfc-2.0.5a-qa-13_14953_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-13_14953_240/rootflop-mfc-2.0.5a-qa-13_14953_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-13_14953_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-12_14836_240
+ MENU LABEL mfc-2.0.5a-qa-12_14836_240 BR:conejos 2011-01-17
+ KERNEL pxe-boot/mfc-2.0.5a-qa-12_14836_240/vmlinuz-bootflop-mfc-2.0.5a-qa-12_14836_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-12_14836_240/rootflop-mfc-2.0.5a-qa-12_14836_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-12_14836_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-11_14833_240
+ MENU LABEL mfc-2.0.5a-qa-11_14833_240 BR:conejos 2011-01-14
+ KERNEL pxe-boot/mfc-2.0.5a-qa-11_14833_240/vmlinuz-bootflop-mfc-2.0.5a-qa-11_14833_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-11_14833_240/rootflop-mfc-2.0.5a-qa-11_14833_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-11_14833_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-10_14768_240
+ MENU LABEL mfc-2.0.5a-qa-10_14768_240 BR:conejos 2011-01-14
+ KERNEL pxe-boot/mfc-2.0.5a-qa-10_14768_240/vmlinuz-bootflop-mfc-2.0.5a-qa-10_14768_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-10_14768_240/rootflop-mfc-2.0.5a-qa-10_14768_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-10_14768_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-9_14761_240
+ MENU LABEL mfc-2.0.5a-qa-9_14761_240  BR:conejos 2011-01-13
+ KERNEL pxe-boot/mfc-2.0.5a-qa-9_14761_240/vmlinuz-bootflop-mfc-2.0.5a-qa-9_14761_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-9_14761_240/rootflop-mfc-2.0.5a-qa-9_14761_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-9_14761_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-8_14631_240
+ MENU LABEL mfc-2.0.5a-qa-8_14631_240  BR:conejos 2011-01-13
+ KERNEL pxe-boot/mfc-2.0.5a-qa-8_14631_240/vmlinuz-bootflop-mfc-2.0.5a-qa-8_14631_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-8_14631_240/rootflop-mfc-2.0.5a-qa-8_14631_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-8_14631_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-7_14626_240
+ MENU LABEL mfc-2.0.5a-qa-7_14626_240  BR:conejos 2011-01-12
+ KERNEL pxe-boot/mfc-2.0.5a-qa-7_14626_240/vmlinuz-bootflop-mfc-2.0.5a-qa-7_14626_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-7_14626_240/rootflop-mfc-2.0.5a-qa-7_14626_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-7_14626_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-6_14587_240
+ MENU LABEL mfc-2.0.5a-qa-6_14587_240  BR:conejos 2011-01-11
+ KERNEL pxe-boot/mfc-2.0.5a-qa-6_14587_240/vmlinuz-bootflop-mfc-2.0.5a-qa-6_14587_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-6_14587_240/rootflop-mfc-2.0.5a-qa-6_14587_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-6_14587_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-5_14545_240
+ MENU LABEL mfc-2.0.5a-qa-5_14545_240  BR:conejos 2011-01-11
+ KERNEL pxe-boot/mfc-2.0.5a-qa-5_14545_240/vmlinuz-bootflop-mfc-2.0.5a-qa-5_14545_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-5_14545_240/rootflop-mfc-2.0.5a-qa-5_14545_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-5_14545_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-4_14526_240
+ MENU LABEL mfc-2.0.5a-qa-4_14526_240  BR:conejos 2011-01-10
+ KERNEL pxe-boot/mfc-2.0.5a-qa-4_14526_240/vmlinuz-bootflop-mfc-2.0.5a-qa-4_14526_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-4_14526_240/rootflop-mfc-2.0.5a-qa-4_14526_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-4_14526_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-3_14249_240
+ MENU LABEL mfc-2.0.5a-qa-3_14249_240  BR:conejos 2010-12-20
+ KERNEL pxe-boot/mfc-2.0.5a-qa-3_14249_240/vmlinuz-bootflop-mfc-2.0.5a-qa-3_14249_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-3_14249_240/rootflop-mfc-2.0.5a-qa-3_14249_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-3_14249_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-2_14245_240
+ MENU LABEL mfc-2.0.5a-qa-2_14245_240  BR:conejos 2010-12-20
+ KERNEL pxe-boot/mfc-2.0.5a-qa-2_14245_240/vmlinuz-bootflop-mfc-2.0.5a-qa-2_14245_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-2_14245_240/rootflop-mfc-2.0.5a-qa-2_14245_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-2_14245_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-qa-1_14232_240
+ MENU LABEL mfc-2.0.5a-qa-1_14232_240  BR:conejos 2010-12-20
+ KERNEL pxe-boot/mfc-2.0.5a-qa-1_14232_240/vmlinuz-bootflop-mfc-2.0.5a-qa-1_14232_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-qa-1_14232_240/rootflop-mfc-2.0.5a-qa-1_14232_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-qa-1_14232_240 installopt=,show-pxe-menu,
+ IPAPPEND 3
+
+LABEL mfc-2.0.5a-dv-1_14232_240
+ MENU LABEL mfc-2.0.5a-dv-1_14232_240  BR:conejos 2010-12-20
+ KERNEL pxe-boot/mfc-2.0.5a-dv-1_14232_240/vmlinuz-bootflop-mfc-2.0.5a-dv-1_14232_240
+ APPEND initrd=pxe-boot/mfc-2.0.5a-dv-1_14232_240/rootflop-mfc-2.0.5a-dv-1_14232_240.img        installfrom=pxe/pxe-boot/mfc-2.0.5a-dv-1_14232_240 installopt=,show-pxe-menu,
+ IPAPPEND 3

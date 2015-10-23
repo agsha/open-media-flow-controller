@@ -1,0 +1,166 @@
+<?
+#
+# Filename:  servicecfg-servermap.tem,v $
+# Date:       
+# Author:    Dhivyamanohary R
+#
+# (C) Copyright Juniper Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Servermap">
+<TMS-MENU "servicecfg">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SERVICECFG-MENU "servermap"></TMS-SERVICECFG-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Server map Configuration">
+<script type="text/javascript">
+function popup(mylink, windowname)
+{
+if (! window.focus)return true;
+var href;
+if (typeof(mylink) == 'string')
+   href=mylink;
+else
+   href=mylink.href;
+window.open(href, windowname,'resizable=yes,scrollbars=yes');
+return false;
+}
+</script>
+
+<CFG-FORM -action "config-form-list-action" -div_id "addsm">
+  <h2>Add Server map</h2>
+  <TMS-TABLE -div_id "sm_table_1">
+    <TMS-TABLE-ENTRY "Servermap">
+      <CFG-TEXTBOX -id "servermap" -errname "servermap" -caps "set_basic"
+                -type "string" -span_id "add_servermap" -required "true" >
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Format type">
+     <CFG-DROPDOWN -id "format-type" -errname "formattype"
+                   -caps "set_basic"
+                   -type "uint32" -span_id "set_status" -options
+                    {
+		      {"cluster-map" "2" }
+		      {"host-origin-map" "1" }
+                      {"origin-escalation-map"  "3"}}>
+     </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+  
+  <input type="hidden" name="f_list_root" value="/nkn/nvsd/server-map/config">
+  <input type="hidden" name="f_list_index" value="servermap" required="true">
+  <input type="hidden" name="f_list_children" value="format-type">
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "add_servermap">
+
+</CFG-FORM>
+
+<h2> Configuration List </h2>
+  <CFG-FORM -action "config-form-list-action" -div_id "ntp_2">
+
+  <?
+    set cur_line 0
+    set sm_prefix "/nkn/nvsd/server-map/config"
+    set sm_ids [tms::iterate-config $sm_prefix]
+
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+     <td></td>
+      <td>
+        Server map </td>
+      <td>
+        Configure</td>
+      <td>
+        Show</td>
+    </tr>
+
+    <FOREACH sm_id $sm_ids>
+    <?
+    set prefix_len [string length "$sm_prefix/"]
+    set sm_name [string range $sm_id $prefix_len end]
+    ?>
+    <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                         -value "$sm_id" -span_id "nm_cbox_2"></td>
+      <td>
+        <?=$sm_name?></td>
+      <td>
+        <a href="/admin/launch?script=rh&amp;template=servicecfg-smconfig&amp;smname=<?=$sm_name?>" onClick="return popup(this, 'notes')">Configure </a>
+      <td>
+        <a href="/admin/launch?script=rh&amp;template=servicecfg-showsm&amp;smname=<?=$sm_name?>" onClick="return popup(this, 'notes')">Show </a>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Server map.
+      <SET priv DISABLED_set_basic>
+    <ELSE>
+      <SET priv set_basic>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove" -caps "set_basic"
+              -span_id "nm_disable_1">
+  </p></td></CFG-FORM>
+  </tr></table>
+
+<h2> Refresh Force  </h2>
+<CFG-FORM -action "config-form-action-servermap" -div_id "refreshsm">
+  <?   
+  set map_ids [tms::get-mapids]
+  set cur_line1 0
+  ?>
+
+  <TMS-TABLE -div_id "sm_table_1">
+   
+    <TMS-TABLE-ENTRY "Select server map">
+     <select name="f_smap" size="1"
+        <?
+          if {[tms::has-capability "set_basic"] == 0} {
+              tms::puts "disabled"
+          }
+        ?>>
+          <FOREACH map $map_ids>
+              <option value="<?=$map?>"><?=$map?></option>
+              <?
+                 incr cur_line
+              ?>
+          </FOREACH>
+        </select>
+     </TMS-TABLE-ENTRY>
+<td width 1>
+<td width 1>
+<td width 4>
+
+  </TMS-TABLE>
+<IF {$cur_line == 0}>
+      <!-- Dont have refresh button -->
+ <ELSE>
+     <CFG-BUTTON -type "apply" -text "Refresh-force" -caps "set_basic"
+             -span_id "refresh">
+ </IF>
+</CFG-FORM>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

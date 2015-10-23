@@ -1,0 +1,10 @@
+#!/bin/sh
+#set -x
+
+cmd=`basename $0`
+os=`uname -s`
+case $os in
+    Linux) /usr/bin/${cmd}sum $1 |awk '{print $1}' |sed 's/^[ \t]*//;s/[ \t]*$//' ;;
+    *) echo $os not supported ;;
+esac
+

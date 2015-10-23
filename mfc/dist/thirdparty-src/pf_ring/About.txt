@@ -1,0 +1,105 @@
+# PF_RING
+# Description from http://www.ntop.org/products/pf_ring/
+PF_RING is a new type of network socket that dramatically improves the
+packet capture speed.
+# Description from source file "README.FIRST".
+PF_RING is a Linux kernel module and user-space framework that allows
+you to process packets at high-rates while providing you a consistent
+API for packet processing applications.
+
+
+The source is downloaded from http://sourceforge.net/projects/ntop/files/PF_RING/
+  http://downloads.sourceforge.net/project/ntop/PF_RING/PF_RING-6.0.0.tar.gz
+Modified: 014-04-14
+Size: 21.7 MB
+md5sum: 8e83990314ca367e2bbae2b9a16157af
+License: GNU General Public License version 2.0 (GPLv2)
+
+GPL License ---
+Kernel module:
+The file "License-kernel-module.txt" has the GPLv2 license text from the source file
+PF_RING-6.0.0/kernel/pf_ring.c
+
+User-land shared library:
+The file "License-library.txt" has the LGPLv3 license text from the source file
+PF_RING-6.0.0/userland/lib/COPYING
+
+MODIFICATIONS ---
+Juniper changes are done via the patch file PF_RING.patch.
+The patch updates
+  kernel/linux/pf_ring.h
+  kernel/pf_ring.c
+  userland/lib/pfring.c
+  userland/lib/pfring.h
+  userland/lib/pfring_mod.c
+  userland/lib/pfring_mod.h
+
+The source tar.gz and patch file are saved in the MFC source tree in:
+  /data/users/dpeet/mfc/trunk/dist/thirdparty-src/pf_ring/
+These are also archived on cmbu-storage01 in:
+  /data/archive/thirdparty/src/pf_ring/
+
+Note: numactl-devel rpm must be installed.
+
+Build instructions:
+1: Extract the file from PF_RING-6.0.0.tar.gz
+2: Remove the "Zero Copy" related files from the source tree.
+3: Apply the Juniper patch.  This patches 6 files.
+4: Build by doing "make" in the top level directory.
+   This builds the libraries and other binaries
+
+These instructions assume that the sourc tar.gz and patch file are in the current dir.
+
+tar xf PF_RING-6.0.0.tar.gz
+cd PF_RING-6.0.0
+find -type f | sort > BEFORE.filelist
+rm -f userland/lib/libs/libpfring_zc_x86_64*
+patch -p1 < ../PF_RING.patch
+make
+find -type f | sort > AFTER.filelist
+cd ..
+
+The files
+  PF_RING-6.0.0/userland/lib/libpfring.so (created by doing the "make")
+  PF_RING-6.0.0/userland/lib/pfring.h
+are checked into the MFC source tree under
+  nokeena/src/thirdparty/binary/pf_ring/
+
+The file
+  PF_RING-6.0.0/kernel/linux/pf_ring.h
+is checked into the MFC source tree as
+  nokeena/src/base_os/linux_el/el6/kernel/src/drivers/net/bnx2x/pf_ring.h
+
+The MFC source tree file 
+  nokeena/src/base_os/linux_el/el6/kernel/src/drivers/net/bnx2x/bnx2x_cmn.c 
+has changes based on the file
+  PF_RING-6.0.0/drivers/PF_RING_aware/non-ZC-drivers/broadcom/netxtreme2-7.8.37/bnx2x-1.78.26/src/bnx2x_cmn.c 
+In particular it defines the flag HAVE_PF_RING, and has additions that are inside ifdef HAVE_PF_RING
+
+The files from
+  PF_RING-6.0.0/kernel/
+      README
+      linux/pf_ring.h
+      pf_ring.c
+      plugins/dummy_plugin.c
+      plugins/dummy_plugin.h
+      plugins/Makefile
+are checked into the MFC source tree under
+  nokeena/src/base_os/linux_common/kmods/pfring/
+The Makefile is not used, as a different one is needed to build in the Samara environment.
+
+
+cp  PF_RING-6.0.0/userland/lib/libpfring.so $PROD_CUSTOMER_ROOT/nokeena/src/thirdparty/binary/pf_ring/
+cp  PF_RING-6.0.0/userland/lib/pfring.h     $PROD_CUSTOMER_ROOT/nokeena/src/thirdparty/binary/pf_ring/
+
+cp  PF_RING-6.0.0/kernel/linux/pf_ring.h    $PROD_CUSTOMER_ROOT/nokeena/src/base_os/linux_el/el6/kernel/src/drivers/net/bnx2x/
+
+mkdir $PROD_CUSTOMER_ROOT/nokeena/src/base_os/linux_common/kmods/pfring/
+mkdir $PROD_CUSTOMER_ROOT/nokeena/src/base_os/linux_common/kmods/pfring/linux
+mkdir $PROD_CUSTOMER_ROOT/nokeena/src/base_os/linux_common/kmods/pfring/plugins
+for F in README linux/pf_ring.h pf_ring.c plugins/dummy_plugin.c plugins/dummy_plugin.h plugins/Makefile
+do
+  cp -a  PF_RING-6.0.0/kernel/$F $PROD_CUSTOMER_ROOT/nokeena/src/base_os/linux_common/kmods/pfring/$F
+done
+cp -a  PF_RING-6.0.0/kernel/Makefile $PROD_CUSTOMER_ROOT/nokeena/src/base_os/linux_common/kmods/pfring/Makefile.orig
+

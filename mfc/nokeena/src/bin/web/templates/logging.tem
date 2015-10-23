@@ -1,0 +1,354 @@
+<?
+# (C) Copyright 2015 Juniper Networks
+# All rights reserved.
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "log-layout">
+
+<TMS-PAGE "Service Log Viewer">
+<TMS-MENU "syslog">
+<TMS-BODY>
+
+<!-- ==================================================
+     == Sidebar
+     ================================================== -->
+
+<?
+  # XXX/EMT this should be configurable!
+  set log_lines_per_page 100
+  # XXX/BBK so should this!
+  set log_update_interval 10
+  set log_update_interval_ms [expr {$log_update_interval * 1000}]
+  set filter_str [tms::get-param post "filter"]
+  set log_page_padding 2
+  set lognum [tms::get-param query "log"]
+
+  set page [tms::get-param query "page"]
+
+  if {[string length $page] == 0} {
+    set page 1
+  }
+  set log_pattern "messages."
+  set file_prefix "/logging/logfiles/global"
+  set files [tms::iterate-config "$file_prefix"]
+  if {[string length $page] == 0} {
+    set page 1
+  }
+
+  set options { { continuous {Continuous&nbsp;log}}  { current {Current&nbsp;log} }  }
+
+  set log_numbers ""
+  set file_list {}
+
+
+  foreach file $files {
+    if {[string match "*.gz" $file] == 1} {
+      set prefix_len [string length "$file_prefix/$log_pattern."]
+      set file_end [expr [string last ".gz" $file] - 1]
+      set file_num [string range $file $prefix_len $file_end]
+      set log_numbers [concat $log_numbers $file_num]
+      set p_len [string length "$file_prefix/"]
+      set f_name [string range $file $p_len end]
+      lappend file_list "$f_name $f_name"
+      #lappend file_list "$f_name"
+    } else {
+      set p_len [string length "$file_prefix/"]
+      set f_name [string range $file $p_len end]
+      lappend file_list "Current&nbsp;log $f_name"
+    }
+
+  }
+
+  #set sorted_list [lsort -integer $log_numbers]
+  set sorted_file_list [lsort -dictionary $file_list]
+
+  foreach file_num $sorted_file_list {
+    set options "$options {$file_num {Archived&nbsp;log&nbsp;$file_num}}"
+  }
+
+  set options "$options {download {Download&nbsp;log} }"
+  set options [list $options]
+?>
+
+<div id="pageSidebar-syslog">
+  <div id="tms_syslog_menu">
+<!--
+    <TMS-SIDEBAR-MENU $lognum $options "syslog&amp;log="></TMS-SIDEBAR-MENU>
+-->
+    <LOG-SIDEBAR-MENU $lognum "logging">
+  </div>
+</div>
+
+<div id="pageContent-syslog" style="height: 1%">
+
+
+<IF  {[string equal $lognum "download"] == 1}>
+<TMS-PAGE-CONTENT "">
+<!--
+<CFG-FORM -action "syslog-download" -div_id "syslog_dn_1">
+ <TMS-TABLE -div_id "syslog_table_1">
+    <TMS-TABLE-SPACE>
+    <TMS-TABLE-ENTRY "Download Cache Log">
+        <CFG-BUTTON -type "download" -text "Download"
+              -caps "action_privileged"
+              -span_id "syslog_download">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+ </TMS-TABLE>
+</CFG-FORM>
+-->
+<CFG-FORM -action "download-syslog" -div_id "syslog_dn_1">
+ <TMS-TABLE -div_id "syslog_table_1">
+    <TMS-TABLE-SPACE>
+    <TMS-TABLE-ENTRY "Download System Log">
+      <CFG-DROPDOWN -id "file" -errname "file" -caps "set_basic"
+                  -type "string" -span_id "download_file"
+                  -options $sorted_file_list>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+ </TMS-TABLE>
+        <CFG-BUTTON -type "download" -text "Download"
+              -caps "action_privileged"
+              -span_id "syslog_download">
+</CFG-FORM>
+<!--
+<CFG-FORM -action "config-form-action" -div_id "loggging_param_1">
+  <table border="0" cellpadding="3" cellspacing="0">
+  <tr class="listing_even">
+    <tr>
+      <td height="8">
+    <tr class="listing_even">
+      <td width="15">
+      <td>
+     Download via scp (pseudo-URL format:
+     scp://username@hostname/path/filename):
+     <br>
+       <table>
+         <tr class="listing_even">
+           <td width="45">
+           <td>
+              URL:
+           <td>
+           <CFG-TEXTBOX -id "remote_url" -caps "action_privileged"
+                        -type "string" -name "remote_url"
+                        -cols 40 -span_id "configure_scp_url">
+         <tr class="listing_even">
+           <td>
+           <td>
+             Password:
+           <td>
+           <CFG-PASSWORDBOX -id "password" -caps "set_privileged"
+                            -type "string" -name "password"
+                            -cols "40" -span_id "users_pass">
+       </table>
+      </td>
+    </tr>
+    <tr>
+      <td height="8">
+
+  </table>
+  <input type="hidden" name="f_mfd_action_binding" value="/nkn/syslog/action/upload">
+  <input type="hidden" name="f_mfd_append_list" value="remote_url,password">
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "log_apply_2">
+</CFG-FORM>
+-->
+</TMS-PAGE-CONTENT>
+<ELSE>
+<!-- ==================================================
+     = Log Page Navigator
+     ================================================== -->
+
+<TAG LOG-NAV-ONE pg page lognum>
+          <IF {[expr $pg == $page] == 0}>
+          <a href="/admin/launch?script=rh&amp;template=logging&amp;log=<?=$lognum?>&amp;page=<?=$pg?>">
+          <ELSE>
+            [</IF><?=$pg?><IF {[expr $pg == $page] == 0}></a><ELSE>]</IF>
+          &nbsp;
+</TAG>
+
+<TAG LOG-NAV lognum page num_pages>
+        <IF {[expr $page < 2] == 0}>
+          <a href="/admin/launch?script=rh&amp;template=logging&amp;log=<?=$lognum?>&amp;page=<?= [expr $page - 1] ?>">
+        </IF>
+          &lt;&lt; Prev
+        <IF {[expr $page < 2] == 0}>
+          </a>
+        </IF>
+        &nbsp;&nbsp;
+        <IF {[expr $page \>= $num_pages] == 0}>
+          <a href="/admin/launch?script=rh&amp;template=logging&amp;log=<?=$lognum?>&amp;page=<?= [expr $page + 1] ?>">
+        </IF>
+          Next &gt;&gt;
+        <IF {[expr $page \>= $num_pages] == 0}>
+          </a>
+        </IF>
+        &nbsp;&nbsp;&nbsp;
+        Page&nbsp;
+
+        <?
+          global log_page_padding
+          set chunk_size [expr ($log_page_padding * 2) + 1]
+          if {[expr $num_pages < ($chunk_size * 3) + 2] == 1} {
+        ?>
+            <FOR {set pg 1} {$pg <= $num_pages} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+        <?
+          } elseif {[expr $page <= ($log_page_padding + 1) * 2]} {
+        ?>
+            <FOR {set pg 1} {$pg <= $page + $log_page_padding} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+            &nbsp;...&nbsp;&nbsp;
+            <FOR {set pg [expr $num_pages - $log_page_padding]} {$pg <= $num_pages} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+        <?
+          } elseif {[expr $page \>= ($num_pages - ($log_page_padding * 2) - 1)] == 1} {
+        ?>
+            <FOR {set pg 1} {$pg <= $log_page_padding + 1} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+            &nbsp;...&nbsp;&nbsp;
+            <FOR {set pg [expr $page - $log_page_padding]} {$pg <= $num_pages} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+        <?
+          } else {
+        ?>
+            <FOR {set pg 1} {$pg <= $log_page_padding + 1} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+            &nbsp;...&nbsp;&nbsp;
+            <FOR {set pg [expr $page - $log_page_padding]} { $pg <= $page + $log_page_padding} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+            &nbsp;...&nbsp;&nbsp;
+            <FOR {set pg [expr $num_pages - $log_page_padding]} {$pg <= $num_pages} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+        <?
+          }
+        ?>
+
+</TAG>
+
+
+<!-- ==================================================
+     = Log Viewer
+         ================================================== -->
+<form method="post">
+ <div align="left"
+  <table>
+  <td>
+  <td>
+  <td>
+  <td>
+  <td align="center" valign="top">
+    <input type="text" name="filter">
+    <input type="submit" id="gsubmit" value="Search">
+  </td>
+  </table>
+  </div>
+</form>
+
+<table width="100%" border="0" cellspacing="0" align="center">
+  <tr>
+    <td>
+      <img src="/images/em.gif" width="15">
+    <td align="left" valign="top"
+        bgcolor="<? global color_main_pane ?><?= $color_main_pane ?>">
+
+      <IF {[tms::has-capability-max "set_privileged"] == 0}>
+        <p>You do not have permission to view the logs.</p>
+      <ELSE>
+
+        <?
+          set num_log_lines 0
+          set page_no 0
+          switch -- $lognum {
+            "current" -
+            "continuous" {
+                if {[string length $filter_str] != 0} {
+                    set num_log_lines [tms::get-filtered-log-line-count $filter_str]
+                } else {
+                    set num_log_lines [tms::get-log-line-count]
+                }
+            }
+            default {
+                if {[string length $filter_str] != 0} {
+                    set num_log_lines [tms::get-filtered-log-line-count $filter_str "$lognum"]
+               } else {
+                    set num_log_lines [tms::get-log-line-count "$lognum"]
+               }
+            }
+          }
+          set num_pages [expr int(ceil(double($num_log_lines)/$log_lines_per_page))]
+	  if { $num_pages !=0 } {
+	  	set page_no $page
+	  }
+          set line_begin [expr ($page-1) * $log_lines_per_page + 1]
+          set num_lines $log_lines_per_page
+          if {[string equal $lognum "current"] == 1 || 
+             [string equal $lognum "continuous"] == 1} {
+                if {[string length $filter_str] != 0} {
+                    set log_lines [tms::get-filtered-log-lines $filter_str $line_begin $num_lines]
+               } else {
+                    set log_lines [tms::get-log-lines $line_begin $num_lines]
+               }
+          } else {
+                if {[string length $filter_str] != 0} {
+                    set log_lines [tms::get-filtered-log-lines $filter_str $line_begin $num_lines "$lognum"]
+               } else {
+                    set log_lines [tms::get-log-lines $line_begin $num_lines "$lognum"]
+               }
+          }
+        ?>
+
+        <h2>
+          <IF {[string equal $lognum "current"] == 1}>
+            Current log, page <?=$page_no?> of <?=$num_pages?>
+          <ELSE>
+            <IF {[string equal $lognum "continuous"] == 1}>
+               Continuous Log (Updated every <?=$log_update_interval?> seconds)
+            <ELSE>
+               Archived log <?=$lognum?>, page <?=$page?> of <?=$num_pages?>
+            </IF>
+          </IF>
+        </h2>
+
+        <IF  {[string equal $lognum "continuous"] == 1}>
+            <div id="logArea"></div>
+
+            <script type="text/javascript">
+                function logWrapper() {
+                    getAjaxText ('<?=$ajax_logging_url?>','logArea')
+                    setTimeout(logWrapper, <?=$log_update_interval_ms?>);
+                }
+                logWrapper();
+            </script>
+            <noscript>
+               <i>Continuous log updates require that JavaScript be enabled.</i>
+            </noscript>
+        <ELSE>
+
+        <LOG-NAV $lognum $page $num_pages>
+<pre><FOREACH line $log_lines><?= $line ?>
+</FOREACH></pre>
+        <LOG-NAV $lognum $page $num_pages>
+
+        </IF>
+      </IF>
+    </td>
+  </tr>
+</table>
+
+     <div id="pageContentLast-logging"></div>
+</IF>
+</div>
+</TMS-BODY>
+</div>
+</TMS-PAGE>

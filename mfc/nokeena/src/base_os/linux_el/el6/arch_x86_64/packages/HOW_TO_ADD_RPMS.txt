@@ -1,0 +1,93 @@
+(From samara.html)
+3.3.2. Installing RPMs
+
+Samara includes many third-party software elements, including the kernel and
+various system utilities. Many of these elements are packaged into the final
+system image by extracting them from binary RPMs. Programs are built from
+source only when absolutely necessary (i.e. when we need to modify their
+behavior). By not building all of these elements, the overall system build
+time can be minimized, and it makes it easier to keep up to date with the
+supported Linux distributions. Samara allows you to add your own RPMs as well.
+
+Note: kernel modules cannot be added using RPMs. They need to be built from
+source. Please see Section 3.4.3 for details on how to do this.
+
+The Samara build process includes a filtering step where the RPM is unpacked
+and only the required fields from the RPM are included in the system image.
+Note that the RPM files themselves are not included in the image, and that
+the image has neither RPM database nor tools like the rpm command. For each
+supported OS distribution, Samara defines a set of filters expressing what to
+take from RPMs in general, and from each RPM specifically. This can be done
+in a "blacklist" or a "whitelist" manner. (Whitelist is generally only
+appropriate for specific RPMs.) For example, by default, no files from
+/usr/share are included in the system image.
+
+The list of RPMs to include is defined by Makefiles, and the filters are
+defined by PERL scripts. The system allows different RPMs and filtering rules
+to be specified for the image and the root floppy (manufacturing environment).
+Generally you should not need to change the manufacturing environment and
+will only need to add RPMs to the system image.
+
+To add your own RPMs to the image, follow these steps.
+
+* Do not make any modifications to the base Samara files unless you need to
+  remove one of the RPMs that it already installed (e.g. if you are including
+  a more up-to-date version in your own directory). Any RPMs you add should
+  be underneath your customer/<product> directory.
+
+* Create the appropriate directories to hold your RPMs, if they do not already
+  exist. Use a directory structure comparable to that used in the main Samara
+  tree. You'll need two directories:
+
+  customer/<PRODUCT>/src/base_os/<DIST>/<VERSION>/arch_<ARCH>/packages
+  customer/<PRODUCT>/src/base_os/<DIST>/<VERSION>/arch_<ARCH>/image_packages
+
+  The former is where you will put the RPMs, and the latter is where you will
+  tell the system when and how to install them. Note that if you are building
+  both i386 and x86_64 versions of your product, you'll have to install two
+  versions of the RPM in their respective directories. An example of the first
+  directory:
+
+  customer/demo/src/base_os/linux_fedora/core6/arch_x86_64/packages
+
+* If you are adding an RPM to the root floppy, you'd create
+  ..../rootflop_packages instead of (or in addition to) ..../image_packages,
+  and use the correspondingly different files in the main tree as examples.
+
+* Add your RPM to the ..../packages directory.
+
+* Build the lfi utility using the Samara build system. Its source is found in
+  src/bin/lfi, so you can just run make in that directory. The resulting
+  binary will then be found in
+    ${PROD_OUTPUT_ROOT}/product-<PRODUCT>-<ARCH>/build/image/bin/lfi.
+  You may want to save this utility and keep it somewhere accessible in case
+  you need it again later.
+
+* Run lfi on the RPM as follows:
+
+    lfi -tgunm <RPM filename>
+
+  It should produce a line of output looking somewhat like this:
+
+    lfiv1 010 - - - - - 136472 - - - md5
+    29271739069610df784774dddc15ecdb xinetd-2.3.13-6.x86_64.rpm
+
+  Append this line to the pkg_bin_check.txt file in the same directory as the
+  RPM, or create such a file if it does not already exist. Add it on a new
+  line by itself, but with no carriage returns within it (i.e. add it all as
+  a single line).
+
+* Now edit the Makefile in the ..../image_packages directory.
+
+* If you want the entire contents of the RPM installed in your product,
+  you're done. If you want to filter the contents, you can add some lines to
+  pkg_config.pl in the same directory as the Makefile. This document does not
+  yet cover how to specify your filters, but you can refer to
+    src/base_os/linux_fedora/core6/arch_i386/image_packages/pkg_config.pl
+  for some examples to follow.
+
+* Note that once you have added an RPM in this manner, dobincp.sh (see
+  Section 3.2.2) will not pick up the changes, as it only synchronizes
+  certain selected directories that are not likely to cover those the RPM
+  installs into. So you'll need to build a full image and install it using
+  the "image ..." CLI commands.

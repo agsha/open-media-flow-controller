@@ -1,0 +1,59 @@
+#Config file for the Cache simulator
+Num_ingest_entries
+Ingest_rate
+Evict_rate
+Sata_Disk_size 2147483648
+Sas_Disk_size 474314964992
+Ssd_Disk_size 51061456896
+Ram_size 52491714560
+AM_size 8000000
+Ingest_size_threshold
+SSD_size_threshold
+Origin_fetch_number 2
+BM_get_loop_delay 5
+BM_get_fetch_delay 10
+OM_get_delay 1000
+BM_put_delay 5
+BM_get_failure_delay 0
+Provider_offset 9
+Ip_offset 0
+#no domain offset
+Domain_offset 99
+Time_offset 3
+Uri_offset 5
+Resp_offset 7
+Resp_size_offset 8
+Range_offset 13
+Content_length_offset 99
+Cache_control_offset 99
+am_extra_struct_size 50
+small_block 0
+number_of_disks 2
+number_of_SATAs 0
+number_of_SSDs 1
+number_of_SASs 1
+Ssd_block_size 262144
+Sas_block_size 2097152
+Sata_block_size 2097152
+small_read 0
+small_read_size 262144
+buffer_hold_time 60000000
+parallel_ingests 16
+buffer_hold_percentage 10
+dm_put_delay 2000
+dm_get_delay 0
+size_based_selection 1
+blocks_to_delete 100
+disk_evict_threshold 80
+#disk evict threshold in %
+ssd_min_size 262144
+sas_min_size 2097152
+sata_min_size 4194304
+ssd_high_mark 70
+sas_high_mark 70
+sata_high_mark 70
+ssd_low_mark 20
+sas_low_mark 20
+sata_low_mark 20
+#offline ingest mode = 1-fifo, 2 -lifo, 3 - hybrid
+offline_ingest_mode 1

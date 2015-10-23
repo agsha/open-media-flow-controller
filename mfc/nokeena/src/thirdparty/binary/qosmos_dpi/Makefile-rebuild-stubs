@@ -1,0 +1,25 @@
+#
+CFILES=qosmos_dpi-stubs.c
+OBJS=qosmos_dpi-stubs.o
+SLIB=qosmos_dpi_stubs.a
+
+TARGET_LIBS=libapp.a libflow.a libplugins.a libqmctl.a libqmdata.a \
+	libqmengine.a libqmfilter.a libqmprotocols.a libqmsecurity.a 
+
+all: ${SLIB} copy_libs
+
+${SLIB}: ${OBJS}
+	ar rcs ${SLIB} ${OBJS}
+
+copy_libs:
+	for lib in ${TARGET_LIBS}; do \
+		rm -rf $$lib ; \
+		cp ${SLIB} $$lib ; \
+	done
+	rm -rf  ${OBJS}
+	
+%.o:%.c
+	cc -c $< -o $@
+
+clean:
+	rm -rf ${OBJS} ${SLIB} ${TARGET_LIBS}

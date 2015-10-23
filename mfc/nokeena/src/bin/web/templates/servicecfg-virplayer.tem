@@ -1,0 +1,158 @@
+<?
+#
+# Filename:  servicecfg-virplayer.tem,v $
+# Date:      2009/02/06 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Virtual Player">
+<TMS-MENU "servicecfg">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SERVICECFG-MENU "virplayer"></TMS-SERVICECFG-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Virtual Player Configuration">
+<script type="text/javascript">
+function popup(mylink, windowname)
+{
+if (! window.focus)return true;
+var href;
+if (typeof(mylink) == 'string')
+   href=mylink;
+else
+   href=mylink.href;
+window.open(href, windowname, 'resizable=yes,scrollbars=yes');
+return false;
+}
+</script>
+
+<CFG-FORM -action "config-form-list-action" -div_id "virtual_player_create">
+  <h2> Add Virtual Player </h2>
+  <TMS-TABLE -div_id "vir_pl_tbl">
+    <TMS-TABLE-ENTRY "Virtual player Name">
+      <CFG-TEXTBOX -id "name" -errname "vpname" -caps "set_basic"
+                   -type "string" -span_id "configure_vpname" -required "true">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Virtual Player Type">
+       <CFG-DROPDOWN -id "type" -errname "vptype" -caps "set_basic"
+                   -type "uint32" -span_id "configure_vptype"
+                    -options {
+                     {"generic" "0" }
+                     {"qss-streamlet" "2" }
+                     {"yahoo" "3" }
+                     {"youtube" "5" }
+                     {"smoothstream-pub" "6" }
+                     {"flashstream-pub" "7" }
+                     }>
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+  <input type="hidden" name="f_list_root" value="/nkn/nvsd/virtual_player/config">
+  <input type="hidden" name="f_list_index" value="name" required "true">
+  <input type="hidden" name="f_list_children" value="type">
+  <input type="hidden" name="f_mfd_action_binding" value="/nkn/nvsd/virtual_player/actions/set_default">
+  <input type="hidden" name="f_mfd_append_list" value="name,type">
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "vp_apply_1">
+
+</CFG-FORM>
+
+<h2> List of Virtual Players Added </h2>
+
+<CFG-FORM -action "config-form-list-action" -div_id "vplist_1">
+  <?
+    set cur_line 0
+    set vp_prefix "/nkn/nvsd/virtual_player/config"
+    set vp_ids [tms::iterate-config $vp_prefix]
+  ?>
+   <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+     <td></td> 
+      <td>
+        Virtual Player</td>
+      <td>
+        Type </td>
+      <td>
+        Configure</td>
+      <td> 
+        Show </td>
+    </tr>
+
+    <FOREACH vp_id $vp_ids>
+    <?
+    set prefix_len [string length "$vp_prefix/"]
+    set vp_name [string range $vp_id $prefix_len end]
+    set vp_type [tms::get-config "$vp_id/type"]
+    set vp_typename "generic"
+    if { $vp_type == 0} {
+       set vp_typename "generic"
+       }
+    if { $vp_type == 2} {
+       set vp_typename "qss-streamlet"
+       }
+    if { $vp_type == 3} {
+       set vp_typename "yahoo"
+       }
+    if { $vp_type == 4} {
+       set vp_typename "smoothflow"
+       }
+    if { $vp_type == 5} {
+       set vp_typename "youtube"
+       }
+    if { $vp_type == 6} {
+       set vp_typename "smoothstream-pub"
+       }
+    if { $vp_type == 7} {
+       set vp_typename "flashstream-pub"
+       }
+    ?>
+   <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                         -value "$vp_id" -span_id "vp_cbox_2"></td>
+      <td>
+        <?=$vp_name?></td>
+      <td>
+        <?=$vp_typename?></td>
+      <td>
+        <a href="/admin/launch?script=rh&amp;template=servicecfg-type<?=$vp_type?>&amp;vpname=<?=$vp_name?>" onClick="return popup(this, 'notes')">Configure </a> </td>
+      <td>
+        <a href="/admin/launch?script=rh&amp;template=servicecfg-showvp&amp;vpname=<?=$vp_name?>" onClick="return popup(this, 'notes')">Show </a> </td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Virtual Player.
+      <SET priv DISABLED_set_basic>
+    <ELSE>
+      <SET priv set_basic>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps "set_basic" -span_id "vp_remove_1">
+  <img src="/images/em.gif" width="10" height="1">
+  </p></td></CFG-FORM></tr></table>
+
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

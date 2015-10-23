@@ -1,0 +1,22 @@
+:
+# When "df" is used with no mount points or devices specified, it will not show
+# any filesystems mounted after the system comes up.
+# (This is because the root is readonly and /etc/mtab is not udpated.)
+# This script mimics what df does when no point points or devices are specfied
+# but uses /proc/mounts to find out which devices are currently mounted.
+OPT=${1}
+df ${OPT} / 
+cat /proc/mounts | while read LINE
+do
+    case "_${LINE}" in
+    _)           break ;;
+    _/dev/root*) continue ;;
+    _/dev/*)     ;;
+    *)           echo "${LINE}" | grep " nfs " > /dev/null
+                 [ ${?} -ne 0 ] && continue
+                 ;; 
+    esac
+    DEV=${LINE%% *}
+    MP=`echo ${LINE} | awk '{print $2}'`
+    df ${OPT} ${MP} | grep -v Filesys | sed -e "s#^-                #${DEV}#"
+done

@@ -1,0 +1,34 @@
+#! /bin/sh
+if [ $# -lt 2 ]; then
+  echo "ingest <full path to file> <URI name> [elemnt file (abs path)]"
+  exit 0
+fi
+FILE=$1
+URL=$2
+CL=`wc -m $FILE | awk '{print $1}'`
+
+if [ $# -eq 2 ]; then
+    QF=/nkn/tmp/q.tmp
+    mkdir -p /nkn/tmp
+else
+    QF=$3 
+fi
+touch $QF
+ret=1
+while [ $ret -ne 0 ]; do
+  /opt/nkn/bin/nknfqueue -i $QF -n -p $FILE -u $URL -H "Content-Length:${CL}"
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    sleep 1
+  fi
+done
+ret=1
+while [ $ret -ne 0 ]; do
+  /opt/nkn/bin/nknfqueue -e $QF -q /tmp/FMGR.queue
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    sleep 1;
+  fi
+done
+echo $URL
+rm -f $QF

@@ -1,0 +1,12 @@
+file.converter.tpoolmode.enable = 0
+file.global.max_concurrent_sessions = 1000
+file.converter.sequential_mode.enable = 0
+file.converter.num_worker_threads = 1
+file.MobileStreaming.task_low_threshold = 6000000
+file.MobileStreaming.task_high_threshold = 12000000
+file.global.use_async_io_apple_fmtr = 1
+file.global.use_async_io_sl_fmtr = 1
+file.global.libc_assert_enable = 0
+file.global.rtsched_num_core_threads = 1
+file.global.max_fds = 100000
+file.global.num_aio_worker_threads = 100

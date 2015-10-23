@@ -1,0 +1,118 @@
+:
+# Script to run a command for building the Samara based product.
+# It is expected to be run by "sudo", which means that any non-standard
+# settings are to be specified on the command line, because the samara
+# makefiles depend on these PROD_* settings.
+MY_DIR=`dirname "${0}"`
+case "${MY_DIR}" in
+/*)   ;;
+../*) MY_DIR=`pwd`/.. ;; 
+.|./) MY_DIR=`pwd` ;;
+*) MY_DIR=`pwd`/"${MY_DIR}" ;;
+esac    
+
+# Standard default that should never need changing.
+export PROD_TARGET_ARCH=X86_64
+export PROD_TARGET_HOST=X86_64
+Syntax()
+{
+    echo On the command line specify the required and optional paramaters and after that the command to run.
+    echo Required paramters:
+    echo 'PROD_CUSTOMER_ROOT=<where the source is checked out>'
+    echo 'PROD_OUTPUT_ROOT=<where you want the build output to go>'
+    echo 'PROD_TREE_ROOT=<override existing or automatic setting>'
+    echo Optional paramters to override settings in the environment:
+    echo PROD_PRODUCT=${PROD_PRODUCT}
+    echo PROD_TARGET_ARCH=${PROD_TARGET_ARCH}
+    echo 'You can specify other environment settings with "VAR=VAL"'
+}
+
+VERBOSE=no
+for ARG in ${@}
+do
+    ARG="${ARG//[]/ }"
+    [ "${VERBOSE}" = "yes" ] && echo "ARG::${ARG}::"
+    case _${ARG} in 
+    *=*)  export "${ARG}"
+          ;;
+    _-h*|_--h*)  Syntax ; exit 1 ;;
+    _-v*|_--v*)
+        VERBOSE=yes
+        echo verbose
+        ;;
+    *)  break ;;
+    esac
+    shift
+done
+
+if [ "${USER}" != "root" ] ; then
+    echo You must run this script usding "sudo".
+    echo If you do not have sudo permission, add this line to /etc/sudoers:
+    echo "${USER} ALL=(ALL) ALL"
+    echo 'Then type "sudo bash", and at the # prompt run this script again.'
+    echo "or if you specify all the parameters on the command line, do sudo ${0}"
+    exit 1
+fi
+# Make sure the required environment is set and correct.
+if [ "_${PROD_CUSTOMER_ROOT}" = "_" ] ; then
+    echo PROD_CUSTOMER_ROOT not set
+    exit 1
+fi
+if [ "_${PROD_OUTPUT_ROOT}" = "_" ] ; then
+    echo PROD_OUTPUT_ROOT not set
+    exit 1
+fi
+if [ "_${PROD_TREE_ROOT}" = "_" ] ; then
+    # The script set-mfc-PROD_TREE_ROOT.sh sets:
+    #   PROD_TREE_ROOT
+    #   PROD_PRODUCT
+    #   SAMARA_SVN_REV
+    #   SAMARA_SVN_BRANCH
+
+   #export PROD_PRODUCT=nokeena
+   #. ${MY_DIR}/set-mfc-PROD_TREE_ROOT.sh
+    . ${MY_DIR}/set-mf-PROD_TREE_ROOT.sh
+    # Verify build settings.
+    if [ -z "${PROD_TREE_ROOT}" ] ; then
+      echo Unable to set PROD_TREE_ROOT automatically.
+      exit 1
+    fi
+    case "${PROD_TREE_ROOT}" in
+    unknown*)
+      echo Cannot build PROD_CUSTOMER_ROOT=${PROD_CUSTOMER_ROOT} on this build machine.
+      echo ${PROD_TREE_ROOT}
+      exit 1
+      ;;
+    esac
+    echo PROD_TREE_ROOT=${PROD_TREE_ROOT} '# Automatically Set#'
+    if [ ! -d ${PROD_TREE_ROOT} ] ; then
+      echo Automatically set PROD_TREE_ROOT=${PROD_TREE_ROOT} not set to valid directory
+      exit 1
+    fi
+fi
+if [ "_${PROD_PRODUCT}" = "_" ] ; then
+    echo PROD_PRODUCT not set
+    exit 1
+fi
+if [ "_${PROD_TARGET_ARCH}" = "_" ] ; then
+    echo PROD_TARGET_ARCH not set
+    exit 1
+fi
+if [ "_${PROD_TARGET_HOST}" = "_" ] ; then
+    export PROD_TARGET_HOST=X86_64
+fi
+# ----------------------------------------------------------
+if [ ! -d ${PROD_TREE_ROOT} ] ; then
+    echo PROD_TREE_ROOT=${PROD_TREE_ROOT} not set to valid directory
+    exit 1
+fi
+if [ ! -d ${PROD_CUSTOMER_ROOT} ] ; then
+    echo PROD_CUSTOMER_ROOT=${PROD_CUSTOMER_ROOT} not set to valid directory
+    exit 1
+fi
+if [ ! -d ${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT} ] ; then
+    echo PROD_PRODUCT=${PROD_PRODUCT} not set to valid subdirectory
+    exit 1
+fi
+
+eval ${@}

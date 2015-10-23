@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# File : default.script
+# Purpose : Script to setup the interface based on udhcpc
+#	For information check man pages of udhcpc
+#
+PACIFICA_HW_FILE=/etc/pacifica_hw
+
+echo "udhcpc state : $1"
+
+# Check the state to see if it is bound
+if [ $1 == "bound" ]; then
+	echo "Setting up interface $interface to $ip/$subnet"
+	ifconfig $interface $ip netmask $subnet
+	ifconfig $interface
+fi
+
+# PR 774932 
+# On Pacifica, for some reason this is conflicting with TM CLI not being
+# able to remove the default gw provided by our Pacifica dhcp server.
+if [ ! -f ${PACIFICA_HW_FILE} ] ; then
+    # Doing this ONLY when *not* on Pacifica hardware.
+    if [ -n "$router" ]; then
+	echo "Setting up routes.. "
+	if [ -f /sbin/route ]; then
+	    route add default gw ${router%% *}
+	else
+	    # If the symlink to route does not exist in the initrd
+	    # then call using busybox
+	    busybox route add default gw ${router%% *}
+	fi
+    fi
+fi
+
+#
+# End of file
+#

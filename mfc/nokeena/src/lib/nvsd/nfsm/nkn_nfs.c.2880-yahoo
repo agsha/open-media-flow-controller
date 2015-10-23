@@ -1,0 +1,1470 @@
+/*
+  COPYRIGHT: NOKEENA NETWORKS
+  AUTHOR: Vikram Venkataraghavan
+*/
+#include <string.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <errno.h>
+#ifdef HAVE_FLOCK
+#  include <sys/file.h>
+#endif
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/mount.h>
+#include <stdint.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <sys/uio.h>
+#include <glib.h>
+#include <dirent.h>
+#include <ctype.h>
+
+#include "nkn_nfs_api.h"
+#include "nkn_nfs.h"
+#include "nkn_mediamgr_api.h"
+#include "nkn_defs.h"
+#include "nkn_trace.h"
+#include "http_header.h"
+#include "fqueue.h"
+#include "nkn_debug.h"
+#include "nkn_namespace.h"
+#include "nkn_am_api.h"
+
+#define NFS_YAHOO_LOCAL_CFG_FILE "/nkn/nfs/nfsyahoolocalcfg.txt"
+#define NKN_NFS_MAX_CACHES 1
+#define NO_FILE_STR "no_file_name_assigned\0"
+
+GThread *nfs_rem_file_cfg_thread;
+GAsyncQueue *nfs_rem_file_cfg_q;
+GThread *nfs_yahoo_cfg_thread;
+int nfs_yahoo_thread_exit = 0;
+int nfs_yahoo_req_complete = 0;
+uint32_t nfs_async_q_count;
+GList *nfs_prefix_map_list = NULL;
+
+int glob_nfs_stat_err = 0;
+int glob_nfs_stat_cnt = 0;
+int glob_nfs_stat_not_found = 0;
+int glob_nfs_get_cnt = 0;
+uint64_t glob_tot_read_from_nfs = 0;
+int glob_nfs_get_err = 0;
+int glob_nfs_put_cnt;
+int glob_nfs_put_err;
+
+int glob_nfs_num_files_open = 0;
+int glob_nfs_num_files_closed = 0;
+int glob_nfs_num_open_err = 0;
+int glob_nfs_num_seek_err = 0;
+int glob_nfs_num_read_err = 0;
+
+int glob_nfs_num_move_files = 0;
+int glob_nfs_num_other_files = 0;
+
+int nfs_yahoo_poll_interval = 0;
+
+#define MAX_NFS_TOKEN_SIZE 64
+typedef struct nkn_nfs_cfg_file_s {
+    char rem_uri[MAX_URI_SIZE];
+    char custtoken[MAX_NFS_TOKEN_SIZE];
+    int  poll_interval;
+    int  req_complete;
+} nkn_nfs_cfg_file_t;
+
+static NFS_mount_obj* s_return_obj_from_token(namespace_token_t ns_token);
+static int s_nfs_read_config_file(NFS_mount_obj *pobj, char *in_file);
+static int s_nfs_parse_yahoo_config_file(NFS_mount_obj *pobj,
+					 char *file, const char *nfsconfigfile);
+
+static uint32_t
+s_get_file_size(char *filename)
+{
+    struct stat file_stat;
+
+    if (!stat(filename, &file_stat)) {
+	return file_stat.st_size;
+    }
+    return 0;
+}
+
+static int
+s_create_new_map_file(char *filename)
+{
+    FILE *file;
+
+    file = fopen(filename, "a+");
+    if (file == NULL) {
+	DBG_LOG(MSG, MOD_NFS,"\n ERROR: Could not create file. "
+		"Create file: %s", filename);
+	return -2;
+    }
+
+    fclose(file);
+    return 0;
+}
+
+static FILE *
+s_open_file_for_read(char *filename)
+{
+    FILE *file;
+    file = fopen(filename, "r");
+    if (file == NULL) {
+	return NULL;
+    }
+    return file;
+}
+
+static FILE *
+s_open_file_for_append(char *filename)
+{
+    FILE *file;
+    file = fopen(filename, "a");
+    if (file == NULL) {
+	return NULL;
+    }
+    return file;
+}
+
+static void
+s_close_file(FILE *file)
+{
+    fclose(file);
+}
+
+static void s_remove_datafiles(char *dirname)
+{
+    const char *cmd = "/bin/rm -rf ";
+    char cmd_line[PATH_MAX + MAX_URI_SIZE + 4096];
+    int count;
+
+    snprintf(cmd_line, sizeof(cmd_line)-1, "%s%s", cmd, dirname);
+    cmd_line[sizeof(cmd_line)-1] = '\0';
+
+    system(cmd_line);
+}
+
+static int s_create_nfs_dir(char *container_path, int isdir)
+{
+    char *end_slash, *cptr;
+    int ret;
+
+    if (isdir) {
+        end_slash = &container_path[strlen(container_path)];
+    } else {
+        end_slash = strrchr(container_path, '/');
+    }
+    cptr = container_path;
+    while (cptr < end_slash) {
+        cptr = strchr(cptr+1, '/');
+        if (cptr) {
+            *cptr = '\0';
+        } else if (isdir) {
+            cptr = end_slash;
+        } else {
+            break;
+        }
+        ret = mkdir(container_path, 0755);
+        if (ret != 0 && errno != EEXIST) {
+            /* This should never happen */
+            DBG_LOG(SEVERE, MOD_NFS, "mkdir error (%s): %d\n",
+		    container_path, errno);
+            return -errno;
+        }
+        if (!isdir || cptr != end_slash)
+            *cptr = '/';
+    }
+    /* Restore slash, so the container name is complete again */
+    if (!isdir)
+        *end_slash = '/';
+    return 0;
+}
+
+static int
+s_nfs_delete_mount(NFS_mount_obj *pobj)
+{
+    int ret = -1;
+
+    // TODO: Need to delete in a loop
+    ret = umount2(pobj->localdir[0], MNT_FORCE);
+    if(ret < 0) {
+	DBG_LOG(WARNING, MOD_NFS, "\n Delete config: Unmount NFS directory "
+                "failed: %s", pobj->localdir[0]);
+	return -1;
+    }
+    return 0;
+}
+
+static int
+s_nfs_create_mount(NFS_mount_obj *pobj, int retry)
+{
+    char            mountcmd[PATH_MAX + MAX_URI_SIZE + 256];
+    int             ret = -1;
+    char            mkdircmd[PATH_MAX + MAX_URI_SIZE + 256];
+    char            mountdir[PATH_MAX + MAX_URI_SIZE];
+    struct stat     sb;
+
+    snprintf(pobj->mntdir, sizeof(pobj->mntdir)-1, "/nkn/nfs");
+    pobj->mntdir[sizeof(pobj->mntdir)-1] = '\0';
+
+    snprintf(mountdir, sizeof(mountdir)-1,
+	     "%s/%s", pobj->mntdir, pobj->prefix[0]);
+    mountdir[sizeof(mountdir)-1] = '\0';
+
+    /* Create the dir if it is not there already */
+    if (stat(mountdir, &sb) < 0) {
+        snprintf(mkdircmd, sizeof(mkdircmd)-1, "mkdir -p %s", mountdir);
+        mkdircmd[sizeof(mkdircmd)-1] = '\0';
+        ret = system(mkdircmd);
+        if(ret < 0) {
+            DBG_LOG(MSG, MOD_NFS, "%s", "NFS Mount Failed....");
+            goto error;
+        }
+    } else {
+        if(pobj->mounted[0] == 0) {
+            /* This mount point was erroneously mounted. Unmount first*/
+            umount(mountdir);
+        }
+    }
+
+    snprintf(mountcmd, sizeof(mountcmd)-1,
+	     "mount -t nfs -n -o soft %s:/%s %s",
+	     pobj->remotehost[0], pobj->remotedir[0], mountdir);
+    mountcmd[sizeof(mountcmd)-1] = '\0';
+
+    snprintf(pobj->localdir[0], sizeof(pobj->localdir[0])-1, "%s", mountdir);
+    pobj->localdir[0][sizeof(pobj->localdir[0])-1] = '\0';
+
+
+    DBG_LOG(MSG, MOD_NFS, "\n NFS Origin: Mounting:%s", mountcmd);
+
+    ret = system(mountcmd);
+    if(ret != 0) {
+        DBG_LOG(WARNING, MOD_NFS, "%s", "NFS Mount Failed....");
+        pobj->mounted[0] = 0;
+        ret = -1;
+    }
+    else {
+        DBG_LOG(MSG, MOD_NFS, "%s", "NFS Mount Success....");
+        pobj->mounted[0] = 1;
+        ret = 0;
+    }
+    if(retry == 0) {
+	nfs_prefix_map_list =
+	    g_list_prepend(nfs_prefix_map_list, pobj);
+    }
+
+    return ret;
+
+ error:
+    return -1;
+}
+
+
+static NFS_mount_obj* s_get_obj_from_prefix(char *prefix)
+{
+    GList       *plist = nfs_prefix_map_list;
+    NFS_mount_obj   *pobj;
+
+    while(plist) {
+        pobj = (NFS_mount_obj *) plist->data;
+        if(strncmp(prefix, pobj->prefix[0],
+		   strlen(prefix)) == 0) {
+            return pobj;
+        }
+        plist = plist->next;
+    }
+    return NULL;
+}
+
+void
+NFS_config_delete(namespace_token_t *del_tok_list, int num_del)
+{
+    int i;
+    NFS_mount_obj   *pobj = NULL;
+
+    for(i=0; i < num_del; i++) {
+	pobj = s_return_obj_from_token(del_tok_list[i]);
+	if(!pobj)
+	    continue;
+	s_nfs_delete_mount(pobj);
+    }
+    return;
+}
+
+static int
+s_nfs_oomgr_request(char *in_uri, char *in_file_str)
+{
+
+    mime_header_t    httpresp;
+    mime_header_t    *oomgr_req = &httpresp;
+    char             *serialbuf;
+    int              serialbufsz;
+    char             requestbuf[4096];
+    fqueue_element_t fq_element;
+    fhandle_t        fh;
+    int              rv = -1;
+
+    init_http_header(oomgr_req, 0, 0);
+
+    /* Serialize HTTP header */
+    serialbufsz = serialize_datasize(oomgr_req);
+    serialbuf = (char *)alloca(serialbufsz);
+    rv = serialize(oomgr_req, serialbuf, serialbufsz);
+    /* rv == 0 Success */
+    if(rv != 0) {
+	DBG_LOG(SEVERE, MOD_NFS, "%s", "Serialize failed");
+    }
+
+    snprintf(requestbuf, sizeof(requestbuf)-1, "%s", in_uri);
+    requestbuf[sizeof(requestbuf)-1] = '\0';
+
+    /* Initialize fqueue element */
+    rv = init_queue_element(&fq_element, 1, "", requestbuf);
+    /* rv == 0 Success */
+    if(rv != 0) {
+	DBG_LOG(SEVERE, MOD_NFS, "%s", "Init FQUEUE failed");
+	goto error;
+    }
+
+    /* Add "http_header" fqueue element attribute */
+    rv = add_attr_queue_element_len(&fq_element, "http_header", 11,
+				    serialbuf, serialbufsz);
+    /* rv == 0 Success */
+    if(rv != 0) {
+	DBG_LOG(SEVERE, MOD_NFS, "%s", "Add attr http_header failed");
+	goto error;
+    }
+
+    /* Add "fq_destination" fqueue element attribute
+     * which controls the routing of the reply fqueue element
+     * within the nvsd file manager.
+     */
+    rv = add_attr_queue_element_len(&fq_element, "fq_destination", 14,
+				    in_file_str, strlen(in_file_str));
+    /* rv == 0 Success */
+    if(rv != 0) {
+	DBG_LOG(SEVERE, MOD_NFS, "%s", "Add attr fq_destination failed");
+	goto error;
+    }
+
+    /* Add to the FQueue queue */
+    fh = open_queue_fqueue("/tmp/OOMGR.queue");
+    if(fh < 0) {
+	DBG_LOG(SEVERE, MOD_NFS, "%s", "Open fqueue failed");
+	goto error;
+    }
+
+    rv = enqueue_fqueue_fh_el(fh, &fq_element);
+    if(rv != 0) {
+	DBG_LOG(SEVERE, MOD_NFS, "%s", "Enqueue fqueue failed");
+	goto error;
+    }
+
+    // TODO: Need a strategy for retry
+    return 0;
+
+ error:
+    return -1;
+}
+
+void
+NFS_oomgr_response(const char *in_token, const char *in_filename)
+{
+    NFS_mount_obj   *pobj = NULL;
+    int             queue_obj = 0;
+
+    pobj = (NFS_mount_obj *) calloc (1, sizeof(NFS_mount_obj));
+    if(!pobj) {
+	return;
+    }
+
+    if(strcmp(in_token, YAHOO_NFS_FILE_STR) == 0) {
+	snprintf(pobj->nfsconfigfile, sizeof(pobj->nfsconfigfile)-1, "%s",
+		 in_filename);
+	pobj->nfsconfigfile[sizeof(pobj->nfsconfigfile)-1] = '\0';
+	queue_obj = 1;
+	pobj->flag = NFS_CONFIG_FILE;
+	snprintf(pobj->nfscfgfiletoken, sizeof(pobj->nfscfgfiletoken)-1, "%s",
+		 YAHOO_NFS_FILE_STR);
+	pobj->nfscfgfiletoken[sizeof(pobj->nfscfgfiletoken)-1] = '\0';
+    }
+
+    if(queue_obj == 0) {
+	free(pobj);
+    } else {
+	g_async_queue_push(nfs_rem_file_cfg_q, pobj);
+	nfs_async_q_count ++;
+    }
+    return;
+}
+
+/* This thread will make an offline origin manager request for the yahoo 
+config file. It also polls the file according to an interval that is specified
+by the configuration. The interval also provides a way to stop the thread from 
+running. */
+static void 
+s_nfs_yahoo_cfg_thread_hdl(gpointer data) 
+{
+    nkn_nfs_cfg_file_t *ptr = (nkn_nfs_cfg_file_t *) data;
+    char *in_uri;
+    char *in_custtoken;
+    int  in_poll_interval;
+    int  print_count = 0;
+    int  count;
+    char dummy[4096];
+    int ret = -1;
+
+    assert(ptr);
+    in_uri = ptr->rem_uri;
+    in_custtoken = ptr->custtoken;
+    in_poll_interval = ptr->poll_interval;
+
+    count = 0;
+    while(1) {
+	/* Tell this thread to exit */
+	if(nfs_yahoo_thread_exit == 1) {
+	    free(ptr);
+	    g_thread_exit(&dummy);
+	    break;
+	}
+	while(ret < 0) {
+	    ret = s_nfs_oomgr_request(in_uri, in_custtoken);
+	    if(ret < 0) {
+		/* Try constantly until we enque the request */
+		if((print_count % 5) == 0) {
+		    DBG_LOG(SEVERE, MOD_NFS, "%s", "OOMGR fqueue request failed");
+		}
+		print_count ++;
+	    }
+	    /* Retry if OOMGR request fails */
+	    sleep(2);
+	}
+	nfs_yahoo_req_complete = 0;
+
+	if(count < 10) {
+	    if(nfs_yahoo_req_complete == 0) {
+		/* Something went wrong with the response */
+		/* Try the request again constantly. TODO: May need to
+		 exit at some point */
+		if((print_count % 5) == 0) {
+		    DBG_LOG(SEVERE, MOD_NFS, "OOMGR response failed. "
+			    "Retry count: %d", print_count);
+		}
+		count ++; 
+		print_count ++;
+		sleep(20);
+	        break;
+	    } else {
+		/* Request was satisfied. Continue the big loop*/
+		/* Get the file after the time specified and see whether any
+		   config has changed. */
+		if(in_poll_interval != 0) {
+		    sleep(in_poll_interval);
+		}
+		break;
+	    }
+	}
+	count = 0;
+    }
+}
+
+static void
+s_nfs_stop_yahoo_config(void)
+{
+    nfs_yahoo_thread_exit = 1;
+}
+
+static int
+s_nfs_start_yahoo_config(char *in_uri, int in_polltime)
+{
+    nkn_nfs_cfg_file_t *ptr;
+    GError 	       *err = NULL ;
+
+    ptr = (nkn_nfs_cfg_file_t *) malloc 
+	(sizeof (nkn_nfs_cfg_file_t));
+    if(!ptr) {
+	return -1;
+    }
+
+    snprintf(ptr->rem_uri, sizeof(ptr->rem_uri)-1, "%s", in_uri);
+    ptr->rem_uri[sizeof(ptr->rem_uri)-1] = '\0';
+    ptr->poll_interval = in_polltime;
+    snprintf(ptr->custtoken, sizeof(ptr->custtoken)-1, "%s", YAHOO_NFS_FILE_STR);
+    ptr->custtoken[sizeof(ptr->custtoken)-1] = '\0';
+
+    nfs_yahoo_poll_interval = in_polltime;
+    nfs_yahoo_cfg_thread = g_thread_create_full (
+    			(GThreadFunc) s_nfs_yahoo_cfg_thread_hdl,
+			(gpointer)ptr, (128*1024),
+			TRUE, FALSE, G_THREAD_PRIORITY_NORMAL, &err);
+    if(nfs_yahoo_cfg_thread == NULL) {
+        g_error_free(err);
+        return -1;
+    }
+    return 0;
+}
+
+void
+NFS_configure(namespace_config_t *cfg)
+{
+    char            prefix[MAX_URI_SIZE];
+    char            dummy[PATH_MAX];
+    char            umountcmd[PATH_MAX + MAX_URI_SIZE + 4096];
+    char            hostname[PATH_MAX + MAX_URI_SIZE];
+    NFS_mount_obj   *pobj = NULL;
+    int             entries = 0;
+    int             len = 0;
+    int             i;
+    char            *saveptr;
+    char            *token;
+    int             ret = -1;
+    struct stat     sb;
+    char            uri_str[] = "http://10.1.1.101/YAHOO1.txt";
+    char file[] = "/home/vikram/yahoo/yahoostrtest.txt\0";
+    int             polltime = 5;
+
+    ret = s_nfs_start_yahoo_config(uri_str, polltime);
+
+    return;
+
+#define NFS_CONFIG(cfg) cfg->http_config->origin.u.nfs
+
+    if(!cfg->uri_prefix) {
+        DBG_LOG(SEVERE, MOD_NFS, "Illegal URI prefix");
+        return;
+    }
+
+    if(!cfg->http_config) {
+        return;
+    }
+
+    entries = NFS_CONFIG(cfg).entries;
+    entries = 1;
+
+    /* There is just one prefix for now*/
+    for(i = 0; i < entries; i++) {
+        if(strlen(cfg->uri_prefix) > MAX_URI_SIZE-1) {
+            continue;
+        }
+        pobj = s_get_obj_from_prefix(cfg->uri_prefix);
+        if(pobj == NULL) {
+	    pobj = (NFS_mount_obj *) calloc (1, sizeof(NFS_mount_obj));
+	    if(!pobj) {
+		return;
+	    }
+	} else {
+	    if(strcmp(cfg->http_config->origin.u.nfs.server[0]->hostname_path,
+		      "") == 0) {
+		/*VIK: HACK: This change is for the yahoo health probe case
+		  where the nfs origin server is being disabled by the no
+		  origin-server nfs command. Right now, the delete configuration
+		  is not a working one so, we need to umount if we see a
+		  NULL hostname_path. Zubair, Davey know that I am doing this.*/
+		snprintf(umountcmd, sizeof(umountcmd)-1, "umount %s",
+			 pobj->localdir[0]);
+                umountcmd[sizeof(umountcmd)-1] = '\0';
+
+		ret = system(umountcmd);
+		pobj->localdir[0][0] = '\0';
+
+		if(ret != 0) {
+		    DBG_LOG(WARNING, MOD_NFS, "%s", "NFS Unmount Failed....");
+		}
+		else {
+		    DBG_LOG(MSG, MOD_NFS, "%s", "NFS Unmount Success....");
+		    pobj->mounted[0] = 1;
+		}
+		return;
+	    }
+	}
+
+        memcpy(pobj->prefix[0], cfg->uri_prefix, strlen(cfg->uri_prefix));
+
+        len = strlen(NFS_CONFIG(cfg).server[i]->hostname_path);
+        if(len > PATH_MAX-1) {
+            continue;
+        }
+
+	memcpy(hostname, (char *) NFS_CONFIG(cfg).server[i]->hostname_path,
+	       sizeof(hostname)-1);
+	hostname[sizeof(hostname)-1] = '\0';
+        token = strtok_r(hostname, "/", &saveptr);
+        snprintf(pobj->remotehost[0], sizeof(pobj->remotehost[0])-1, "%s", token);
+        pobj->remotehost[0][sizeof(pobj->remotehost[0])-1] = '\0';
+        snprintf(pobj->remotedir[0], sizeof(pobj->remotedir[0])-1, "%s", saveptr);
+        pobj->remotedir[0][sizeof(pobj->remotedir[0])-1] = '\0';
+
+
+        pobj->flag = NFS_CONFIG_CREATE;
+    }
+    g_async_queue_push(nfs_rem_file_cfg_q, pobj);
+    nfs_async_q_count ++;
+
+    return;
+}
+
+static void
+s_nfs_rem_file_cfg_thread_hdl(void)
+{
+    NFS_mount_obj *pobj = NULL;
+    int ret;
+
+    while(1) {
+	ret = -1;
+        pobj = (NFS_mount_obj *)g_async_queue_pop(nfs_rem_file_cfg_q);
+        if(pobj == NULL) {
+            continue;
+        }
+        nfs_async_q_count --;
+
+	/*
+	  We are not going to do the mount through CLI right now. We are
+	  only going to do the mount dynamically, i.e. when NFS_stat is called.
+	  if(pobj->flag == NFS_CONFIG_CREATE) {
+	  s_nfs_create_mount(pobj, 0);
+	  }
+        if(pobj->flag == NFS_CONFIG_DELETE){
+            s_nfs_delete_mount(pobj);
+        }
+	*/
+	if(pobj->flag == NFS_CONFIG_FILE) {
+	    if(strcmp(pobj->nfscfgfiletoken, YAHOO_NFS_FILE_STR) == 0) {
+		ret = s_nfs_parse_yahoo_config_file(pobj, pobj->nfsconfigfile,
+					      NFS_YAHOO_LOCAL_CFG_FILE);
+
+		/* The requester thread will retry */
+		if(ret >= 0) {
+		    nfs_yahoo_req_complete = 1;
+		}
+	    }
+	}
+    }
+
+    return;
+}
+
+/* This function removes all mounted directories that are contained
+   within the given directory. It goes through each dir and checks
+   it in /proc/mounts. If it finds it, it will umount it.
+*/
+static void
+s_umount_dirs(char *in_dir)
+{
+    DIR           *d;
+    struct dirent *dir;
+    char          umountdir[PATH_MAX];
+    int           ret = -1;
+
+    d = opendir(in_dir);
+    if (d) {
+	while ((dir = readdir(d)) != NULL) {
+	    printf("%s\n", dir->d_name);
+	    if(!isalpha(dir->d_name[0]) && !isdigit(dir->d_name[0])) {
+		continue;
+	    }
+	    snprintf(umountdir, sizeof(umountdir)-1, "%s/%s", in_dir, dir->d_name);
+	    umountdir[sizeof(umountdir)-1] = '\0';
+
+	    ret = umount2(umountdir, MNT_FORCE);
+	    if(ret < 0) {
+		DBG_LOG(WARNING, MOD_NFS, "\n Unmount NFS directory failed: %s",
+			umountdir);
+	    }
+	    if (!rmdir(umountdir)) {
+		continue;
+	    }
+	}
+	closedir(d);
+    }
+    return;
+}
+
+int
+NFS_init(void)
+{
+    int 		num_caches;
+    int 		ret_val = -1;
+    GError 		*err = NULL ;
+    char 		message[64];
+    char 		dirname[128] = "/nkn/nfs\0";
+    char 		configfile[128] = "/nkn/nfsconfig.txt\0";
+    int 		ret = -1;
+
+    //s_remove_datafiles(dirname);
+    s_umount_dirs(dirname);
+    ret_val = s_create_nfs_dir(dirname, 1);
+
+    if(ret_val < 0) {
+	DBG_LOG(SEVERE, MOD_NFS, "Cannot make NFS directory: %s",
+		dirname);
+	return -1;
+    }
+
+    MM_register_provider(NFSMgr_provider, 0,
+			 NFS_put, NFS_stat, NFS_get,
+			 NFS_delete, NFS_shutdown,
+			 NFS_discover, NFS_evict, NFS_provider_stat,
+			 NULL, NULL, NFS_promote_complete,
+                         100, 5000, MM_THREAD_ACTION_ASYNC);
+
+    nfs_rem_file_cfg_q = g_async_queue_new();
+    if(nfs_rem_file_cfg_q == NULL) {
+        DBG_LOG(SEVERE, MOD_NFS, "\n%s(): Async Queue did not get inited",
+		__FUNCTION__);
+	return -1;
+    }
+    nfs_async_q_count = 0;
+
+    nfs_rem_file_cfg_thread = g_thread_create_full (
+    			(GThreadFunc) s_nfs_rem_file_cfg_thread_hdl,
+			(void *)message, (128*1024),
+			TRUE, FALSE, G_THREAD_PRIORITY_NORMAL, &err);
+    if(nfs_rem_file_cfg_thread == NULL) {
+        g_error_free(err);
+        return -1;
+    }
+
+    // For testing purposes only
+    //test_nfs_mount();
+    //test_nfs_config_file();
+    return 0;
+}	/* NFS_init */
+
+/*
+  This function extracts the postfix from the uri, i.e. it extracts
+  everything after the prefix from the given uri.
+*/
+static char *
+s_nfs_extract_postfix(char *uri, char *prefix)
+{
+    char *p_uri = (char *) uri;
+    char *p_pre = (char *) prefix;
+    int  exact_match = 1;
+
+    while(*p_uri && *p_pre) {
+        if (*(p_uri++) != *(p_pre++)) {
+            exact_match = 0;
+            break;
+        }
+    }
+
+    if(exact_match) {
+        return p_uri;
+    }
+    else {
+        return NULL;
+    }
+}
+
+/*
+  This function returns an object which maps a uri prefix to a
+  mount point.
+*/
+static NFS_mount_obj* s_return_obj_from_uri(namespace_token_t ns_token,
+                                            char *in_uri, char **tmpp)
+{
+    GList 	    *plist = nfs_prefix_map_list;
+    NFS_mount_obj   *pobj;
+    int             urilen = 0;
+
+    /* Get the longest match between the uri that came in and
+       the uri corresponding to the namespace. */
+    *tmpp = ns_uri2uri(ns_token, in_uri, &urilen);
+    if(urilen <= 0) {
+        return NULL;
+    }
+
+    /* Return the object that has the same token as the one
+       in the arg list. */
+    while(plist) {
+	pobj = (NFS_mount_obj *) plist->data;
+	if(pobj->token == ns_token.u.token) {
+	    return pobj;
+	}
+	plist = plist->next;
+    }
+    return NULL;
+}
+
+/*
+  This function returns an object which maps a uri prefix to a
+  mount point.
+*/
+static NFS_mount_obj* s_return_obj_from_token(namespace_token_t ns_token)
+{
+    GList 	    *plist = nfs_prefix_map_list;
+    NFS_mount_obj   *pobj;
+    int             urilen = 0;
+
+    while(plist) {
+	pobj = (NFS_mount_obj *) plist->data;
+	if(pobj->token == ns_token.u.token) {
+	    return pobj;
+	}
+	plist = plist->next;
+    }
+    return NULL;
+}
+
+
+int
+NFS_put(struct MM_put_data *map, uint32_t dummy)
+{
+    return -1;
+}
+
+/* This function translates the ns_token in the stat or get
+   call to the namespace configuration and stores it in the
+   NFS_mount_obj_t object passed in.*/
+static int
+s_nfs_translate_ns_token(namespace_token_t *ns_token,
+			  NFS_mount_obj *pobj)
+{
+    const namespace_config_t *cfg = NULL;
+    int   entries = 0;
+    int   i;
+    uint32_t   len;
+    char  *token;
+    char  *saveptr;
+    char  hostname[PATH_MAX+MAX_URI_SIZE];
+#define NFS_CONFIG(cfg) cfg->http_config->origin.u.nfs
+
+    /* TODO: If namespace mapper is set we can skip all this configuration
+       because it does not apply. In that case, we have to go to origin to
+       get the config file. This configuration is read by another thread
+       and will not be done by this function. Just fail if we have a namespace
+       mapper set. */
+    cfg = namespace_to_config(*ns_token);
+    if(!cfg) {
+        DBG_LOG(SEVERE, MOD_NFS, "\nNo configuration for this token \n");
+	goto error;
+    }
+
+    if(!cfg->uri_prefix) {
+        DBG_LOG(SEVERE, MOD_NFS, "\nIllegal URI prefix \n");
+	goto error;
+    }
+
+    if(!cfg->http_config) {
+        DBG_LOG(SEVERE, MOD_NFS, "\nIllegal HTTP config in token \n");
+	goto error;
+    }
+
+    entries = NFS_CONFIG(cfg).entries;
+    entries = 1;
+
+    /* There is just one prefix for now*/
+    for(i = 0; i < entries; i++) {
+        if(strlen(cfg->uri_prefix) > MAX_URI_SIZE-1) {
+            continue;
+        }
+	memcpy(pobj->prefix[0], cfg->uri_prefix, strlen(cfg->uri_prefix));
+
+        len = strlen(NFS_CONFIG(cfg).server[i]->hostname_path);
+        if(len > sizeof(hostname)-1) {
+            continue;
+        }
+	memcpy(hostname, (char *) NFS_CONFIG(cfg).server[i]->hostname_path, len);
+	hostname[sizeof(hostname)-1] = '\0';
+
+        token = strtok_r(hostname, "/", &saveptr);
+        snprintf(pobj->remotehost[0], sizeof(pobj->remotehost[0])-1, "%s", token);
+        pobj->remotehost[0][sizeof(pobj->remotehost[0])-1] = '\0';
+        snprintf(pobj->remotedir[0], sizeof(pobj->remotedir[0])-1, "%s", saveptr);
+        pobj->remotedir[0][sizeof(pobj->remotedir[0])-1] = '\0';
+
+        pobj->flag = NFS_CONFIG_CREATE;
+    }
+
+    release_namespace_token_t(*ns_token);
+    return 0;
+
+ error:
+    release_namespace_token_t(*ns_token);
+    return -1;
+}
+
+int
+NFS_stat(nkn_uol_t	uol,
+	 MM_stat_resp_t	*in_ptr_resp)
+{
+    char 		filename[MAX_URI_SIZE + MAX_URI_SIZE + 100];
+    char 		dirname[PATH_MAX + MAX_URI_SIZE];
+    char 	        tmp[PATH_MAX + MAX_URI_SIZE];
+    struct stat	        sb;
+    NFS_mount_obj 	*pobj = NULL;
+    int                 ret = -1;
+    char                *postfix;
+    char                *part = tmp;
+    AM_pk_t             pk;
+
+    /* Find the object that matches on the namespace token.*/
+    pobj = s_return_obj_from_uri(in_ptr_resp->ns_token, uol.uri, &part);
+    if(pobj == NULL) {
+	pobj = (NFS_mount_obj *) calloc (1, sizeof(NFS_mount_obj));
+	if(!pobj) {
+	    goto nfs_stat_not_found;
+	}
+	/* Get the configuration that corresponds to this token and
+	 put into the object. */
+	ret = s_nfs_translate_ns_token(&in_ptr_resp->ns_token, pobj);
+	if(ret < 0) {
+	    goto nfs_stat_not_found;
+	}
+	snprintf(pobj->mntdir, sizeof(pobj->mntdir)-1,
+		 "/nkn/nfs");
+	pobj->mntdir[sizeof(pobj->mntdir)-1] = '\0';
+	/* Namespace token is a unique id. We use it here to id the
+	 mount object. It will be part of all stat requests. */
+	pobj->token = in_ptr_resp->ns_token.u.token;
+    }
+
+    postfix = s_nfs_extract_postfix(part, pobj->prefix[0]);
+    if(postfix == NULL) {
+        goto nfs_stat_not_found;
+    }
+    snprintf(filename, sizeof(filename)-1, "%s%s%s",
+             pobj->mntdir, pobj->prefix[0], postfix);
+    filename[sizeof(filename)-1] = '\0';
+
+    if (stat (filename, &sb) < 0) {
+	if(pobj->mounted[0] == 0) {
+	    ret = s_nfs_create_mount(pobj, 0);
+	    if(ret < 0) {
+		goto nfs_stat_not_found;
+	    }
+	}
+    }
+
+    if (stat (filename, &sb) < 0) {
+	DBG_LOG(MSG, MOD_NFS, "\n Could not stat filename: %s",
+		filename);
+	goto nfs_stat_not_found;
+    }
+
+    memcpy(in_ptr_resp->physid, filename, strlen(filename));
+    in_ptr_resp->ptype 		        = NFSMgr_provider;
+
+    if(sb.st_size > NKN_NFS_LARGE_BLK_LEN) {
+        in_ptr_resp->media_blk_len = NKN_NFS_LARGE_BLK_LEN;
+    } else {
+        in_ptr_resp->media_blk_len = NKN_NFS_BLK_LEN;
+    }
+
+    in_ptr_resp->tot_content_len 	= sb.st_size;
+
+    pk.type = AM_OBJ_URI;
+    pk.name = uol.uri;
+    pk.provider_id = NFSMgr_provider;
+    pk.sub_provider_id = 0;
+
+    ret = AM_is_video_promote_worthy(&pk);
+    if(ret == 1) {
+	AM_set_video_promote_pending(&pk);
+	MM_promote_uri(uol.uri, NFSMgr_provider, NFSMgr_provider);
+    }
+
+    glob_nfs_stat_cnt ++;
+    if(uol.offset >= sb.st_size) {
+	in_ptr_resp->mm_stat_ret = -1;
+	return -1;
+    }
+    return 0;
+
+ nfs_stat_not_found:
+    if(pobj) {
+        free(pobj);
+    }
+    glob_nfs_stat_not_found++;
+    in_ptr_resp->tot_content_len = 0;
+    return -1;
+}
+
+static int
+s_get_content(const char     *in_filename,
+              const uint64_t in_offset,
+              struct iovec   *in_iov,
+              const int32_t  in_iovcnt,
+	      uint64_t	     *out_read_len)
+{
+    int fd, retf = -1;
+    int out_errno = 0;
+
+    fd = open(in_filename, O_RDONLY | O_DIRECT);
+    if(fd < 0) {
+	/* Try opening with no O_DIRECT option*/
+	fd = open(in_filename, O_RDONLY);
+    }
+    if (fd < 0) {
+	out_errno = errno;
+	glob_nfs_num_open_err ++;
+	DBG_LOG(SEVERE, MOD_NFS, "\n%s(): FILESYSTEM OPEN "
+		"FAILED %s \n", __FUNCTION__, in_filename);
+	return out_errno;
+    }
+    glob_nfs_num_files_open ++;
+
+    retf = lseek(fd, in_offset, SEEK_SET);
+    if (retf >= 0) {
+	retf = readv(fd, in_iov, in_iovcnt);
+	if (retf <= 0) {
+	    out_errno = errno;
+	    glob_nfs_num_read_err ++;
+	    DBG_LOG(SEVERE, MOD_NFS, "\n%s(): FILESYSTEM "
+		    "READ ERROR: %s %d",
+		    __FUNCTION__, in_filename, retf);
+	}
+	*out_read_len = retf;
+    }
+    else {
+	out_errno = errno;
+	glob_nfs_num_seek_err ++;
+	DBG_LOG(SEVERE, MOD_NFS, "\n%s(): FILESYSTEM "
+		"SEEK ERROR: %d", __FUNCTION__, retf);
+    }
+
+    close(fd);
+    glob_nfs_num_files_closed ++;
+    return out_errno;
+}
+
+static void
+s_set_attr_content_length(nkn_attr_t *in_ap, uint64_t in_len)
+{
+    char 	ascii_length[64];
+    nkn_attr_id_t	id;
+
+    nkn_attr_init(in_ap);
+    in_ap->content_length = in_len;
+    id.u.attr.protocol_id = NKN_PROTO_HTTP;
+    id.u.attr.id = MIME_HDR_CONTENT_LENGTH;
+    snprintf(ascii_length, sizeof(ascii_length)-1, "%ld", in_len);
+    ascii_length[sizeof(ascii_length)-1] = '\0';
+    nkn_attr_set(in_ap, id, (nkn_attr_len_t)strlen(ascii_length), ascii_length);
+}
+
+static void
+s_set_attr_cache_expiry(nkn_attr_t *in_ap, int32_t exp_time)
+{
+    if(!in_ap) {
+	return;
+    }
+    in_ap->cache_expiry = exp_time;
+}
+
+/*
+  - Expiry time
+  - date header
+  - last modified
+  - cache control:max-age =: snprintf("max-age=%d");
+  - inline void http_add_date(http_cb_t * phttp)
+  {
+  add_namevalue_pair(phttp, HTTP_PAIR_RES, "Date", nkn_cur_datestr);
+  }
+
+  char *mk_rfc1123_time(const time_t *t, char *buf, int bufsz)
+  {
+  #define STRFTIME_FMT_RFC1123 "%a, %d %b %Y %H:%M:%S GMT"
+  struct tm gmt;
+
+  gmtime_r(t, &gmt);
+  if (!buf) {
+  bufsz = 128;
+  buf = malloc(bufsz);
+  }
+  *buf = '\0';
+  strftime(buf, bufsz, STRFTIME_FMT_RFC1123, &gmt);
+  return buf;
+  }
+
+
+*/
+
+int
+NFS_get(MM_get_resp_t *in_ptr_resp)
+{
+#define NFS_STACK_ALLOC (1024*1024/CM_MEM_PAGE_SIZE)
+    int 		    i, j;
+    struct iovec    iovp_mem[NFS_STACK_ALLOC];
+    struct iovec    *iov = iovp_mem;
+    void            *content_ptr = NULL;
+    nkn_attr_t      *attr_ptr = NULL;
+    void            *ptr_vobj;
+    int             in_num_obj = in_ptr_resp->in_num_content_objects;
+    nkn_uol_t	    uol;
+    uint64_t	    length_read;
+    int		        cont_idx = 0;
+    int             num_pages = 0;
+    int             partial_pages = 0;
+    uint64_t	    read_length = 0;
+    uint64_t 	    read_offset = 0;
+    int		        iov_alloced = 0;
+    int		        ret_val = -1;
+    MM_stat_resp_t  pstat;
+    int		        ret_stat;
+    uint64_t	    tot_content_len;
+
+    if(in_num_obj > NFS_STACK_ALLOC) {
+        iov = calloc(sizeof(struct iovec), in_num_obj);
+        if(iov == NULL) {
+            goto nfs_get_error;
+        }
+        iov_alloced = 1;
+    }
+
+    uol.uri = in_ptr_resp->in_uol.uri;
+
+    pstat.ns_token = in_ptr_resp->ns_token;
+    ret_stat = NFS_stat(in_ptr_resp->in_uol, &pstat);
+    if(ret_stat == -1) {
+	in_ptr_resp->err_code = -1;
+	goto nfs_get_error;
+    }
+
+    /* Set the iovec to contain the buf pointers from bufmgr*/
+    for(i = 0; i < in_num_obj; i++) {
+	ptr_vobj = in_ptr_resp->in_content_array[i];
+	assert(ptr_vobj);
+
+	content_ptr = nkn_buffer_getcontent(ptr_vobj);
+	assert(content_ptr);
+
+	iov[i].iov_base = content_ptr;
+	iov[i].iov_len = CM_MEM_PAGE_SIZE;
+    }
+
+    uol.offset = in_ptr_resp->in_uol.offset;
+    uol.length = in_ptr_resp->in_uol.length;
+    /* Align the read offset to the current page size */
+    read_offset = uol.offset & ~(CM_MEM_PAGE_SIZE - 1);
+
+    ret_val = s_get_content(in_ptr_resp->physid, read_offset,
+			    iov, in_num_obj, &length_read);
+    if(ret_val != 0) {
+	in_ptr_resp->err_code = -1;
+	goto nfs_get_error;
+    }
+
+    if(in_ptr_resp->in_attr != NULL) {
+	attr_ptr = (nkn_attr_t *) nkn_buffer_getcontent(
+							in_ptr_resp->in_attr);
+	/* Set the content length attribute in the http header */
+	s_set_attr_content_length(attr_ptr, pstat.tot_content_len);
+	s_set_attr_cache_expiry(attr_ptr, -1);
+	nkn_buffer_setid(in_ptr_resp->in_attr, &uol,
+			 NFSMgr_provider, 0);
+    }
+
+    /* Need to set the correct ids on the buffers of bufmgr*/
+    num_pages = length_read / CM_MEM_PAGE_SIZE;
+    partial_pages = length_read % CM_MEM_PAGE_SIZE;
+    if(partial_pages > 0)
+	num_pages ++;
+
+    read_length = length_read;
+    glob_tot_read_from_nfs += read_length;
+    /* Set the IDs of each buffer for bufmgr to identify  */
+    for (j = 1; j <= num_pages; j++) {
+	if(in_ptr_resp->out_num_content_objects ==
+	   in_ptr_resp->in_num_content_objects) {
+	    break;
+	}
+	ptr_vobj = in_ptr_resp->in_content_array[cont_idx];
+	assert(ptr_vobj);
+
+	uol.offset = read_offset;
+	if(read_length >= CM_MEM_PAGE_SIZE) {
+	    uol.length = CM_MEM_PAGE_SIZE;
+	    read_offset += CM_MEM_PAGE_SIZE;
+	    read_length -= CM_MEM_PAGE_SIZE;
+	}
+	else {
+	    uol.length = read_length;
+	    read_offset += read_length;
+	    read_length = 0;
+	}
+
+	nkn_buffer_setid(ptr_vobj, &uol, NFSMgr_provider, 0);
+	in_ptr_resp->out_num_content_objects++;
+	cont_idx ++;
+    }
+
+    if(iov_alloced)
+	free(iov);
+    return ret_val;
+
+ nfs_get_error:
+    if(iov_alloced)
+	free(iov);
+    return -1;
+}
+
+void
+NFS_cleanup(void)
+{
+    return;
+}
+
+int
+NFS_delete(MM_delete_resp_t *in_ptr_resp)
+{
+    return 0;
+}
+
+int
+NFS_shutdown(void)
+{
+    return 0;
+}
+
+int
+NFS_discover(struct mm_provider_priv *p)
+{
+    return 0;
+}
+
+void
+NFS_promote_complete(MM_promote_data_t *pdata)
+{
+    AM_pk_t pk;
+
+    pk.name = pdata->in_uol.uri;
+    pk.provider_id = pdata->in_ptype;
+    pk.sub_provider_id = pdata->in_sub_ptype;
+    pk.type = AM_OBJ_URI;
+    AM_video_promoted(&pk);
+    return;
+}
+
+int
+NFS_evict(void)
+{
+    return 0;
+}
+
+int
+NFS_provider_stat (MM_provider_stat_t *tmp)
+{
+    tmp->weight = 0;
+    tmp->percent_full = 0;
+    return 0;
+}
+
+static int
+s_nfs_read_config_file(NFS_mount_obj *pobj, char *in_file)
+{
+    int             ret = -1;
+    char            in_name[1024];
+    char            in_remoteip[1024];
+    char            in_remotedir[1024];
+    int             count = 0;
+    char            line[4096];
+    char            testcfgfile[] = "/nkn/nfs/debugtestconfigfile.txt";
+    char            objcfgfile[] = "/nkn/nfs/debugobjconfigfile.txt";
+    FILE            *nfsfile;
+    FILE            *testfile;
+    FILE            *objfile;
+    char            mountcmd[PATH_MAX + MAX_URI_SIZE + 256];
+    char            mkdircmd[PATH_MAX + MAX_URI_SIZE + 256];
+    char            mountdir[PATH_MAX + MAX_URI_SIZE];
+    struct stat     sb;
+    int             i;
+
+    assert(pobj);
+    nfsfile = fopen(in_file, "a+");
+    if(!nfsfile) {
+        printf("\n could not open file %p", in_file);
+        return -1;
+    }
+
+    testfile = fopen(testcfgfile, "w+");
+    if(!testfile) {
+	return -1;
+    }
+
+    snprintf(pobj->mntdir, sizeof(pobj->mntdir)-1, "/nkn/nfs");
+    pobj->mntdir[sizeof(pobj->mntdir)-1] = '\0';
+
+    count = 0;
+    while (fgets(line, sizeof(line), nfsfile) != NULL ) {
+	sscanf(line, "name = %s remoteip = %s remotedir = %s",
+	       in_name, in_remoteip, in_remotedir);
+        printf("\n Count = %d, name = %s, remoteip = %s, remotedir = %s",
+	       count, in_name, in_remoteip, in_remotedir);
+
+	/* The directory name is the same as provided by the xml file */
+	snprintf(mountdir, sizeof(mountdir)-1,
+		 "%s/%s", pobj->mntdir, in_name);
+	mountdir[sizeof(mountdir)-1] = '\0';
+
+	/* Create the dir if it is not there already */
+	if (stat(mountdir, &sb) < 0) {
+	    snprintf(mkdircmd, sizeof(mkdircmd)-1, "mkdir -p %s", mountdir);
+	    mkdircmd[sizeof(mkdircmd)-1] = '\0';
+	    ret = system(mkdircmd);
+	    if(ret < 0) {
+		DBG_LOG(MSG, MOD_NFS, "%s", "NFS Make directory failed....");
+		continue;
+	    }
+	} else {
+	    if(pobj->mounted[count] == 0) {
+		/* This mount point was erroneously mounted. Unmount first*/
+		umount(mountdir);
+	    }
+	}
+
+	snprintf(pobj->remotehost[count], sizeof(pobj->remotehost[count])-1,
+		 "%s", in_remoteip);
+	pobj->remotehost[count][sizeof(pobj->remotehost[count])-1] = '\0';
+	snprintf(pobj->remotedir[count], sizeof(pobj->remotedir[count])-1,
+		 "%s", in_remotedir);
+	pobj->remotedir[count][sizeof(pobj->remotedir[count])-1] = '\0';
+
+	snprintf(mountcmd, sizeof(mountcmd)-1,
+		 "mount -t nfs -n -o soft %s:/%s %s",
+		 pobj->remotehost[count], pobj->remotedir[count], mountdir);
+	mountcmd[sizeof(mountcmd)-1] = '\0';
+
+	snprintf(pobj->localdir[count], sizeof(pobj->localdir[count])-1,
+		 "%s", mountdir);
+	pobj->localdir[count][sizeof(pobj->localdir[count])-1] = '\0';
+
+	DBG_LOG(MSG, MOD_NFS, "\n NFS Origin: Mounting:%s", mountcmd);
+
+#if 0
+	ret = system(mountcmd);
+	if(ret != 0) {
+	    DBG_LOG(WARNING, MOD_NFS, "%s", "NFS Mount Failed....");
+	    pobj->mounted[count] = 0;
+	    ret = -1;
+	}
+	else {
+	    DBG_LOG(MSG, MOD_NFS, "%s", "NFS Mount Success....");
+	    pobj->mounted[count] = 1;
+	    ret = 0;
+	}
+#endif
+	fprintf(testfile, "%s\n", mountcmd);
+        count ++;
+    }
+    fclose(nfsfile);
+    fclose(testfile);
+
+    if(count >= 0) {
+	pobj->num_mounts = count;
+	nfs_prefix_map_list =
+	    g_list_prepend(nfs_prefix_map_list, pobj);
+    }
+
+    objfile = fopen(objcfgfile, "w+");
+    if(!objfile) {
+	return -1;
+    }
+
+    fprintf(objfile, "Printing out POBJ: %p", pobj);
+    for(i=0; i<count; i++) {
+	fprintf(objfile, "Count:%d remotehost: %s remotedir: %s localdir:%s\n",
+		i, pobj->remotehost[i], pobj->remotedir[i],
+		pobj->localdir[i]);
+    }
+    fclose(objfile);
+
+    return 0;
+
+ error:
+    return -1;
+}
+
+static int
+s_nfs_parse_yahoo_config_file(NFS_mount_obj *pobj, char *remfile,
+			      const char *yahooconfigfile)
+{
+    char *str, *token ,*saveptr, *saveptr1, *saveptr2, *saveptr3, *filestr;
+    int  fd;
+    FILE *nfsfile = NULL;
+    int  len;
+    char delim1[] = " ";
+    char delim2[] = "<";
+    char delim3 = '\\';
+    char delim4 = '\"';
+    int i = 0, ret = 0;
+    char domainstr[32];
+    char dirstr[32];
+    char prefixstr[32];
+    char str1[] = "INTERVAL-SEC";
+    char str2[] = "PUBLISHINGPOINT NAME";
+    char str3[] = "NAME";
+    int count = 0;
+    char *dir, *remoteip, *remotedir;
+    char nfsconfigfile[] = NFS_YAHOO_LOCAL_CFG_FILE;
+
+#define NFS_MAX_REMOTE_FILE_SIZE (1024 * 1024)
+    assert(pobj);
+    filestr = (char *) malloc (NFS_MAX_REMOTE_FILE_SIZE);
+    if(!filestr) {
+	return -1;
+    }
+    fd = open(remfile, O_RDONLY);
+    if(fd < 0) {
+	DBG_LOG(SEVERE, MOD_NFS, "Configfile NFS: Cannot open remote "
+		"file:%s errno = %d", remfile, errno);
+        return -1;
+    }
+
+    /* This will overwrite any data in the original file */
+    nfsfile = fopen(nfsconfigfile, "w+");
+    if(!nfsfile) {
+	DBG_LOG(SEVERE, MOD_NFS, "Configfile NFS: Cannot open config "
+		"file: %s errno = %d", nfsconfigfile, errno);
+        return -1;
+    }
+
+    len = read(fd, filestr, NFS_MAX_REMOTE_FILE_SIZE-1);
+    if(len <= 0) {
+	DBG_LOG(SEVERE, MOD_NFS, "Configfile NFS: No bytes read: %s "
+		"errno = %d", remfile, errno);
+        return -1;
+    }
+    DBG_LOG(SEVERE, MOD_NFS, "Configfile NFS: From: %s: bytes read: %d",
+	    remfile, len);
+
+    /* This parser is very specific to Yahoo NFS configuration file
+     We should use a generic parser in the future. */
+    str = filestr;
+    token = strtok_r(str, delim2, &saveptr);
+    while(token) {
+    if(!strncmp(token, str1, strlen(str1))) {
+        count ++;
+    } else if(!strncmp(token, str2, strlen(str2))) {
+        ret = sscanf(token, "PUBLISHINGPOINT NAME=%s PATH=%s%s",
+		     prefixstr, domainstr, dirstr);
+        token = strtok(prefixstr, &delim3);
+        token = strtok(token, &delim4);
+        dir = strdup(token);
+
+        token = strtok(domainstr, &delim3);
+        token = strtok(NULL, &delim3);
+        remoteip = strdup(token);
+        token = strtok(NULL, &delim3);
+        if(token) {
+            token[strlen(token)-1] = '\0';
+            remotedir = strdup(token);
+            fprintf(nfsfile, "name = %s remoteip = %s remotedir = %s\n",
+		    dir, remoteip, remotedir);
+        }
+    } else if (!strncmp(token, str3, strlen(str2))) {
+        count ++;
+    }
+
+    token = strtok_r(NULL, delim2, &saveptr);
+    }
+    close(fd);
+
+    fclose(nfsfile);
+    ret = s_nfs_read_config_file(pobj, nfsconfigfile);
+    return ret;
+}

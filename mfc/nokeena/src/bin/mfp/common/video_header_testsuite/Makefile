@@ -1,0 +1,57 @@
+
+SRC1=\
+	video_header_test.c
+
+SRC2=\
+	mrecv_vidhead.c\
+	
+COMMON_SRCS=\
+	../mfp_video_header.c\
+	../../../../lib/nvsd/memalloc/nkn_memalloc.c\
+	../../../../lib/nvsd/parser/nkn_vpe_mfp_ts2mfu.c\
+	../../../../lib/nvsd/parser/nkn_vpe_h264_parser.c\
+	../../../../lib/nvsd/parser/nkn_vpe_mfu_parse.c\
+	../../../../lib/nvsd/parser/nkn_vpe_mfu_parser.c\
+	../../../../lib/nvsd/parser/nkn_vpe_pattern_search.c\
+	../../../../lib/nvsd/parser/nkn_vpe_bitio.c\
+
+	
+	#../lib/nknlog/libnknlog.c
+
+	
+CFLAGS=-I../../../../include/mfp\
+	-I../../../../include\
+	-I/usr/lib64/glib-2.0/include\
+	-I/usr/include/glib-2.0\
+	-I/usr/lib/glib-2.0/include\
+	-I../../../../lib/mediacodecs/common\
+	-I$(PROD_TREE_ROOT)/src/include\
+	-I/usr/include/libxml2
+	
+DEFINES=-DINC_ALIGNER\
+		-DCHECK\
+		-DINC_SEGD\
+		-DMFP_BUGFIX_8460\
+
+DEFINES+=-D_XOPEN_SOURCE=600 -D_REENTRANT  -DPROD_PRODUCT=nokeena -DPROD_PRODUCT_nokeena=1 -DPROD_CUSTOMER=JUNIPER -DPROD_CUSTOMER_JUNIPER=1 -DPROD_ID=MFC -DPROD_ID_MFC=1 -DPROD_TARGET_OS=LINUX -DPROD_TARGET_OS_LINUX=1 -DPROD_TARGET_PLATFORM=LINUX_EL -DPROD_TARGET_PLATFORM_LINUX_EL=1 -DPROD_TARGET_PLATFORM_VERSION=EL5 -DPROD_TARGET_PLATFORM_VERSION_EL5=1 -DPROD_TARGET_PLATFORM_FULL=LINUX_EL_EL5 -DPROD_TARGET_PLATFORM_FULL_LINUX_EL_EL5=1 -DPROD_TARGET_ARCH=X86_64 -DPROD_TARGET_ARCH_X86_64=1 -DPROD_TARGET_ARCH_FAMILY=X86 -DPROD_TARGET_ARCH_FAMILY_X86=1 -DPROD_TARGET_CPU=X86_64 -DPROD_TARGET_CPU_X86_64=1 -DPROD_TARGET_CPU_WORDSIZE=64 -DPROD_TARGET_CPU_WORDSIZE_64=1 -DPROD_TARGET_CPU_ENDIAN=LITTLE -DPROD_TARGET_CPU_ENDIAN_LITTLE=1 -DPROD_TARGET_CPU_ALIGNMENT=8 -DPROD_TARGET_CPU_ALIGNMENT_8=1  -DPROD_FEATURE_SCHED=1 -DPROD_FEATURE_NTP_CLIENT=1 -DPROD_FEATURE_DHCP_CLIENT=1 -DPROD_FEATURE_ZEROCONF=1 -DPROD_FEATURE_AAA=1 -DPROD_FEATURE_RADIUS=1 -DPROD_FEATURE_TACACS=1 -DPROD_FEATURE_LDAP=1 -DPROD_FEATURE_XINETD=1 -DPROD_FEATURE_TELNETD=1 -DPROD_FEATURE_GRAPHING=1 -DPROD_FEATURE_SMARTD=1 -DPROD_FEATURE_TMS_MIB=1 -DPROD_FEATURE_WEB_REF_UI=1 -DPROD_FEATURE_MULTI_USER=1 -DPROD_FEATURE_RENAME_IFS=1 -DPROD_FEATURE_KERNEL_IMAGE_SMP=1 -DPROD_FEATURE_KERNEL_BOOTFLOPPY_UNI=1 -DPROD_FEATURE_MULTITHREADING=1 -DPROD_FEATURE_CRYPTO=1 -DPROD_FEATURE_IMAGE_SECURITY=1 -DPROD_FEATURE_XML_GW=1 -DPROD_FEATURE_OBFUSCATE_NONADMIN=1 -DPROD_FEATURE_CMC_CLIENT=1 -DPROD_FEATURE_BRIDGING=1 -DPROD_FEATURE_BONDING=1 -DPROD_FEATURE_WEB_COMBINED_LOGIN=1 -DPROD_FEATURE_GPT_PARTED=1 -DPROD_FEATURE_RESTRICT_CMDS=1 -DPROD_FEATURE_SECURE_NODES=1 -DPROD_FEATURE_AUTH_SMTP=1 -DPROD_FEATURE_UCD_SNMP_MIB=1 -DPROD_FEATURE_IPTABLES=1 -DPROD_FEATURE_VIRT=1 -DPROD_FEATURE_VIRT_KVM=1 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
+
+LIBS= -pthread -L/lib64 -lgthread-2.0 -lglib-2.0   -lm -lelf -ldl -lssl -luuid -lxml2
+
+CFLAGS+=-pipe -fsigned-char -fmerge-constants -g -std=c99  -m64 -Wall -W -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wpointer-arith -Wnested-externs -Wredundant-decls -Wundef -Wreturn-type -Wwrite-strings -Wbad-function-cast -Wno-unused  -Wformat-security -Wmissing-format-attribute -Winline  -Werror
+
+OUTPUT=bin
+
+
+BIN1=vdtester
+BIN2=pktanalyzer
+
+all: clean build1 build2
+build1:
+	gcc -g $(COMMON_SRCS) $(SRC1) $(CFLAGS) $(DEFINES) $(LIBS) -o $(OUTPUT)/$(BIN1)
+	
+build2:
+	gcc -g $(COMMON_SRCS) $(SRC2) $(CFLAGS) $(DEFINES) $(LIBS) -o $(OUTPUT)/$(BIN2)
+
+clean:
+	rm -rf $(OUTPUT)/$(BIN1)
+	rm -rf $(OUTPUT)/$(BIN2)

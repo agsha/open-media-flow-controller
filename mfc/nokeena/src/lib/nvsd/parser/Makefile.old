@@ -1,0 +1,45 @@
+topdir = ..
+srcdir = $(topdir)/src
+includedir = -I$(topdir)/include -I/usr/include/glib-2.0/ -I/usr/lib64/glib-2.0/include -I/home/sunil/inline_parsing/trunk/nokeena/src/include
+etagsdir = $(topdir)/include/*.h /usr/include/glib-2.0/*.h /usr/lib64/glib-2.0/include/*.h
+outputdir = $(topdir)/bin
+libdir = $(topdir)/lib
+output = main
+libname = libparser
+
+SRCS = \
+	$(srcdir)/main.c
+
+LIBSRC = \
+	$(srcdir)/nkn_vpe_parser_api.c\
+	$(srcdir)/nkn_vpe_flv_parser.c\
+	$(srcdir)/nkn_vpe_mp4_parser.c\
+	$(srcdir)/nkn_vpe_backend_io_plugin.c\
+	$(srcdir)/nkn_vpe_bitstream_io.c
+OBJS = \
+	nkn_vpe_parser_api.o\
+	nkn_vpe_flv_parser.o\
+	nkn_vpe_mp4_parser.o\
+	nkn_vpe_backend_io_plugin.o\
+	nkn_vpe_bitstream_io.o
+
+
+CFLAGS = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -g -Wall -Werror
+CFLAGSLIB = -c -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -g -Wall -Werror
+LDFLAGS = -L/usr/lib64 -L$(libdir) -lm -lglib-2.0 -lparser
+
+CC = gcc
+
+driver: LIB
+	$(CC) $(SRCS) $(CFLAGS) $(includedir) $(LDFLAGS) -o $(outputdir)/$(output) 
+
+COMPLIB: 
+	$(CC) $(LIBSRC) $(CFLAGSLIB) $(includedir)
+
+LIB: COMPLIB
+	ar rcs $(libdir)/$(libname).a $(OBJS)
+
+etags:
+	etags $(srcdir)/*.c $(etagsdir)
+clean:
+	rm -f $(libdir)/* *.o $(outputdir)/nkn_flv_pre_proc

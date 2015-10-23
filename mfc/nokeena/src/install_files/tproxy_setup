@@ -1,0 +1,30 @@
+#! /bin/sh
+
+IPTABLES=/sbin/iptables
+IFCONFIG=/sbin/ifconfig
+ON_IP=$1
+
+
+echo "1" > /proc/sys/net/ipv4/ip_nonlocal_bind
+
+interfaces=`/sbin/ifconfig | grep -v "^ " | awk '{print $1}' | sed '/^$/d'  | grep -v "lo"`
+
+for intf in $interfaces
+do
+	logger "Setting up redirect rule for $intf"
+	CMD="$IPTABLES -t nat -A PREROUTING -i $intf -p tcp --dport 80 -j REDIRECT --to-port 80"
+	ret=`${CMD}`
+	CMD="$IPTABLES -t nat -A PREROUTING -i $intf -p tcp --dport 554 -j REDIRECT --to-port 554"
+	ret=`${CMD}`
+done
+
+CMD="$IPTABLES -t tproxy -A PREROUTING -j ACCEPT"
+ret=`${CMD}`
+
+CMD="$IPTABLES -t tproxy -A PREROUTING -j TPROXY --on-port 0 --on-ip ${ON_IP}"
+logger "Executing : ${CMD}"
+
+
+ret=`${CMD}`
+exit $?
+

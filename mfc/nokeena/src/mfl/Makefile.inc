@@ -1,0 +1,2 @@
+INSTALL_TREE=mfl-image
+PROD_INSTALL_PREFIX=mfl-inst

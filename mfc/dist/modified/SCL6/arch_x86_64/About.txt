@@ -1,0 +1,15 @@
+For th3 MFC package only use:
+  glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+
+Install these two on build machines:
+  glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+  glib2-devel-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+
+Building the patched source also creates the following, which we put here to be complete,
+but are not currently used anywhere.
+  glib2-debuginfo-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+  glib2-doc-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.noarch.rpm
+  glib2-static-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+
+The new source rpm that incorporates the patches is placed over in the ../SRRMS dir.
+  glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.src.rpm

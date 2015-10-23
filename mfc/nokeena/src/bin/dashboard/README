@@ -1,0 +1,8 @@
+use following command to get the new dashboard of MFC.
+checkout new source
+goto nokeena/src directory
+
+patch -p0 -i bin/dashboard/sd-new-dashboard-changes
+cp bin/dashboard/ajax-loader.gif bin/web/content/images/
+cp bin/dashboard/dojo-release-1.8.0.tar.gz thirdparty/lib/dojo/
+

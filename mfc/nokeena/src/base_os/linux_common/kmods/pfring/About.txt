@@ -1,0 +1,6 @@
+Refer to nokeena/src/thirdparty/binary/pf_ring/About.txt for details about
+where the files in this directory come from.
+In short from
+http://downloads.sourceforge.net/project/ntop/PF_RING/PF_RING-6.0.0.tar.gz
+It is GPLv2 licensed.
+The Makefile is not from PF_RING as it has to work in the Samara env.

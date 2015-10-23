@@ -1,0 +1,13 @@
+:
+SAVE_DIR=`pwd`
+IMAGE_DIR=image
+if [ ! -d ${IMAGE_DIR} ] ; then
+    echo No ${IMAGE_DIR} dir here!  Nothing to do.
+    exit
+fi
+cd ${IMAGE_DIR}
+rm -f ${SAVE_DIR}/image-sums.txt
+for i in `sudo find * -type f | sort`
+do
+echo ${i} `sudo /usr/bin/sum ${i}` >> ${SAVE_DIR}/image-sums.txt
+done

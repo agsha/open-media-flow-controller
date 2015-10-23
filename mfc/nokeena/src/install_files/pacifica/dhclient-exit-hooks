@@ -1,0 +1,108 @@
+#
+# File : dhclient-exit-hooks
+#
+# Description : This is called from /sbin/dhclient-script at the end 
+#     of the script after the interface has been setup. We are using this
+#     in pacifica to enable SSH on this interface and also switch the 
+#     interface to static from DHCP as only then SSH will listen on this.
+#	
+# By : Ramanand Narayanan (ramanandn@juniper.net) on 30th Nov, 2012
+#
+
+
+
+#
+# This is to reset the interface passed as parameter
+#
+function reset_other_interface() {
+    other_interface=$1
+
+    #
+    # Declare the interface as no longer having valid DHCP override config.
+    # Do this before removing the non-interface (i.e. resolver and routing)
+    # overrides, so we can switch over to those of another eligible interface,
+    # if there are any.
+    #
+    ${MDREQ} -qq action \
+        /net/general/actions/set_overlay_valid \
+        ifname string "$other_interface" \
+        valid bool false \
+        reason string "RE failover"
+
+    ${MDREQ} -qq action \
+        /resolver/actions/overlay/clear \
+        ifname string "$other_interface"
+
+    ${MDREQ} -qq action \
+        /net/routes/actions/overlay/clear \
+        ifname string "$other_interface"
+
+    ${MDREQ} -qq action \
+        /net/interface/actions/override/set \
+        ifname string "$other_interface" \
+        ip ipv4addr "0.0.0.0" \
+        netmask ipv4addr "0.0.0.0" \
+        enabled bool true
+
+    # Stop the other interface from SSH server listening
+    SSH_LISTEN_INTERFACE_BINDING=/ssh/server/listen/interface/${other_interface}
+    ${MDREQ} set delete "" ${SSH_LISTEN_INTERFACE_BINDING} 
+
+    # Enable DHCP on this interface by switching off and then on
+    # This will get it waiting for a DHCP till the other RE becomes master
+    DHCP_OTHER_INTERFACE_BINDING=/net/interface/config/${other_interface}/addr/ipv4/dhcp
+    ${MDREQ} set modify "" ${DHCP_OTHER_INTERFACE_BINDING} bool false
+    ${MDREQ} set modify "" ${DHCP_OTHER_INTERFACE_BINDING} bool true
+
+} # end of reset_other_interface()
+
+
+
+# exit_status is set in dhclient-script before calling invoking this file
+# and it gives the exit status of dhclient-script. If not 0 then we don't
+# want to do anything at this time
+if [ $exit_status -ne 0 ]; then
+    logger -p local6.notice -t "dhclient-exit-hooks[$$]" "[dhcp.NOTICE]: skipping since exit code is $exit_status"
+else
+    # We are only interested if reason was BOUND/RENEW/REBOOT/REBIND
+    if [ x$reason = xBOUND ] || [ x$reason = xRENEW ] || \
+           [ x$reason = xREBIND ] || [ x$reason = xREBOOT ]; then
+        # First check which interface got set now and unset the other interface (eth0 or eth1)
+        [ "eth0" == $interface ] && reset_other_interface "eth1";
+
+        [ "eth1" == $interface ] && reset_other_interface "eth0";
+
+        # Disable DHCP on the interface that we got IP
+        DHCP_INTERFACE_BINDING=/net/interface/config/${interface}/addr/ipv4/dhcp
+        ${MDREQ} set modify "" ${DHCP_INTERFACE_BINDING} bool false
+
+        # Configure the new IP for the interface
+        ${MDREQ} -qq action \
+            /net/interface/actions/override/set \
+            ifname string "$interface" \
+            ip ipv4addr "$new_ip_address" \
+            netmask ipv4addr "$new_subnet_mask" \
+            enabled bool true
+
+        # Configure the new route on this interface
+        for router in $new_routers; do
+          ${MDREQ} -qq action \
+              /net/routes/actions/overlay/add/ipv4/default \
+              ifname string "$interface" \
+              gw ipv4addr "$router"
+
+	  # Ping the router 
+	  ping -c 5 $router
+        done
+
+        # Enable SSH on this interface
+        SSH_LISTEN_INTERFACE_BINDING=/ssh/server/listen/interface/${interface}
+        ${MDREQ} set modify "" ${SSH_LISTEN_INTERFACE_BINDING} string "${interface}"
+
+    fi
+fi
+
+
+#
+# End of dhclient-exit-hooks
+#

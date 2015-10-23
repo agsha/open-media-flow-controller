@@ -1,0 +1,14 @@
+Binaries (and matching source) for installing ant on MFC build machines,
+as well as the files needed to enable the use of the Fedora epel yum repo.
+
+Sudirs here:
+
+apache-ant/
+  Source and binary for apache-ant-1.8.2 
+
+ant-contrib/
+  Source and binary for ant-contrib-0.6
+
+epel.repo/
+  Fedora epel yum repo rpm and gpg key file 
+

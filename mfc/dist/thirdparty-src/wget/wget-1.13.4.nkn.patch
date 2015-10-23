@@ -1,0 +1,71 @@
+diff --exclude=.svn -rupN wget-1.13.4/src/recur.c ../wget_svn1/wget-1.13.4/src/recur.c
+--- wget-1.13.4/src/recur.c	2012-02-03 03:03:41.000000000 -0800
++++ ../wget_svn1/wget-1.13.4/src/recur.c	2012-02-03 03:14:09.000000000 -0800
+@@ -530,6 +530,11 @@ download_child_p (const struct urlpos *u
+ 
+   /* Determine whether URL under consideration has a HTTP-like scheme. */
+   u_scheme_like_http = schemes_are_similar_p (u->scheme, SCHEME_HTTP);
++  if (!u_scheme_like_http)
++    {
++    /* Add entry for the https (fake http) scheme */
++      u_scheme_like_http = schemes_are_similar_p (u->scheme, SCHEME_FAKE_HTTP);
++    }
+ 
+   /* 1. Schemes other than HTTP are normally not recursed into. */
+   if (!u_scheme_like_http && !(u->scheme == SCHEME_FTP && opt.follow_ftp))
+diff --exclude=.svn -rupN wget-1.13.4/src/retr.c ../wget_svn1/wget-1.13.4/src/retr.c
+--- wget-1.13.4/src/retr.c	2012-02-03 03:03:41.000000000 -0800
++++ ../wget_svn1/wget-1.13.4/src/retr.c	2012-02-03 03:04:12.000000000 -0800
+@@ -716,7 +716,8 @@ retrieve_url (struct url * orig_parsed, 
+           result = PROXERR;
+           goto bail;
+         }
+-      if (proxy_url->scheme != SCHEME_HTTP && proxy_url->scheme != u->scheme)
++      if (proxy_url->scheme != SCHEME_HTTP && proxy_url->scheme != SCHEME_FAKE_HTTP
++	      && proxy_url->scheme != u->scheme)
+         {
+           logprintf (LOG_NOTQUIET, _("Error in proxy URL %s: Must be HTTP.\n"), proxy);
+           url_free (proxy_url);
+@@ -727,7 +728,7 @@ retrieve_url (struct url * orig_parsed, 
+         }
+     }
+ 
+-  if (u->scheme == SCHEME_HTTP
++  if (u->scheme == SCHEME_HTTP || u->scheme == SCHEME_FAKE_HTTP
+ #ifdef HAVE_SSL
+       || u->scheme == SCHEME_HTTPS
+ #endif
+@@ -1168,6 +1169,7 @@ getproxy (struct url *u)
+   switch (u->scheme)
+     {
+     case SCHEME_HTTP:
++    case SCHEME_FAKE_HTTP:
+       proxy = opt.http_proxy ? opt.http_proxy : getenv ("http_proxy");
+       break;
+ #ifdef HAVE_SSL
+diff --exclude=.svn -rupN wget-1.13.4/src/url.c ../wget_svn1/wget-1.13.4/src/url.c
+--- wget-1.13.4/src/url.c	2012-02-03 03:03:41.000000000 -0800
++++ ../wget_svn1/wget-1.13.4/src/url.c	2012-02-03 03:13:15.000000000 -0800
+@@ -70,9 +70,11 @@ struct scheme_data
+ };
+ 
+ /* Supported schemes: */
++/* Added a fake https scheme to treat https as http */
+ static struct scheme_data supported_schemes[] =
+ {
+   { "http",     "http://",  DEFAULT_HTTP_PORT,  scm_has_query|scm_has_fragment },
++  { "http",     "https://",  DEFAULT_HTTP_PORT,  scm_has_query|scm_has_fragment },
+ #ifdef HAVE_SSL
+   { "https",    "https://", DEFAULT_HTTPS_PORT, scm_has_query|scm_has_fragment },
+ #endif
+diff --exclude=.svn -rupN wget-1.13.4/src/url.h ../wget_svn1/wget-1.13.4/src/url.h
+--- wget-1.13.4/src/url.h	2012-02-03 03:03:41.000000000 -0800
++++ ../wget_svn1/wget-1.13.4/src/url.h	2012-02-03 03:04:36.000000000 -0800
+@@ -50,6 +50,7 @@ enum url_auth_mode {
+ 
+ enum url_scheme {
+   SCHEME_HTTP,
++  SCHEME_FAKE_HTTP,
+ #ifdef HAVE_SSL
+   SCHEME_HTTPS,
+ #endif

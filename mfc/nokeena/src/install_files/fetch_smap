@@ -1,0 +1,80 @@
+#!/bin/bash
+
+
+SMAP_NAME=${1}
+echo "smap name = $SMAP_NAME"
+DOWNLOAD_DIR=${2}
+DOWNLOAD_DIR_WGET=`echo ${DOWNLOAD_DIR/\%/%25}`
+echo "download dir = $DOWNLOAD_DIR"
+DOWNLOAD_FILE=${3}
+DOWNLOAD_FILE_WGET=`echo ${DOWNLOAD_FILE/\%/%25}`
+echo "download file = $DOWNLOAD_FILE"
+TYPE=${4}
+echo "type = $TYPE"
+VERSION=${5}
+echo "version = $VERSION"
+CONFIG=${6}
+echo "config = $CONFIG"
+LOCAL_NAME=${3}.new
+MKDIR="mkdir -p"
+TARGET_DIR=/nkn/tmp/smap/${SMAP_NAME}
+
+# Attempt to download the file. --progress=dot:mega is used to prevent
+# WGET_OUTPUT from getting too long.
+# check if target local directory exists. If not ceate it before downloading
+if [ ! -d ${TARGET_DIR} ]
+then
+    $MKDIR ${TARGET_DIR}
+fi
+
+cd ${TARGET_DIR}
+
+WGET_OUTPUT=$(2>&1 /opt/nkn/bin/wget -t 3 --timeout 30 --timestamping --progress=dot:mega \
+    "$DOWNLOAD_DIR_WGET/$DOWNLOAD_FILE_WGET")
+
+
+# Make sure the download went okay.
+if [ $? -ne 0 ]
+then
+    # wget had problems.
+#    echo 1>&2 $0: "$WGET_OUTPUT"
+    echo "RETURN=1"
+    exit 1
+fi
+
+
+
+# Copy the file to the new name if necessary.
+if echo "$WGET_OUTPUT" | fgrep 'saved' &> /dev/null
+then
+    # change seen and new file downloaded. Change from local file name to
+    # actual file name
+    cp -f "${DOWNLOAD_FILE}" "${LOCAL_NAME}"
+    /opt/nkn/bin/MapXML -i "${TARGET_DIR}/${DOWNLOAD_FILE}" -o "${TARGET_DIR}/${DOWNLOAD_FILE}.${VERSION}.bin" -t "${TYPE}"
+    if [ $? -ne 0 ]
+    then
+        echo "RETURN=3"
+        exit 3
+    else
+        echo "RETURN=0"
+        exit 0
+    fi
+else
+    if [ $CONFIG -eq 1 ]
+    then
+        /opt/nkn/bin/MapXML -i "${TARGET_DIR}/${DOWNLOAD_FILE}" -o "${TARGET_DIR}/${DOWNLOAD_FILE}.${VERSION}.bin" -t "${TYPE}"
+        if [ $? -ne 0 ]
+        then
+            echo "RETURN=3"
+            exit 3
+        else
+            echo "RETURN=0"
+            exit 0
+        fi
+    else
+        # no change in file.. so nothing downloaded
+        echo "RETURN=2"
+        exit 2
+    fi
+fi
+

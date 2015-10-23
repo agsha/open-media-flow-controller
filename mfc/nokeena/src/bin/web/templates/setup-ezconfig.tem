@@ -1,0 +1,275 @@
+<?
+#
+# Filename:  setup-ezconfig.tem,v $
+# Date:      2008/12/20 
+# Author:    Ramanand
+#
+# (C) Copyright 2008 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<TMS-PAGE "EZ Config">
+<TMS-MENU "ezconfig">
+<TMS-BODY>
+<!--
+<TMS-SIDEBAR><TMS-SETUP-MENU "ezconfig"></TMS-SETUP-MENU></TMS-SIDEBAR>
+-->
+<TMS-PAGE-CONTENT "EZ Config">
+
+  <h2>System Hostname</h2>
+
+<CFG-FORM -action "config-form-ezconfig" -div_id "ezconfig_1">
+
+  <TMS-TABLE -div_id "fqdn_table_1">
+    <TMS-TABLE-ENTRY "Host Name (FQDN)">
+        <CFG-TEXTBOX -id "fqdn" -errname "fqdn" -caps "set_basic"
+                     -cols "16" -type "string"
+                     -span_id "add_fqdn">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "DNS IP">
+        <CFG-TEXTBOX -id "dns" -errname "dns" -caps "set_basic"
+                     -cols "16" -type "string"
+                     -span_id "add_dns">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "fqdn_apply_1">
+</CFG-FORM>
+
+<CFG-FORM -div_id "ezconfig_network_param">
+  <h2>Network Parameters</h2>
+  <TMS-TABLE -div_id "ezconfig_table_2">
+
+    <TMS-TABLE-ENTRY "Max-Bandwidth per Session(kbps)">
+      <CFG-TEXTBOX -id "max_bw" -errname "max_bw" -caps "set_basic"
+                   -name "/nkn/nvsd/network/config/max_bandwidth"
+                   -type "uint32" -span_id "configure_max_bw">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Network Max Connections">
+      <CFG-TEXTBOX -id "con_sess" -errname "con_sess" -caps "set_basic"
+                   -name "/nkn/nvsd/network/config/max_connections"
+                   -type "uint32" -span_id "configure_con_sess">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Assured Flow Rate (kbps)">
+      <CFG-TEXTBOX -id "afr" -errname "afr" -caps "set_basic"
+                   -name "/nkn/nvsd/network/config/assured_flow_rate"
+		   -type "uint32" -span_id "configure_afr">
+    </TMS-TABLE-ENTRY>
+<!--
+    <TMS-TABLE-ENTRY "Network Timeout(secs)">
+      <CFG-TEXTBOX -id "idle_timeout" -errname "idle_timeout" -caps "set_basic"
+                   -name "/nkn/nvsd/network/config/timeout"
+                   -type "uint32" -span_id "configure_idle_timeout">
+    </TMS-TABLE-ENTRY>
+-->
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "network_apply_1">
+
+</CFG-FORM>
+<!-- ==================================================
+     = Add New Domain Name
+     ================================================== -->
+<!--
+<CFG-FORM -action "config-form-dns" -div_id "ezconfig_1a">
+  <h2>Add Domain Name</h2>
+  <TMS-TABLE -div_id "dns_table_1">
+    <TMS-TABLE-ENTRY "Domain Name">
+      <CFG-TEXTBOX -id "add_domain" -errname "domain name"
+                   -caps "set_basic" -cols "16" -span_id "dns_domain">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="10">
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "add" -text "Add Domain Name" -caps "set_basic"
+              -span_id "dns_add_1">
+  </CFG-FORM>
+-->
+
+<CFG-FORM -action "config-form-list" -div_id "ezconfig_virplayer_param">
+  <h2>Virtual Player</h2>
+  <TMS-TABLE -div_id "ezconfig_virplayer">
+
+    <TMS-TABLE-ENTRY "Virtual Player Name">
+      <CFG-TEXTBOX -id "vpname" -errname "vpname" -caps "set_basic"
+		   -type "string" -span_id "configure_vpname">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Virtual Player Type">
+      <CFG-DROPDOWN -id "type" -errname "vptype" -caps "set_basic"
+                   -type "uint32" -span_id "configre_vptype" -options {
+                    {"Type1" "1"}
+                    {"Type2" "2"}
+                    } >
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/nkn/nvsd/virtual_player/config">
+  <input type="hidden" name="f_list_index" value="vpname">
+  <input type="hidden" name="f_list_children" value="type">
+
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "vp_apply_1">
+
+</CFG-FORM>
+
+
+<CFG-FORM -action "config-form-namespace" -div_id "ezconfig_2">
+  <h2>Add Namespace</h2>
+  <TMS-TABLE -div_id "ezconfig_table_1">
+    <TMS-TABLE-ENTRY "Namespace">
+      <CFG-TEXTBOX -id "namespace" -errname "namespace" -caps "set_basic"
+                -type "string" -span_id "add_namespace">
+    <td width 2>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "URI-Prefix">
+      <CFG-TEXTBOX -id "uri" -errname "uri" -caps "set_basic"
+                   -type "string" -cols "16" -span_id "add_uri">
+    <td width 2>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Domain ( * for any)">
+      <CFG-TEXTBOX -id "domain" -errname "domain" -caps "set_basic"
+                   -type "string" -cols "16" -span_id "add_domain">
+    <td width 2>
+    </TMS-TABLE-ENTRY>
+<!--
+    <TMS-TABLE-ENTRY "HTTP Origin Server Host Name">
+      <CFG-TEXTBOX -id "hostname"
+                   -errname "hostname" -caps "set_basic"
+                   -type "hostname" -cols "16" -span_id "add_om_hostname">
+    </TMS-TABLE-ENTRY>
+
+-->
+    <TMS-TABLE-ENTRY "HTTP Origin">
+    <CFG-RADIO -id "omtype" -caps "set_basic"
+                -value "http" -checked "true"
+                -span_id "add_origin">
+    <td width 4>
+        HostName/IP Address
+      <CFG-TEXTBOX -id "httphostname"
+                   -errname "httphostname" -caps "set_basic"
+                   -type "hostname" -cols "16" -span_id "add_om_httphostname">
+
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "NFS Origin">
+    <CFG-RADIO -id "omtype" -caps "set_basic"
+                -value "nfs" -checked "false"
+                -span_id "add_origin">
+
+    <td width 4>
+        HostName/IP Address
+      <CFG-TEXTBOX -id "nfshostname"
+                   -errname "nfshostname" -caps "set_basic"
+                   -type "hostname" -cols "16" -span_id "add_om_nfshostname">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Virtual Player">
+      <CFG-TEXTBOX -id "virtual_player" -errname "Virtual Player"
+                   -caps "set_basic" -required "false"
+                   -type "string" -span_id "set_vp">
+    <td width 2>
+    <td width 2>
+    </TMS-TABLE-ENTRY>
+    
+
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "add" -text "Add" -caps "set_basic"
+              -span_id "namespace_add_1">
+
+</CFG-FORM>
+
+<CFG-FORM -action "config-form-interface" -div_id "iface_1">
+  <h2>Enable Interfaces</h2>
+  <TMS-TABLE -div_id "ezconfig_interface">
+  <?
+      set if_info [tms::get-if-info]
+  ?>
+  <FOREACH if_rec $if_info>
+  <?
+  set iface [lindex $if_rec 0]
+  set if_cfg "/net/interface/config/$iface"
+  
+  if {[string compare $iface "lo"] == 0} {
+      continue;
+  }
+  ?>
+  <TMS-TABLE-ENTRY "$iface">
+    <td>
+      IP Address
+      <td width="4">
+    <td>
+    <CFG-IPV4 -id "ip_$iface" -errname "$iface IP address"
+                        -caps "set_restricted"
+                        -name "$if_cfg/addr/ipv4/static/1/ip"
+                        -type "ipv4addr" -span_id "if_ip_$iface">
+    <td>
+      Netmask
+      <td width="4">
+    <td>
+    <CFG-IPV4 -id "mask_$iface" -errname "$iface net mask"
+                        -caps "set_restricted"
+                        -name "$if_cfg/addr/ipv4/static/1/mask_len"
+                        -type "uint8" -ctype "ipv4addr"
+                        -span_id "if_mask_$iface">
+
+    <td>
+      Enable
+      <td width="4">
+    <td>
+    <CFG-CHECKBOX -id "enable_iface_$iface" -caps "set_basic"
+		-name "$if_cfg/enable" -type "bool"
+		-span_id "iface_cbox_1_$iface">
+  </TMS-TABLE-ENTRY>
+   </FOREACH>
+   <tr>
+     <td height="8">
+  </TMS-TABLE>
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "iface_apply_1">
+</CFG-FORM>
+
+<!-- Commenting out the restart services . It has been added to
+the System Config menu
+<CFG-FORM -action "restart" -div_id "restart_1">
+<h2>Service Restart</h2>
+  <TMS-TABLE -div_id "service_restart">
+  <TMS-TABLE-ENTRY "Service Name">
+      <CFG-DROPDOWN -id "processname" -errname "servicename" 
+                   -caps "set_basic"
+                   -type "string" -span_id "configure_servicename" -options {
+                    {"mod-delivery" "nvsd"}
+                    {"mod-ftp" "ftpd"}
+                    {"mod-oom" "nknoomgr"}
+                    {"mod-log" "nknlogd"}
+                    } >
+  </TMS-TABLE-ENTRY>
+   <tr>
+     <td height="8">
+  </TMS-TABLE>
+  <CFG-BUTTON -type "ok" -text "Restart" 
+          -caps "action_privileged"
+          -span_id "restart_ok_1">
+</CFG-FORM>
+-->
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

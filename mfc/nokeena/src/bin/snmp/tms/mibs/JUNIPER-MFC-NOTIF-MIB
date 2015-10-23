@@ -1,0 +1,558 @@
+JUNIPER-MFC-NOTIF-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+      MODULE-IDENTITY,
+      NOTIFICATION-TYPE
+            FROM SNMPv2-SMI
+      jnxMediaFlow,
+      jmfcServiceName,
+      jmfcCacheHitRatio,
+      jmfcCacheHitRatioErrThreshold,
+      jmfcCacheHitRatioClrThreshold,
+      jmfcCpuUtil,
+      jmfcCpuUtilErrThreshold,
+      jmfcCpuUtilClrThreshold,
+      jmfcDiskName, 
+      jmfcDiskFreeSpace,
+      jmfcDiskSpaceErrThreshold,
+      jmfcDiskSpaceClrThreshold,
+      jmfcMemUtil,
+      jmfcMemUtilErrThreshold,
+      jmfcMemUtilClrThreshold,
+      jmfcNetIntfUtilCurrent,
+      jmfcNetIntfUtilErrThreshold,
+      jmfcNetIntfUtilClrThreshold,
+      jmfcDiskIORate,
+      jmfcDiskIORateErrThreshold,
+      jmfcDiskIORateClrThreshold,
+      jmfcAppMaxCpuUtil,
+      jmfcAppMaxCpuUtilErrThreshold,
+      jmfcAppMaxCpuUtilClrThreshold,
+      jmfcCacheBw,
+      jmfcCacheBwErrThreshold,
+      jmfcCacheBwClrThreshold,
+      jmfcOriginBw,
+      jmfcOriginBwErrThreshold,
+      jmfcOriginBwClrThreshold,
+      jmfcDiskBW,
+      jmfcDiskBWErrThreshold,
+      jmfcDiskBWClrThreshold,
+      jmfcConnectionRateCurrent,
+      jmfcConnectionRateErrThreshold,
+      jmfcConnectionRateClrThreshold,
+      jmfcTransactionRateCurrent,
+      jmfcTransactionRateErrThreshold,
+      jmfcTransactionRateClrThreshold,
+      jmfcPagingCurrent,
+      jmfcPagingErrThreshold,
+      jmfcPagingClrThreshold,
+      jmfcResourcePoolName,
+      jmfcResourcePoolBandwidth,
+      jmfcResourcePoolActiveConns,
+      jmfcClusterNamespace,
+      jmfcClusterInstance,
+      jmfcNodeName,
+      jmfcLoggerFileName,
+      jmfcLoggerName,
+      jmfcTemperatureCurrent,
+      jmfcTemperatureThreshold,
+      jmfcTemperatureSensorName,
+      jmfcMirrorBrokenErrDescr,
+      jmfcJBODShelfErrDescr,
+      jmfcMirrorCompletionDescr
+	    FROM JUNIPER-MFC-MIB
+      NOTIFICATION-GROUP,
+      MODULE-COMPLIANCE
+              FROM SNMPv2-CONF;
+
+
+jmfcMIBNotifications MODULE-IDENTITY
+      LAST-UPDATED "201203130000Z"  -- Mar 13, 2012 00:00:00 AM
+      ORGANIZATION "Juniper Networks, Inc"
+      CONTACT-INFO
+            "Juniper Technical Assistance Center
+            Juniper Networks, Inc.
+            1194 N. Mathilda Avenue
+            Sunnyvale, CA 94089
+            E-mail: support@juniper.net"
+      DESCRIPTION
+            "This MIB defines all the notifications for Juniper Networks
+            Media Flow Controller Devices."
+      REVISION "201203130000Z"      -- Mar 13, 2012 00:00:00 AM
+      DESCRIPTION
+            "Initial version."
+      -- 1.3.6.1.4.1.2636.1.2.2
+     ::= { jnxMediaFlow 2 }
+
+--
+-- The Media Flow Controller - Notifications
+--
+
+jmfcNotifPrefix OBJECT IDENTIFIER 
+      -- 1.3.6.1.4.1.2636.1.2.2.0
+      ::= { jmfcMIBNotifications 0 }
+
+jmfcServiceCrash NOTIFICATION-TYPE
+    OBJECTS { jmfcServiceName }
+    STATUS  current
+    DESCRIPTION
+            "One of the monitored services is down due to a crash."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.1
+    ::= { jmfcNotifPrefix 1 }
+
+jmfcServiceUp NOTIFICATION-TYPE
+    OBJECTS { jmfcServiceName }
+    STATUS  current
+    DESCRIPTION
+            "One of the monitored services is restarted."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.2
+    ::= { jmfcNotifPrefix 2 }
+
+jmfcFanFailure NOTIFICATION-TYPE
+    STATUS current
+    DESCRIPTION
+            "The system fan stopped functioning."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.3
+    ::= { jmfcNotifPrefix 3 }
+
+jmfcFanStatusOK NOTIFICATION-TYPE
+    STATUS current
+    DESCRIPTION
+            "Fan status is ok"
+    -- 1.3.6.1.4.1.2636.1.2.2.0.4
+    ::= { jmfcNotifPrefix 4 }
+
+jmfcPowerSupplyFailure NOTIFICATION-TYPE
+    STATUS current
+    DESCRIPTION
+            "The system power supply failed."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.5
+    ::= { jmfcNotifPrefix 5 }
+
+jmfcPowerSupplyOk NOTIFICATION-TYPE
+    STATUS current
+    DESCRIPTION
+            "The system power supply is restored."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.6
+    ::= { jmfcNotifPrefix 6 }
+
+jmfcCacheHitRatioLow NOTIFICATION-TYPE
+    OBJECTS { jmfcCacheHitRatio, jmfcCacheHitRatioErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "Cache Hit Ratio is low."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.8
+    ::= { jmfcNotifPrefix 8 }
+
+jmfcCacheHitRatioOk NOTIFICATION-TYPE
+    OBJECTS { jmfcCacheHitRatio, jmfcCacheHitRatioClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "Cache Hit Ratio is normal."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.9
+    ::= { jmfcNotifPrefix 9 }
+
+jmfcCpuUtilHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcCpuUtil, jmfcCpuUtilErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The aggregate CPU utilization across all CPUs is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.10
+    ::= { jmfcNotifPrefix 10 }
+
+jmfcCpuUtilOk NOTIFICATION-TYPE
+    OBJECTS { jmfcCpuUtil, jmfcCpuUtilClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The aggregate CPU utilization across all CPUs has fallen back to normal."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.11
+    ::= { jmfcNotifPrefix 11 }
+
+jmfcDiskSpaceLow NOTIFICATION-TYPE
+    OBJECTS { jmfcDiskName, jmfcDiskFreeSpace, jmfcDiskSpaceErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "Free disk space is low."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.12
+    ::= { jmfcNotifPrefix 12 }
+
+jmfcDiskSpaceOk NOTIFICATION-TYPE
+    OBJECTS { jmfcDiskName, jmfcDiskFreeSpace, jmfcDiskSpaceClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "Free disk space is normal."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.13
+    ::= { jmfcNotifPrefix 13 }
+
+jmfcMemUtilizationHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcMemUtil, jmfcMemUtilErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "Memory utilization on the system is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.14
+    ::= { jmfcNotifPrefix 14 }
+
+jmfcMemUtilizationOk NOTIFICATION-TYPE
+    OBJECTS { jmfcMemUtil, jmfcMemUtilClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "Memory utilization on the system has come down to normal level."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.15
+    ::= { jmfcNotifPrefix 15 }
+
+jmfcNetUtilizationHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcNetIntfUtilCurrent, jmfcNetIntfUtilErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "Network utilization on the system is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.16
+    ::= { jmfcNotifPrefix 16 }
+
+jmfcNetUtilizationOk NOTIFICATION-TYPE
+    OBJECTS { jmfcNetIntfUtilCurrent, jmfcNetIntfUtilClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "Network utilization on the system has come down to normal level."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.17
+    ::= { jmfcNotifPrefix 17 }
+
+jmfcDiskIOHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcDiskName, jmfcDiskIORate, jmfcDiskIORateErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "Disk I/O on the system is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.18
+    ::= { jmfcNotifPrefix 18 }
+
+jmfcDiskIOOk NOTIFICATION-TYPE
+    OBJECTS { jmfcDiskName, jmfcDiskIORate, jmfcDiskIORateClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "Disk I/O on the system has come down to normal level."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.19
+    ::= { jmfcNotifPrefix 19 }
+
+jmfcOriginNodeDown NOTIFICATION-TYPE
+    OBJECTS { jmfcClusterNamespace, jmfcClusterInstance, jmfcNodeName }
+    STATUS current
+    DESCRIPTION
+            "One of the nodes in the cluster is down."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.20
+    ::= { jmfcNotifPrefix 20 }
+
+jmfcOriginNodeUp NOTIFICATION-TYPE
+    OBJECTS { jmfcClusterNamespace, jmfcClusterInstance, jmfcNodeName }
+    STATUS current
+    DESCRIPTION
+            "One of the failed nodes in the cluster is up."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.21
+    ::= { jmfcNotifPrefix 21 }
+
+jmfcLogExportFailed NOTIFICATION-TYPE
+    OBJECTS { jmfcLoggerName, jmfcLoggerFileName }
+    STATUS current
+    DESCRIPTION
+            "Export of access log files failed."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.22
+    ::= { jmfcNotifPrefix 22 }
+
+jmfcApplCpuUtilHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcAppMaxCpuUtil, jmfcAppMaxCpuUtilErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "CPU utilization of core HTTP Engine is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.23
+    ::= { jmfcNotifPrefix 23 }
+
+jmfcApplCpuUtilOk NOTIFICATION-TYPE
+    OBJECTS { jmfcAppMaxCpuUtil, jmfcAppMaxCpuUtilClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "CPU utilization of core HTTP Engine has fallen back to normal."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.24
+    ::= { jmfcNotifPrefix 24 }
+
+jmfcCacheBandwidthUsageHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcCacheBw, jmfcCacheBwErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The Cache Bandwidth usage is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.27
+    ::= { jmfcNotifPrefix 27 }
+
+jmfcCacheBandwidthUsageOk NOTIFICATION-TYPE
+    OBJECTS { jmfcCacheBw, jmfcCacheBwClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The Cache Bandwith usage has come down within normal limits."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.28
+    ::= { jmfcNotifPrefix 28 }
+
+jmfcOriginBandwidthUsageHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcOriginBw, jmfcOriginBwErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The Origin Bandwidth usage is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.29
+    ::= { jmfcNotifPrefix 29 }
+
+jmfcOriginBandwidthUsageOk NOTIFICATION-TYPE
+    OBJECTS { jmfcOriginBw, jmfcOriginBwClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The Origin Bandwith usage has come down within normal limits."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.30
+    ::= { jmfcNotifPrefix 30 }
+
+jmfcDiskBandwidthUsageHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcDiskName, jmfcDiskBW, jmfcDiskBWErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The Disk Bandwidth usage is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.31
+    ::= { jmfcNotifPrefix 31 }
+
+jmfcDiskBandwidthUsageOk NOTIFICATION-TYPE
+    OBJECTS { jmfcDiskName, jmfcDiskBW, jmfcDiskBWClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The Disk Bandwith usage has come down within normal limits."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.32
+    ::= { jmfcNotifPrefix 32 }
+
+jmfcConnectionRateHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcConnectionRateCurrent, jmfcConnectionRateErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The Connection Rate is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.33
+    ::= { jmfcNotifPrefix 33 }
+
+jmfcConnectionRateOk NOTIFICATION-TYPE
+    OBJECTS { jmfcConnectionRateCurrent, jmfcConnectionRateClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The Connection Rate has come down within normal limits."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.34
+    ::= { jmfcNotifPrefix 34 }
+
+jmfcTransactionRateHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcTransactionRateCurrent, jmfcTransactionRateErrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The HTTP transaction Rate is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.35
+    ::= { jmfcNotifPrefix 35 }
+
+jmfcTransactionRateOk NOTIFICATION-TYPE
+    OBJECTS { jmfcTransactionRateCurrent, jmfcTransactionRateClrThreshold }
+    STATUS current
+    DESCRIPTION
+            "The HTTP transaction Rate has come down within normal limits."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.36
+    ::= { jmfcNotifPrefix 36 }
+
+jmfcPagingHigh NOTIFICATION-TYPE
+    OBJECTS { jmfcPagingCurrent, jmfcPagingErrThreshold}
+    STATUS current
+    DESCRIPTION
+            "The Paging activity is high."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.37
+    ::= { jmfcNotifPrefix 37 }
+
+jmfcPagingOk NOTIFICATION-TYPE
+    OBJECTS { jmfcPagingCurrent, jmfcPagingClrThreshold}
+    STATUS current
+    DESCRIPTION
+            "The Paging activity has come down to normal level."
+    -- 1.3.6.1.4.1.2636.1.2.2.0.38
+    ::= { jmfcNotifPrefix 38 }
+
+jmfcResourcePoolUsageHigh NOTIFICATION-TYPE
+        OBJECTS { jmfcResourcePoolName, jmfcResourcePoolBandwidth, jmfcResourcePoolActiveConns }
+        STATUS  current
+        DESCRIPTION
+                "The usage of a resource pool has exceeded its defined upper limit"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.39
+        ::= { jmfcNotifPrefix 39 }
+
+jmfcResourcePoolHighUsageOK NOTIFICATION-TYPE
+        OBJECTS { jmfcResourcePoolName, jmfcResourcePoolBandwidth, jmfcResourcePoolActiveConns }
+        STATUS  current
+        DESCRIPTION
+                "The usage of a resource pool has fallen back to its normal limit"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.40
+        ::= { jmfcNotifPrefix 40 }
+
+jmfcResourcePoolUsageLow NOTIFICATION-TYPE
+        OBJECTS { jmfcResourcePoolName, jmfcResourcePoolBandwidth, jmfcResourcePoolActiveConns }
+        STATUS  current
+        DESCRIPTION
+                "The usage of a resource pool has fallen lower than its defined lower limit"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.41
+        ::= { jmfcNotifPrefix 41 }
+
+jmfcResourcePoolLowUsageOK NOTIFICATION-TYPE
+        OBJECTS { jmfcResourcePoolName, jmfcResourcePoolBandwidth, jmfcResourcePoolActiveConns }
+        STATUS  current
+        DESCRIPTION
+                "The usage of a resource pool has come up to its normal limit"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.42
+        ::= { jmfcNotifPrefix 42 }
+
+jmfcServiceExit NOTIFICATION-TYPE
+        OBJECTS { jmfcServiceName }
+        STATUS  current
+        DESCRIPTION
+                "One of the services managed by PM has exited unexpectedly, but not left a core file."
+        -- 1.3.6.1.4.1.2636.1.2.2.0.43
+        ::= { jmfcNotifPrefix 43 }
+
+jmfcServiceLivenessFailure NOTIFICATION-TYPE
+        OBJECTS { jmfcServiceName }
+        STATUS  current
+        DESCRIPTION
+                "Process Manager has detected that a process has hung and will now perform its restart action"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.44
+        ::= { jmfcNotifPrefix 44 }
+
+jmfcSmartError NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+            "SMART has sent an event about a possible disk error"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.45
+        ::= { jmfcNotifPrefix 45 }
+
+jmfcUnexpectedShutdown NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+            "The system has shut down unexpectedly"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.46
+        ::= { jmfcNotifPrefix 46 }
+
+
+jmfcTestTrap NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+            "A test trap ordered by the system administrator"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.49
+        ::= { jmfcNotifPrefix 49 }
+
+jmfcTemperatureHigh NOTIFICATION-TYPE
+OBJECTS { jmfcTemperatureCurrent, jmfcTemperatureThreshold, jmfcTemperatureSensorName }
+    STATUS  current
+    DESCRIPTION
+            "Temperature of the chassis is high"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.50
+        ::= { jmfcNotifPrefix 50 }
+
+jmfcTemperatureOk NOTIFICATION-TYPE
+OBJECTS { jmfcTemperatureCurrent, jmfcTemperatureThreshold, jmfcTemperatureSensorName }
+    STATUS  current
+    DESCRIPTION
+            "Temperature of the chassis is back within normal limits"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.51
+        ::= { jmfcNotifPrefix 51 }
+
+jmfcRootDiskMirrorBroken NOTIFICATION-TYPE
+OBJECTS { jmfcMirrorBrokenErrDescr }
+    STATUS  current
+    DESCRIPTION
+            "Root Disk Mirror is broken"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.52
+        ::= { jmfcNotifPrefix 52 }
+
+jmfcJBODShelfUnreachable NOTIFICATION-TYPE
+OBJECTS { jmfcJBODShelfErrDescr }
+    STATUS  current
+    DESCRIPTION
+            "Connectivity to JBOD Shelf is removed from the system"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.53
+        ::= { jmfcNotifPrefix 53 }
+
+jmfcRootDiskMirrorComplete NOTIFICATION-TYPE
+OBJECTS { jmfcMirrorCompletionDescr }
+    STATUS  current
+    DESCRIPTION
+            "Root Disk Re-mirroring is done"
+        -- 1.3.6.1.4.1.2636.1.2.2.0.54
+        ::= { jmfcNotifPrefix 54 }
+
+
+jmfcNotifConformance OBJECT IDENTIFIER
+      -- 1.3.6.1.4.1.2636.1.2.2.1 
+      ::= { jmfcMIBNotifications 1 }
+
+jmfcNotificationsGroup NOTIFICATION-GROUP
+	NOTIFICATIONS {
+		jmfcServiceCrash,
+		jmfcServiceUp,
+		jmfcFanFailure,
+		jmfcFanStatusOK,
+		jmfcPowerSupplyFailure,
+		jmfcPowerSupplyOk,
+		jmfcCacheHitRatioLow,
+		jmfcCacheHitRatioOk,
+		jmfcCpuUtilHigh,
+		jmfcCpuUtilOk,
+		jmfcDiskSpaceLow,
+		jmfcDiskSpaceOk,
+		jmfcMemUtilizationHigh,
+		jmfcMemUtilizationOk,
+		jmfcNetUtilizationHigh,
+		jmfcNetUtilizationOk,	
+		jmfcDiskIOHigh,
+		jmfcDiskIOOk,
+		jmfcOriginNodeDown,
+		jmfcOriginNodeUp,
+		jmfcApplCpuUtilHigh,
+		jmfcApplCpuUtilOk,
+		jmfcCacheBandwidthUsageHigh,
+		jmfcCacheBandwidthUsageOk,
+		jmfcOriginBandwidthUsageHigh,
+		jmfcOriginBandwidthUsageOk,
+		jmfcDiskBandwidthUsageHigh,
+		jmfcDiskBandwidthUsageOk,
+		jmfcConnectionRateHigh,
+		jmfcConnectionRateOk,
+		jmfcTransactionRateHigh,
+		jmfcTransactionRateOk,
+		jmfcPagingHigh,
+		jmfcPagingOk,
+		jmfcResourcePoolUsageHigh,
+		jmfcResourcePoolHighUsageOK,
+		jmfcResourcePoolUsageLow,
+		jmfcResourcePoolLowUsageOK,
+		jmfcServiceExit,
+		jmfcServiceLivenessFailure,
+		jmfcSmartError,
+		jmfcUnexpectedShutdown,
+		jmfcTestTrap,
+	     	jmfcLogExportFailed,
+ 		jmfcTemperatureHigh,
+		jmfcTemperatureOk,
+		jmfcRootDiskMirrorBroken,
+		jmfcJBODShelfUnreachable,
+		jmfcRootDiskMirrorComplete}
+       STATUS current
+	DESCRIPTION
+		"The Juniper Notifications Group"
+        -- 1.3.6.1.4.1.2636.1.2.2.1.1
+        ::= { jmfcNotifConformance 1 }
+
+jmfcNotifCompliances OBJECT IDENTIFIER
+      -- 1.3.6.1.4.1.2636.1.2.2.1.2
+      ::= { jmfcNotifConformance 2 }
+
+jmfcNotifModuleCompliance MODULE-COMPLIANCE
+      STATUS  current
+      DESCRIPTION
+            "Compliance statements for this module"
+
+      MODULE
+      MANDATORY-GROUPS {
+                  jmfcNotificationsGroup }
+      -- 1.3.6.1.4.1.2636.1.2.2.1.2.1
+      ::= { jmfcNotifCompliances 1 }
+
+END

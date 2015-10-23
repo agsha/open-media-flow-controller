@@ -1,0 +1,72 @@
+<?
+#
+# Filename:  servicecfg-analytics.tem,v $
+# Date:      2009/02/06 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Analytics">
+<TMS-MENU "servicecfg">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SERVICECFG-MENU "analytics"></TMS-SERVICECFG-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Analytics Configuration">
+<CFG-FORM -div_id "cachepromotion_param">
+  <TMS-TABLE -div_id "analytics_table_1">
+    <tr>
+      <td height="8">
+
+    <TMS-TABLE-ENTRY "Cache Promotion Hit Threshold">
+      <CFG-TEXTBOX -id "hitthres" -errname "hitthres" -caps "set_basic"
+                   -name "/nkn/nvsd/am/config/cache_promotion/hit_threshold"
+                   -type "uint32" -span_id "configure_hitthres">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Cache Promotion Hit Increment">
+      <CFG-TEXTBOX -id "hitincr" -errname "hitincr" -caps "set_basic"
+                   -name "/nkn/nvsd/am/config/cache_promotion/hit_increment"
+                   -type "uint32" -span_id "hitincr">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Cache Promotion Hotness Threshold">
+      <CFG-TEXTBOX -id "hotthres" -errname "hotthres" -caps "set_basic"
+                   -name "/nkn/nvsd/am/config/cache_promotion/hotness_threshold"
+                   -type "uint32" -span_id "hotthres">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Cache Promotion Hotness Increment">
+      <CFG-TEXTBOX -id "hotincr" -errname "hotincr" -caps "set_basic"
+                   -name "/nkn/nvsd/am/config/cache_promotion/hotness_increment"
+                   -type "uint32" -span_id "hotincr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Cache Ingest Hit Threshold">
+      <CFG-TEXTBOX -id "cihitthres" -errname "cihitthres" -caps "set_basic"
+                   -name "/nkn/nvsd/am/config/cache_ingest_hits_threshold"
+                   -type "uint32" -span_id "configure_cihitthres">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Last Evict Time Difference">
+      <CFG-TEXTBOX -id "lastevict" -errname "lastevict" -caps "set_basic"
+                   -name "/nkn/nvsd/am/config/cache_ingest_last_eviction_time_diff"
+                   -type "uint32" -span_id "configure_lastevict">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Cache Evict Wait Time">
+      <CFG-TEXTBOX -id "evictwttime" -errname "evictwttime" -caps "set_basic"
+                   -name "/nkn/nvsd/am/config/cache_evict_aging_time"
+                   -type "uint32" -span_id "configure_evictwttime">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "cachepromotion_apply_1">
+
+</CFG-FORM>
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

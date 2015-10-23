@@ -1,0 +1,3522 @@
+ddns-update-style none;
+ignore client-updates;
+log-facility local7;
+option domain-name "englab.juniper.net spg.juniper.net juniper.net jnpr.net";
+option domain-name-servers 192.168.5.68, 172.17.28.101;
+server-name "cmbu-linux-c01";
+server-identifier 10.87.129.144;
+max-lease-time 600;
+default-lease-time 600;
+option ntp-servers 172.17.31.138;
+
+#filename "pxe/pxelinux.0";
+filename "pxe/pxeboot62.0";
+#option root-path "/var/iso/junos/10.2R1.8";
+option root-path "/var/iso/junos/12.1R2.9";
+
+# Network Description Section
+
+# VLAN 109
+shared-network vlan109 {
+    subnet 10.87.128.0 netmask 255.255.224.0 {
+        option routers 10.87.159.254;
+        filename "pxe/pxelinux.0";
+    }
+   
+}
+
+# END NETWORK DESCRIPTION
+
+
+group {
+    server-name "cmbu-sv02";
+    next-server 10.87.129.3;
+    option root-path "/tftpboot/";
+    filename "pxelinux.0";
+
+    #class "pxeclients" {
+    #   match if substring(option vendor-class-identifier, 0, 9) = "PXEClient";
+    #   next-server 10.157.42.224;
+    #   filename "pxelinux.0";
+    #}
+
+    host cmbu-qa03 {
+        hardware ethernet 00:21:5a:d3:e5:d2;
+        fixed-address 10.157.42.154;
+    }
+    host cmbu-dt05 {
+        hardware ethernet 00:21:5a:e0:a0:5b;
+        #fixed-address 10.157.42.166;
+        fixed-address 10.87.140.170;
+	send host-name "cmbu-dt05";
+    }
+    host cmbu-bd-mfd1-qa18 {
+        hardware ethernet 00:26:b9:55:c8:26;
+        fixed-address 10.157.42.71;
+    }
+    host cmbu-cli35 {
+        hardware ethernet 00:26:b9:8a:5a:12;
+        fixed-address 10.157.42.214;
+    }
+    host cmbu-qa16 {
+        hardware ethernet 78:e7:d1:be:76:e0;
+        #fixed-address 10.157.42.218;
+        fixed-address 10.87.129.186;
+    }
+    host cmbu-cl40 {
+        hardware ethernet  00:1e:c9:b2:60:ae;
+        fixed-address 10.87.140.139;
+    }
+
+    host cmbu-jmfd4 {
+        hardware ethernet 00:e0:81:c1:88:4e;
+        #fixed-address 10.157.42.84;
+        fixed-address 10.87.130.93;
+	send host-name "cmbu-jmfd4";
+
+    }
+    host cmbu-cl03-ntt {
+        hardware ethernet 00:1F:29:5E:E5:77;
+        #hardware ethernet 00:1f:29:5e:e5:76;
+        fixed-address 10.157.42.197;
+    }
+    host cmbu-at05 {
+        hardware ethernet 00:24:81:fb:fb:c0;
+        fixed-address 10.157.42.201;
+    }
+    host cmbu-qa13 {
+        hardware ethernet 78:e7:d1:be:76:78;
+        fixed-address 10.87.130.43;
+	send host-name "cmbu-qa13";
+    }
+    host vxa12-4 {
+        hardware ethernet 00:18:7d:10:94:b2;
+        fixed-address 10.157.43.86;
+    }
+    host vxa12-1 {
+        hardware ethernet 00:18:7d:10:94:ba;
+        fixed-address 10.87.129.149;
+    }
+    host vxa22-5 {
+        hardware ethernet 00:e0:81:c3:40:24;
+        #fixed-address 10.157.43.79;
+        fixed-address 10.87.128.58;
+	send host-name "vxa22-5";
+    }
+    host cmbu-qa14 {
+        hardware ethernet 78:e7:d1:be:74:08;
+        fixed-address 10.87.130.83;
+    }
+   host cmbu-cl39 {
+        hardware ethernet 00:1e:c9:b5:42:4e;
+        fixed-address 10.87.129.245 ;
+    }
+
+    host cmbu-at02 {
+        hardware ethernet 00:22:19:a4:06:77;
+        #fixed-address 10.157.42.12;
+        fixed-address 10.87.130.137;
+	send host-name "cmbu-at02";
+    }
+    host cmbu-cluster-node-5 {
+        hardware ethernet ea:6a:e2:c5:ba:5e;
+        fixed-address 10.157.42.120;
+    }
+    host cmbu-ixs6-1 {
+        hardware ethernet 00:25:90:0a:1d:48;
+        fixed-address 10.157.43.153;
+    }
+    host cmbu-qa08 {
+        hardware ethernet 00:30:48:D3:06:7F;
+        fixed-address 10.157.42.150;
+    }
+  host cmbu-dt01 {
+        hardware ethernet  00:21:5A:EB:29:C2 ;
+        #fixed-address 10.157.42.210;
+        fixed-address 10.87.129.217;
+        send host-name "cmbu-dt01";
+    }
+
+    host cmbu-dt03 {
+        hardware ethernet 00:1f:29:e7:11:e6;
+        fixed-address 10.157.42.208;
+    }
+    host cmbu-vxa20-5 {
+        hardware ethernet 00:e0:81:c3:9e:b8;
+        fixed-address 10.87.129.251;
+        send host-name "cmbu-vxa20-5";
+    }
+    host cmbu-se01 {
+        hardware ethernet 00:30:48:D6:63:B2;
+        fixed-address 10.157.42.169;
+    }
+
+    host cmbu-qa15 {
+        hardware ethernet 78:e7:d1:be:74:84;
+        #fixed-address 10.157.42.217;
+        fixed-address 10.87.129.74;
+    }
+    host cmbu-qa04 {
+        hardware ethernet 00:21:5a:f6:cd:c4;
+        fixed-address 10.87.129.250;
+	send host-name "cmbu-qa04";
+    }
+    host cmbu-esx-mfc01 {
+        hardware ethernet 00:0c:29:31:bc:1a;
+        fixed-address 10.157.34.16;
+    }
+    host cmbu-esx-mfc02 {
+        hardware ethernet 00:0c:29:85:34:c7;
+        fixed-address 10.157.34.14;
+    }
+    host cmbu-esx2-mfc01 {
+        hardware ethernet 00:0c:29:8e:71:ee;
+        fixed-address 10.157.34.20;
+    }
+    host cmbu-proto-mfc {
+        hardware ethernet 00:e0:81:c1:fe:00;
+        fixed-address 10.157.42.63;
+    }
+    host cmbu-ixs2-1 {
+        hardware ethernet 00:25:90:1A:92:3C;
+        #fixed-address 10.102.0.249;
+        #fixed-address 10.157.43.135;
+        fixed-address 10.87.129.75;
+	send host-name "cmbu-ixs2-1";
+    }
+    host cmbu-vxa20-1 {
+        hardware ethernet 00:e0:81:c2:dd:b8;
+        #fixed-address 10.157.43.70;
+        fixed-address 10.87.129.65;
+	send host-name "cmbu-vxa20-1";
+    }
+    host cmbu-vxa20-4 {
+        hardware ethernet 00:e0:81:c3:3e:90;
+        fixed-address 10.87.140.49;
+	send host-name "cmbu-vxa20-4";
+    }
+    host cmbu-dt04 {
+        hardware ethernet 00:1F:29:EB:14:DC;
+        fixed-address 10.87.129.214;
+        send host-name "cmbu-dt04";
+    }
+    host cmbu-esx-mfc03 {
+        hardware ethernet 00:0c:29:02:a7:08;
+        fixed-address 10.157.34.15;
+    }
+    host cmbu-esx-mfc04 {
+        hardware ethernet 00:0c:29:ea:14:1b;
+        fixed-address 10.157.34.13;
+    }
+    host cmbu-ixs1-7 {
+        hardware ethernet 00:25:90:1c:fc:68;
+        fixed-address 10.157.43.170;
+    }
+    host cmbu-ixs6-2 {
+        hardware ethernet 00:25:90:1c:fc:66;
+        #fixed-address 10.157.43.171;
+        fixed-address 10.87.129.115;
+	send host-name "cmbu-ixs6-2";
+    }
+    host cmbu-dhruva-guest-vm {
+        hardware ethernet 00:0c:29:c2:73:98;
+        fixed-address 10.157.43.12;
+    }
+    host cmbu-pt14 {
+        hardware ethernet 00:26:b9:54:6d:de;
+        fixed-address 10.157.42.15;
+    }
+    host cmbu-pt15 {
+        hardware ethernet 00:26:b9:54:50:d6;
+        fixed-address 10.157.42.16;
+    }
+    host cmbu-esx-mfc06 {
+        hardware ethernet 00:0c:29:1c:1a:02;
+        fixed-address 10.157.42.64;
+    }
+    host cmbu-esx-mfc07 {
+        hardware ethernet 00:0c:29:f2:fb:f9;
+        fixed-address 10.157.34.7;
+    }
+    host cmbu-esx-mfc08 {
+        hardware ethernet 00:0c:29:0c:8c:7c;
+        fixed-address 10.157.34.8;
+    }
+    host cmbu-esx-mfc09 {
+        hardware ethernet 00:0c:29:dc:27:6e;
+        fixed-address 10.157.34.9;
+    }
+    host cmbu-esx-mfc10 {
+        hardware ethernet 00:0c:29:3e:3c:42;
+        fixed-address 10.157.34.12;
+    }
+    host cmbu-esx-mfm01 {
+        hardware ethernet 00:0c:29:0d:8f:be;
+        fixed-address 10.157.42.61;
+    }
+    host cmbu-vxa11-2 {
+        hardware ethernet 00:18:7d:0e:28:37;
+        #fixed-address 10.157.43.66;
+        fixed-address 10.87.129.191;
+	send host-name "cmbu-vxa11-2";
+    }
+    host cmbu-vxa6-3 {
+        hardware ethernet 00:25:90:1c:fc:50;
+        fixed-address 10.157.43.173;
+    }
+    host cmbu-esx2-mfc02 {
+        hardware ethernet 00:0c:29:78:50:0a;
+        fixed-address 10.157.34.21;
+    }
+    host cmbu-esx2-mfm03 {
+        hardware ethernet 00:0c:29:6d:12:e8;
+        fixed-address 10.157.34.22;
+    }
+    host cmbu-vxa20-2 {
+        hardware ethernet 00:e0:81:c3:3b:94;
+        #fixed-address 10.157.43.75;
+        fixed-address 10.87.129.168;
+	send host-name "cmbu-vxa20-2";
+    }
+    host cmbu-cli33 {
+        hardware ethernet 00:15:c5:60:ea:b3;
+        fixed-address 10.157.42.14;
+    }
+    host cmbu-vxa12-5 {
+        hardware ethernet 00:18:7d:0b:66:14;
+        fixed-address 10.157.43.89;
+    }
+    host cmbu-esx-mfc11 {
+        hardware ethernet 00:0c:29:1b:08:6e;
+        fixed-address 10.157.34.13;
+    }
+    host bambi01 {
+        hardware ethernet 00:E0:81:C3:9E:BC;
+        fixed-address 10.87.129.162;
+	send host-name "bambi01";
+    }
+    host bambi02 {
+        hardware ethernet 00:E0:81:C2:DD:AD;
+        fixed-address 10.87.129.62;
+	send host-name "bambi02";
+    }
+    host bambi03 {
+        hardware ethernet 00:E0:81:C5:89:FA;
+        fixed-address 10.87.140.50;
+	send host-name "bambi03";
+    }
+    host cmbu-ixs2-8 {
+        hardware ethernet 00:25:90:1b:12:5a;
+        fixed-address 10.87.129.111;
+    }
+    host cmbu-vxa22-9 {
+        hardware ethernet 00:E0:81:C5:17:A0;
+        fixed-address 10.87.129.59 ;
+        send host-name "cmbu-vxa22-9";
+    }
+    host cmbu-cli29 {
+        hardware ethernet 00:1F:29:5D:93:10;
+        #fixed-address 10.157.42.42;
+        fixed-address 10.87.129.192;
+        send host-name "cmbu-cli29";
+    }
+    #proto 2nd MAC
+    host cmbu-proto {
+        hardware ethernet 00:E0:81:C1:FD:90;
+        #fixed-address 10.157.42.63;
+        fixed-address  10.87.130.85;
+	send host-name "cmbu-proto-mfc";
+    }
+    host cmbu-vxa20-9 {
+        hardware ethernet 00:E0:81:C5:9D:D4;
+        fixed-address 10.102.0.212;
+    }
+    host cmbu-vxa20-16 {
+        hardware ethernet 00:E0:81:C3:9E:8A;
+        fixed-address 10.87.140.16;
+	send host-name "cmbu-vxa20-16";
+    }
+
+    host cmbu-jmfd5 {
+        hardware ethernet 00:E0:81:C1:7A:9A;
+        fixed-address 10.157.42.85;
+    }
+    host cmbu-ixs1-9 {
+        hardware ethernet 00:25:90:1B:17:1C;
+        #fixed-address 10.157.43.175;
+        fixed-address 10.87.129.113;
+    }
+    host cmbu-ixs1-10 {
+        hardware ethernet 00:25:90:1C:FC:58;
+        fixed-address 10.157.43.177;
+    }
+    host cmbu-ixs2-9 {
+        hardware ethernet 00:25:90:1C:FC:5E;
+        fixed-address 10.157.43.178;
+    }
+    host cmbu-ixs1-11 {
+        hardware ethernet 00:25:90:1B:29:DA;
+        fixed-address 10.157.43.180;
+    }
+    host cmbu-ixs1-12 {
+        # FOR SM 
+	#hardware ethernet 00:25:90:1C:10:6D;
+        fixed-address 10.87.129.79;
+	send host-name "cmbu-is1-12";
+    }
+    host cmbu-ixs1-13 {
+        hardware ethernet 00:25:90:1B:12:54;
+        fixed-address 10.87.129.190;
+	send host-name "cmbu-ixs1-13";
+    }
+    host cmbu-ixs2-12 {
+        hardware ethernet 00:1B:21:72:26:80;
+        #hardware ethernet 00:25:90:1B:17:44;
+        #fixed-address 10.157.43.184;
+        fixed-address 10.87.129.180;
+	send host-name "cmbu-ixs2-12";
+    }
+    host cmbu-ixs1-14 {
+        hardware ethernet 00:25:90:1C:10:6E;
+        fixed-address 10.157.43.185;
+    }
+    host cmbu-vxa20-10 {
+        hardware ethernet 00:E0:81:C5:17:A8;
+        #fixed-address 10.157.43.32;
+        fixed-address 10.87.129.61;
+	send host-name "cmbu-vxa20-10";
+    }
+	host cmbu-ixs1-5 {
+        # SM i
+	#hardware ethernet 00:25:90:1A:91:3D;
+        fixed-address 10.87.129.71;
+        send host-name "cmbu-ixs1-5";
+    }
+	
+    host cmbu-vxa22-12 {
+        hardware ethernet 00:E0:81:C3:88:EC;
+        #fixed-address 10.157.43.92;
+        fixed-address 10.87.129.232;
+        send host-name "cmbu-vxa22-12";
+    }
+    host cmbu-vxa22-13 {
+        hardware ethernet 00:E0:81:C3:40:2E;
+        #fixed-address 10.157.43.93;
+        fixed-address 10.87.129.57;
+        send host-name "cmbu-vxa22-13";
+    }
+    host cmbu-vxa22-10 {
+        hardware ethernet 00:E0:81:C3:88:FC;
+        #hardware ethernet 00:E0:81:C3:88:FD;
+        fixed-address 10.157.43.90;
+        send host-name "cmbu-vxa22-10";
+        }
+    host cmbu-vxa22-11 {
+        hardware ethernet 00:E0:81:C3:42:7A;
+        fixed-address 10.87.129.111;
+	send host-name "cmbu-vxa22-11";
+        }
+    host cmbu-vxa20-6 {
+        hardware ethernet 00:E0:81:C3:88:CE;
+        #fixed-address 10.157.43.82;
+        fixed-address 10.87.130.112;
+	send host-name "cmbu-vxa20-6";
+        }
+    host cmbu-esx3-mfc01 {
+        hardware ethernet 00:0c:29:c4:b8:e6;
+        fixed-address 10.157.34.33;
+        }
+    host cmbu-esx3-mfc02 {
+        hardware ethernet 00:0c:29:74:2d:ba;
+        fixed-address 10.157.34.34;
+        }
+    host cmbu-jmfc7 {
+        hardware ethernet 00:E0:81:C1:88:4C;
+        fixed-address 10.157.42.29;
+        }
+    host cmbu-jmfc6 {
+        hardware ethernet 00:E0:81:C3:3E:94;
+        #fixed-address 10.157.42.30;
+        fixed-address 10.87.130.130;
+	send host-name "cmbu-jmfc6";
+        }
+    host cmbu-esx3-lnx01 {
+        hardware ethernet 00:0C:29:86:31:DA;
+        fixed-address 10.157.34.36;
+        }
+    host cmbu-bl460-01 {
+        hardware ethernet D4:85:64:4E:F4:B8;
+        fixed-address 10.157.43.30;
+        }
+    host cmbu-bl460-02 {
+        hardware ethernet D4:85:64:4E:25:B8;
+        fixed-address 10.157.43.31;
+        }
+    host cmbu-esx3-mfc03 {
+        hardware ethernet 00:0c:29:6a:25:b9;
+        fixed-address 10.157.34.37;
+        }
+    host cmbu-esx3-mfc04 {
+        hardware ethernet 00:0c:29:d1:6c:f3;
+        fixed-address 10.157.34.38;
+        }
+    host cmbu-ixs2-3 {
+        hardware ethernet 00:25:90:1a:92:43;
+        #fixed-address 10.157.43.137;
+        fixed-address 10.87.129.77;
+	send host-name "cmbu-ixs2-3";
+        }
+    host cmbu-dmfc1 {
+        hardware ethernet F4:CE:46:E7:27:44;
+        fixed-address 10.157.43.44;
+        }
+    host cmbu-icmfc1 {
+        hardware ethernet F4:CE:46:E7:87:88;
+        fixed-address 10.157.43.46;
+        }
+    host cmbu-dmfc2 {
+        hardware ethernet F4:CE:46:E7:26:E4;
+        fixed-address 10.157.43.45;
+        }
+    host cmbu-icmfc2 {
+        hardware ethernet F4:CE:46:E7:89:9C;
+        fixed-address 10.157.43.47;
+        }
+    host cmbu-esx3-mfc05 {
+        hardware ethernet 00:0C:29:F8:F6:12;
+        fixed-address 10.157.34.42;
+        }
+    host cmbu-vpe02 {
+        hardware ethernet 00:21:5A:EB:29:D2;
+        fixed-address 10.157.42.206;
+        }
+    host cmbu-esx2-mfc04 {
+        hardware ethernet 00:0C:29:E4:83:CB;
+        fixed-address 10.157.34.23;
+        }
+    host cmbu-esx-mfc12 {
+        hardware ethernet 00:0C:29:C6:02:9C;
+        fixed-address 10.157.34.46;
+    }
+    host cmbu-vxa22-2-dup {
+        hardware ethernet 00:E0:81:C3:89:3C;
+        #fixed-address 10.102.0.239;
+        fixed-address 10.87.140.43;
+	send host-name "cmbu-vxa22-2-dup";
+
+    }
+   host dgautam-vm5 {
+        hardware ethernet 52:54:00:70:80:a3;
+        fixed-address 10.87.129.205;
+        send host-name "dgautam-vm5";
+    }
+
+host cmbu-oblock1 {
+        hardware ethernet 04:7D:7B:B7:3B:E6;
+        fixed-address 10.87.129.212;
+        send host-name "cmbu-oblock1";
+    }
+host cmbu-oblock2 {
+        hardware ethernet C4:54:44:2E:8A:AE;
+        fixed-address 10.87.129.213;
+        send host-name "cmbu-oblock2";
+    }
+
+host cmbu-oblock3 {
+        hardware ethernet C4:54:44:2E:8A:A8 ;
+        fixed-address 10.87.129.215;
+        #fixed-address 10.87.129.214;
+        send host-name "cmbu-oblock3";
+    }
+
+    host cmbu-vxa20-14 {
+        hardware ethernet 00:E0:81:C9:FA:04;
+        #fixed-address 10.157.43.72;
+        fixed-address 10.87.129.167;
+	send host-name "cmbu-vxa20-14";
+    }
+    host cmbu-pt16 {
+        hardware ethernet 00:26:B9:54:72:47;
+        fixed-address 10.157.42.17;
+    }
+    host cmbu-vxa22-1 {
+        hardware ethernet 00:E0:81:C2:CD:74;
+        fixed-address 10.157.43.69;
+    }
+    host cmbu-qa01 {
+        hardware ethernet 00:1E:C9:2A:50:C4;
+        fixed-address 10.157.42.10;
+    }
+
+   host cmbu-qa09 {
+        hardware ethernet  00:1F:29:5F:0C:5E;
+        fixed-address 10.87.138.1;
+        send host-name "cmbu-qa09.englab.juniper.net";
+    }
+
+    host cmbu-sunfire {
+        hardware ethernet 00:21:28:50:14:FE;
+        fixed-address 10.157.42.148;
+    }
+    host cmbu-perf-mfc {
+        hardware ethernet 00:E0:81:C1:12:8A;
+        fixed-address 10.157.42.174;
+    }
+    host cmbu-esx-mfc13 {
+        hardware ethernet 00:0C:29:2C:F2:D3;
+        fixed-address 10.157.34.47;
+    }
+    host cmbu-vpe01 {
+        hardware ethernet 00:30:48:D6:9F:AA;
+        fixed-address 10.157.42.205;
+    }
+    host cmbu-qa07 {
+        hardware ethernet 00:23:7D:61:06:C8;
+        fixed-address 10.157.42.152;
+    }
+    host cmbu-qa06-lnx {
+        hardware ethernet 00:23:7D:61:06:C6;
+        #fixed-address 10.157.42.162;
+        fixed-address 10.87.131.62;
+        send host-name "cmbu-qa06-lnx";
+    }
+    host cmbu-esx04-mfc01 {
+        hardware ethernet 00:50:56:B2:05:1C;
+        fixed-address 10.157.34.48;
+    }
+    host cmbu-esx04-mfc02 {
+        hardware ethernet 00:50:56:B2:05:1D;
+        fixed-address 10.157.34.49;
+    }
+    host cmbu-esx04-mfc03 {
+        hardware ethernet 00:50:56:B2:05:1E;
+        fixed-address 10.157.34.50;
+    }
+    host cmbu-vxa22-7 {
+        hardware ethernet 00:E0:81:C2:A7:54;
+        fixed-address 10.157.43.71;
+        send host-name "cmbu-vxa22-7";
+    }
+    host cmbu-cl30 {
+        hardware ethernet 00:13:72:3C:33:56;
+        fixed-address 10.157.42.137;
+    }
+    #cmbu-auto-vhost01-ipmi 10.87.140.219
+    host cmbu-auto-vhost01 {
+        hardware ethernet 00:25:90:0C:86:F7;
+        #fixed-address 10.102.0.71;
+        fixed-address 10.87.140.81;
+	send host-name "cmbu-auto-vhost01";
+    }
+    #cmbu-auto-vhost02-ipmi 10.87.140.194
+    host cmbu-auto-vhost02 {
+        hardware ethernet 00:25:90:0C:86:F9;
+        #fixed-address 10.102.0.73;
+        fixed-address 10.87.140.82;
+	send host-name "cmbu-auto-vhost02";
+    }
+    #cmbu-auto-vhost03-ipmi 10.87.140.195
+    host cmbu-auto-vhost03 {
+        hardware ethernet 00:25:90:0C:87:01;
+        #fixed-address 10.102.0.75;
+        fixed-address 10.87.140.83;
+	send host-name "cmbu-auto-vhost03";
+    }
+    #cmbu-auto-vhost04-ipmi 10.87.140.196
+    host cmbu-auto-vhost04 {
+        hardware ethernet 00:25:90:0C:08:F5;
+        fixed-address 10.87.140.84;
+	send host-name "cmbu-auto-vhost04";
+    }
+    host cmbu-auto-vhost05 {
+        hardware ethernet A0:42:3F:01:AD:07;
+        fixed-address 10.87.141.34;
+	send host-name "cmbu-auto-vhost05";
+    }
+    host cmbu-auto-vhost06 {
+        hardware ethernet A0:42:3F:01:AB:A7;
+        fixed-address 10.87.141.35;
+	send host-name "cmbu-auto-vhost06";
+    }
+#    host cmbu-auto-vhost07 {
+#        hardware ethernet A0:42:3F:01:AF:C7;
+#        fixed-address 10.87.141.36;
+#	send host-name "cmbu-auto-vhost07";
+#    }
+    host cmbu-auto-vhost08 {
+        hardware ethernet A0:42:3F:01:AB:9B;
+        fixed-address 10.87.141.47;
+	send host-name "cmbu-auto-vhost08";
+    }
+    host cmbu-auto-vhost09 {
+        hardware ethernet A0:42:3F:01:AD:0B;
+        fixed-address 10.87.141.48;
+	send host-name "cmbu-auto-vhost09";
+    }
+    host cmbu-auto-vhost10 {
+        hardware ethernet A0:42:3F:01:AD:09;
+        fixed-address 10.87.141.49;
+	send host-name "cmbu-auto-vhost10";
+    }
+#    host cmbu-auto-vhost11 {
+#        hardware ethernet A0:42:3F:01:AD:13;
+#        fixed-address 10.87.141.50;
+#	send host-name "cmbu-auto-vhost11";
+#    }
+    # IPs reserved for use in cmbu-auto-vhost01 to 11
+    # 10.87.141.37 10.87.141.38 10.87.141.39 10.87.141.40 10.87.141.41 10.87.141.42 10.87.141.43 10.87.141.44 10.87.141.45 10.87.141.46
+    # 10.87.141.51 10.87.141.52 10.87.141.53 10.87.141.54 10.87.141.55 10.87.141.56 10.87.141.57 10.87.141.58 10.87.141.59 10.87.141.60
+    # VM launched in cmbu-auto-vhost04 over esx
+    #host DemoVM {
+    #    hardware ethernet 00:0C:29:21:07:A5;
+    #    fixed-address 10.87.140.254;
+#	send host-name "DemoVM";
+#    }
+#    host cmbu-toystory-01 {
+#        hardware ethernet 00:25:90:92:0D:EE;
+#        fixed-address 10.87.129.224;
+#	send host-name "cmbu-toystory-01";
+#    }
+#    host cmbu-toystory-02 {
+#        hardware ethernet 00:25:90:92:0E:6E;
+#        fixed-address 10.87.129.226;
+#	send host-name "cmbu-toystory-02";
+#    }
+    host cmbu-starwars-01 {
+        #hardware ethernet 00:25:90:CA:2C:88;
+        fixed-address 10.87.129.228;
+	send host-name "cmbu-starwars-01";
+    }
+    host cmbu-starwars-02 {
+        #hardware ethernet 00:25:90:CA:2D:24;
+        fixed-address 10.87.129.234;
+	send host-name "cmbu-starwars-02";
+    }
+    host cmbu-gravity-01 {
+        hardware ethernet 00:25:90:72:00:3C;
+        fixed-address 10.87.140.205;
+	send host-name "cmbu-gravity-01";
+    }
+    host cmbu-gravity-02 {
+        hardware ethernet 00:25:90:AB:9C:72;
+        fixed-address 10.87.140.207;
+	send host-name "cmbu-gravity-02";
+    }
+    host cmbu-gravity-03 {
+        hardware ethernet 00:25:90:7B:54:91;
+        fixed-address 10.87.140.209;
+    	send host-name "cmbu-gravity-03";
+    }
+    host cmbu-gravity-04 {
+        hardware ethernet 00:25:90:AB:9C:7F;
+        fixed-address 10.87.140.211;
+    	send host-name "cmbu-gravity-04";
+    }
+#    host cmbu-gravity-05 {
+#        hardware ethernet 00:25:90:AB:9C:78;
+#        fixed-address 10.87.140.213;
+#    	send host-name "cmbu-gravity-05";
+#    }
+    host cmbu-gravity-06 {
+        #hardware ethernet 00:25:90:AB:9C:6C;
+        fixed-address 10.87.140.215;
+    	send host-name "cmbu-gravity-06";
+    }
+    host cmbu-gravity-07 {
+        hardware ethernet 00:25:90:AB:9C:4A;
+        fixed-address 10.87.140.217;
+    	send host-name "cmbu-gravity-07";
+    }
+##    cmbu-gravity-08-ipmi 10.87.141.25
+#    host cmbu-gravity-08 {
+#        hardware ethernet 00:00:00:AB:9C:4A;
+#        fixed-address 10.87.141.26;
+#    	send host-name "cmbu-gravity-08";
+#    }
+#    cmbu-gravity-09-ipmi 10.87.141.27
+#    host cmbu-gravity-09 {
+#        hardware ethernet 00:00:00:AB:9B:4A;
+#        fixed-address 10.87.141.28;
+#    	send host-name "cmbu-gravity-09";
+#    }
+#    cmbu-gravity-10-ipmi 10.87.141.32
+    host cmbu-gravity-10 {
+        hardware ethernet 00:25:90:AB:9C:70;
+        fixed-address 10.87.141.33;
+    	send host-name "cmbu-gravity-10";
+    }
+    host esbu-mflab-esx15-lnx01 {
+        hardware ethernet 00:50:56:BB:77:E0;
+        fixed-address 10.87.132.140;
+        send host-name "esbu-mflab-esx15-lnx01";
+    }
+    host esbu-mflab-esx15-lnx02 {
+        hardware ethernet 00:50:56:BB:0F:29;
+        fixed-address 10.87.132.141;
+        send host-name "esbu-mflab-esx15-lnx02";
+    }
+    host esbu-mflab-esx15-lnx03 {
+        hardware ethernet 00:50:56:BB:7D:3E;
+        fixed-address 10.87.132.143;
+        send host-name "esbu-mflab-esx15-lnx03";
+    }
+   host cmbu-esx18-build01 {
+        #hardware ethernet 00:0c:29:49:1d:ed;
+        hardware ethernet 00:0c:29:5b:b8:02;
+        fixed-address 10.87.132.144;
+        send host-name "cmbu-esx18-build01";
+    }
+   host cmbu-esx18-sc6-b10 {
+        hardware ethernet 00:50:56:bb:2c:42;
+        fixed-address 10.87.132.161;
+        send host-name "cmbu-esx18-sc6-b10";
+    }
+   host cmbu-esx6-davey1 {
+        hardware ethernet 00:50:56:ae:cc:c9;
+        fixed-address 10.87.132.170;
+        send host-name "cmbu-esx6-davey1";
+    }
+
+
+
+    host cmbu-cl27 {
+        hardware ethernet 00:13:72:3C:31:2B;
+        fixed-address 10.157.42.13;
+    }
+    host cmbu-cl26 {
+        hardware ethernet 00:30:48:B8:C9:5C;
+        fixed-address 10.157.42.146;
+    }
+    host cmbu-esx04-mfc04 {
+        hardware ethernet 00:50:56:B2:02:19;
+        fixed-address 10.157.34.55;
+    }
+    host cmbu-esx04-mfc05 {
+        hardware ethernet 00:50:56:B2:04:4D;
+        fixed-address 10.157.34.116;
+    }
+    host cmbu-cli53 {
+        hardware ethernet 00:08:9B:BC:96:06;
+        fixed-address 10.157.42.191;
+    }
+    host cmbu-ixs2-4 {
+        hardware ethernet 00:25:90:1A:91:33;
+        #fixed-address 10.157.43.138;
+        fixed-address 10.87.129.78;
+	send host-name "cmbu-ixs2-4";
+    }
+    host cmbu-vxa22-6 {
+        hardware ethernet 00:E0:81:C3:8B:D2;
+        #fixed-address 10.157.43.80;
+        fixed-address 10.87.130.47;
+	send host-name "cmbu-vxa22-6";
+    }
+host cmbu-esx10-lnx1 {
+        hardware ethernet 00:50:56:b2:1e:ec;
+        fixed-address 10.87.132.135;
+        send host-name "cmbu-esx10-lnx1";
+    }
+
+    host cmbu-esx04-space01 {
+        hardware ethernet 00:50:56:B2:1E:81;
+        fixed-address 10.157.34.56;
+    }
+    host appl-esx1-vin1 {
+        hardware ethernet 00:50:56:bb:01:3a;
+        fixed-address 10.87.132.142;
+        send host-name "appl-esx1-vin1";
+    }
+    host appl-esx1-vin-sm2 {
+        hardware ethernet 00:50:56:ae:38:b9;
+        fixed-address 10.87.132.169;
+        send host-name "appl-esx1-vin-sm2";
+    }
+
+
+    host cmbu-esx04-space02 {
+        hardware ethernet 00:50:56:B2:07:08;
+        fixed-address 10.157.34.58;
+    }
+    host cmbu-esx04-space03 {
+        hardware ethernet 00:50:56:B2:09:36;
+        fixed-address 10.157.34.60;
+    }
+    host cmbu-esx04-space04 {
+        hardware ethernet 00:50:56:B2:09:5B;
+        fixed-address 10.157.34.62;
+    }
+    host cmbu-esx04-space05 {
+        hardware ethernet 00:50:56:B2:09:61;
+        fixed-address 10.157.34.64;
+    }
+    host cmbu-esx04-space06 {
+        hardware ethernet 00:50:56:B2:09:62;
+        fixed-address 10.157.34.66;
+    }
+    host cmbu-esx04-space07 {
+        hardware ethernet 00:50:56:B2:09:63;
+        fixed-address 10.157.34.68;
+    }
+    host cmbu-esx04-space08 {
+        hardware ethernet 00:50:56:B2:09:68;
+        fixed-address 10.157.34.74;
+    }
+    host cmbu-esx04-space09 {
+        hardware ethernet 00:50:56:B2:09:69;
+        fixed-address 10.157.34.75;
+    }
+    host groucho-perf01 {
+        hardware ethernet 64:31:50:4E:D7:B0;
+        fixed-address 10.102.0.150;
+    }
+    host groucho-func01 {
+        hardware ethernet 64:31:50:4F:07:6C;
+        fixed-address 10.102.0.151;
+    }
+    host cmbu-rd01 {
+        hardware ethernet 00:25:90:0C:86:FC;
+   #Repurposed to esx13    fixed-address 10.102.0.211;
+    }
+    host cmbu-reuters {
+        hardware ethernet 00:E0:81:C3:9F:9C;
+        fixed-address 10.157.43.56;
+    }
+    host groucho-func02 {
+        hardware ethernet 64:31:50:4F:07:8A;
+        fixed-address 10.102.0.152;
+    }
+    host vxa22-4 {
+        hardware ethernet 00:e0:81:c3:44:20;
+        fixed-address 10.87.129.156;
+    }
+    host cmbu-vxa20-8 {
+        hardware ethernet 00:E0:81:C3:9E:DA;
+        fixed-address 10.157.43.83;
+    }
+    host cmbu-esx4-space03 {
+        hardware ethernet 00:50:56:B2:09:36;
+        fixed-address 10.157.34.60;
+    }
+    host cmbu-esx4-space04 {
+        hardware ethernet 00:50:56:B2:09:5B;
+        fixed-address 10.157.34.62;
+    }
+    host groucho-ld02 {
+        hardware ethernet 00:25:90:35:78:BA;
+        fixed-address 10.102.0.154;
+    }
+    host groucho-cwm {
+        hardware ethernet 00:25:90:35:7C:E6;
+        fixed-address 10.102.0.155;
+    }
+    host groucho-cn01 {
+        hardware ethernet 64:31:50:4E:FA:F6;
+        fixed-address 10.102.0.157;
+    }
+    host groucho-cn02 {
+        hardware ethernet 64:31:50:4E:FB:78;
+        fixed-address 10.102.0.158;
+    }
+    host groucho-cn03 {
+        hardware ethernet 64:31:50:4F:11:8A;
+        fixed-address 10.102.0.159;
+    }
+    host groucho-cn04 {
+        hardware ethernet 64:31:50:4A:5A:0A;
+        fixed-address 10.102.0.160;
+    }
+    host groucho-cn05 {
+        hardware ethernet 64:31:50:4F:10:86;
+        fixed-address 10.102.0.161;
+    }
+    host cmbu-cl67 {
+        hardware ethernet 00:25:90:0D:25:CA;
+        fixed-address 10.102.0.103;
+    }
+#bambi02    host cmbu-vxa20-11 {
+#        hardware ethernet 00:E0:81:C2:DD:AD;
+#        #fixed-address 10.157.43.58;
+#        fixed-address 10.87.129.62;
+#	send host-name "cmbu-vxa20-11";
+#    }
+    host cmbu-qa25 {
+        hardware ethernet 00:25:90:35:8B:34;
+        fixed-address 10.102.0.106;
+    }
+    host cmbu-qa26 {
+        hardware ethernet 00:25:90:35:8A:1E;
+        fixed-address 10.87.140.91;
+    }
+    host cmbu-qa27 {
+        hardware ethernet 00:25:90:35:8A:7E;
+        fixed-address 10.87.140.92;
+    }
+    host cmbu-space-eval {
+        hardware ethernet 00:18:7D:17:22:77;
+        fixed-address 10.102.0.215;
+    }
+    host cmbu-eval-cli-52 {
+	hardware ethernet 00:26:B9:87:54:1D;
+	fixed-address 10.87.130.21;
+	send host-name "cmbu-eval-cli-52";
+    }
+    host cmbu-vxa22-14 {
+        hardware ethernet 00:E0:81:C3:13:E6;
+        fixed-address 10.157.43.56;
+    }
+    host cmbu-att {
+         #hardware ethernet 00:1B:21:B6:56:72;
+         # old hardware ethernet 00:25:90:0C:09:80;
+        #hardware ethernet 90:E2:BA:0B:AD:C4;
+        #hardware ethernet 00:25:90:7B:54:58;
+        hardware ethernet  00:25:90:1A:92:46;
+       # fixed-address 10.102.0.213;
+        fixed-address 10.87.140.103;
+	send host-name "cmbu-att";
+    }
+    host cmbu-esx05-mfc01 {
+        hardware ethernet 00:50:56:B2:09:94;
+        fixed-address 10.157.34.77;
+    }
+    host cmbu-reuters2-vxa {
+        hardware ethernet 00:18:7D:10:94:5A;
+        fixed-address 10.157.43.57;
+    }
+    host cmbu-kvm {
+        hardware ethernet 00:25:90:0E:F4:EA;
+        fixed-address 10.102.0.214;
+    }
+    host cmbu-cl28 {
+        hardware ethernet 00:13:72:3C:30:83;
+        fixed-address 10.157.43.57;
+    }
+    host cmbu-vpe03 {
+        hardware ethernet 00:18:7d:0b:65:a4;
+        fixed-address 10.157.43.77;
+    }
+    host cmbu-esx06-mfc01 {
+        hardware ethernet 00:50:56:B2:15:B9;
+        fixed-address 10.157.34.84;
+    }
+    host cmbu-cli17 {
+        hardware ethernet 00:21:5A:DD:AA:31;
+        fixed-address 10.157.42.213;
+    }
+    host cmbu-at03 {
+        hardware ethernet 00:30:48:D5:F7:5E;
+        fixed-address 10.87.129.253;
+    }
+    host cmbu-at04 {
+        hardware ethernet 00:30:48:D4:5A:A0;
+        fixed-address 10.87.129.227;
+    }
+    host cmbu-qa02 {
+        hardware ethernet 00:1F:29:EB:14:F4;
+        fixed-address 10.157.42.144;
+    }
+    host cmbu-qa10 {
+        hardware ethernet 00:30:48:D6:63:1A;
+        fixed-address 10.87.129.156;
+    }
+    host cmbu-vxa12-2 {
+        hardware ethernet 00:18:7D:10:95:6E;
+        fixed-address 10.87.129.150;
+    }
+    host cmbu-vxa12-3 {
+        hardware ethernet 00:18:7D:0C:F0:CB;
+        fixed-address 10.87.129.153;
+    }
+    host cmbu-vxa11-1 {
+        hardware ethernet 00:18:7D:0F:B1:33;
+        fixed-address 10.157.43.65;
+    }
+    host cmbu-vxa11-3 {
+        hardware ethernet 00:18:7D:0F:B1:1D;
+        #fixed-address 10.157.43.74;
+        fixed-address 10.87.129.193;
+	send host-name "cmbu-vxa11-3";
+    }
+    host cmbu-vxa22-3 {
+        hardware ethernet 00:E0:81:C3:8D:5C;
+        fixed-address 10.87.129.166;
+    }
+    host cmbu-ixs2-10 {
+        hardware ethernet 00:25:90:1C:FC:62;
+        #fixed-address 10.157.43.179;
+        fixed-address 10.87.130.57;
+	send host-name "cmbu-ixs2-10";
+    }
+    host cmbu-ixs2-11 {
+        hardware ethernet 00:25:90:1C:FC:60;
+        #fixed-address 10.157.43.181;
+        fixed-address 10.87.129.100;
+	send host-name "cmbu-ixs2-11";
+    }
+    host cmbu-20-7 {
+        hardware ethernet 00:E0:81:C3:9E:D8;
+        #fixed-address 10.157.43.84;
+        fixed-address 10.87.129.163 ;
+    }
+    host cmbu-cl31 {
+        hardware ethernet 00:30:48:B8:F8:22;
+        fixed-address 10.157.42.146;
+    }
+    host cmbu-esx06-mfc02 {
+        hardware ethernet 00:50:56:B2:0F:B5;
+        fixed-address 10.157.34.87;
+    }
+    host cmbu-esx06-mfc03 {
+        hardware ethernet 00:50:56:B2:0F:BA;
+        fixed-address 10.157.34.88;
+    }
+    host cmbu-esx06-mfc04 {
+        hardware ethernet 00:50:56:B2:0F:BB;
+        fixed-address 10.157.34.89;
+    }
+    host cmbu-esx06-mfc05 {
+        hardware ethernet 00:50:56:B2:0F:BC;
+        fixed-address 10.157.34.90;
+    }
+    host cmbu-esx06-mfc06 {
+        hardware ethernet 00:50:56:B2:10:3C;
+        fixed-address 10.157.34.91;
+    }
+    host cmbu-cl16 {
+        hardware ethernet 00:21:5A:DD:AA:40;
+        fixed-address 10.157.42.171;
+    }
+    host cmbu-esx07-mfc01 {
+        hardware ethernet 00:50:56:B2:11:46;
+        fixed-address 10.157.34.95;
+    }
+    host cmbu-esx07-mfc02 {
+        hardware ethernet 00:50:56:B2:11:47;
+        fixed-address 10.157.34.96;
+    }
+    host cmbu-esx07-mfc03 {
+        hardware ethernet 00:50:56:B2:11:48;
+        fixed-address 10.157.34.97;
+    }
+    host cmbu-esx07-lnx01 {
+        hardware ethernet 00:50:56:B2:11:3E;
+        fixed-address 10.87.132.134;
+	send host-name "cmbu-esx07-lnx01";
+    }
+    host cmbu-qa28 {
+        hardware ethernet 00:25:90:52:40:44;
+        #fixed-address 10.102.0.223;
+        fixed-address 10.87.140.76;
+	send host-name "cmbu-qa28";
+    }
+    host cmbu-super-vxa {
+        hardware ethernet 00:E0:81:C6:D6:F2;
+        fixed-address 10.102.0.224;
+    }
+    host cmbu-esx05-mfc02 {
+        hardware ethernet 00:50:56:B2:0B:58;
+        fixed-address 10.157.34.104;
+    }
+    host cmbu-esx06-mfc08 {
+        hardware ethernet 00:50:56:B2:0D:3C;
+        fixed-address 10.157.34.105;
+    }
+    host cmbu-vxa22-15 {
+        hardware ethernet 00:E0:81:C5:8B:90;
+        fixed-address 10.87.140.53;
+    }
+    host cmbu-vxa22-16 {
+        hardware ethernet 00:E0:81:C5:8B:EA;
+        fixed-address 10.102.0.228;
+    }
+    host cmbu-vxa22-17 {
+        hardware ethernet 00:E0:81:C5:89:9A;
+        #fixed-address 10.102.0.229;
+        fixed-address 10.87.140.51;
+	send host-name "cmbu-vxa22-17";
+    }
+#bambi03    host cmbu-vxa22-18 {
+#        hardware ethernet 00:E0:81:C5:89:FA;
+#        fixed-address 10.87.140.50;
+#	send host-name "cmbu-vxa22-18";
+#    }
+    host cmbu-esx07-mfc05 {
+        hardware ethernet 00:50:56:B2:0F:F7;
+        fixed-address 10.157.34.107;
+    }
+    host cmbu-esx07-mfc06 {
+        hardware ethernet 00:50:56:B2:12:05;
+        fixed-address 10.157.34.112;
+    }
+    host cmbu-esx07-mfc07 {
+        hardware ethernet 00:50:56:B2:14:47;
+        fixed-address 10.157.34.113;
+    }
+    host cmbu-esx06-mfc09 {
+        hardware ethernet 00:50:56:B2:14:46;
+        fixed-address 10.157.34.120;
+    }
+    host cmbu-esx06-mfc10 {
+        hardware ethernet 00:50:56:B2:14:49;
+        fixed-address 10.157.34.110;
+    }
+    host cmbu-esx06-mfc11 {
+        hardware ethernet 00:50:56:B2:14:4A;
+        fixed-address 10.157.34.111;
+    }
+        host cmbu-esx06-sm01 {
+        hardware ethernet 00:50:56:bb:44:5e;
+        fixed-address 10.87.132.168;
+        send host-name "cmbu-esx06-sm01";
+    }
+    
+    host cmbu-esx-mfc14 {
+        hardware ethernet 00:50:56:B2:3D:7F;
+        fixed-address 10.157.34.114;
+    }
+    host cmbu-esx-mfc15 {
+        hardware ethernet 00:50:56:B2:14:4D;
+        fixed-address 10.157.34.115;
+    }
+    host cmbu-rosecity {
+        hardware ethernet 00:1E:67:08:17:BE;
+        fixed-address 10.102.0.240;
+    }
+    host cmbu-esx2-mfc05 {
+        hardware ethernet 00:50:56:B2:14:E2;
+        fixed-address 10.157.34.117;
+    }
+    host cmbu-esx3-mfc06 {
+        hardware ethernet 00:50:56:B2:12:65;
+        fixed-address 10.157.34.118;
+    }
+    host cmbu-cl73 {
+        # SM
+	#hardware ethernet 00:25:90:60:42:00;
+        #fixed-address 10.102.1.53;
+        fixed-address 10.87.140.36;
+    }
+    host cmbu-gravity-11 {
+        # SM
+	#hardware ethernet 00:25:90:7B:54:10;
+        fixed-address 10.87.141.62;
+    }
+    host aliens.englab.juniper.net {
+	# Host to run SM and test server for solutions testbeds
+	# aliens-ipmi 10.87.141.73
+	# cst-sm1-vm 10.87.141.75
+	# cst-sm2-vm 10.87.141.76
+	# cst-test-vm 10.87.141.77
+	hardware ethernet 00:25:90:AB:9C:3E;
+	fixed-address 10.87.141.74;
+        send host-name "aliens";
+    }
+    host aliens-sm1 {
+      hardware ethernet 52:54:00:d1:1d:71;
+      fixed-address 10.87.141.75;
+      send host-name "aliens-sm1";
+    }
+    host aliens-sm2 {
+      hardware ethernet 52:54:00:c1:6c:ce;
+      fixed-address 10.87.141.76;
+      send host-name "aliens-sm2";
+    }
+    host aliens-auto {
+      hardware ethernet 52:54:00:86:6d:7b;
+      fixed-address 10.87.141.77;
+      send host-name "aliens-auto";
+    }
+    host aliens-auto2 {
+      hardware ethernet 52:54:00:30:df:b6;
+      fixed-address 10.87.141.78;
+      send host-name "aliens-auto2";
+    }
+    host cmbu-cl62 {
+        # SM
+	# IPMI 10.87.141.70
+	#hardware ethernet 00:25:90:0F:67:28;
+        fixed-address 10.87.141.71;
+	send host-name "cmbu-cl62";
+    }
+    host cmbu-esx03-lnx03 {
+        hardware ethernet 00:50:56:B2:13:86;
+        fixed-address 10.157.34.121;
+    }
+    host cmbu-esx04-lnx02 {
+        hardware ethernet 00:50:56:B2:15:04;
+        fixed-address 10.157.34.125;
+    }
+    host cmbu-esx-mfc16 {
+        hardware ethernet 00:50:56:B2:16:8F;
+        fixed-address 10.157.34.129;
+    }
+    host cmbu-ixs1-2 {
+        hardware ethernet 00:25:90:1A:92:3E;
+        #fixed-address 10.157.43.130;
+        fixed-address 10.87.129.68;
+	send host-name "cmbu-ixs1-2";
+    }
+    host cmbu-groucho-ld01 {
+        hardware ethernet 00:25:90:35:7C:E0;
+        fixed-address 10.102.0.170;
+    }
+    host cmbu-vxa22-19 {
+        hardware ethernet 00:E0:81:C6:D4:B8;
+        #fixed-address 10.102.0.232;
+        fixed-address 10.87.140.48;
+	send host-name "cmbu-vxa22-19";
+    }
+    host cmbu-vxa2100-proto1 {
+        hardware ethernet 00:E0:81:C9:F6:02;
+        #fixed-address 10.102.0.233;
+        fixed-address 10.87.129.252;
+        send host-name "cmbu-vxa2100-proto1";
+    }
+    host cmbu-cl75 {
+        hardware ethernet 00:25:90:7b:54:52;
+        #hardware ethernet  00:26:B9:84:92:39;
+        fixed-address 10.102.0.234;
+        send host-name "cmbu-cl75";
+    }
+   host cmbu-vxa2100-proto6 {
+        hardware ethernet 00:E0:81:CA:FE:A1;
+        #fixed-address 10.102.0.110;
+	fixed-address 10.87.140.12;
+	send host-name "cmbu-vxa2100-proto6";
+    }
+    host cmbu-ixs4-34 {
+        hardware ethernet 00:30:48:F6:4C:CC;
+        fixed-address 10.157.43.152;
+    }
+    host cmbu-ixs4-14 {
+	hardware ethernet 00:30:48:F6:4C:4A;
+	fixed-address 10.87.129.139;
+	send host-name "cmbu-ixs4-14";
+    }
+    host cmbu-cl74 {
+        hardware ethernet 00:26:B9:84:FA:95;
+        fixed-address 10.157.43.191;
+    }
+    #cmbu-cl63-ipmi 10.87.141.82
+    #10.87.141.84,10.87.141.85,93,94 for vms inside cl63
+    host cmbu-cl63 {
+        hardware ethernet 00:25:90:0F:48:92;
+        fixed-address 10.87.141.83;
+        send host-name "cmbu-cl63";
+    }
+    host cmbu-cl63-vm3 {
+        hardware ethernet 52:54:00:30:8c:74;
+        fixed-address 10.87.141.93;
+        send host-name "cmbu-cl63-vm3";
+    }
+    host cmbu-cl63-vm4 {
+        hardware ethernet 52:54:00:30:8c:75;
+        fixed-address 10.87.141.94;
+        send host-name "cmbu-cl63-vm4";
+    }
+    #cmbu-cl64-ipmi 10.87.141.86
+    #Windows machine - unactivated
+    host cmbu-cl64 {
+        hardware ethernet 00:25:90:30:34:70;
+        #fixed-address 10.87.141.83;
+        send host-name "cmbu-cl64";
+    }
+    #cmbu-cl65-ipmi 10.87.141.87
+    #10.87.141.89,10.87.141.90 for vms inside cl63
+    host cmbu-cl65 {
+        hardware ethernet 00:25:90:30:31:96;
+        fixed-address 10.87.141.88;
+        send host-name "cmbu-cl65";
+    }
+    host cmbu-cl65-smvm {
+        hardware ethernet 52:54:00:42:7e:d0;
+        fixed-address 10.87.141.89;
+        send host-name "cmbu-cl65-smvm";
+    }
+    host cmbu-cl65-tvm {
+        hardware ethernet 52:54:00:ad:a8:78;
+        fixed-address 10.87.141.90;
+        send host-name "cmbu-cl65-tvm";
+    }
+    host cmbu-vxa2100-proto2 {
+        hardware ethernet 00:E0:81:C5:8C:8E;
+        #fixed-address 10.102.0.235;
+        fixed-address 10.87.140.46;
+	send host-name "cmbu-vxa2100-proto2";
+    }
+    host cmbu-qa29 {
+        hardware ethernet 00:30:48:7B:53:D2;
+        fixed-address 10.87.129.121;
+	send host-name "cmbu-qa29";
+    }
+    host cmbu-client-x1 {
+        hardware ethernet 00:25:90:04:C1:5C;
+        fixed-address 10.102.0.237;
+    }
+    host cmbu-client-x2 {
+        hardware ethernet 00:25:90:04:8F:7E;
+        fixed-address 10.102.0.236;
+    }
+    host cmbu-proxy {
+        hardware ethernet 00:25:90:0C:86:D8;
+        fixed-address 10.102.0.100;
+    }
+    host cmbu-cl76 {
+        hardware ethernet 00:25:90:0D:25:3C;
+        fixed-address 10.157.43.193;
+    }
+    host cmbu-daveys-vm1 {
+        hardware ethernet EE:EA:BF:A9:6F:AE;
+        fixed-address 10.157.42.77;
+    }
+    host cmbu-vxa20-12 {
+        hardware ethernet 00:E0:81:C9:F9:BC;
+        fixed-address 10.157.43.195;
+    }
+    host cmbu-esx07-mfc08 {
+        hardware ethernet 00:50:56:B2:1A:85;
+        fixed-address 10.157.34.140;
+    }
+    host cmbu-esx07-mfc09 {
+        hardware ethernet 00:50:56:B2:19:F9;
+        fixed-address 10.157.34.141;
+    }
+    host cmbu-vxa2100-temp {
+   # new hostname is esbu-2010-23
+   #     hardware ethernet 00:E0:81:C9:F9:BA;
+   #     fixed-address 10.102.1.91;
+    }
+    host cmbu-esx07-lnx07 {
+        hardware ethernet 00:50:56:B2:16:6F;
+        fixed-address 10.157.34.136;
+    }
+    host cmbu-esx07-lnx08 {
+        hardware ethernet 00:50:56:B2:1A:91;
+        fixed-address 10.157.34.137;
+    }
+    host cmbu-esx07-lnx09 {
+        hardware ethernet 00:50:56:B2:1A:8F;
+        fixed-address 10.157.34.138;
+    }
+    host cmbu-esx07-lnx10 {
+        hardware ethernet 00:50:56:B2:1A:90;
+        fixed-address 10.157.34.139;
+    }
+    host cmbu-vxa20-13 {
+        hardware ethernet 00:E0:81:C9:F7:F0;
+        fixed-address 10.157.44.173;
+    }
+    host cmbu-esx05-mfc03 {
+        hardware ethernet 00:50:56:B2:1B:0E;
+        fixed-address 10.157.34.142;
+    }
+    host cmbu-cl77 {
+        hardware ethernet 00:25:90:0E:F4:24;
+        #fixed-address 10.157.43.196;
+        fixed-address 10.87.129.221;
+	send host-name "cmbu-cl77";
+    }
+    host cmbu-cl78 {
+        hardware ethernet 00:25:90:71:AD:20;
+        #hardware ethernet 90:E2:BA:06:A8:6A;
+        #hardware ethernet 90:E2:BA:06:A8:6B;
+        fixed-address 10.87.140.131;
+	send host-name "cmbu-cl78";
+    }
+   host esbu-mflab-lnx-c06 {
+        hardware ethernet 00:25:90:72:00:3B;
+        fixed-address 10.87.129.40;
+        send host-name "esbu-mflab-lnx-c06";
+    }
+   host esbu-mflab-lnx-c07 {
+        hardware ethernet 00:25:90:72:00:5F;
+        fixed-address 10.87.129.42;
+        send host-name "esbu-mflab-lnx-c07";
+    }
+
+    host cmbu-cl79 {
+        hardware ethernet 00:25:90:71:B4:E2;
+        fixed-address 10.87.140.133;
+	send host-name "cmbu-cl79";
+    }
+    #cmbu-cl80 was previously ix-store
+    host cmbu-cl80 {
+        hardware ethernet 00:25:90:60:41:FE;
+        fixed-address 10.87.140.135;
+	send host-name "cmbu-cl80";
+    }
+    #cmbu-interview IPMI 10.87.140.246
+    #IPs reserved for usein VMs in cmbu-interview
+    #10.87.140.248 10.87.140.249 10.87.140.250 10.87.140.251 10.87.140.252 10.87.140.253 10.87.140.254
+    host cmbu-interview {
+        hardware ethernet 00:25:90:7B:54:85;
+        fixed-address 10.87.140.247;
+	send host-name "cmbu-interview";
+    }
+    host cmbu-interview-vMFC1 {
+        hardware ethernet 00:15:5D:8C:F7:08;
+        fixed-address 10.87.140.248;
+	send host-name "cmbu-interview-vMFC1";
+    }
+    host cmbu-vxa20-15 {
+        hardware ethernet 00:E0:81:C6:D5:FC;
+        fixed-address 10.87.140.27;
+	send host-name "cmbu-vxa20-15";
+
+    }
+    host cmbu-vxa2100-proto3 {
+        hardware ethernet 00:E0:81:C9:F6:2E;
+        #fixed-address 10.102.0.246;
+        fixed-address 10.87.140.28;
+	send host-name "cmbu-vxa2100-proto3";
+
+    }
+    host cmbu-vxa2100-proto4 {
+        hardware ethernet 00:E0:81:C9:F0:BE;
+        #fixed-address 10.102.0.247;
+        fixed-address 10.87.140.21;
+    }
+    host cmbu-esx04-mfc06 {
+        hardware ethernet 00:50:56:B2:78:C2;
+        fixed-address 10.157.34.212;
+    }
+    host cmbu-ex10-lnx08 {
+        hardware ethernet 00:50:56:b2:63:f0;
+        fixed-address 10.157.34.150;
+    }
+    host cmbu-esx-mfc17 {
+        hardware ethernet 00:50:56:B2:18:29;
+        fixed-address 10.157.34.132;
+    }
+    host cmbu-cl10 {
+        hardware ethernet 00:1E:C9:FF:0E:D1;
+        fixed-address 10.157.42.73;
+    }
+    host cmbu-rma-vxa {
+        hardware ethernet 00:E0:81:C5:8A:42;
+        fixed-address 10.102.0.250;
+    }
+    host cmbu-auto-esx1 {
+        hardware ethernet 00:25:90:71:AD:2C;
+        fixed-address 10.87.140.227;
+	send host-name "cmbu-auto-esx1";
+    }
+    host cmbu-auto-esx1-lnx01 {
+        #hardware ethernet 00:0C:29:AF:19:38;
+        hardware ethernet aa:50:56:00:00:01;
+        fixed-address 10.87.140.229;
+	send host-name "cmbu-auto-esx1-lnx01";
+    }
+    host cmbu-auto-esx1-lnx02 {
+        #hardware ethernet 00:0C:29:DC:47:62;
+        hardware ethernet aa:50:56:00:00:02;
+        fixed-address 10.87.140.230;
+	send host-name "cmbu-auto-esx1-lnx02";
+    }
+    host cmbu-esx10-mfc01 {
+        hardware ethernet 00:50:56:B2:1E:0B;
+        #fixed-address 10.157.34.158;
+        fixed-address 10.87.132.100;
+	send host-name "cmbu-esx10-mfc01";
+    }
+    host cmbu-esx10-mfc02 {
+        hardware ethernet 00:50:56:B2:1E:5E;
+        fixed-address 10.157.34.159;
+    }
+    host cmbu-esx10-mfc03 {
+        hardware ethernet 00:50:56:B2:1E:5F;
+        fixed-address 10.157.34.160;
+    }
+    host cmbu-esx10-mfc04 {
+        hardware ethernet 00:50:56:B2:1E:60;
+        fixed-address 10.157.34.161;
+    }
+    host cmbu-esx10-mfc05 {
+        hardware ethernet 00:50:56:B2:1E:61;
+        fixed-address 10.157.34.162;
+    }
+    host cmbu-esx10-mfc06 {
+        hardware ethernet 00:50:56:B2:1E:70;
+        fixed-address 10.157.34.163;
+    }
+    host cmbu-esx10-mfc07 {
+        hardware ethernet 00:50:56:B2:1E:76;
+        fixed-address 10.157.34.164;
+    }
+    host cmbu-esx10-mfc08 {
+        hardware ethernet 00:50:56:B2:1E:89;
+        fixed-address 10.157.34.165;
+    }
+    host cmbu-vxa2100-proto5 {
+        hardware ethernet 00:E0:81:C9:F5:F0;
+     #   fixed-address 10.102.1.136;
+        fixed-address 10.87.140.11;
+    }
+    #cmbu-esx-junos-sdk dhruva
+    host host160 { hardware ethernet 00:0c:29:cb:73:bb; }
+    #cmbu-esx-junos-sdk dhruva2
+    host host161 { hardware ethernet 00:0c:29:cb:73:c5; }
+    #CMBU-ESX-LINUX-MTK2-CLIENT-PC01
+    host host163 { hardware ethernet 00:0c:29:09:a3:5b; }
+    #CMBU-ESX-LINUX-MTK2-SERVER-PC01
+    host host164 { hardware ethernet 00:0c:29:91:7e:81; }
+    #dhruva vm
+    host host189 { hardware ethernet 00:0c:29:97:01:3d; }
+    #dhruva vm2
+    host host190 { hardware ethernet 00:0c:29:97:01:47; }
+    host cmbu-space1 {
+        hardware ethernet 00:18:7D:12:D3:41;
+        fixed-address 10.157.43.26;
+    }
+    host cmbu-space2 {
+        hardware ethernet 00:18:7D:12:D3:05;
+        fixed-address 10.157.43.25;
+    }
+    host cmbu-ESX2-MFC06 {
+        hardware ethernet 00:50:56:B2:57:63;
+        fixed-address 10.157.34.179;
+    }
+    host cmbu-ESX2-MFC07 {
+        hardware ethernet 00:50:56:B2:57:65;
+        fixed-address 10.157.34.180;
+    }
+    host cmbu-IXS1-3 {
+        hardware ethernet 00:25:90:1A:92:46;
+        fixed-address 10.157.43.131;
+    }
+    host cmbu-ESX8-MFC01 {
+        hardware ethernet 00:50:56:B2:57:83;
+        fixed-address 10.157.34.181;
+    }
+    host cmbu-ESX8-MFC02 {
+        hardware ethernet 00:50:56:B2:57:84;
+        fixed-address 10.157.34.182;
+    }
+    host cmbu-ESX8-MFC03 {
+        hardware ethernet 00:50:56:B2:61:67;
+        fixed-address 10.157.34.183;
+    }
+    host cmbu-ESX8-MFC04 {
+        hardware ethernet 00:50:56:B2:61:68;
+        fixed-address 10.157.34.184;
+    }
+    host cmbu-ESX8-MFC05 {
+        hardware ethernet 00:50:56:B2:61:69;
+        fixed-address 10.157.34.185;
+    }
+    host cmbu-ESX8-MFC06 {
+        hardware ethernet 00:50:56:B2:61:6A;
+        fixed-address 10.157.34.186;
+    }
+    host cmbu-ESX8-MFC07 {
+        hardware ethernet 00:50:56:B2:61:6B;
+        fixed-address 10.157.34.187;
+    }
+    host cmbu-ESX8-MFC08 {
+        hardware ethernet 00:50:56:B2:61:6C;
+        fixed-address 10.157.34.188;
+    }
+    host cmbu-ESX8-MFC09 {
+        hardware ethernet 00:50:56:B2:61:6D;
+        fixed-address 10.157.34.189;
+    }
+    host cmbu-ESX8-MFC10 {
+        hardware ethernet 00:50:56:B2:61:6E;
+        fixed-address 10.157.34.190;
+    }
+    host cmbu-ESX8-MFC11 {
+        hardware ethernet 00:50:56:B2:61:6F;
+        fixed-address 10.157.34.191;
+    }
+    host cmbu-ESX8-MFC12 {
+        hardware ethernet 00:50:56:B2:61:70;
+        fixed-address 10.157.34.192;
+    }
+    host cmbu-ESX8-MFC13 {
+        hardware ethernet 00:50:56:B2:61:72;
+        fixed-address 10.157.34.193;
+    }
+    host cmbu-ESX9-MFC01 {
+        hardware ethernet 00:50:56:B2:0B:E3;
+        fixed-address 10.157.34.194;
+    }
+    host cmbu-ESX9-MFC02 {
+        hardware ethernet 00:50:56:B2:61:75;
+        fixed-address 10.157.34.195;
+    }
+    host cmbu-ESX9-MFC03 {
+        hardware ethernet 00:50:56:B2:61:76;
+        fixed-address 10.157.34.196;
+    }
+    host cmbu-ESX9-MFC04 {
+        hardware ethernet 00:50:56:B2:61:77;
+        fixed-address 10.157.34.197;
+    }
+    host cmbu-ESX9-MFC05 {
+        hardware ethernet 00:50:56:B2:61:78;
+        fixed-address 10.157.34.198;
+    }
+    host cmbu-ESX9-MFC06 {
+        hardware ethernet 00:50:56:B2:61:81;
+        fixed-address 10.157.34.199;
+    }
+    host cmbu-ESX9-MFC07 {
+        hardware ethernet 00:50:56:B2:61:87;
+        fixed-address 10.157.34.200;
+    }
+    host cmbu-ESX9-MFC08 {
+        hardware ethernet 00:50:56:B2:61:8C;
+        fixed-address 10.157.34.201;
+    }
+    host cmbu-ESX9-MFC09 {
+        hardware ethernet 00:50:56:B2:61:8D;
+        fixed-address 10.157.34.202;
+    }
+    host cmbu-ESX9-MFC10 {
+        hardware ethernet 00:50:56:B2:61:8E;
+        fixed-address 10.157.34.203;
+    }
+    host cmbu-ESX9-MFC11 {
+        hardware ethernet 00:50:56:B2:61:8F;
+        fixed-address 10.157.34.204;
+    }
+    host cmbu-vxa1100-proto1 {
+        hardware ethernet 00:E0:81:CB:B7:3A;
+        fixed-address 10.102.0.253;
+    }
+    host cmbu-ixs1-1 {
+        hardware ethernet 00:25:90:1A:92:40;
+        fixed-address 10.102.1.140;
+        send host-name "cmbu-ixs1-1";
+    }
+    host cmbu-ESX11-MFC02 {
+        hardware ethernet 00:50:56:b2:52:d2;
+        fixed-address 10.157.34.213;
+    }
+    host cmbu-ESX09-MFC12 {
+        hardware ethernet 00:50:56:b2:53:0a;
+        fixed-address 10.157.34.213;
+    }
+### Startng ESX12 MFC's
+
+host cmbu-ESX12-MFC01 {
+        hardware ethernet 00:50:56:b2:71:8a;
+        fixed-address 10.102.1.151;
+        option routers 10.102.3.254;
+    }
+host cmbu-ESX12-MFC02 {
+        hardware ethernet 00:50:56:b2:71:94;
+        fixed-address 10.102.1.152;
+        option routers 10.102.3.254;
+    }
+host cmbu-ESX12-MFC03 {
+        hardware ethernet 00:50:56:b2:71:95;
+        fixed-address 10.102.1.153;
+        option routers 10.102.3.254;
+    }
+host cmbu-ESX12-MFC04 {
+        hardware ethernet 00:50:56:b2:71:96;
+        fixed-address 10.102.1.154;
+        option routers 10.102.3.254;
+    }
+host cmbu-ESX12-MFC05 {
+        hardware ethernet 00:50:56:b2:71:97;
+        fixed-address 10.102.1.155;
+        option routers 10.102.3.254;
+    }
+host cmbu-ESX12-MFC06 {
+        hardware ethernet 00:50:56:b2:71:98;
+        fixed-address 10.102.1.156;
+        option routers 10.102.3.254;
+    }
+host cmbu-ESX12-MFC07 {
+        hardware ethernet 00:50:56:b2:71:99;
+        fixed-address 10.102.1.157;
+        option routers 10.102.3.254;
+    }
+host cmbu-ESX12-MFC08 {
+        hardware ethernet 00:50:56:b2:71:9a;
+        fixed-address 10.102.1.158;
+        option routers 10.102.3.254;
+    }
+host cmbu-ESX12-MFC09 {
+        hardware ethernet 00:50:56:b2:71:9b;
+        fixed-address 10.102.1.159;
+        option routers 10.102.3.254;
+    }
+host cmbu-ESX12-MFC10 {
+        hardware ethernet 00:50:56:b2:71:a6;
+        fixed-address 10.102.1.160;
+        option routers 10.102.3.254;
+    }
+host cmbu-esx12-dh1 {
+        hardware ethernet 00:50:56:bb:20:4b;
+        fixed-address 10.87.132.151;
+	option routers 10.87.159.254;
+	send host-name "cmbu-esx12-dh1";
+    }
+host cmbu-esx12-dp1 {
+       hardware ethernet 00:50:56:bb:75:70;
+        fixed-address 10.87.132.152;
+        option routers 10.87.159.254;
+        send host-name "cmbu-esx12-dp1";
+    }
+
+host cmbu-esx16-vin1 {
+       hardware ethernet 00:50:56:bb:28:1d;
+        fixed-address 10.87.132.153;
+        option routers 10.87.159.254;
+        send host-name "cmbu-esx16-vin1";
+    }
+
+
+
+host cmbu-vxa2010-10 {
+        hardware ethernet 00:E0:81:C5:17:A8;
+        fixed-address 10.87.129.61;
+	send host-name "cmbu-vxa2010-10";
+    }
+
+
+
+###VSE Appliance
+host esbu-vse2100-1 {
+       hardware ethernet 00:E0:81:CF:63:25;
+       # hardware ethernet 00:E0:81:CF:63:97;
+        #fixed-address 10.102.2.55;
+        fixed-address 10.87.129.173;
+        send host-name "cmbu-vse2100-1";
+    }
+host cmbu-vse2100-2 {
+        #hardware ethernet 00:E0:81:CF:63:25;
+        hardware ethernet 00:E0:81:CF:62:C5 ;
+        #fixed-address 10.102.2.56;
+        fixed-address 10.87.140.178;
+        send host-name "cmbu-vse2100-2";
+    }
+
+host esbu-vse2100-3 {
+        hardware ethernet 00:e0:81:cf:57:df;
+        #hardware ethernet 00:E0:ED:20:FA:5B;
+        #fixed-address 10.102.2.57;
+        fixed-address 10.87.140.122;
+        send host-name "esbu-vse2100-3";
+    }
+host esbu-vse2100-4 {
+        hardware ethernet 00:E0:81:CF:63:CB;
+        fixed-address 10.102.2.58;
+        send host-name "esbu-vse2100-4";
+    }
+
+
+host esbu-vse2100-5 {
+        hardware ethernet 00:E0:81:CF:62:97;
+        fixed-address 10.87.140.120;
+        send host-name "esbu-vse2100-5";
+    }
+
+host vee-emul02 {
+        hardware ethernet 00:25:90:35:00:A2;
+        fixed-address 10.102.43.20;
+        send host-name "vee-emul02";
+    }
+  host vxeproto3 {
+        hardware ethernet 00:E0:81:C5:79:B2;
+        #fixed-address 10.102.43.34;
+        fixed-address 10.157.43.93;
+        send host-name "vxeproto3";
+    }
+ host vxeproto1 {
+        hardware ethernet 00:E0:81:C5:7D:02;
+        #fixed-address 10.102.43.33;
+        fixed-address 10.157.43.92;
+        send host-name "vxeproto1";
+    }
+
+  host cmbu-ceph-perf1 {
+        hardware ethernet 00:25:90:AB:9C:89;
+        fixed-address 10.87.140.197;
+        send host-name "cmbu-ceph-perf1";
+  	}
+  host cmbu-ceph-perf2 {
+        hardware ethernet 00:25:90:92:0D:55;
+        fixed-address 10.87.140.198;
+        send host-name "cmbu-ceph-perf2";
+  	}
+  host cmbu-ceph-perf3 {
+        hardware ethernet 00:25:90:92:0E:6D;
+        fixed-address 10.87.140.199;
+        send host-name "cmbu-ceph-perf3";
+  	}
+  host cmbu-ceph-perf4 {
+        hardware ethernet 00:25:90:92:0D:F3;
+        fixed-address 10.87.140.200;
+        send host-name "cmbu-ceph-perf4";
+  	}
+
+  host cmbu-esx13-centos1 {
+        hardware ethernet 00:50:56:bb:79:8b;
+        fixed-address 10.87.132.139;
+        send host-name "cmbu-esx13-centos1";
+	}
+  host appl-esx1-lnx9{
+        hardware ethernet 00:50:56:bb:56:0b;
+        fixed-address 10.87.132.147;
+        send host-name "appl-esx1-lnx9";
+        }
+
+  host appl-esx1-sarin01{
+        hardware ethernet 00:50:56:ae:66:0d;
+        fixed-address 10.87.132.171;
+        send host-name "appl-esx1-sarin01";
+        }
+
+
+### CS- Servers
+
+host cs-scale-1 {
+      #  hardware ethernet c4:54:44:44:d7:26;
+        fixed-address 10.87.141.1;
+        send host-name "cs-scale-1";
+    }
+
+host cs-scale-2 {
+   #     hardware ethernet c4:54:44:44:d5:be;
+        fixed-address 10.87.141.2;
+        send host-name "cs-scale-2";
+    }
+
+host cs-scale-3 {
+   #     hardware ethernet c4:54:44:44:d7:b3;
+        fixed-address 10.87.141.3;
+        send host-name "cs-scale-3";
+    }
+
+host cs-scale-4 {
+   #     hardware ethernet c4:54:44:44:d6:f0;
+        fixed-address 10.87.141.4;
+        send host-name "cs-scale-4";
+    }
+
+host cs-scale-5 {
+   #     hardware ethernet c4:54:44:44:d7:a7;
+        fixed-address 10.87.141.5;
+        send host-name "cs-scale-5";
+    }
+
+host cs-scale-6 {
+   #     hardware ethernet c4:54:44:44:d6:0c;
+        fixed-address 10.87.141.6;
+        send host-name "cs-scale-6";
+    }
+
+host cs-scale-7 {
+   #     hardware ethernet c4:54:44:44:d7:05;
+        fixed-address 10.87.141.7;
+        send host-name "cs-scale-7";
+    }
+
+host cs-scale-8 {
+     #   hardware ethernet c4:54:44:44:d7:7a;
+        fixed-address 10.87.141.8;
+        send host-name "cs-scale-8";
+    }
+
+host cs-scale-9 {
+        hardware ethernet c4:54:44:44:d5:a3;
+        fixed-address 10.87.141.9;
+        send host-name "cs-scale-9";
+    }
+
+host cs-scale-10 {
+        hardware ethernet c4:54:44:44:d7:5c;
+        fixed-address 10.87.141.20;
+        ### changed to 20 fixed-address 10.87.141.10;
+        send host-name "cs-scale-10";
+    }
+
+host cs-scale-11 {
+        hardware ethernet c4:54:44:44:d6:15;
+        fixed-address 10.87.141.11;
+        send host-name "cs-scale-11";
+    }
+
+host cs-scale-12 {
+        hardware ethernet c4:54:44:43:a1:34;
+        fixed-address 10.87.141.12;
+        send host-name "cs-scale-12";
+    }
+ 
+
+#### Starting ESX13
+host cmbu-esx13-ram-ub1 {
+        hardware ethernet 00:0c:29:ad:b6:77;
+        fixed-address 10.187.132.1;
+        send host-name "cmbu-esx13-ram-ub1";
+        option routers 10.87.159.254;
+    }
+host cmbu-esx13-ram-ub2 {
+        hardware ethernet 00:0c:29:ad:b6:78;
+        fixed-address 10.187.132.2;
+        send host-name "cmbu-esx13-ram-ub1";
+        option routers 10.87.159.254;
+    }
+host cmbu-esx12-mfc1{
+	# MFC for BETTY 
+        hardware ethernet 00:50:56:b2:71:8a;
+        fixed-address 10.187.132.5;
+        send host-name "cmbu-esx12-mfc1";
+        option routers 10.87.159.254;
+    }
+
+
+host cmbu-ESX13-MFC01 {
+        hardware ethernet 00:50:56:bb:33:a9;
+        fixed-address 10.87.132.114;
+        send host-name "cmbu-ESX13-MFC01";
+        option routers 10.87.159.254;
+    }
+host cmbu-ESX13-MFC02 {
+        hardware ethernet 00:50:56:bb:19:34;
+        fixed-address 10.87.132.115;
+        send host-name "cmbu-ESX13-MFC02";
+        option routers 10.87.159.254;
+    }
+host cmbu-ESX13-MFC03 {
+        hardware ethernet 00:50:56:bb:7d:13;
+        fixed-address 10.87.132.116;
+        send host-name "cmbu-ESX13-MFC03";
+        option routers 10.87.159.254;
+    }
+host cmbu-ESX13-MFC04 {
+        hardware ethernet 00:50:56:bb:75:58;
+        fixed-address 10.87.132.117;
+        send host-name "cmbu-ESX13-MFC04";
+        option routers 10.87.159.254;
+    }
+host cmbu-ESX13-MFC05 {
+        hardware ethernet 00:50:56:bb:58:90;
+        fixed-address 10.87.132.118;
+        send host-name "cmbu-ESX13-MFC05";
+        option routers 10.87.159.254;
+    }
+host cmbu-ESX13-MFC06 {
+        hardware ethernet 00:50:56:bb:1e:e7;
+        fixed-address 10.87.132.119;
+        send host-name "cmbu-ESX13-MFC06";
+        option routers 10.87.159.254;
+    }
+ 
+host cmbu-lime-vxa1 {
+        hardware ethernet  00:E0:81:CA:FC:FA;
+        fixed-address 10.87.130.122;
+        send host-name "cmbu-LIME-vxa1";
+        option routers 10.87.159.254;
+    }
+
+host cmbu-ESX13-MFC07 {
+        hardware ethernet 00:50:56:bb:36:41;
+        fixed-address 10.87.132.120;
+        send host-name "cmbu-ESX13-MFC07";
+        option routers 10.87.159.254;
+    }
+host cmbu-ESX13-MFC08 {
+        hardware ethernet 00:50:56:b2:71:92;
+        fixed-address 10.102.1.208;
+    }
+host cmbu-ESX13-MFC09 {
+        hardware ethernet 00:50:56:b2:71:93;
+        fixed-address 10.102.1.209;
+    }
+host cmbu-ESX13-MFC10 {
+        hardware ethernet 00:50:56:b2:71:a0;
+        fixed-address 10.102.1.210;
+    }
+
+#ESX13-LINUX
+host cmbu-ESX13-LINUX01 {
+        hardware ethernet 00:50:56:b2:04:16;
+        #fixed-address 10.102.2.1;
+	fixed-address 10.87.132.138;
+	send host-name "cmbu-esx13-Linux01";
+    }
+
+host cmbu-ESX13-LINUX02 {
+        hardware ethernet 00:50:56:b2:04:42;
+        fixed-address 10.102.2.2;
+    }
+
+#END-ESX13
+
+host appl-esx2-lnx01 {
+        hardware ethernet 00:50:56:8a:38:7c;
+        fixed-address 10.87.132.148;
+        send host-name "appl-esx2-lnx1";
+
+    }
+host appl-esx1-lnx7 {
+        hardware ethernet 00:50:56:8a:39:26;
+        fixed-address 10.87.132.145;
+        send host-name "appl-esx1-lnx7";
+    }
+host appl-esx1-mfc1 {
+        hardware ethernet 00:50:56:8A:7F:4F;
+        fixed-address 10.87.132.146;
+        send host-name "appl-esx1-mfc1";
+    }
+host appl-esx1-lnx10-vin {
+        hardware ethernet 00:50:56:bb:0d:b0;
+        fixed-address 10.87.132.150;
+        send host-name "appl-esx1-lnx10-vin";
+    }
+
+
+
+
+host draco-proto2 {
+        hardware ethernet 00:10:f3:27:fe:4d;
+        #hardware ethernet 00:10:f3:27:fe:4e;
+        #fixed-address 10.102.2.74;
+        fixed-address 10.87.140.134;
+    }
+ host draco-proto1 {
+        hardware ethernet 00:10:F3:27:FE:51;
+        #fixed-address 10.102.2.75;
+        send host-name "draco-proto02";
+        fixed-address 10.87.140.132;
+        option routers 10.87.159.254;
+    }
+
+
+
+
+host esbu-mflab-lnx01 {
+        hardware ethernet 00:26:B9:48:D3:28;
+        fixed-address 10.157.42.56;
+    }
+
+host esbu-mflab-lnx02 {
+        hardware ethernet 00:26:B9:54:5C:4F;
+        fixed-address 10.157.42.57;
+    }
+#host esbu-mflab-lnx-c02 {
+#        hardware ethernet 00:25:90:71:FE:69;
+        #fixed-address 10.157.44.6;
+#        fixed-address 10.87.129.25;
+#        send host-name "esbu-mflab-lnx-c02";
+#    }
+
+host esbu-mflab-lnx-c03 {
+#        hardware ethernet 00:25:90:72:00:63;
+#        #fixed-address 10.157.44.7;
+        fixed-address 10.87.129.27;
+        send host-name "esbu-mflab-lnx-c03";
+    }
+host esbu-mflab-lnx-c04 {
+        hardware ethernet 00:25:90:72:00:6f;
+        #fixed-address 10.157.44.8;
+        fixed-address 10.87.129.29;
+       send host-name "esbu-mflab-lnx-c04";
+    }
+
+host ESBU-MFLAB-ESX14-LNX1 {
+        hardware ethernet 00:0c:29:d6:de:04;
+        fixed-address 10.102.1.251;
+    }
+
+#host esbu-mflab-lnx-c01 {
+#        hardware ethernet 00:25:90:7B:54:81;
+        #fixed-address 10.157.44.5;
+#        fixed-address 10.87.129.23;
+#        send host-name "esbu-mflab-lnx-c01.englab.juniper.net";
+#    }
+host esbu-mflab-lnx-c01-guest1 {
+        hardware ethernet 00:00:01:02:03:05;
+        fixed-address 10.157.44.64;
+        send host-name "esbu-mflab-lnx-c01-guest1";
+    }
+
+host esbu-mflab-lnx-c10 {
+        hardware ethernet 00:25:90:7b:54:6d;
+        fixed-address 10.157.44.50;
+       send host-name "esbu-mflab-lnx-c10";
+    }
+
+ host cmbu-V1 {
+        hardware ethernet 00:50:56:b2:71:85;
+        fixed-address 10.102.1.201;
+    }
+
+#ESBU-MFLAB-ESX16
+host cmbu-esx16-linux02 {
+        hardware ethernet 00:50:56:bb:72:ca;
+        fixed-address 10.87.132.111;
+        send host-name "cmbu-esx16-linux02";
+    }
+host cmbu-esx16-linux03 {
+        hardware ethernet 00:50:56:bb:75:32;
+        fixed-address 10.87.132.112;
+        send host-name "cmbu-esx16-linux03";
+    }
+host esbu-mflab-esx16-mfc02 {
+        hardware ethernet 00:50:56:B2:17:20;
+        fixed-address 10.157.44.127;
+                send host-name "esbu-mflab-esx16-mfc02";
+    }
+host esbu-mflab-esx16-mfc03 {
+        hardware ethernet 00:50:56:B2:17:21;
+        fixed-address 10.157.44.128;
+                send host-name "esbu-mflab-esx16-mfc03";
+    }
+host esbu-mflab-esx16-mfc04 {
+        #hardware ethernet 00:50:56:B2:17:31;
+        hardware ethernet 00:50:56:B2:17:22;
+        fixed-address 10.157.44.129;
+                send host-name "esbu-mflab-esx16-mfc04";
+    }
+host esbu-mflab-esx16-mfc05 {
+        hardware ethernet 00:50:56:B2:17:23;
+        fixed-address 10.157.44.130;
+                send host-name "esbu-mflab-esx16-mfc05";
+    }
+host esbu-mflab-esx16-mfc06 {
+        hardware ethernet 00:50:56:B2:17:3F;
+        fixed-address 10.157.44.131;
+                send host-name "esbu-mflab-esx16-mfc06";
+    }
+host esbu-mflab-esx16-mfc07 {
+        hardware ethernet 00:50:56:B2:17:40;
+        fixed-address 10.157.44.132;
+                send host-name "esbu-mflab-esx16-mfc07";
+    }
+host esbu-mflab-esx16-mfc08 {
+        hardware ethernet 00:50:56:B2:17:41;
+        fixed-address 10.157.44.133;
+                send host-name "esbu-mflab-esx16-mfc08";
+    }
+host esbu-mflab-esx16-mfc09 {
+        hardware ethernet 00:50:56:B2:17:68;
+        fixed-address 10.157.44.134;
+                send host-name "esbu-mflab-esx16-mfc09";
+    }
+host esbu-mflab-esx16-mfc10 {
+        hardware ethernet 00:50:56:B2:17:42;
+        fixed-address 10.157.44.135;
+                send host-name "esbu-mflab-esx16-mfc10";
+    }
+host esbu-mflab-esx16-mfc11 {
+        hardware ethernet 00:50:56:B2:17:48;
+        fixed-address 10.157.44.136;
+                send host-name "esbu-mflab-esx16-mfc11";
+    }
+host esbu-mflab-esx16-mfc12 {
+        hardware ethernet 00:50:56:B2:17:49;
+        fixed-address 10.157.44.137;
+                send host-name "esbu-mflab-esx16-mfc12";
+    }
+host esbu-mflab-esx16-mfc13 {
+        hardware ethernet 00:50:56:B2:17:4A;
+        fixed-address 10.157.44.138;
+                send host-name "esbu-mflab-esx16-mfc13";
+    }
+host esbu-mflab-esx16-mfc14 {
+        hardware ethernet 00:50:56:B2:17:4C;
+        fixed-address 10.157.44.139;
+                send host-name "esbu-mflab-esx16-mfc14";
+    }
+host esbu-mflab-esx16-mfc15 {
+        hardware ethernet 00:50:56:B2:17:4D;
+        fixed-address 10.157.44.140;
+                send host-name "esbu-mflab-esx16-mfc15";
+    }
+host esbu-mflab-esx16-mfc16 {
+        hardware ethernet 00:50:56:B2:17:6D;
+        fixed-address 10.157.44.141;
+                send host-name "esbu-mflab-esx16-mfc16";
+    }
+host esbu-mflab-esx16-mfc17 {
+        hardware ethernet 00:50:56:B2:17:71;
+        fixed-address 10.157.44.142;
+                send host-name "esbu-mflab-esx16-mfc17";
+    }
+host esbu-mflab-esx16-mfc18 {
+        hardware ethernet 00:50:56:B2:17:73;
+        fixed-address 10.157.44.143;
+                send host-name "esbu-mflab-esx16-mfc18";
+    }
+host esbu-mflab-esx16-mfc19 {
+        hardware ethernet 00:50:56:B2:17:74;
+        fixed-address 10.157.44.144;
+                send host-name "esbu-mflab-esx16-mfc19";
+    }
+host esbu-mflab-esx16-mfc20 {
+        hardware ethernet 00:50:56:B2:17:75;
+        fixed-address 10.157.44.145;
+                send host-name "esbu-mflab-esx16-mfc20";
+    }
+host mfc-cedexis-c1 {
+        hardware ethernet 00:50:56:8a:7a:92;
+        fixed-address 10.157.44.62;
+                send host-name "mfc-cedexis-c1";
+    }
+host mfc-cedexis-c2 {
+        hardware ethernet 00:50:56:8a:32:2a;
+        fixed-address 10.157.44.63;
+                send host-name "mfc-cedexis-c2";
+    }
+
+# ESBU ESX17
+host cmbu-esxi17-lnx2 {
+        hardware ethernet 00:50:56:bb:61:73;
+        fixed-address 10.87.132.154;
+        send host-name "cmbu-esxi17-lnx2";
+    }
+
+host cmbu-esxi17-lnx3 {
+        hardware ethernet 00:50:56:bb:11:50;
+        fixed-address 10.87.132.155;
+        send host-name "cmbu-esxi17-lnx3";
+    }
+
+host cmbu-esxi17-vin1 {
+        hardware ethernet 00:50:56:bb:0e:00;
+        fixed-address 10.87.132.156;
+        send host-name "cmbu-esxi17-vin1";
+    }
+
+
+host esbu-mflab-esx17-space01 {
+        hardware ethernet 00:50:56:8a:02:53;
+        #conflit with MFN01
+        fixed-address 10.157.44.171;
+        send host-name "esbu-mflab-esx17-space01";
+    }
+host cmbu-esx18 {
+        hardware ethernet 00:25:90:AB:9C:62;
+        fixed-address 10.87.140.220;
+        send host-name "cmbu-esx18";
+    }
+
+host cmbu-esx3-lnx1 {
+        hardware ethernet 00:50:56:bb:0b:2a;
+        #hardware ethernet 00:0c:29:d5:db:38;
+        fixed-address 10.87.132.158;
+        send host-name "cmbu-esx3-lnx1";
+    }
+
+host appl-esx1-lnx1 {
+        hardware ethernet 00:50:56:8a:3b:f0;
+        fixed-address 10.87.132.159;
+        send host-name "appl-esx1-lnx1";
+    }
+
+host cmbu-esx18-lnx3 {
+        hardware ethernet 00:0c:29:86:12:2e;
+        fixed-address 10.87.132.160;
+        send host-name "cmbu-esx18-lnx3";
+    }
+host cmbu-esxi18-lnx4 {
+        hardware ethernet 00:50:56:bb:10:42;
+        fixed-address 10.87.132.161;
+        send host-name "cmbu-esxi18-lnx4";
+    }
+
+ host cmbu-esx18-c66-build01 {
+        hardware ethernet 00:0c:29:86:c2:07;
+        fixed-address 10.87.132.163;
+        send host-name "cmbu-esx18-c66-build01";
+    }
+
+
+
+# ESBU ESX15
+host esbu-mflab-esx15-mfc01 {
+        hardware ethernet 00:50:56:B2:17:4E;
+        fixed-address 10.157.44.101;
+                send host-name "esbu-mflab-esx15-mfc01";
+    }
+host esbu-mflab-esx15-mfc02 {
+        hardware ethernet 00:50:56:B2:17:55;
+        fixed-address 10.157.44.102;
+                send host-name "esbu-mflab-esx15-mfc02";
+    }
+host esbu-mflab-esx15-mfc03 {
+        hardware ethernet 00:50:56:B2:17:56;
+        fixed-address 10.157.44.103;
+                send host-name "esbu-mflab-esx15-mfc03";
+    }
+host esbu-mflab-esx15-mfc04 {
+        hardware ethernet 00:50:56:B2:17:57;
+        fixed-address 10.157.44.104;
+                send host-name "esbu-mflab-esx15-mfc04";
+    }
+host esbu-mflab-esx15-mfc05 {
+        hardware ethernet 00:50:56:B2:17:58;
+        fixed-address 10.157.44.105;
+                send host-name "esbu-mflab-esx15-mfc05";
+    }
+host esbu-mflab-esx15-mfc06 {
+        hardware ethernet 00:50:56:B2:17:59;
+        fixed-address 10.157.44.106;
+                send host-name "esbu-mflab-esx15-mfc06";
+    }
+host esbu-mflab-esx15-mfc07 {
+        hardware ethernet 00:50:56:B2:17:5A;
+        fixed-address 10.157.44.107;
+                send host-name "esbu-mflab-esx15-mfc07";
+    }
+host esbu-mflab-esx15-mfc08 {
+        hardware ethernet 00:50:56:B2:17:5B;
+        fixed-address 10.157.44.108;
+                send host-name "esbu-mflab-esx15-mfc08";
+    }
+host esbu-mflab-esx15-mfc09 {
+        hardware ethernet 00:50:56:B2:17:5D;
+        fixed-address 10.157.44.109;
+                send host-name "esbu-mflab-esx15-mfc09";
+    }
+host esbu-mflab-esx15-mfc10 {
+        hardware ethernet 00:50:56:B2:17:5E;
+        fixed-address 10.157.44.110;
+                send host-name "esbu-mflab-esx15-mfc10";
+    }
+host esbu-mflab-esx15-mfc11 {
+        hardware ethernet 00:50:56:B2:17:63;
+        fixed-address 10.157.44.111;
+                send host-name "esbu-mflab-esx15-mfc11";
+    }
+host esbu-mflab-esx15-mfc12 {
+        hardware ethernet 00:50:56:B2:17:64;
+        fixed-address 10.157.44.112;
+                send host-name "esbu-mflab-esx15-mfc12";
+    }
+host esbu-mflab-esx15-mfc13 {
+        hardware ethernet 00:50:56:B2:17:65;
+        fixed-address 10.157.44.113;
+                send host-name "esbu-mflab-esx15-mfc13";
+    }
+host esbu-mflab-esx15-mfc14 {
+        hardware ethernet 00:50:56:B2:17:66;
+        fixed-address 10.157.44.114;
+                send host-name "esbu-mflab-esx15-mfc14";
+    }
+host esbu-mflab-esx15-mfc15 {
+        hardware ethernet 00:50:56:B2:17:67;
+        fixed-address 10.157.44.115;
+                send host-name "esbu-mflab-esx15-mfc15";
+    }
+host esbu-mflab-esx15-mfc16 {
+        hardware ethernet 00:50:56:B2:17:69;
+        fixed-address 10.157.44.115;
+                send host-name "esbu-mflab-esx15-mfc16";
+    }
+host esbu-mflab-esx15-mfc17 {
+        hardware ethernet 00:50:56:B2:17:6A;
+        fixed-address 10.157.44.115;
+                send host-name "esbu-mflab-esx15-mfc17";
+    }
+host esbu-mflab-esx15-mfc18 {
+        hardware ethernet 00:50:56:B2:17:6B;
+        fixed-address 10.157.44.115;
+                send host-name "esbu-mflab-esx15-mfc18";
+    }
+host esbu-mflab-esx15-mfc19 {
+        hardware ethernet 00:50:56:B2:17:6F;
+        fixed-address 10.157.44.115;
+        send host-name "esbu-mflab-esx15-mfc19";
+    }
+host esbu-mflab-esx15-mfc20 {
+        hardware ethernet 00:50:56:B2:17:70;
+        fixed-address 10.157.44.115;
+        send host-name "esbu-mflab-esx15-mfc20";
+    }
+host esbu-mflab-esx15-mfn01 {
+        hardware ethernet 00:50:56:8a:41:0f;
+        fixed-address 10.157.44.171;
+        send host-name "esbu-mflab-esx15-mfn01";
+    }
+
+#host esbu-mflab-lnx-c08 {
+#        hardware ethernet 00:25:90:72:00:73;
+#        #fixed-address 10.157.44.27;
+#        fixed-address 10.87.129.43;
+#        send host-name "esbu-mflab-lnx-c08";
+#    }
+host esbu-mflab-lnx-c09 {
+        hardware ethernet 00:25:90:AB:9C:48;
+        fixed-address 10.102.2.113;
+        send host-name "esbu-mflab-lnx-c09";
+    }
+host cmbu-vxa2010-21 {
+        hardware ethernet 00:E0:81:C9:F0:AA;
+        #fixed-address 10.102.2.60;
+        fixed-address 10.87.140.175;
+        send host-name "cmbu-vxa2010-21";
+    }
+
+host cmbu-vxa2010-22 {
+        hardware ethernet 00:E0:81:C9:F6:4C;
+        #fixed-address 10.102.2.61;
+        fixed-address 10.87.140.176;
+        send host-name "cmbu-vxa2010-22";
+    }
+
+host cmbu-vxa2010-23 {
+        hardware ethernet 00:E0:81:C9:F9:BA;
+        #fixed-address 10.102.2.62;
+        fixed-address 10.87.140.177;
+        send host-name "cmbu-vxa2010-23";
+    }
+host esbu-mflab-esx15-mfc21 {
+        #Muthu
+        hardware ethernet 00:50:56:8A:0B:2B;
+        fixed-address 10.157.44.175;
+        send host-name "esbu-mflab-esx15-mfc21";
+    }
+
+ host cmbu-vxa2010-17 {
+        hardware ethernet 00:E0:81:C9:F6:28;
+        #fixed-address 10.102.2.99;
+        fixed-address 10.87.140.170;
+        send host-name "cmbu-vxa2010-17";
+    }
+ host cmbu-vxa2010-18 {
+        hardware ethernet 00:E0:81:CA:FC:FC;
+        #fixed-address 10.102.2.100;
+        fixed-address 10.87.140.167;
+        send host-name "cmbu-vxa2010-18";
+        option routers 10.87.159.254;
+    }
+ host cmbu-vxa2010-19 {
+        hardware ethernet 00:E0:81:C5:8B:B0;
+        #fixed-address 10.102.2.101;
+        fixed-address 10.87.140.168;
+        send host-name "cmbu-vxa2010-19";
+        option routers 10.87.159.254;
+   }
+ host cmbu-vxa2010-20 {
+        hardware ethernet 00:E0:81:C9:F7:8E;
+        #fixed-address 10.102.2.102;
+        fixed-address 10.87.140.169;
+        send host-name "cmbu-vxa2010-20";
+        option routers 10.87.159.254;
+    }
+host esbu-vse2100-10 {
+        hardware ethernet A0:42:3F:01:AB:99;
+        #hardware ethernet 00:E0:ED:26:39:7D;
+        #fixed-address 10.102.2.103;
+        fixed-address 10.87.129.174;
+        send host-name "cmbu-vse2100-10";
+    }
+host esbu-vse2100-11 {
+        hardware ethernet A0:42:3F:01:AD:15;
+        #hardware ethernet 00:E0:ED:27:37:33;
+        #fixed-address 10.102.2.104;
+        fixed-address 10.87.129.175;
+        send host-name "cmbu-vse2100-11";
+    }
+
+
+# Evan
+host CMBU-ESX01-MFM02-EVAN  {
+        hardware ethernet 00:50:56:b2:12:e4;
+        fixed-address 10.157.34.13;
+                send host-name "CMBU-ESX01-MFM02-EVAN";
+    }
+host esbu-mflab-vxa20-5-ipmi {
+        hardware ethernet 00:E0:81:c3:40:59;
+        fixed-address 10.157.44.15;
+                send host-name "esbu-mflab-vxa20-5-ipmi";
+    }
+#Sarin
+host MAZDA-workstation {
+        hardware ethernet 6c:f0:49:26:40:67;
+        fixed-address 10.102.2.242;
+    }
+host CMBU-ESX10-LNX09{
+        hardware ethernet 00:50:56:8a:58:28;
+        #fixed-address 10.102.2.243;
+        fixed-address 10.157.34.206;
+  }
+host MFC-proto5-vm2 {
+        hardware ethernet 52:54:00:cc:0b:e1;
+        fixed-address 10.102.2.244;
+  }
+
+host MFC-proto4-vm1 {
+        hardware ethernet 52:54:00:4d:4e:2e;
+        fixed-address 10.102.2.245;
+  }
+
+host cmbu-vxa2010-26{
+        #hardware ethernet 00:E0:81:C6:D6:10;
+        hardware ethernet 00:e0:81:c9:f9:ce;
+        #fixed-address 10.157.44.200;
+        fixed-address 10.87.140.188;
+	send host-name "cmbu-vxa2010-26";
+    }
+host cmbu-vxa2010-25{
+        hardware ethernet 00:E0:81:C6:D6:1E;
+        #hardware ethernet 00:E0:81:C6:D7:B9;
+        fixed-address 10.87.140.187;
+        send host-name "cmbu-vxa2010-25";
+    }
+
+host cmbu-vxa2010-24 {
+        #hardware ethernet 00:E0:81:C9:F9:CE;
+        hardware ethernet 00:E0:81:C6:D6:10;
+        #hardware ethernet 00:E0:81:C6:D7:AB;
+        #fixed-address 10.102.2.105;
+        fixed-address 10.87.140.186;
+        send host-name "cmbu-vxa2010-24";
+    }
+host blaster {
+        hardware ethernet 00:25:90:59:e8:17;
+        fixed-address 10.102.1.60;
+        send host-name "blaster.englab.juniper.net";
+    }
+host Blaster-vJCE-001 {
+    send host-name "Blaster-vJCE-001";
+    hardware ethernet 00:50:56:00:00:01;
+    fixed-address 10.87.132.43;
+  }
+  host Blaster-vJCE-002 {
+    send  host-name "Blaster-vJCE-002";
+    hardware ethernet 00:50:56:00:00:02;
+    fixed-address 10.87.132.44;
+  }
+  host Blaster-vJCE-003 {
+    send host-name "Blaster-vJCE-003";
+    hardware ethernet 00:50:56:00:00:03;
+    fixed-address 10.87.132.45;
+  }
+  host Blaster-vJCE-004 {
+    send host-name "Blaster-vJCE-004";
+    hardware ethernet 00:50:56:00:00:04;
+    fixed-address 10.87.132.46;
+  }
+  host Blaster-vJCE-005 {
+    send host-name "Blaster-vJCE-005";
+    hardware ethernet 00:50:56:00:00:05;
+    fixed-address 10.87.132.47;
+  }
+  host Blaster-vJCE-006 {
+    send host-name "Blaster-vJCE-006";
+    hardware ethernet 00:50:56:00:00:06;
+    fixed-address 10.87.132.48;
+  }
+  host Blaster-vJCE-007 {
+    send host-name "Blaster-vJCE-007";
+    hardware ethernet 00:50:56:00:00:07;
+    fixed-address 10.87.132.49;
+  }
+  host Blaster-vJCE-008 {
+    send host-name "Blaster-vJCE-008";
+    hardware ethernet 00:50:56:00:00:08;
+    fixed-address 10.87.132.50;
+  }
+  host Blaster-vJCE-009 {
+    send host-name "Blaster-vJCE-009";
+    hardware ethernet 00:50:56:00:00:09;
+    fixed-address 10.87.132.51;
+  }
+  host Blaster-vJCE-010 {
+    send host-name "Blaster-vJCE-010";
+    hardware ethernet 00:50:56:00:00:0A;
+    fixed-address 10.87.132.52;
+  }
+  host Blaster-vJCE-011 {
+    send host-name "Blaster-vJCE-011.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:0B;
+    fixed-address 10.87.132.53;
+  }
+  host Blaster-vJCE-012 {
+    send host-name "Blaster-vJCE-012.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:0C;
+    fixed-address 10.87.132.54;
+  }
+  host Blaster-vJCE-013 {
+    send host-name "Blaster-vJCE-013.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:0D;
+    fixed-address 10.87.132.55;
+  }
+  host Blaster-vJCE-014 {
+    send host-name "Blaster-vJCE-014.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:0E;
+    fixed-address 10.87.132.56;
+  }
+  host Blaster-vJCE-015 {
+    send host-name "Blaster-vJCE-015.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:0F;
+    fixed-address 10.87.132.57;
+  }
+  host Blaster-vJCE-016 {
+    send host-name "Blaster-vJCE-016.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:10;
+    fixed-address 10.87.132.58;
+  }
+  host Blaster-vJCE-017 {
+    send host-name "Blaster-vJCE-017.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:11;
+    fixed-address 10.87.132.59;
+  }
+  host Blaster-vJCE-018 {
+    send host-name "Blaster-vJCE-018.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:12;
+    fixed-address 10.87.132.60;
+  }
+  host Blaster-vJCE-019 {
+    send host-name "Blaster-vJCE-019.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:13;
+    fixed-address 10.87.132.61;
+  }
+  host Blaster-vJCE-020 {
+    send host-name "Blaster-vJCE-020.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:14;
+    fixed-address 10.87.132.62;
+  }
+  host Blaster-vJCE-021 {
+    send host-name "Blaster-vJCE-021.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:15;
+    fixed-address 10.87.132.63;
+  }
+  host Blaster-vJCE-022 {
+    send host-name "Blaster-vJCE-022.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:16;
+    fixed-address 10.87.132.64;
+  }
+  host Blaster-vJCE-023 {
+    send host-name "Blaster-vJCE-023.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:17;
+    fixed-address 10.87.132.65;
+  }
+  host Blaster-vJCE-024 {
+    send host-name "Blaster-vJCE-024.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:18;
+    fixed-address 10.87.132.66;
+  }
+  host Blaster-vJCE-025 {
+    send host-name "Blaster-vJCE-025.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:19;
+    fixed-address 10.87.132.67;
+  }
+  host Blaster-vJCE-026 {
+    send host-name "Blaster-vJCE-026.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:1A;
+    fixed-address 10.87.132.68;
+  }
+  host Blaster-vJCE-027 {
+    send host-name "Blaster-vJCE-027.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:1B;
+    fixed-address 10.87.132.69;
+  }
+  host Blaster-vJCE-028 {
+    send host-name "Blaster-vJCE-028.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:1C;
+    fixed-address 10.87.132.70;
+  }
+  host Blaster-vJCE-029 {
+    send host-name "Blaster-vJCE-029.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:1D;
+    fixed-address 10.87.132.71;
+  }
+  host Blaster-vJCE-030 {
+    send host-name "Blaster-vJCE-030.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:1E;
+    fixed-address 10.87.132.72;
+  }
+  host Blaster-vJCE-031 {
+    send host-name "Blaster-vJCE-031.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:1F;
+    fixed-address 10.87.132.73;
+  }
+  host Blaster-vJCE-032 {
+    send host-name "Blaster-vJCE-032.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:20;
+    fixed-address 10.87.132.74;
+  }
+  host Blaster-vJCE-033 {
+    send host-name "Blaster-vJCE-033.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:21;
+    fixed-address 10.87.132.75;
+  }
+  host Blaster-vJCE-034 {
+    send host-name "Blaster-vJCE-034.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:22;
+    fixed-address 10.87.132.76;
+  }
+  host Blaster-vJCE-035 {
+    send host-name "Blaster-vJCE-035.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:23;
+    fixed-address 10.87.132.77;
+  }
+  host Blaster-vJCE-036 {
+    send host-name "Blaster-vJCE-036.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:24;
+    fixed-address 10.87.132.78;
+  }
+  host Blaster-vJCE-037 {
+    send host-name "Blaster-vJCE-037.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:25;
+    fixed-address 10.87.132.79;
+  }
+  host Blaster-vJCE-038 {
+    send host-name "Blaster-vJCE-038.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:26;
+    fixed-address 10.87.132.80;
+  }
+  host Blaster-vJCE-039 {
+    send host-name "Blaster-vJCE-039.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:27;
+    fixed-address 10.87.132.81;
+  }
+  host Blaster-vJCE-040 {
+    send host-name "Blaster-vJCE-040.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:28;
+    fixed-address 10.87.132.82;
+  }
+  host Blaster-vJCE-041 {
+    send host-name "Blaster-vJCE-041.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:29;
+    fixed-address 10.87.132.83;
+  }
+  host Blaster-vJCE-042 {
+    send host-name "Blaster-vJCE-042.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:2A;
+    fixed-address 10.87.132.84;
+  }
+  host Blaster-vJCE-043 {
+    send host-name "Blaster-vJCE-043.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:2B;
+    fixed-address 10.87.132.85;
+  }
+  host Blaster-vJCE-044 {
+    send host-name "Blaster-vJCE-044.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:2C;
+    fixed-address 10.87.132.86;
+  }
+  host Blaster-vJCE-045 {
+    send host-name "Blaster-vJCE-045.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:2D;
+    fixed-address 10.87.132.87;
+  }
+  host Blaster-vJCE-046 {
+    send host-name "Blaster-vJCE-046.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:2E;
+    fixed-address 10.87.132.88;
+  }
+  host Blaster-vJCE-047 {
+    send host-name "Blaster-vJCE-047.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:2F;
+    fixed-address 10.87.132.89;
+  }
+  host Blaster-vJCE-048 {
+    send host-name "Blaster-vJCE-048.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:30;
+    fixed-address 10.87.132.90;
+  }
+  host Blaster-vJCE-049 {
+    send host-name "Blaster-vJCE-049.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:31;
+    fixed-address 10.87.132.91;
+  }
+  host Blaster-vJCE-050 {
+    send host-name "Blaster-vJCE-050.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:32;
+    fixed-address 10.87.132.92;
+  }
+  host Blaster-vJCE-051 {
+    send host-name "Blaster-vJCE-051.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:33;
+    fixed-address 10.87.132.93;
+  }
+  host Blaster-vJCE-052 {
+    send host-name "Blaster-vJCE-052.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:34;
+    fixed-address 10.87.132.94;
+  }
+  host Blaster-vJCE-053 {
+    send host-name "Blaster-vJCE-053.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:35;
+    fixed-address 10.87.132.95;
+  }
+  host Blaster-vJCE-054 {
+    send host-name "Blaster-vJCE-054.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:36;
+    fixed-address 10.87.132.96;
+  }
+  host Blaster-vJCE-055 {
+    send host-name "Blaster-vJCE-055.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:37;
+    fixed-address 10.87.132.97;
+  }
+  host Blaster-vJCE-056 {
+    send host-name "Blaster-vJCE-056.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:38;
+    fixed-address 10.87.132.98;
+  }
+  host Blaster-vJCE-057 {
+    send host-name "Blaster-vJCE-057.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:39;
+    fixed-address 10.87.132.99;
+  }
+  host Blaster-vJCE-058 {
+    send host-name "Blaster-vJCE-058.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:3A;
+    fixed-address 10.87.132.100;
+  }
+  host Blaster-vJCE-059 {
+    send host-name "Blaster-vJCE-059.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:3B;
+    fixed-address 10.87.132.101;
+  }
+  host Blaster-vJCE-060 {
+    send host-name "Blaster-vJCE-060.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:3C;
+    fixed-address 10.87.132.102;
+  }
+  host Blaster-vJCE-061 {
+    send host-name "Blaster-vJCE-061.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:3D;
+    fixed-address 10.87.132.103;
+  }
+  host Blaster-vJCE-062 {
+    send host-name "Blaster-vJCE-062.spglab.juniper.net";
+    hardware ethernet 00:50:56:00:00:3E;
+    fixed-address 10.87.132.104;
+  }
+  host Blaster-vJCE-063 {
+    send host-name "Blaster-vJCE-063";
+    hardware ethernet 00:50:56:00:00:3F;
+    fixed-address 10.87.132.105;
+  }
+  host Blaster-vJCE-064 {
+    send host-name "Blaster-vJCE-064";
+    hardware ethernet 00:50:56:00:00:40;
+    fixed-address 10.87.132.106;
+  }
+
+
+ host cmbu-ceph-1 {
+        hardware ethernet 00:25:90:c1:18:0c;
+        fixed-address 10.87.140.162;
+        send host-name "cmbu-ceph-1.englab.juniper.net";
+    }
+host cmbu-ceph-2 {
+        hardware ethernet 00:25:90:CA:39:98 ;
+        fixed-address 10.87.140.160;
+        send host-name "cmbu-ceph-2.englab.juniper.net";
+    }
+
+ host cmbu-ceph-3 {
+        hardware ethernet 00:25:90:CA:2C:7C ;
+        fixed-address 10.87.140.158;
+        send host-name "cmbu-ceph-3.englab.juniper.net";
+    }
+
+ host cmbu-ceph-4 {
+        hardware ethernet 00:25:90:CA:2C:50;
+        fixed-address 10.87.140.156;
+        send host-name "cmbu-ceph-4.englab.juniper.net";
+    }
+
+ host cmbu-ceph-5 {
+        hardware ethernet 00:25:90:CA:2C:50;
+        fixed-address 10.87.140.154;
+        send host-name "cmbu-ceph-5.englab.juniper.net";
+    }
+
+ host cmbu-quanta-vxa1 {
+        hardware ethernet 04:7D:7B:BB:6F:AA;
+        #fixed-address 10.102.2.131;
+        fixed-address 10.87.140.129; 
+        send host-name "cmbu-quanta-vxa1.englab.juniper.net";
+    }
+
+ host cmbu-quanta-vxa2 {
+        hardware ethernet 04:7D:7B:B2:8F:64;
+        #fixed-address 10.102.2.133;
+        fixed-address  10.87.140.130;
+        send host-name "cmbu-quanta-vxa2.englab.juniper.net";
+    }
+
+host vinod-ubuntu-test {
+        hardware ethernet 00:50:56:8a:10:06;
+        fixed-address 10.102.2.139;
+        send host-name "vinod-ubuntu-test.englab.juniper.net";
+    }
+host cmbu-builder01 {
+        hardware ethernet 00:25:90:CA:39:28;
+        fixed-address 10.87.129.199;
+        send host-name "cmbu-builder01";
+    }
+host cmbu-marvel {
+        hardware ethernet 00:25:90:0A:1D:48;
+        fixed-address 10.87.129.201;
+        send host-name "cmbu-marvel";
+    }
+
+host ceph-build-test {
+        hardware ethernet 00:50:56:8a:1c:a9;
+        fixed-address 10.102.2.140;
+        send host-name "ceph-build-test.englab.juniper.net";
+    }
+host ceph-buildvm-01 {
+        hardware ethernet 00:50:56:8a:58:b0;
+        fixed-address 10.102.2.141;
+        send host-name "ceph-buildvm-01.englab.juniper.net";
+    }
+host ceph-buildvm-02 {
+        hardware ethernet 00:50:56:8a:36:3c;
+        fixed-address 10.102.2.142;
+        send host-name "ceph-buildvm-02.englab.juniper.net";
+    }
+host ceph-buildvm-03 {
+        hardware ethernet 00:50:56:8a:55:30;
+        fixed-address 10.102.2.143;
+        send host-name "ceph-buildvm-03.englab.juniper.net";
+    }
+host yuva-buildvm-01 {
+        hardware ethernet 00:50:56:8a:20:12;
+        fixed-address 10.157.44.65;
+        send host-name "yuva-buildvm-01.englab.juniper.net";
+    }
+host planes {
+        hardware ethernet 00:25:90:ca:f5:f8;
+        #fixed-address 10.102.2.145;
+	fixed-address 10.87.140.180;
+        send host-name "planes";
+    }
+host croods {
+        hardware ethernet 00:25:90:CA:F2:BC;
+        fixed-address 10.87.140.147;
+        send host-name "croods";
+    }
+host croods-vJCE {
+        hardware ethernet 00:50:56:BC:BC:BC;
+        fixed-address 10.87.141.63;
+        send host-name "croods-vJCE";
+    }
+host crcomp1 {
+        hardware ethernet 00:0C:29:F6:B5:AC;
+        fixed-address 10.87.141.68;
+        send host-name "crcomp1";
+    }
+host croods-esx-vm-standalone {
+        hardware ethernet 00:0C:29:5C:CF:3B;
+    #    fixed-address 10.87.141.69;
+        send host-name "croods-esx-vm-standalone";
+    }
+host vJCE-1238 {
+	hardware ethernet 52:54:00:E1:C5:C7;
+	fixed-address 10.87.141.69;
+	send host-name "vJCE-12.3.8";
+    }
+
+## Added by Vin
+host blaster-mfc02 {
+    hardware ethernet 00:50:56:8A:65:92;
+    fixed-address 10.102.1.161;
+    send host-name "blaster-mfc02";
+}
+
+host blaster-mfc03 {
+    hardware ethernet 00:50:56:8A:5C:EE;
+    fixed-address 10.102.1.162;
+    send host-name "blaster-mfc03";
+}
+
+host blaster-mfc04 {
+    hardware ethernet 00:50:56:8A:09:C8;
+    fixed-address 10.102.1.163;
+    send host-name "blaster-mfc04";
+}
+
+host blaster-mfc05 {
+    hardware ethernet 00:50:56:8A:22:24;
+    fixed-address 10.102.1.164;
+    send host-name "blaster-mfc05";
+}
+
+host blaster-mfc06 {
+    hardware ethernet 00:50:56:8A:2F:5C;
+    fixed-address 10.102.1.165;
+    send host-name "blaster-mfc06";
+}
+
+host blaster-mfc07 {
+    hardware ethernet 00:50:56:8A:7F:36;
+    fixed-address 10.102.1.166;
+    send host-name "blaster-mfc07";
+}
+
+host blaster-mfc08 {
+    hardware ethernet 00:50:56:8A:09:9A;
+    fixed-address 10.102.1.167;
+    send host-name "blaster-mfc08";
+}
+
+host blaster-mfc09 {
+    hardware ethernet 00:50:56:8A:27:08;
+    fixed-address 10.102.1.168;
+    send host-name "blaster-mfc09";
+}
+
+host blaster-mfc10 {
+    hardware ethernet 00:50:56:8A:3E:1D;
+    fixed-address 10.102.1.169;
+    send host-name "blaster-mfc10";
+}
+
+host blaster-mfc11 {
+    hardware ethernet 00:50:56:8A:11:61;
+    fixed-address 10.102.1.170;
+    send host-name "blaster-mfc11";
+}
+
+host blaster-mfc12 {
+    hardware ethernet 00:50:56:8A:03:46;
+    fixed-address 10.102.1.171;
+    send host-name "blaster-mfc12";
+}
+
+host blaster-mfc13 {
+    hardware ethernet 00:50:56:8A:42:34;
+    fixed-address 10.102.1.172;
+    send host-name "blaster-mfc13";
+}
+
+host blaster-mfc14 {
+    hardware ethernet 00:50:56:8A:10:BA;
+    fixed-address 10.102.1.173;
+    send host-name "blaster-mfc14";
+}
+
+host blaster-mfc15 {
+    hardware ethernet 00:50:56:8A:73:82;
+    fixed-address 10.102.1.174;
+    send host-name "blaster-mfc15";
+}
+host blaster-mfc16 {
+    hardware ethernet 00:50:56:8A:55:BA;
+    fixed-address 10.102.1.175;
+    send host-name "blaster-mfc16";
+}
+
+host blaster-mfc17 {
+    hardware ethernet 00:50:56:8A:0B:46;
+    fixed-address 10.102.1.176;
+    send host-name "blaster-mfc17";
+}
+
+host blaster-mfc18 {
+    hardware ethernet 00:50:56:8A:3A:BE;
+    fixed-address 10.102.1.177;
+    send host-name "blaster-mfc18";
+}
+
+host blaster-mfc19 {
+    hardware ethernet 00:50:56:8A:1D:F6;
+    fixed-address 10.102.1.178;
+    send host-name "blaster-mfc19";
+}
+
+host blaster-mfc20 {
+    hardware ethernet 00:50:56:8A:2B:21;
+    fixed-address 10.102.1.179;
+    send host-name "blaster-mfc20";
+}
+
+host blaster-mfc21 {
+    hardware ethernet 00:50:56:8A:49:47;
+    fixed-address 10.102.1.180;
+    send host-name "blaster-mfc21";
+}
+
+host blaster-mfc22 {
+    hardware ethernet 00:50:56:8A:48:55;
+    fixed-address 10.102.1.181;
+    send host-name "blaster-mfc22";
+}
+
+host blaster-mfc23 {
+    hardware ethernet 00:50:56:8A:1E:CF;
+    fixed-address 10.102.1.182;
+    send host-name "blaster-mfc23";
+}
+
+host blaster-mfc24 {
+    hardware ethernet 00:50:56:8A:2E:DD;
+    fixed-address 10.102.1.183;
+    send host-name "blaster-mfc24";
+}
+
+host blaster-mfc25 {
+    hardware ethernet 00:50:56:8A:19:3B;
+    fixed-address 10.102.1.184;
+    send host-name "blaster-mfc25";
+}
+
+host blaster-mfc26 {
+    hardware ethernet 00:50:56:8A:18:A7;
+    fixed-address 10.102.1.185;
+    send host-name "blaster-mfc26";
+}
+
+host blaster-mfc27 {
+    hardware ethernet 00:50:56:8A:68:ED;
+    fixed-address 10.102.1.186;
+    send host-name "blaster-mfc27";
+}
+
+host blaster-mfc28 {
+    hardware ethernet 00:50:56:8A:2A:CF;
+    fixed-address 10.102.1.187;
+    send host-name "blaster-mfc28";
+}
+
+host blaster-mfc29 {
+    hardware ethernet 00:50:56:8A:36:F0;
+    fixed-address 10.102.1.188;
+    send host-name "blaster-mfc29";
+}
+
+host blaster-mfc30 {
+    hardware ethernet 00:50:56:8A:48:40;
+    fixed-address 10.102.1.189;
+    send host-name "blaster-mfc30";
+}
+
+host blaster-mfc31 {
+    hardware ethernet 00:50:56:8A:19:69;
+    fixed-address 10.102.1.190;
+    send host-name "blaster-mfc31";
+}
+
+host blaster-mfc32 {
+    hardware ethernet 00:50:56:8A:18:25;
+    fixed-address 10.102.1.191;
+    send host-name "blaster-mfc32";
+}
+
+host blaster-mfc33 {
+    hardware ethernet 00:50:56:8A:68:1F;
+    fixed-address 10.102.1.192;
+    send host-name "blaster-mfc33";
+}
+
+host blaster-mfc34 {
+    hardware ethernet 00:50:56:8A:33:5E;
+    fixed-address 10.102.1.193;
+    send host-name "blaster-mfc34";
+}
+
+host blaster-mfc35 {
+    hardware ethernet 00:50:56:8A:16:05;
+    fixed-address 10.102.1.194;
+    send host-name "blaster-mfc35";
+}
+
+host blaster-mfc36 {
+    hardware ethernet 00:50:56:8A:0B:BC;
+    fixed-address 10.102.1.195;
+    send host-name "blaster-mfc36";
+}
+
+host blaster-mfc37 {
+    hardware ethernet 00:50:56:8A:12:D8;
+    fixed-address 10.102.1.196;
+    send host-name "blaster-mfc37";
+}
+
+host blaster-mfc38 {
+    hardware ethernet 00:50:56:8A:29:41;
+    fixed-address 10.102.1.197;
+    send host-name "blaster-mfc38";
+}
+
+host blaster-mfc39 {
+    hardware ethernet 00:50:56:8A:21:1A;
+    fixed-address 10.102.1.198;
+    send host-name "blaster-mfc39";
+}
+
+host blaster-mfc40 {
+    hardware ethernet 00:50:56:8A:62:41;
+    fixed-address 10.102.1.199;
+    send host-name "blaster-mfc40";
+}
+
+host blaster-mfc41 {
+    hardware ethernet 00:50:56:8A:52:7A;
+    fixed-address 10.102.1.200;
+    send host-name "blaster-mfc41";
+}
+
+host blaster-mfc42 {
+    hardware ethernet 00:50:56:8A:48:5E;
+    fixed-address 10.102.1.211;
+    send host-name "blaster-mfc42";
+}
+
+host blaster-mfc43 {
+    hardware ethernet 00:50:56:8A:2D:93;
+    fixed-address 10.102.1.212;
+    send host-name "blaster-mfc43";
+}
+
+host blaster-mfc44 {
+    hardware ethernet 00:50:56:8A:35:BE;
+    fixed-address 10.102.1.213;
+    send host-name "blaster-mfc44";
+}
+
+host blaster-mfc45 {
+    hardware ethernet 00:50:56:8A:35:BF;
+    fixed-address 10.102.1.214;
+    send host-name "blaster-mfc45";
+}
+
+host blaster-mfc46 {
+    hardware ethernet 00:50:56:8A:69:0A;
+    fixed-address 10.102.1.215;
+    send host-name "blaster-mfc46";
+}
+
+host blaster-mfc47 {
+    hardware ethernet 00:50:56:8A:04:42;
+    fixed-address 10.102.1.216;
+    send host-name "blaster-mfc47";
+}
+
+host blaster-mfc48 {
+    hardware ethernet 00:50:56:8A:0A:F0;
+    fixed-address 10.102.1.217;
+    send host-name "blaster-mfc48";
+}
+
+host blaster-mfc49 {
+    hardware ethernet 00:50:56:8A:2A:21;
+    fixed-address 10.102.1.218;
+    send host-name "blaster-mfc49";
+}
+
+host blaster-mfc50 {
+    hardware ethernet 00:50:56:8A:51:87;
+    fixed-address 10.102.1.219;
+    send host-name "blaster-mfc50";
+}
+
+host blaster-mfc51 {
+    hardware ethernet 00:50:56:8A:51:56;
+    fixed-address 10.102.1.220;
+    send host-name "blaster-mfc51";
+}
+
+host blaster-mfc52 {
+    hardware ethernet 00:50:56:8A:7A:D9;
+    fixed-address 10.102.1.221;
+    send host-name "blaster-mfc52";
+}
+
+host blaster-mfc53 {
+    hardware ethernet 00:50:56:8A:64:B7;
+    fixed-address 10.102.1.222;
+    send host-name "blaster-mfc53";
+}
+
+host blaster-mfc54 {
+    hardware ethernet 00:50:56:8A:69:39;
+    fixed-address 10.102.1.223;
+    send host-name "blaster-mfc54";
+}
+
+host blaster-mfc55 {
+    hardware ethernet 00:50:56:8A:28:06;
+    fixed-address 10.102.1.224;
+    send host-name "blaster-mfc55";
+}
+
+host blaster-mfc56 {
+    hardware ethernet 00:50:56:8A:42:5A;
+    fixed-address 10.102.1.225;
+    send host-name "blaster-mfc56";
+}
+
+host blaster-mfc57 {
+    hardware ethernet 00:50:56:8A:1D:F7;
+    fixed-address 10.102.1.226;
+    send host-name "blaster-mfc57";
+}
+
+host blaster-mfc58 {
+    hardware ethernet 00:50:56:8A:5F:9F;
+    fixed-address 10.102.1.227;
+    send host-name "blaster-mfc58";
+}
+
+host blaster-mfc59 {
+    hardware ethernet 00:50:56:8A:3C:96;
+    fixed-address 10.102.1.228;
+    send host-name "blaster-mfc59";
+}
+
+host blaster-mfc60 {
+    hardware ethernet 00:50:56:8A:21:7E;
+    fixed-address 10.102.1.229;
+    send host-name "blaster-mfc60";
+}
+
+host blaster-mfc61 {
+    hardware ethernet 00:50:56:8A:59:8E;
+    fixed-address 10.102.1.230;
+    send host-name "blaster-mfc61";
+}
+
+host blaster-mfc62 {
+    hardware ethernet 00:50:56:8A:1B:7E;
+    fixed-address 10.102.1.231;
+    send host-name "blaster-mfc62";
+}
+
+host blaster-mfc63 {
+    hardware ethernet 00:50:56:8A:32:73;
+    fixed-address 10.102.1.232;
+    send host-name "blaster-mfc63";
+}
+
+host blaster-mfc64 {
+    hardware ethernet 00:50:56:8A:43:5B;
+    fixed-address 10.102.1.233;
+    send host-name "blaster-mfc64";
+}
+
+
+### end Vin
+host esbu-vse2100-6 {
+        hardware ethernet A0:42:3F:01:A9:1F;
+        #fixed-address 10.102.2.94;
+        fixed-address 10.87.140.129;
+        send host-name "esbu-vse2100-6.englab.juniper.net";
+    }
+
+host esbu-vse2100-7 {
+        hardware ethernet A0:42:3F:01:AB:A3;
+        #fixed-address 10.102.2.130;
+	fixed-address 10.87.141.91;
+        send host-name "esbu-vse2100-7.englab.juniper.net";
+    }
+
+host esbu-vse2100-8 {
+        hardware ethernet 00:E0:81:CF:62:B3;
+        #fixed-address 10.102.2.96;
+        fixed-address 10.87.140.127;
+        send host-name "esbu-vse2100-8.englab.juniper.net";
+    }
+
+host esbu-vse2100-9 {
+        hardware ethernet A0:42:3F:01:AE:0D;
+        #fixed-address 10.102.2.97;
+        fixed-address 10.87.140.128;
+        send host-name "esbu-vse2100-9.englab.juniper.net";
+    }
+
+host host203 { hardware ethernet 00:18:7D:12:D3:05; }
+    #eroneous hosts I haven't tracked down yet
+    host 301 {
+        hardware ethernet 00:25:90:0f:b6:89;
+        fixed-address 10.157.34.253;
+    }
+    host 302 {
+        hardware ethernet 00:25:90:0f:ac:d3;
+        fixed-address 10.157.34.252;
+    }
+    host 303 {
+        hardware ethernet 78:e7:d1:be:74:0a;
+        fixed-address 10.157.34.251;
+    }
+    host 304 {
+        hardware ethernet 00:1e:c9:ab:4c:ee;
+        fixed-address 10.157.34.250;
+    }
+    host 305 {
+        hardware ethernet 00:25:90:0f:ac:d3;
+        fixed-address 10.157.34.249;
+    }
+    host 306 {
+        hardware ethernet 78:e7:d1:be:74:86;
+        fixed-address 10.157.34.248;
+    }
+    host 307 {
+        hardware ethernet 78:e7:d1:be:76:e2;
+        fixed-address 10.157.34.247;
+    }
+    host 308 {
+        hardware ethernet 00:24:dc:01:af:80;
+        fixed-address 10.157.34.246;
+    }
+    host 309 {
+        hardware ethernet f4:ce:46:e7:27:46;
+        fixed-address 10.157.34.245;
+    }
+    host 310 {
+        hardware ethernet 78:e7:d1:be:76:7a;
+        fixed-address 10.157.34.244;
+    }
+    host 311 {
+        hardware ethernet 00:25:90:0f:91:1f;
+        fixed-address 10.157.34.243;
+    }
+    host 312 {
+        hardware ethernet 00:25:90:1c:b1:60;
+        fixed-address 10.157.34.242;
+    }
+    host 313 {
+        hardware ethernet 00:50:56:b2:01:28;
+        fixed-address 10.157.34.241;
+    }
+    host 314 {
+        hardware ethernet 00:60:e0:80:e9:88;
+        fixed-address 10.157.34.240;
+    }
+    host 315 {
+        hardware ethernet 00:25:90:52:3f:29;
+        fixed-address 10.157.34.239;
+    }
+    host 316 {
+        hardware ethernet 00:1a:64:77:c4:30;
+        fixed-address 10.157.34.238;
+    }
+    host 317 {
+        hardware ethernet 00:25:90:48:4c:e0;
+        fixed-address 10.157.34.237;
+    }
+    host 318 {
+        hardware ethernet 00:25:90:48:4c:df;
+        fixed-address 10.157.34.236;
+    }
+    host 319 {
+        hardware ethernet 00:25:90:0d:36:d8;
+        fixed-address 10.157.34.235;
+    }
+    host 320 {
+        hardware ethernet 00:25:90:0f:90:c2;
+        fixed-address 10.157.34.234;
+    }
+    host cmbu-ixs2-2 {
+        hardware ethernet 00:25:90:1a:91:35;
+        #fixed-address 10.157.43.136;
+        fixed-address 10.87.129.76;
+	send host-name "cmbu-ixs2-2";
+    }
+    host cmbu-vxa22-2 {
+        hardware ethernet 00:E0:81:C3:89:3C;
+        fixed-address 10.87.130.2;
+        send host-name "cmbu-vxa22-2";
+    }
+
+    host 321 {
+        hardware ethernet 00:E0:81:C9:FA:1E;
+        fixed-address 10.157.34.233;
+    }
+}
+

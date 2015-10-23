@@ -1,0 +1,10 @@
+1) Compile the source code
+   % make
+   % copy 1) output nknssld and 2) Trust certificate list file root.pem 
+     into target JMFC machine.
+
+2) Create testing SSL certifiate in target JMFC machine.
+   % openssl req -x509 -nodes -days 365 -newkey rsa:1024 -keyout key.pem -out key.pem
+
+3) run the ssl daemon manually
+   % nknssld -d -f nknssld.cfg

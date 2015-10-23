@@ -1,0 +1,30 @@
+LSI/3ware CLI (version 2.00.11.016) Copyright (c) 2010 LSI -- 3Ware RAID
+controller monitoring CLI -- Downloaded from
+http://www.lsi.com/downloads/Public/SATA/SATA%20Common%20Files/3DM2_CLI-Linux-10.2.zip
+
+1: Downloaded 3DM2_CLI-Linux-10.2.zip with this command:
+     wget http://www.lsi.com/downloads/Public/SATA/SATA%20Common%20Files/3DM2_CLI-Linux-10.2.zip
+
+2: Unzip with this command:
+     unzip 3DM2_CLI-Linux-10.2.zip 
+   This results in three files: readme.txt  install.sh  tdmCliLnx.tgz 
+
+3: The readme.txt file has these lines:
+     LSI 3ware Linux 3DM2 and CLI installer from 10.2 Release
+     3DM2 v2.11.00.016
+     CLI v2.00.11.016
+     ******************************
+     Installation and usage instructions can be found in the 9750 User's Guide.
+     http://www.lsi.com/channel/ChannelDownloads/
+
+4: Untar tdmClilnx.tgz and 
+     tar zxvf tdmClilnx.tgz
+   Only keep the binary tw_cli.x86_64 (renamed to just "tw_cli") and
+   the license.txt file
+
+5: The md5sum of tw_cli.x86_64 is "fa2dae9eab61f4c4ec8baf63490ed928"
+  
+6: Our Makefile installs tw_cli as /opt/nkn/bin/tw_cli
+
+7: The license for tw_cli is in the in the license.txt from tdmClilnx.tgz
+

@@ -1,0 +1,75 @@
+#!/bin/sh
+#
+# $Id: INSTALL,v 1.9.444.1 2009-08-13 05:05:00 kdickman Exp $
+#
+# Copyright (c) 2001, 2003-2006, Juniper Networks, Inc.
+# All rights reserved.
+
+initialize "$@"
+
+inner=%PKGNAME%_pkg
+
+extractInner() {
+    DebugOn extractInner
+    if [ -s %PACKAGE%.tgz ]; then
+	mkdir -p $inner &&
+	(cd $inner && tar zxf -) < %PACKAGE%.tgz || Exit 1
+	# save space now...
+	rm %PACKAGE%.tgz
+    fi
+    DebugOff extractInner
+}
+
+RunREQUIRE() {
+    DebugOn RunREQUIRE
+    (   x=
+        if cd $inner; then
+            if [ ./+REQUIRE ]; then
+                echo "Pre-checking requirements for %PKGNAME%..."
+                instmp=$instmp/$inner /bin/sh ./+REQUIRE %PKGNAME% INSTALL
+                 x=$?
+	    fi
+	fi
+	exit ${x:-0}
+    )
+    x=$?
+    DebugOff RunREQUIRE
+    return $x
+}
+
+if [ "$instance" = "PRE-INSTALL" ] ; then
+    DebugOn signedPreINSTALL signedINSTALL
+    [ "x$PKG_FORCE" != "x" ] && check_arch_compatibility "%PKGNAME%"
+    DebugOff signedPreINSTALL signedINSTALL
+fi
+
+if [ "$instance" = "POST-INSTALL" ] ; then
+    DebugOn signedPostINSTALL signedINSTALL
+    etc_pkgdir=/etc/db/pkg
+
+    # we do this here rather than in REQUIRE so that we cannot proceed
+    # if the verify fails.
+    $PKG_VERIFIED verify_files %PACKAGE%.tgz
+    export PKG_VERIFIED=:
+    pkg=%PKGNAME%
+    if [ "%PKGNAME%" = "jkernel-dbg" ]; then
+        pkg=${pkg%-dbg}
+    fi
+
+    pkg=${pkg%-ppc}
+
+    extractInner
+    if [ -d $etc_pkgdir/$pkg ] ; then
+        # see if the package will be happy before we de-install
+        RunREQUIRE || exit 1
+        echo "Auto-deleting old $pkg..."
+        PKG_UPGRADE=: pkg_delete $pkg
+        PKG_DELETED=1
+        export PKG_DELETED
+        trace "${PKGNAME} signed post install PKG_DELETED = $PKG_DELETED"	   
+    fi
+    echo "Adding %PKGNAME%..."
+    pkg_add $PKG_FORCE $inner || fail=1
+    DebugOff signedPostINSTALL signedINSTALL
+fi
+Exit $fail

@@ -1,0 +1,512 @@
+<?
+#
+# Filename:  servicecfg-shownm.tem,v $
+# Date:      2009/09/04
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "NamespaceList">
+<!-- <TMS-MENU "servicecfg"> -->
+<TMS-BODY>
+<!-- <TMS-SIDEBAR><TMS-SERVICECFG-MENU "shownm"></TMS-SERVICECFG-MENU></TMS-SIDEBAR> -->
+<TMS-PAGE-CONTENT "Details on Configured Namespace">
+
+<?
+  #set namespace_name [tms::get-param post "f_name"]
+  set namespace_name [tms::get-param query "nmname"]
+  set match_uri_name [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/uri/uri_name"]
+  set match_uri_regex [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/uri/regex"]
+  set match_header_name [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/header/name"] 
+  set match_header_value [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/header/value"] 
+  set match_header_regex [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/header/regex"] 
+  set match_query_name [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/query-string/name"] 
+  set match_query_value [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/query-string/value"] 
+  set match_query_regex [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/query-string/regex"] 
+  set match_virtual_ip [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/virtual-host/ip" ]
+  set match_virtual_port [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/virtual-host/port"]
+  #set match_rtsp_virtual_port [tms::get-config "/nkn/nvsd/namespace/$namespace_name/rtsp/match/virtual-host/port"]
+  #set match_rtsp_virtual_ip [tms::get-config "/nkn/nvsd/namespace/$namespace_name/rtsp/match/virtual-host/ip" ]
+  #set match_rtsp_uri_name [tms::get-config "/nkn/nvsd/namespace/$namespace_name/rtsp/match/uri/uri_name"]
+  #set match_rtsp_uri_regex [tms::get-config "/nkn/nvsd/namespace/$namespace_name/rtsp/match/uri/regex"]
+  set match_type [tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/type"]
+  #set rtsp_match_type [tms::get-config "/nkn/nvsd/namespace/$namespace_name/rtsp/match/type"]
+  set mt_uri_name 1
+  set mt_uri_regex 2
+  set mt_header_name 3
+  set mt_header_regex 4
+  set mt_query_string_name 5
+  set mt_query_string_regex 6
+  set mt_vhost 7
+  set mt_rtsp_uri_name 8
+  set mt_rtsp_uri_regex 9
+  set mt_rtsp_vhost 10
+  
+  set osvr_http_host 1
+  set osvr_http_abs_url 2
+  set osvr_http_follow_header 3
+  set osvr_http_desp_ip 4
+  set osvr_http_server_map 5
+  set osvr_nfs_host 6
+  set osvr_nfs_server_map 7
+  set os_http_host [tms::get-config "/nkn/nvsd/namespace/$namespace_name/origin-server/http/host/name"]
+  set os_http_hostport [tms::get-config "/nkn/nvsd/namespace/$namespace_name/origin-server/http/host/port"]
+  set os_http_servermap [tms::get-config "/nkn/nvsd/namespace/$namespace_name/origin-server/http/server-map"]
+  set os_http_followheader [tms::get-config "/nkn/nvsd/namespace/$namespace_name/origin-server/http/follow/header"]
+  set os_http_absurl [tms::get-config "/nkn/nvsd/namespace/$namespace_name/origin-server/http/absolute-url"]
+  set os_nfs_host [tms::get-config "/nkn/nvsd/namespace/$namespace_name/origin-server/nfs/host"]
+  set os_nfs_hostport [tms::get-config "/nkn/nvsd/namespace/$namespace_name/origin-server/nfs/port"]
+  set os_nfs_servermap [tms::get-config "/nkn/nvsd/namespace/$namespace_name/origin-server/nfs/server-map"]
+  set os_originserver_type [tms::get-config "/nkn/nvsd/namespace/$namespace_name/origin-server/type"]
+  set http_proto [tms::get-config "/nkn/nvsd/namespace/$namespace_name/delivery/proto/http"]
+  set rtsp_proto [tms::get-config "/nkn/nvsd/namespace/$namespace_name/delivery/proto/rtsp"]
+  set domain_host [tms::get-config "/nkn/nvsd/namespace/$namespace_name/domain/host"]
+  set domain_regex [tms::get-config "/nkn/nvsd/namespace/$namespace_name/domain/regex"]
+
+?>
+<!--
+<form method="post">
+  <?
+    set nm_prefix "/nkn/nvsd/namespace"
+    set nm_ids [tms::iterate-config $nm_prefix]
+    set namespace_list {}
+    foreach nm_id $nm_ids {
+       set prefix_len [string length "$nm_prefix/"]
+       set nm_name [string range $nm_id $prefix_len end]
+       lappend namespace_list "$nm_name $nm_name"
+    }
+
+  ?>
+
+  <TMS-TABLE -div_id "shownm_sel">
+    <TMS-TABLE-ENTRY "Select Namespace">
+     <CFG-DROPDOWN -id "name" -errname "name"
+                   -caps "set_basic" -required "true"
+                   -options $namespace_list
+                   -type "string" -span_id "set_name">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+   </TMS-TABLE>
+  <CFG-BUTTON -type "add" -text "Show" -caps "set_basic" 
+              -span_id "shownm_sel_1">
+</form>
+-->
+<?
+  if {[string length $namespace_name] != 0} {
+?>
+
+<CFG-FORM -div_id "disp_area">
+  <table>
+    <tr>
+      <td><b>Namespace : </b> </td>
+      <td> <?=$namespace_name?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;Active : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/namespace/$namespace_name/status/active"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;Precedence : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/namespace/$namespace_name/match/precedence"]?> </td>
+    </tr>
+
+    <? 
+      set cache_inherit [tms::get-config "/nkn/nvsd/namespace/$namespace_name/cache_inherit"]
+      if {$cache_inherit == "set" } {
+    ?>
+    <tr>
+      <td> &nbsp;&nbsp;Cache-Inherit : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/namespace/$namespace_name/uid"]?> </td>
+    </tr>
+    <?
+     }
+    ?>
+   
+    <tr>
+      <td> &nbsp;&nbsp;Proxy Mode : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/namespace/$namespace_name/proxy-mode"]?> </td>
+    </tr>
+
+    <tr> <td height="13"> </td>
+    </tr> 
+    <tr>
+      <td> <b> &nbsp;&nbsp; Match Detail : </b></td>
+      <? 
+       if {[string compare $match_type $mt_uri_name] == 0 } {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Uri-Name :  </td>
+      <td> <?=$match_uri_name?> </td>
+      </tr>
+      <?
+      }
+      ?>
+      <? 
+       if {[string compare $match_type $mt_uri_regex] == 0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Uri-Regex :  </td>
+      <td> <?=$match_uri_regex?> </td>
+      </tr>
+      <?
+      }
+      ?>
+      <? 
+       if {[string compare $match_type $mt_header_name] == 0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Header-Name :  </td>
+      <td> <?=$match_header_name?> </td>
+      </tr>
+      <? 
+       if {[string length $match_header_value] != 0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Header-Value :  </td>
+      <td> <?=$match_header_value?> </td>
+      </tr>
+      <?
+      }
+      }
+      ?>
+      <? 
+       if {[string compare $match_type $mt_header_regex] == 0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Header-Regex :  </td>
+      <td> <?=$match_header_regex?> </td>
+      </tr>
+      <?
+      }
+      ?>
+      <? 
+       if {[string compare $match_type $mt_query_string_name] == 0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Query-String-Name :  </td>
+      <td> <?=$match_query_name?> </td>
+      </tr>
+      <?
+      }
+      ?>
+      <? 
+       if {[string length $match_query_value] !=0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Query-String-Value :  </td>
+      <td> <?=$match_query_value?> </td>
+      </tr>
+      <?
+      }
+      ?>
+      <? 
+       if {[string compare $match_type $mt_query_string_regex] == 0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Query-String-Regex :  </td>
+      <td> <?=$match_query_regex?> </td>
+      </tr>
+      <?
+      }
+      ?>
+      <? 
+       if {[string compare $match_type $mt_vhost] == 0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;VirtualHost-ip :  </td>
+      <td> <?=$match_virtual_ip?> </td>
+      </tr>
+      <? 
+       if {[string length $match_virtual_port] != 0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;VirtualHost-Port :  </td>
+      <td> <?=$match_virtual_port?> </td>
+      </tr>
+      <?
+      }
+      }
+      ?>
+    </tr>
+
+    <tr>
+      <td> <b> &nbsp;&nbsp;&nbsp;&nbsp;Delivery Protocols :</b> </td>
+      <td> http - <?=$http_proto?> , 
+          rtsp - <?=$rtsp_proto?> , 
+      </td>
+    </tr>
+
+    <tr>
+      <td> <b> &nbsp;&nbsp;&nbsp;&nbsp;Domain :</b> </td>
+      <? 
+       if {[string length $domain_regex] != 0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Regex :  </td>
+      <td> <?=$domain_regex?> </td>
+      </tr>
+      <?
+      }
+       if {[string length $domain_host] != 0 && [string length $domain_regex] == 0} {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Host :  </td>
+      <td> <?=$domain_host?> </td>
+      </tr>
+      <?
+      }
+      ?>
+
+    </tr>
+
+    <tr>
+      <td> <b> &nbsp;&nbsp;&nbsp;&nbsp;Origin-server :</b> </td>
+      <? 
+       if {[string compare $osvr_http_host $os_originserver_type] == 0 } {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Http Host :  </td>
+      <td> http://<?=$os_http_host?>:<?=$os_http_hostport?> </td>
+      </tr>
+      <?
+      }
+      ?>
+      <? 
+       if {[string compare $osvr_http_server_map $os_originserver_type]== 0 } {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Http Servermap :  </td>
+      <td> <?=$os_http_servermap?> </td>
+      </tr>
+      <?
+      }
+      ?>
+      <? 
+       if {[string compare $osvr_http_follow_header $os_originserver_type] == 0 } {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Http FollowHeader :  </td>
+      <td> <?=$os_http_followheader?> </td>
+      </tr>
+      <?
+      }
+      ?>
+      <? 
+       if {[string compare $osvr_http_abs_url $os_originserver_type] == 0 } {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;Http Absolute Url:  </td>
+      <td> <?=$os_http_absurl?> </td>
+      </tr>
+      <?
+      }
+      ?>
+    <!--
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;KeepAlive : </td>
+      <td> <?=[tms::get-config "$http_id/keep-alive"]?>
+      </td>
+    </tr>
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Weight : </td>
+      <td> <?=[tms::get-config "$http_id/weight"]?>
+      </td>
+    </tr>
+-->
+      <? 
+       if {[string compare $osvr_nfs_host $os_originserver_type] == 0 } {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;NFS Host:  </td>
+      <td> nfs://<?=$os_nfs_host?>:<?=$os_nfs_hostport?> </td>
+      </tr>
+      <?
+      }
+      ?>
+      <? 
+       if {[string compare $osvr_nfs_server_map $os_originserver_type] == 0 } {
+      ?>
+      <tr>
+      <td>  &nbsp;&nbsp;&nbsp;&nbsp;NFS Server map:  </td>
+      <td> <?=$os_nfs_servermap?> </td>
+      </tr>
+      <?
+      }
+      ?>
+    
+    <!--
+    <?
+        set smap [tms::get-config "$uri_id/origin-server/server-map"]
+        if {[string length $smap] != 0 } {
+    ?>
+
+    <tr> <td height="13"> </td>
+    </tr>
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Server Map</td>
+      <td> <?=$smap?> 
+      </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Protocol</td>
+      <td> <?=[tms::get-config "/nkn/nvsd/server-map/$smap/protocol"]?> 
+      </td>
+    </tr>
+      
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Map File</td>
+      <td> <?=[tms::get-config "/nkn/nvsd/server-map/$smap/file-url"]?> 
+      </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Refresh Interval</td>
+      <td> <?=[tms::get-config "/nkn/nvsd/server-map/$smap/refresh"]?> secs 
+      </td>
+    </tr>
+
+    <?
+         }
+    ?>
+    -->
+    <!--
+    </FOREACH>
+    -->
+    <tr> <td height="13"> </td>
+    </tr>
+    <tr>
+      <td> <b> &nbsp;&nbsp;Virtual Player : </b></td>
+      <td> <?=[tms::get-config "/nkn/nvsd/namespace/$namespace_name/virtual_player"]?>  </td>
+    </tr>
+
+    <tr> <td height="13"> </td>
+    </tr> 
+
+    <tr>
+      <td> <b> &nbsp;&nbsp; HTTP Origin Fetch Configuration : </b> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Cache-Age (Default) : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/cache-age/default"]?> (seconds)  </td>
+    </tr>
+
+    <?
+        set origin_prefix "/nkn/nvsd/origin_fetch/config/$namespace_name/cache-age/content-type"
+        set origin_ids [tms::iterate-config $origin_prefix]
+    ?>
+    <?
+    if { [string length $origin_ids] != 0 } {
+    ?>
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Cache-Age Per Content-Type : </td>
+    </tr>
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Content-Type : </td>
+    </tr>
+    <tr>
+      <td> Cache-Control: </td>
+      <td> max-age </td>
+    </tr> 
+    <?
+    }
+    ?>
+    <FOREACH origin_id $origin_ids>
+      <tr>
+        <td> <?=[tms::get-config "$origin_id/type"]?> </td>
+        <td> <?=[tms::get-config "$origin_id/value"]?> (secs) </td>
+      </tr>  
+    </FOREACH>
+   
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Cache-Directive : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/cache-directive/no-cache"]?> </td>
+    </tr>
+ 
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Cache-Revalidate : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/cache-revalidate"]?> </td>
+    </tr>
+ 
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Cache Age Threshold : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/content-store/media/cache-age-threshold"]?> (secs) </td>
+    </tr>
+ 
+    <tr>
+      <td>&nbsp;&nbsp;&nbsp;&nbsp;Convert HEAD to GET : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/convert/head"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Object Size Threshold : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/content-store/media/object-size-threshold"]?> Bytes </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Modify Date Header : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/date-header/modify"]?> </td>
+    </tr>
+
+    <tr>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp;Offline File Fetch Size : </td>
+      <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/offline/fetch/size"]?> (kbytes) </td>
+    </tr>
+
+   <tr>
+     <td> <b> &nbsp;&nbsp;RTSP Origin Fetch Configuration : </b> </td>
+   </tr>
+                                                                                                                                       
+   <tr>
+     <td> &nbsp;&nbsp;&nbsp;&nbsp;Cache-Age (Default) : </td>
+     <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/rtsp/cache-age/default"]?> (seconds)  </td>
+   </tr>
+   <tr>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;Cache-Directive : </td>
+     <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/rtsp/cache-directive/no-cache"]?> </td>
+   </tr>
+
+   <tr>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;Cache Age Threshold : </td>
+     <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/rtsp/content-store/media/cache-age-threshold"]?> (secs) </td>
+   </tr>
+
+   <tr>
+     <td> &nbsp;&nbsp;&nbsp;&nbsp;Object Size Threshold : </td>
+     <td> <?=[tms::get-config "/nkn/nvsd/origin_fetch/config/$namespace_name/rtsp/content-store/media/object-size-threshold"]?> Bytes </td>
+   </tr>
+
+    <tr> <td height="13"> </td>
+    <tr>
+      <td> <b> Pre-stage FTP Configuration : </b> </td>
+    </tr>
+    
+    </tr>
+    <?
+        set prestage_prefix "/nkn/nvsd/namespace/$namespace_name/prestage/user"
+        set prestage_ids [tms::iterate-config $prestage_prefix]
+    ?>
+    <FOREACH prestage_id $prestage_ids>
+      <tr>
+        <td> &nbsp;&nbsp;&nbsp;&nbsp;User : </td>
+        <td> <?=[tms::get-config "$prestage_id"]?> </td>
+      </tr>
+    </FOREACH>
+  </table>
+
+<CFG-FORM>
+<?
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

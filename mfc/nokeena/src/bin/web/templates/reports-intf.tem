@@ -1,0 +1,51 @@
+<?
+#
+# Filename:  servicecfg-analytics.tem,v $
+# Date:      2009/02/06 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "reports-layout">
+<TMS-PAGE "Interface Statistics">
+<TMS-MENU "reports">
+<TMS-BODY>
+<TMS-SIDEBAR><MFD-REPORTS-MENU "intf"></MFD-REPORTS-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Network Usage">
+
+ <h3> Last 24 hours </h3>
+ <?
+   set fexist [file exist "/var/opt/tms/web/graphs/day/intf_day.png"]
+   if {$fexist == 1} {
+ ?>
+     <img src="/graphs/day/intf_day.png">
+ <?
+   } else { 
+ ?>
+  <b> Currently Image file not available </b>
+ <?
+   }
+ ?> 
+ <h3> Last 7 days </h3>
+ <?
+   set fexist [file exist "/var/opt/tms/web/graphs/week/intf_week.png"]
+   if {$fexist == 1} {
+ ?>
+     <img src="/graphs/week/intf_week.png">
+
+ <?
+    } else {
+ ?>
+   <b> Currently Image file not available </b>
+ <?  
+    }
+ ?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

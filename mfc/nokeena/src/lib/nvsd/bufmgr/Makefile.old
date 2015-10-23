@@ -1,0 +1,64 @@
+# Makefile for  eng/src/bufmgr directory
+# Modified on : 2008-09-05
+# Copyright (c) Nokeena Inc., 2008
+
+# Include Macros
+include ../Makefile.inc
+
+# Local Macros
+LIB_CACHEMGR = $(PROJECTLIB)/libnkn_bufmgr.a
+CFLAGS += -fPIC -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -Werror
+
+SRCS =  nkn_buf.c cache_mgr.c cache_request.c nkn_attr.c
+OBJS = $(SRCS:.c=.o)
+DEPS = $(SRCS:.c=.dep)
+
+
+# Rules 
+.PHONY: clean clean_self
+
+lib: include $(LIB_CACHEMGR)
+	@echo
+	@echo "----------Cache Manager Library Build Completed----------"
+	@echo
+
+all: include $(LIB_CACHEMGR)
+	@echo
+	@echo "----------Cache Manager Library Build Completed----------"
+	@echo
+
+$(PROJECTINC):
+	@echo
+	mkdir -p $(PROJECTINC)
+
+$(PROJECTLIB):
+	@echo
+	mkdir -p $(PROJECTLIB)
+
+include: $(PROJECTINC)
+	$(CP) cache_mgr.h $(PROJECTINC)
+	$(CP) nkn_attr.h $(PROJECTINC)
+
+
+$(LIB_CACHEMGR): ${PROJECTLIB} $(OBJS)
+	$(AR) rv $@ $(OBJS)
+	ranlib $@
+
+%.o : %.c
+	$(CC) -MD -c $(CFLAGS) -o $@ $<
+	$(DOTP_FROM_DOTD)
+
+clean: clean_self
+
+clean_self: 
+	$(RM) *.o *.d *.P *.~
+	$(RM) $(LIB_CACHEMGR)
+	-rmdir --ignore-fail-on-non-empty $(PROJECTLIB)
+	$(RM) $(PROJECTINC)/cache_mgr.h
+	$(RM) $(PROJECTINC)/nkn_attr.h
+	-rmdir --ignore-fail-on-non-empty $(PROJECTINC)
+
+# Include the dependency files 
+-include $(SRCS:.c=.P)
+
+# End of Makefile

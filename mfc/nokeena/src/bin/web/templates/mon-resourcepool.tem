@@ -1,0 +1,39 @@
+<?
+#
+# Filename:  $Source: mon-resourcepool.tem,v $
+# Date:      $Date: 2009/01/05$
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "mon-resourcepool-common">
+
+<TMS-PAGE "Resource Pool">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "resourcepool"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Resource Pool Stats">
+   <CFG-FORM -div_id "resourcepool">
+   <input type="hidden" name="template" value="mon-resourcepool.tem"> 
+   </CFG-FORM>
+
+<div id="cntrArea"></div>
+
+<noscript>
+<MON-RESOURCEPOOL-BODY>
+</noscript>
+
+<script type="text/javascript">
+    function cntrWrapper() {
+        getAjaxText ('<?=$ajax_mon_resourcepool_url?>','cntrArea')
+        setTimeout(cntrWrapper, 3000);
+    }
+    cntrWrapper();
+
+</script>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

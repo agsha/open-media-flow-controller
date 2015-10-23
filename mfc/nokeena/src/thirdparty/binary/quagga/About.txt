@@ -1,0 +1,36 @@
+# Quaggaa
+# It is GPL licensed.  We only use the unmodified source to build
+# binaries and # do NOT link any other code with the libraries.
+
+Steps to create the binary.
+The source was downloaded from http://www.quagga.net/download.php
+The commands to build the binaries are:
+
+tar zxvf /data/archive/thirdparty/src/quagga/quagga-0.99.18.tar.gz 
+cd quagga-0.99.18
+./configure --disable-ripd --disable-ripngd --disable-ospfd --disable-ospf6d --enable-vtysh --enable-user=admin --enable-group=root
+make
+mkdir /tmp/quagga-install
+make install DESTDIR=/tmp/quagga-install
+cd /tmp/quagga-install
+echo 'password test' > usr/local/etc/zebra.conf
+echo 'password test' > usr/local/etc/bgpd.conf
+echo 'username root nopassword' > usr/local/etc/vtysh.conf
+mkdir copy
+cp \
+  usr/local/bin/vtysh \
+  usr/local/sbin/bgpd \
+  usr/local/sbin/watchquagga \
+  usr/local/sbin/zebra \
+  usr/local/lib/libzebra.so.0.0.0 \
+  usr/local/etc/bgpd.conf \
+  usr/local/etc/vtysh.conf \
+  usr/local/etc/zebra.conf \
+  copy
+
+# These symlinks need to be made as well.
+#   usr/local/lib/libzebra.so -> libzebra.so.0.0.0
+#   usr/local/lib/libzebra.so.0 -> libzebra.so.0.0.0
+
+For the build on CentOS 6.3, the files that were copied in the above step
+have been checked into the "6" subdir.

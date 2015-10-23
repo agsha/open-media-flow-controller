@@ -1,0 +1,19 @@
+
+CFLAGS=-I${PROD_CUSTOMER_ROOT}/nokeena/src/include/ -g
+
+LIB_PROTO_HTTP=$(PROD_OUTPUT_ROOT)/product-nokeena-x86_64/build/image/custlib/proto_http/libproto_HTTP.a
+
+LIB_NET=$(PROD_OUTPUT_ROOT)/product-nokeena-x86_64/build/image/custlib/libnet/libnet.a
+
+LIBNET_TEST_LDFLAGS=-L/usr/local/lib ${LIB_PROTO_HTTP} ${LIB_NET} -lelf -lc -lpthread
+
+all:	libnet_test
+
+libnet_test:	libnet_test.o
+	 cc -o libnet_test libnet_test.o ${LIBNET_TEST_LDFLAGS}
+
+libnet_test.c:	libnet_test.o
+	cc ${CFLAGS} -c libnet_test.c
+
+clean:
+	rm -rf libnet_test libnet_test.o

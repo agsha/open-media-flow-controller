@@ -1,0 +1,9 @@
+lfd.listen_port=2010
+lfd.sys.glob.tcp_conn_max=0
+lfd.sys.glob.tcp_active_conn_max=128000
+lfd.sys.glob.http_tps_max=200000
+lfd.sys.glob.disk_io_util_max=0
+lfd.sys.glob.if_bw_max=125000000
+lfd.sampling_interval=500
+lfd.window_length=5000
+lfd.xmlns=http://www.juniper.net/mfc/schema/lf

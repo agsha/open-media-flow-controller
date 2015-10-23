@@ -1,0 +1,70 @@
+libcurl is a free and easy-to-use client-side URL transfer library, supporting FTP, FTPS, HTTP, HTTPS, SCP, SFTP, TFTP, TELNET, DICT, LDAP, LDAPS, FILE, IMAP, SMTP, POP3 and RTSP.
+
+Downloaded from http://curl.haxx.se/ More info at: http://curl.haxx.se/libcurl/
+
+Downloaded this:
+    http://curl.haxx.se/download/curl-7.20.1.tar.gz - released 2010-04-14
+This source file is archived locally as:
+    /data/archive/thirdparty/build-machine-src/curl/curl-7.20.0.tar.gz 
+This tar file was extrated, no modifications made, and put in source control as:
+    svn://svn/thirdparty/vendors/curl/cur-7.20.1 
+
+Build and install this on the build machine with the following commands:
+
+ ./configure --prefix=/usr/local --enable-ares=/usr/local
+ make
+ sudo make install
+
+This installs on the build machine:
+
+/usr/local/lib/libcurl.so.4.2.0
+/usr/local/lib/libcurl.la
+/usr/local/lib/libcurl.a
+/usr/local/include/curl/curl.h
+/usr/local/include/curl/curlver.h
+/usr/local/include/curl/easy.h
+/usr/local/include/curl/mprintf.h
+/usr/local/include/curl/stdcheaders.h
+/usr/local/include/curl/types.h
+/usr/local/include/curl/multi.h
+/usr/local/include/curl/typecheck-gcc.h
+/usr/local/include/curl/curlbuild.h
+/usr/local/include/curl/curlrules.h
+/usr/local/share/man/man3/*
+/usr/local/share/man/man1/*
+/usr/local/lib/pkgconfig/libcurl.pc
+
+Use: The shared library is installed on the MFC machine, none of the other files.
+
+libcurl.so.4.2.0
+libcurl.so.4 -> libcurl.so.4.2.0
+libcurl.so -> libcurl.so.4.2.0
+
+Note that curl depends on c-ares being installed on the build machine. (c-ares is the library libcurl uses for asynchronous name resolves.)
+
+The copyright+license information is at: http://curl.haxx.se/docs/copyright.html The following is from that page:
+  
+ Curl and libcurl are true Open Source/Free Software and meet all definitions
+ as such. It means that you are free to modify and redistribute all contents of
+ the curl distributed archives. You may also freely use curl and libcurl in
+ your commercial projects.
+ Curl and libcurl are licensed under a MIT/X derivate license, see below.
+ The curl license:
+   COPYRIGHT AND PERMISSION NOTICE
+   Copyright (c) 1996 - 2014, Daniel Stenberg, <daniel@haxx.se>.
+   All rights reserved.
+   Permission to use, copy, modify, and distribute this software for any purpose
+   with or without fee is hereby granted, provided that the above copyright
+   notice and this permission notice appear in all copies.
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS. IN
+   NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+   OR OTHER DEALINGS IN THE SOFTWARE.
+   Except as contained in this notice, the name of a copyright holder shall not
+   be used in advertising or otherwise to promote the sale, use or other dealings
+   in this Software without prior written authorization of the copyright holder.
+
+The file "COPYING" in the source also has the above curl license text.

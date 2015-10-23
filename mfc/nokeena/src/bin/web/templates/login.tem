@@ -1,0 +1,59 @@
+<?
+# (C) Copyright 2015 Juniper Networks
+# All rights reserved.
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Login">
+
+<p>
+Please enter your username and password, then click &quot;Login&quot;.
+</p>
+
+<?
+set idle_time_out [tms::get-param query "idle"]
+if {[string compare $idle_time_out "true"] == 0} {
+   tms::set-custom-var "v_success" "You were logged out due to inactivity."
+}
+?>
+
+<TMS-MSG>
+
+<!-- login form -->
+<?
+set login_url ""
+set dest_url [tms::get-param query dest]
+if {[string length $dest_url] == 0} {
+   set login_url [tms::construct-url "template=login" "action=login"]
+} else {
+   set login_url [tms::construct-url-paired "template" "login" "action" "login" "dest" [tms::url-escape $dest_url]]
+}
+?>
+<table border="0" cellpadding="5" cellspacing="0">
+<form action="<?= $login_url ?>" method="post">
+<tr>
+  <td valign="middle">
+      Account:
+  <td valign="middle">
+      <CFG-TEXTBOX -id "user_id" -type "string" -cols 10 -span_id "login_id">
+
+<tr>
+  <td valign="middle">
+    Password:
+  <td valign="middle">
+    <input name="f_password" type="password">
+
+<tr>
+  <td colspan="2">
+    <img src="/images/em.gif" width="1" height="10">
+
+<tr>
+  <td colspan="2">
+    <input type="submit" name="Login" value="Login">
+</form>
+</table>
+
+<HR>
+
+</TMS-PAGE>

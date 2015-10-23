@@ -1,0 +1,89 @@
+<TAG MON-NAMESPACE-BODY>
+<?
+   set cur_line 0
+   set namespace_ids [tms::iterate-config "/stat/nkn/namespace"]
+?>
+  <table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td rowspan="2"> <b> Namespace</b></td>
+      <td rowspan="2"> <b> Number of Requests</b></td>
+      <td rowspan="2"> <b> Resource pool</b></td>
+      <td colspan="2" align="center"> <b> HTTP </b> </td>
+      <td colspan="2" align="center"> <b> Cache Hit Ratio </b> </td>
+    </tr>
+
+    <tr class="listing_head">
+      <td > <b> Current Sessions </b> </td>
+      <td > <b> Bandwidth (Mbps)</b> </td>
+      <td > <b> Based on Request </b> </td>
+      <td > <b> Based on Bytes </b> </td>
+    </tr>
+  <FOREACH namespace_id $namespace_ids>
+  <?
+    set namespace_str_len [string length "/stat/nkn/namespace/"]
+    set namespace [string range $namespace_id $namespace_str_len end]
+    if { [string equal $namespace "mfc_probe"] } {
+      continue
+    }
+    set gets [tms::get-config "$namespace_id/gets"]
+    set rsrc_path "/nkn/nvsd/resource_mgr"
+    set cache_hit_ratio_on_req [tms::get-config "$rsrc_path/ns/$namespace/http/cache_hit_ratio_on_req"]
+    set cache_hit_ratio_on_bytes [tms::get-config "$rsrc_path/ns/$namespace/http/cache_hit_ratio_on_bytes"]
+    if {[string length $cache_hit_ratio_on_req] == 0} {
+      set req_cache_hit_ratio_on_req 0
+    }
+    if {[string length $cache_hit_ratio_on_bytes] == 0} {
+      set cache_hit_ratio_on_bytes 0
+    } 
+    set rtsp_curr_sess [tms::get-config "$rsrc_path/ns/$namespace/rtsp/curr_ses"]
+    set rtsp_curr_bw [tms::get-config "/stats/state/sample/ns_served_bytes/node/\\/nkn\\/nvsd\\/resource_mgr\\/namespace\\/$namespace\\/rtsp\\/served_bytes/last/value"]
+    #set rtsp_served_bytes [tms::get-config "$rsrc_path/namespace/$namespace/rtsp/served_bytes"]
+    set http_curr_bw [tms::get-config "/stats/state/sample/ns_served_bytes/node/\\/nkn\\/nvsd\\/resource_mgr\\/namespace\\/$namespace\\/http\\/served_bytes/last/value"]
+    #set http_served_bytes [tms::get-config "$rsrc_path/namespace/$namespace/http/served_bytes"]
+    set http_curr_sess [tms::get-config "$rsrc_path/ns/$namespace/http/curr_ses"]
+    set mb [expr 1000.0 * 1000.0]
+    if {[string length $http_curr_bw] == 0} {
+      set http_curr_bw 0.0
+    }
+    if {[string length $rtsp_curr_bw] == 0} {
+      set rtsp_curr_bw 0.0
+    }
+    set rtsp_curr_bw [expr $rtsp_curr_bw / 5 * 8]
+    set http_curr_bw [expr $http_curr_bw / 5 * 8]
+    set rtsp_mbps_bw [format "%2.3f" [expr $rtsp_curr_bw / $mb]]
+    set http_mbps_bw [format "%2.3f" [expr $http_curr_bw / $mb]]
+    set resource_pool [tms::get-config "/nkn/nvsd/namespace/$namespace/resource_pool"]
+  ?>
+   <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+	set tr_cl "listing_even"
+    } else {
+        tms::puts "listing_odd"
+	set tr_cl "listing_odd"
+    }?>">
+
+    <td>
+        <a href="/admin/launch?script=rh&amp;template=mon-ns-complete&amp;nsname1=<?=$namespace?>" onClick="return popup(this, 'notes')"><?=$namespace?> </a> </td>
+    <td> <?=$gets?> </td>
+    <td> <?=$resource_pool?> </td>
+    <td> <?=$http_curr_sess?> </td>
+    <td> <?=$http_mbps_bw?> </td>
+    <td> <?=$cache_hit_ratio_on_req?> </td>
+    <td> <?=$cache_hit_ratio_on_bytes?> </td>
+  </tr>
+    <?
+      incr cur_line
+    ?>
+
+  </FOREACH>
+  <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="7">
+          No Active Namespace.
+    </IF>
+
+  <tr>
+    <td height="6">
+  <table>
+</TAG>

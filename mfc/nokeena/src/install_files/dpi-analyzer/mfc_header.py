@@ -1,0 +1,9 @@
+LOG_FILE = '/var/log/log_analyzer_mfc_debug.log'
+DPI_CONF = '/config/nkn/dpi-analyzer/analyzer.conf'
+RESULT_FILE = '/var/log/log_analyzer_mfc.log'
+PBR_FILE = '/var/log/log_analyzer_mfc_pbr.txt'
+CHUNK_SIZE= '1024*1024'
+MAX_LINE = 255
+SIGNATURE = '***END***'
+MAXLOG_SIZE = 104857600  ##100 MB
+LOGBACKP_COUNT = 10

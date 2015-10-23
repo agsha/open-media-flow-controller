@@ -1,0 +1,83 @@
+<?
+#
+# Filename:  setup-tech-support.tem,v $
+# Date:      2009/02/06 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<TMS-PAGE "Tech Support">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "tech-support"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Tech support ">
+<CFG-FORM -action "config-form-techsupport" -div_id "tech_spt_1">
+ <TMS-TABLE -div_id "techsupport_table_1">
+    <TMS-TABLE-SPACE>
+    <TMS-TABLE-ENTRY "Tech Support Report">
+        <CFG-BUTTON -type "download" -text "Download" 
+              -caps "action_privileged"
+              -span_id "tech_download">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+ </TMS-TABLE>
+</CFG-FORM>
+
+<?
+  set file_prefix "/nkn/debug/snapshot/corefiles"
+  set files [tms::iterate-config "$file_prefix"]
+
+  set file_list {}
+
+
+  foreach file $files {
+    if {[string match "*.gz" $file] == 1} {
+      set prefix_len [string length "/nkn/debug/snapshot/corefiles/"]
+      set file_end [string length $file]
+      set file_name [string range $file $prefix_len $file_end]
+      lappend file_list "$file_name $file_name"
+    }
+  }
+
+  set sorted_file_list [lsort -dictionary $file_list]
+
+?>
+
+<?
+# List the snapshots in the system for download
+?>
+<CFG-FORM -action "file-snapshot" -div_id "snapshot_dn_1">
+ <TMS-TABLE -div_id "snapshot_table_1">
+    <TMS-TABLE-SPACE>
+    <TMS-TABLE-ENTRY "Snapshot(s)">
+      <CFG-DROPDOWN -id "file" -errname "file" -caps "set_basic"
+                  -type "string" -span_id "download_file"
+                  -options $sorted_file_list>
+	<IF {[llength  $sorted_file_list] == 0}>
+		<CFG-BUTTON -type "upload" -text "Download"
+		-caps "action_privileged" -disabled "true"
+		-span_id "snapshot_download">
+		<CFG-BUTTON -type "delete" -text "Delete"
+		-caps "action_privileged" -disabled "true"
+		-span_id "snapshot_download">
+	<ELSE>
+		<CFG-BUTTON -type "upload" -text "Download"
+		-caps "action_privileged" 
+		-span_id "snapshot_download">
+		<CFG-BUTTON -type "delete" -text "Delete"
+		-caps "action_privileged" 
+		-span_id "snapshot_download">
+	</IF>
+	</TMS-TABLE-ENTRY>
+ </TMS-TABLE>
+</CFG-FORM>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

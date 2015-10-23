@@ -1,0 +1,230 @@
+READ THIS END USER LICENSE AGREEMENT ("AGREEMENT") BEFORE DOWNLOADING, 
+INSTALLING, OR USING THE SOFTWARE.  BY DOWNLOADING, INSTALLING, OR USING THE 
+SOFTWARE OR OTHERWISE EXPRESSING YOUR AGREEMENT TO THE TERMS CONTAINED HEREIN, 
+YOU (AS CUSTOMER OR IF YOU ARE NOT THE CUSTOMER, AS A REPRESENTATIVE/AGENT 
+AUTHORIZED TO BIND THE CUSTOMER) CONSENT TO BE BOUND BY THIS AGREEMENT.  IF YOU 
+DO NOT OR CANNOT AGREE TO THE TERMS CONTAINED HEREIN, THEN (A) DO NOT DOWNLOAD, 
+INSTALL, OR USE THE SOFTWARE, AND (B) YOU MAY CONTACT JUNIPER NETWORKS 
+REGARDING LICENSE TERMS.  
+1.	 The Parties.  The parties to this Agreement are (i) Juniper Networks, 
+Inc. (if the Customer's principal office is located in the Americas) or Juniper 
+Networks (Cayman) Limited (if the Customer's principal office is located 
+outside the Americas) (such applicable entity being referred to herein as 
+"Juniper"), and (ii) the person or organization that originally purchased from 
+Juniper or an authorized Juniper reseller the applicable license(s) for use of 
+the Software ("Customer") (collectively, the "Parties").  
+2.	 The Software.  In this Agreement, "Software" means the program modules 
+and features of the Juniper or Juniper-supplied software, for which Customer 
+has paid the applicable license or support fees to Juniper or an authorized 
+Juniper reseller, or which was embedded by Juniper in equipment which Customer 
+purchased from Juniper or an authorized Juniper reseller. "Software" also 
+includes updates, upgrades and new releases of such software.  "Embedded 
+Software" means Software which Juniper has embedded in or loaded onto the 
+Juniper equipment and any updates, upgrades, additions or replacements which 
+are subsequently embedded in or loaded onto the equipment.
+3.	 License Grant.  Subject to payment of the applicable fees and the 
+limitations and restrictions set forth herein, Juniper grants to Customer a 
+non-exclusive and non-transferable license, without right to sublicense, to use 
+the Software, in executable form only, subject to the following use 
+restrictions:
+a.	 Customer shall use Embedded Software solely as embedded in, and for 
+execution on, Juniper equipment originally purchased by Customer from Juniper 
+or an authorized Juniper reseller.
+b.	 Customer shall use the Software on a single hardware chassis having a 
+single processing unit, or as many chassis or processing units for which 
+Customer has paid the applicable license fees; provided, however, with respect 
+to the Steel-Belted Radius or Odyssey Access Client software only, Customer 
+shall use such Software on a single computer containing a single physical 
+random access memory space and containing any number of processors. Use of the 
+Steel-Belted Radius or IMS AAA software on multiple computers or virtual 
+machines (e.g., Solaris zones) requires multiple licenses, regardless of 
+whether such computers or virtualizations are physically contained on a single 
+chassis.  
+c.	 Product purchase documents, paper or electronic user documentation, 
+and/or the particular licenses purchased by Customer may specify limits to 
+Customer's use of the Software.  Such limits may restrict use to a maximum 
+number of seats, registered endpoints, concurrent users, sessions, calls, 
+connections, subscribers, clusters, nodes, realms, devices, links, ports or 
+transactions, or require the purchase of separate licenses to use particular 
+features, functionalities, services, applications, operations, or capabilities, 
+or provide throughput, performance, configuration, bandwidth, interface, 
+processing, temporal, or geographical limits. In addition, such limits may 
+restrict the use of the Software to managing certain kinds of networks or 
+require the Software to be used only in conjunction with other specific 
+Software. Customer's use of the Software shall be subject to all such 
+limitations and purchase of all applicable licenses.    
+d.	 For any trial copy of the Software, Customer's right to use the 
+Software expires 30 days after download, installation or use of the Software.  
+Customer may operate the Software after the 30-day trial period only if 
+Customer pays for a license to do so.  Customer may not extend or create an 
+additional trial period by re-installing the Software after the 30-day trial 
+period.
+e.	 The Global Enterprise Edition of the Steel-Belted Radius software may 
+be used by Customer only to manage access to Customer's enterprise network.  
+Specifically, service provider customers are expressly prohibited from using 
+the Global Enterprise Edition of the Steel-Belted Radius software to support 
+any commercial network access services. 
+The foregoing license is not transferable or assignable by Customer.  No 
+license is granted herein to any user who did not originally purchase the 
+applicable license(s) for the Software from Juniper or an authorized Juniper 
+reseller.  
+4.	 Use Prohibitions.  Notwithstanding the foregoing, the license provided 
+herein does not permit the Customer to, and Customer agrees not to and shall 
+not: (a) modify, unbundle, reverse engineer, or create derivative works based 
+on the Software; (b) make unauthorized copies of the Software (except as 
+necessary for backup purposes); (c) rent, sell, transfer, or grant any rights 
+in and to any copy of the Software, in any form, to any third party; (d) remove 
+any proprietary notices, labels, or marks on or in any copy of the Software or 
+any product in which the Software is embedded; (e) distribute any copy of the 
+Software to any third party, including as may be embedded in Juniper equipment 
+sold in the secondhand market; (f) use any 'locked' or key-restricted feature, 
+function, service, application, operation, or capability without first 
+purchasing the applicable license(s) and obtaining a valid key from Juniper, 
+even if such feature, function, service, application, operation, or capability 
+is enabled without a key; (g) distribute any key for the Software provided by 
+Juniper to any third party; (h) use the Software in any manner that extends or 
+is broader than the uses purchased by Customer from Juniper or an authorized 
+Juniper reseller; (i) use Embedded Software on non-Juniper equipment; (j) use  
+Embedded Software (or make it available for use) on Juniper equipment that the 
+Customer did not originally purchase from Juniper or an authorized Juniper 
+reseller; (k) disclose the results of testing or benchmarking of the Software 
+to any third party without the prior written consent of Juniper; or (l) use the 
+Software in any manner other than as expressly provided herein.
+5.	 Audit.  Customer shall maintain accurate records as necessary to 
+verify compliance with this Agreement.  Upon request by Juniper, Customer shall 
+furnish such records to Juniper and certify its compliance with this Agreement.
+6.	 Confidentiality.  The Parties agree that aspects of the Software and 
+associated documentation are the confidential property of Juniper.  As such, 
+Customer shall exercise all reasonable commercial efforts to maintain the 
+Software and associated documentation in confidence, which at a minimum 
+includes restricting access to the Software to Customer employees and 
+contractors having a need to use the Software for Customer's internal business 
+purposes.
+7.	 Ownership.  Juniper and Juniper's licensors, respectively, retain 
+ownership of all right, title, and interest (including copyright) in and to the 
+Software, associated documentation, and all copies of the Software.  Nothing in 
+this Agreement constitutes a transfer or conveyance of any right, title, or 
+interest in the Software or associated documentation, or a sale of the 
+Software, associated documentation, or copies of the Software.  
+8.	 Warranty, Limitation of Liability, Disclaimer of Warranty.  The 
+warranty applicable to the Software shall be as set forth in the warranty 
+statement that accompanies the Software (the "Warranty Statement").  Nothing in 
+this Agreement shall give rise to any obligation to support the Software.  
+Support services may be purchased separately.  Any such support shall be 
+governed by a separate, written support services agreement.  TO THE MAXIMUM 
+EXTENT PERMITTED BY LAW, JUNIPER SHALL NOT BE LIABLE FOR ANY LOST PROFITS, LOSS 
+OF DATA, OR COSTS OR PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, OR FOR ANY 
+SPECIAL, INDIRECT, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THIS AGREEMENT, THE 
+SOFTWARE, OR ANY JUNIPER OR JUNIPER-SUPPLIED SOFTWARE.  IN NO EVENT SHALL 
+JUNIPER BE LIABLE FOR DAMAGES ARISING FROM UNAUTHORIZED OR IMPROPER USE OF ANY 
+JUNIPER OR JUNIPER-SUPPLIED SOFTWARE.  EXCEPT AS EXPRESSLY PROVIDED IN THE 
+WARRANTY STATEMENT TO THE EXTENT PERMITTED BY LAW, JUNIPER DISCLAIMS ANY AND 
+ALL WARRANTIES IN AND TO THE SOFTWARE (WHETHER EXPRESS, IMPLIED, STATUTORY, OR 
+OTHERWISE), INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A 
+PARTICULAR PURPOSE, OR NONINFRINGEMENT.  IN NO EVENT DOES JUNIPER WARRANT THAT 
+THE SOFTWARE, OR ANY EQUIPMENT OR NETWORK RUNNING THE SOFTWARE, WILL OPERATE 
+WITHOUT ERROR OR INTERRUPTION, OR WILL BE FREE OF VULNERABILITY TO INTRUSION OR 
+ATTACK.  In no event shall Juniper's or its suppliers' or licensors' liability 
+to Customer, whether in contract, tort (including negligence), breach of 
+warranty, or otherwise, exceed the price paid by Customer for the Software that 
+gave rise to the claim, or if the Software is embedded in another Juniper 
+product, the price paid by Customer for such other product.  Customer 
+acknowledges and agrees that Juniper has set its prices and entered into this 
+Agreement in reliance upon the disclaimers of warranty and the limitations of 
+liability set forth herein, that the same reflect an allocation of risk between 
+the Parties (including the risk that a contract remedy may fail of its 
+essential purpose and cause consequential loss), and that the same form an 
+essential basis of the bargain between the Parties.
+9.	 Termination.  Any breach of this Agreement or failure by Customer to 
+pay any applicable fees due shall result in automatic termination of the 
+license granted herein.  Upon such termination, Customer shall destroy or 
+return to Juniper all copies of the Software and related documentation in 
+Customer's possession or control.  
+10.	 Taxes.  All license fees payable under this agreement are exclusive of 
+tax.   Customer shall be responsible for paying Taxes arising from the purchase 
+of the license, or importation or use of the Software.  If applicable, valid 
+exemption documentation for each taxing jurisdiction shall be provided to 
+Juniper prior to invoicing, and Customer shall promptly notify Juniper if their 
+exemption is revoked or modified.  All payments made by Customer shall be net 
+of any applicable withholding tax.   Customer will provide reasonable 
+assistance to Juniper in connection with such withholding taxes by promptly: 
+providing Juniper with valid tax receipts and other required documentation 
+showing Customer's payment of any withholding taxes; completing appropriate 
+applications that would reduce the amount of withholding tax to be paid; and 
+notifying and assisting Juniper in any audit or tax proceeding related to 
+transactions hereunder.  Customer shall comply with all applicable tax laws and 
+regulations, and Customer will promptly pay or reimburse Juniper for all costs 
+and damages related to any liability incurred by Juniper as a result of 
+Customer's non-compliance or delay with its responsibilities herein.  
+Customer's obligations under this Section shall survive termination or 
+expiration of this Agreement.  
+11.	 Export.  Customer agrees to comply with all applicable export laws and 
+restrictions and regulations of any United States and any applicable foreign 
+agency or authority, and not to export or re-export the Software or any direct 
+product thereof in violation of any such restrictions, laws or regulations, or 
+without all necessary approvals.  Customer shall be liable for any such 
+violations.  The version of the Software supplied to Customer may contain 
+encryption or other capabilities restricting Customer's ability to export the 
+Software without an export license.  
+12.	 Commercial Computer Software.  The Software is "commercial computer 
+software" and is provided with restricted rights.  Use, duplication, or 
+disclosure by the United States government is subject to restrictions set forth 
+in this Agreement and as provided in DFARS 227.7201 through 227.7202-4, FAR 
+12.212, FAR 27.405(b)(2), FAR 52.227-19, or FAR 52.227-14(ALT III) as 
+applicable.
+13.	 Interface Information. To the extent required by applicable law, and 
+at Customer's written request, Juniper shall provide Customer with the 
+interface information needed to achieve interoperability between the Software 
+and another independently created program, on payment of applicable fee, if 
+any. Customer shall observe strict obligations of confidentiality with respect 
+to such information and shall use such information in compliance with any 
+applicable terms and conditions upon which Juniper makes such information 
+available.
+14.	 Third Party Software.  Any licensor of Juniper whose software is 
+embedded in the Software and any supplier of Juniper whose products or 
+technology are embedded in (or services are accessed by) the Software shall be 
+a third party beneficiary with respect to this Agreement, and such licensor or 
+vendor shall have the right to enforce this Agreement in its own name as if it 
+were Juniper. In addition, certain third party software may be provided with 
+the Software and is subject to the accompanying license(s), if any, of its 
+respective owner(s).  To the extent portions of the Software are distributed 
+under and subject to open source licenses obligating Juniper to make the source 
+code for such portions publicly available (such as the GNU General Public 
+License ("GPL") or the GNU Library General Public License ("LGPL")), Juniper 
+will make such source code portions (including Juniper modifications, as 
+appropriate) available upon request for a period of up to three years from the 
+date of distribution.  Such request can be made in writing to Juniper Networks, 
+Inc., 1194 N. Mathilda Ave., Sunnyvale, CA  94089, ATTN:  General Counsel.  You 
+may obtain a copy of the GPL at http://www.gnu.org/licenses/gpl.html, and a 
+copy of the LGPL at http://www.gnu.org/licenses/lgpl.html.  
+15.	 Miscellaneous.  This Agreement shall be governed by the laws of the 
+State of California without reference to its conflicts of laws principles.  The 
+provisions of the U.N. Convention for the International Sale of Goods shall not 
+apply to this Agreement. For any disputes arising under this Agreement, the 
+Parties hereby consent to the personal and exclusive jurisdiction of, and venue 
+in, the state and federal courts within Santa Clara County, California.  This 
+Agreement constitutes the entire and sole agreement between Juniper and the 
+Customer with respect to the Software, and supersedes all prior and 
+contemporaneous agreements relating to the Software, whether oral or written 
+(including any inconsistent terms contained in a purchase order), except that 
+the terms of a separate written agreement executed by an authorized Juniper 
+representative and Customer shall govern to the extent such terms are 
+inconsistent or conflict with terms contained herein.  No modification to this 
+Agreement nor any waiver of any rights hereunder shall be effective unless 
+expressly assented to in writing by the party to be charged.  If any portion of 
+this Agreement is held invalid, the Parties agree that such invalidity shall 
+not affect the validity of the remainder of this Agreement.  This Agreement and 
+associated documentation has been written in the English language, and the 
+Parties agree that the English version will govern. (For Canada: Les parties 
+aux présentés confirment leur volonté que cette convention de même que tous les 
+documents y compris tout avis qui s'y rattaché, soient redigés en langue 
+anglaise. (Translation: The parties confirm that this Agreement and all related 
+documentation is and will be in the English language)).
+
+
+
+
+
+
+
+

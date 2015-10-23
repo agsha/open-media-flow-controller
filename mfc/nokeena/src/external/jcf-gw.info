@@ -1,0 +1,8 @@
+PKG_NAME=jcf-gw
+PKG_FROM_URL=http://ssd-git-01:8081/nexus/content/repositories/JVAE2-0/jcf-gw/D1.0.15-x86_64-linux/jcf-gw-D1.0.15-x86_64-linux.tgz
+PKG_CHECKSUM_URL=http://ssd-git-01:8081/nexus/content/repositories/JVAE2-0/jcf-gw/D1.0.15-x86_64-linux/jcf-gw-D1.0.15-x86_64-linux.tgz.md5
+TO_DIR=/
+TP_LICENSE_URL=
+TP_ATTRIBUTES_URL=
+TP_SOURCE_URL=
+EXCLUDE=

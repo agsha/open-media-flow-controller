@@ -1,0 +1,22 @@
+cprops - c prototyping tools by iaelion, pprindeville
+
+Downloaded from
+http://sourceforge.net/projects/cprops/files/cprops/cprops-0.1.8/libcprops-0.1.8.zip/download
+
+It is in the MFC source tree as:
+  dist/build-machine/build-machine-src/libcprops/libcprops-0.1.8.zip
+
+Project home:
+http://cprops.sourceforge.net/
+
+License:
+GNU Library or Lesser General Public License (LGPL)
+
+Release Date: version 0.1.8 on 2007-12-15 (lastest at of 2011-04-10)
+
+Summary about this tool:
+  "the c prototyping tools library provides thread-safe linked list,
+   priority queue, hash table, hash list, AVL tree and trie implementations,
+   as well as a thread pool and thread management framework, a tcp and http
+   socket api, and a dbms abstraction layer."
+

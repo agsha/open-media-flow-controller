@@ -1,0 +1,28 @@
+# System install instructions for OCRP_cgi binary
+
+
+# Directories
+mkdir -p /opt/tms/lib/web/cgi-bin/protocol/ocrp/asset-map
+mkdir -p /nkn/tmp/ocrp
+
+# Copy CGI
+cp OCRP_cgi /opt/tms/lib/web/cgi-bin/protocol/ocrp
+chmod ug+s  /opt/tms/lib/web/cgi-bin/protocol/ocrp/OCRP_cgi
+
+# CGI hard links
+ln /opt/tms/lib/web/cgi-bin/protocol/ocrp/OCRP_cgi /opt/tms/lib/web/cgi-bin/protocol/ocrp/asset-map/load
+
+ln /opt/tms/lib/web/cgi-bin/protocol/ocrp/OCRP_cgi /opt/tms/lib/web/cgi-bin/protocol/ocrp/asset-map/update
+
+ln /opt/tms/lib/web/cgi-bin/protocol/ocrp/OCRP_cgi  /opt/tms/lib/web/cgi-bin/protocol/ocrp/get-status
+
+ln /opt/tms/lib/web/cgi-bin/protocol/ocrp/OCRP_cgi /opt/tms/lib/web/cgi-bin/protocol/ocrp/get-asset-map
+
+# URL(s)
+curl -v --data-binary @./XXX -H "Content-Type:application/octet-stream" http://<Host>:8080/admin/protocol/ocrp/asset-map/load
+
+curl -v --data-binary @./XXX -H "Content-Type:application/octet-stream" http://<Host>:8080/admin/protocol/ocrp/asset-map/update
+
+curl -v http://<Host>:8080/admin/protocol/ocrp/get-status
+
+curl -v http://<Host>:8080/admin/protocol/ocrp/get-asset-map

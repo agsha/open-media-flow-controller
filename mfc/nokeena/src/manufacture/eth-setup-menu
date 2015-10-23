@@ -1,0 +1,326 @@
+#! /bin/bash
+# This script is a menu front end for the eth-reorder command.
+# (Like the script eth-setup is a command line front for eth-reorder.)
+# This is run in the MANUFACTURING environment only, so the
+# file /tmp/install-options.txt exists which has settings from the
+# boot cmdline that we reference.
+
+STOP_FILE=/tmp/stop.$$.tmp
+trap_int_handler()
+{
+  touch ${STOP_FILE}
+  echo
+  echo "(Interrupt)"
+  echo
+}
+trap "trap_int_handler" INT
+
+Exit_Clean()
+{
+  #trap - INT
+  rm -f ${STOP_FILE}
+  exit ${1}
+}
+
+
+export SUDO=
+ETH_X=`/sbin/ifconfig -a | grep ^eth | head -1 | cut -f1 -d' '`
+/sbin/ethtool -i ${ETH_X} > /dev/null 2>&1
+if [ ${?} -ne 0 ] ; then
+  SUDO=/usr/bin/sudo
+  if [ ! -x ${SUDO} ] ; then
+    echo No permission to use /sbin/ethtool.  Fail.
+    Exit_Clean 3
+  fi
+fi
+# For now, do not update the info file.  This was causing the
+# limited size filesystem to fill up when run multiple times.
+# To fix this requires using a RAM FS for the manufacture.tgz
+# extract, and then making the directory where the info file is
+# located a symlink into this RAM FS.
+#### Try to update the info file used by lspci.  This tries to
+#### download the latest version from the internet.  Ignore all errors.
+###${SUDO} /sbin/update-pciids > /dev/null 2> /dev/null
+
+CURRENT_INFO_FILE=/tmp/eth-info.out
+ETH_ORDER_FILE=/tmp/eth-order-eth.out
+INP_ORDER_FILE=/tmp/eth-order-inp.out
+TMP_ORDER_FILE=/tmp/eth-order-tmp2.out
+NEW_ORDER_FILE=/tmp/eth-order-new.out
+rm -f ${CURRENT_INFO_FILE}
+rm -f ${ETH_ORDER_FILE}
+rm -f ${INP_ORDER_FILE}
+rm -f ${TMP_ORDER_FILE}
+
+for ETH_NAME in `/sbin/ifconfig -a | grep ^eth | cut -f1 -d' '`
+do
+  BUS_INFO=`${SUDO} /sbin/ethtool -i ${ETH_NAME} | grep "^bus-info: " | cut -c11-`
+  HW_ADDR=`/sbin/ifconfig ${ETH_NAME} | grep HWaddr | cut -f2- -d: | sed -e "/Ethernet.*HWaddr /s///" | sed -e "/ /s///g"`
+  echo ${BUS_INFO},${HW_ADDR},${ETH_NAME} >> ${ETH_ORDER_FILE}
+done
+
+if [ ! -f ${NEW_ORDER_FILE} ] ; then
+  # Create the file with the default mapping.
+  bash eth-reorder.sh --force --outfile ${NEW_ORDER_FILE} > /dev/null 2> /dev/null
+fi
+
+Update_Current()
+{
+  rm -f ${CURRENT_INFO_FILE}
+  if [ -f ${TMP_ORDER_FILE} ] ; then
+    IN=${TMP_ORDER_FILE}
+  else
+    IN=${NEW_ORDER_FILE}
+  fi
+  for i in `cat ${IN}`
+  do
+    BUS_INFO=`echo ${i} | cut -f1 -d,`
+    HW_ADDR=` echo ${i} | cut -f2 -d,`
+    ETH_NAME=`echo ${i} | cut -f3 -d,`
+    USE_NAME=`grep ${BUS_INFO}, ${ETH_ORDER_FILE} | cut -f3 -d,`
+    INET_ADDR=`/sbin/ifconfig ${USE_NAME} | grep "inet addr" | cut -f2 -d: | cut -f1 -d' '`
+    INET6_ADDR=`/sbin/ifconfig ${USE_NAME} | grep "inet6 addr" | cut -f2- -d: | cut -f1 -d/`
+    EA_LINE=
+    if [ ! -z "${INET_ADDR}" ] ; then
+      EA_LINE="inet addr: ${INET_ADDR}"
+    fi
+    if [ ! -z "${INET6_ADDR}" ] ; then
+      if [ -z "${EA_LINE}" ] ; then
+        EA_LINE="inet6 addr:${INET6_ADDR} "
+      else
+        EA_LINE="${EA_LINE}   inet6 addr:${INET6_ADDR} "
+      fi
+    fi
+    DEVICE_INFO=`/sbin/lspci -s ${BUS_INFO} | cut -f3- -d: | sed -e "/^ /s///"`
+    echo ${ETH_NAME} >> ${CURRENT_INFO_FILE}
+    echo " PCI address: ${BUS_INFO}   HW address: ${HW_ADDR}" >> ${CURRENT_INFO_FILE}
+    if [ ! -z "${EA_LINE}" ] ; then
+      echo " ${EA_LINE}" >> ${CURRENT_INFO_FILE}
+    fi
+    echo " ${DEVICE_INFO}" >> ${CURRENT_INFO_FILE}
+  done
+}
+
+Help()
+{
+  if [ "${1}" = "use" ] ; then
+    echo 'Optional first parameters: [use|menu|help]'
+    echo 'To specify the eth setup parameter on the command line have the'
+    echo '  word "use" followed by the eth setup parameter string.'
+    echo 'To interactively specify the eth setup parameter then on the command'
+    echo '   line only specify "menu".'
+    echo 'To print out these instructions use "help".'
+    echo 'The eth setup parameter has the following syntax:'
+  else
+    echo 'Syntax forms:'
+  fi
+  echo "  default|least-ports|most-ports|pxe|<URL>|url"
+  echo "  <HWaddr>[-<HWaddr>]"
+  echo "Examples of all the forms:"
+  echo " default"
+  echo " least-ports"
+  echo " most-ports"
+  echo " pxe"
+  echo " http://66.224.165.46/mfd-images/1.0.0-45.img"
+  echo " url"
+  echo " 00:30:48:B8:F8:22"
+  echo " F8:22"
+  echo " f8:23-ca:A8"
+  echo 'When "default" is specified, eth0 and eth1 are assigned in the order that'
+  echo 'the devices are on the PCI bus. eth0 might not be assigned to the port'
+  echo 'that you want it to be.'
+  echo 'The other options allow you to specify which port to use as eth0 (and eth1).'
+  echo ''
+  echo 'When "least-ports" is specified, the first NIC card with the least number of'
+  echo 'ports is used for eth0 (and eth1 if there are two or more ports on that NIC).'
+  echo 'When "most-ports" is specified, the first NIC card with the most number of'
+  echo 'ports is used for eth0 and eth1.'
+  echo 'When "pxe" is specified, the interface used to PXE boot from is used for eth0.'
+  echo 'You may specify an http or https URL, and the ethernet device that provides'
+  echo 'access to that URL will be used for eth0.'
+  echo 'In the PXE-boot situation which installs from a URL you can specify the word'
+  echo '"url", and it will use that URL to select eth0 as described above.'
+  echo 'You may specify a HWaddr to force eth0 to use that device.'
+  echo 'You can specify a second HWaddr to be used for eth1.'
+  echo 'For the HWaddr, aka MAC addr, you do not have to specify all the octets,'
+  echo 'you may specify as little as two of the right most octets as long as that'
+  echo 'is unique across all the installed ethernet devices.'
+}
+
+Validate_Input()
+{
+  ETH_0=
+  ETH_1=
+  for i in ${*}
+  do
+    case "${i}" in
+    default|least-ports|most-ports|pxe|url|http://*|https://*)
+      if [ ! -z "${ETH_0}" ] ; then
+        echo "Cannot specify ${i} after ${ETH_0}"
+        echo
+        ETH_0=
+        return
+      fi
+      ETH_0=${i}
+      if [ "${ETH_0}" = "url" ] ; then
+        if [ -z "${IMG_URL}" ] ; then
+          echo "Cannot use 'url' option because was not PXE booted, or not properly PXE booted. "
+          ETH_0=
+          return
+        fi
+        ETH_0=${IMG_URL}
+      fi
+      if [ "${ETH_0}" = "pxe" ] ; then
+        if [ -z "${IOP_MAC_ADDR}" ] ; then
+          echo "Cannot use 'pxe' option because was not PXE booted, or not properly PXE booted. "
+          ETH_0=
+          return
+        fi
+        ETH_0=${IOP_MAC_ADDR}
+      fi
+      ;;
+    [0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]*)
+      if [ -z "${ETH_0}" ] ; then
+        ETH_0=`echo "${i}" | cut -f1 -d-`
+        ETH_1=`echo "${i}" | cut -f2 -d-`
+        [ "${ETH_0}" = "${ETH_1}" ] && ETH_1=
+        case _${ETH_1} in
+        _|_[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]*)
+          break ;;
+        *)
+          echo "HW address for second ethernet port is not valid"
+          ETH_1=
+          return
+          ;;
+        esac
+      elif [ -z "${ETH_1}" ] ; then
+        case "${ETH_0}" in
+        default|least-ports|most-ports|pxe|url|http*)
+          echo "Cannot specify ${i} address after ${ETH_0}"
+          echo
+          ETH_0=
+          return
+          ;;
+        esac
+        ETH_1=${i}
+      else
+        echo "Cannot specify more than two HW addresses"
+        echo
+        ETH_0=
+        return
+      fi
+      continue
+      ;;
+    *)
+      echo Invalid command line parameter ${i}
+      echo
+      ETH_0=
+      return
+    esac
+  done
+}
+
+# The install-options.txt file the following (and others) from the boot command line:
+IOP_MAC_ADDR=
+# See S30_mfc_install for format and explanations.
+
+if [ -f /tmp/install-options.txt ] ; then
+  . /tmp/install-options.txt
+fi
+
+INTERACTIVE=yes
+case "_${1}" in
+_use)  INTERACTIVE=no  ; shift ;;
+_menu) INTERACTIVE=yes ; shift ;;
+_*help) Help use ; exit 0 ;;
+esac
+
+if [ "${INTERACTIVE}" = "no" ] ; then
+  Update_Current
+  Validate_Input ${1}
+  if [ -z "${ETH_0}" ] ; then
+    Help use
+    exit 0
+  fi
+  rm -f ${TMP_ORDER_FILE}
+  if [ -z "${ETH_1}" ] ; then
+    bash eth-reorder.sh --force --outfile ${TMP_ORDER_FILE} --eth0 "${ETH_0}"
+  else
+    bash eth-reorder.sh --force --outfile ${TMP_ORDER_FILE} --eth0 "${ETH_0}" --eth1 "${ETH_1}"
+  fi
+  echo The new mapping is:
+  Update_Current
+  cat ${CURRENT_INFO_FILE}
+  rm -f ${NEW_ORDER_FILE}
+  for NUM in `cat ${TMP_ORDER_FILE} | cut -f3 -d, | cut -c4-  | sort -n`
+  do
+    grep "eth${NUM}$" ${TMP_ORDER_FILE} >> ${NEW_ORDER_FILE}
+  done
+  exit 0
+fi
+
+echo ==============================================================
+echo Current ethernet device naming:
+Update_Current
+cat ${CURRENT_INFO_FILE}
+echo ==============================================================
+echo
+echo
+
+READ_COUNT=0
+while true
+do
+  # Just in case the stdin somehow is spewing, limit the number of loops.
+  READ_COUNT=$(( ${READ_COUNT} + 1 ))
+  [ ${READ_COUNT} -gt 100 ] && Exit_Clean 1
+  [ -f ${STOP_FILE} ] && Exit_Clean 1
+  echo
+  if [ ! -f ${TMP_ORDER_FILE} ] ; then
+    echo Enter 0 to not make any ethernet device naming changes.
+  else
+    echo Enter 0 to NOT USE this new ethernet port naming.
+    echo Enter 1 to USE this new ethernet port naming.
+  fi
+  echo Otherwise enter the specification for eth0, and optionally eth1,
+  echo and then press return to generate the new port to name mapping.
+  echo For an explanation of the specifications that can be used enter "'help'".
+  if [ ! -f ${TMP_ORDER_FILE} ] ; then
+  echo
+    read -p "Enter 0, help or the spec > " ANS
+  else
+    read -p "Enter 0, 1, help or the spec > " ANS
+  fi
+  [ -z "${ANS}" ] && continue
+  case _${ANS} in
+  _0|_exit|_quit|_q)
+    Exit_Clean 0
+    ;;
+  _1)
+    [ ! -f ${TMP_ORDER_FILE} ] && Exit_Clean 0
+    rm -f ${NEW_ORDER_FILE}
+    # Created the new order file in ethernet number order.
+    echo Saving...
+    for NUM in `cat ${TMP_ORDER_FILE} | cut -f3 -d, | cut -c4-  | sort -n`
+    do
+      grep "eth${NUM}$" ${TMP_ORDER_FILE} >> ${NEW_ORDER_FILE}
+    done
+    Exit_Clean 0
+    ;;
+  _help|h)
+    Help menu
+    continue
+    ;;
+  esac
+  Validate_Input ${ANS}
+  [ -z "${ETH_0}" ] && continue
+
+  rm -f ${TMP_ORDER_FILE}
+  if [ -z "${ETH_1}" ] ; then
+    bash eth-reorder.sh --force --outfile ${TMP_ORDER_FILE} --eth0 "${ETH_0}"
+  else
+    bash eth-reorder.sh --force --outfile ${TMP_ORDER_FILE} --eth0 "${ETH_0}" --eth1 "${ETH_1}"
+  fi
+  echo The new mapping is:
+  Update_Current
+  cat ${CURRENT_INFO_FILE}
+done

@@ -1,0 +1,152 @@
+<TAG MON-RESOURCEPOOL-BODY>
+<?
+   set cur_line 0
+   set resource_ids [tms::iterate-config "/nkn/nvsd/resource_mgr/monitor/external"]
+   set mb [expr 1000.0 * 1000.0]
+?>
+  <table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td> <b> Resource Pool Name</b></td>
+      <td> <b> Associated Namespaces</b></td>
+      <td> <b> Resource Type</b></td>
+      <td> <b> Maximum </b> </td>
+      <td> <b> Current </b> </td>
+    </tr>
+
+  <FOREACH resource_id $resource_ids>
+  <?
+    set resource_str_len [string length "/nkn/nvsd/resource_mgr/monitor/external/"]
+    set resource [string range $resource_id $resource_str_len end]
+    set rsrc_path "/nkn/nvsd/resource_mgr/monitor/external"
+    set max_client [tms::get-config "$rsrc_path/$resource/max/client_sessions"]
+    set used_client [tms::get-config "$rsrc_path/$resource/used/client_sessions"]
+    set max_bw [tms::get-config "$rsrc_path/$resource/max/max_bandwidth"]
+    set max_bw [format "%2.2f" [expr ($max_bw / $mb) * 8]]
+    set used_bw [tms::get-config "$rsrc_path/$resource/used/max_bandwidth"]
+    set used_bw [format "%2.2f" [expr ($used_bw / $mb) * 8]]
+    #set max_origin [tms::get-config "$rsrc_path/$resource/max/origin_sessions"]
+    #set used_origin [tms::get-config "$rsrc_path/$resource/used/origin_sessions"]
+    set ns_ids  [tms::iterate-config "/nkn/nvsd/resource_mgr/config/$resource/namespace"]
+    set namespace1 ""
+    set namespace2 ""
+    set firstRow ""
+    if { [string compare $resource "global_pool"] == 0} {
+    	set namespace_ids [tms::iterate-config "/nkn/nvsd/namespace"]
+	foreach namespace $namespace_ids {
+		set namespace_str_len [string length "/nkn/nvsd/namespace/"]
+		set ns_value [string range $namespace $namespace_str_len end]
+		set rsrc [tms::get-config "/nkn/nvsd/namespace/$ns_value/resource_pool"]
+		if { [string compare $rsrc "global_pool"] == 0} {
+			if { [string compare $firstRow ""] == 0 } {
+				if { [string compare $namespace1 ""] == 0 } { 
+					set namespace1 "$ns_value"
+				} else {
+					set namespace1 "$namespace1, $ns_value"
+				}
+			if { [string length $namespace1] > 80 } {
+				set temp "$namespace1"
+				set index [string last "," $temp]
+				set namespace1 "[string range $temp 0 $index]"
+				set firstRow "over"
+			        set namespace2 "[string range $temp [expr $index + 1] end]"
+			}
+		} else {
+			if { [string compare $namespace2 ""] == 0 } {
+				set namespace2 "$ns_value"
+			} else {
+				set namespace2 "$namespace2, $ns_value"
+			}
+			if { [string length $namespace2] > 80 } {
+				set namespace2 "[string range $namespace2 0 77]"
+				set namespace2 "$namespace2..."
+				break
+			}
+		}
+	   }
+       }
+    } else {
+    foreach ns_id $ns_ids {
+       set ns_str_len [string length "/nkn/nvsd/resource_mgr/config/$resource/namespace/"]
+       set ns [string range $ns_id $ns_str_len end]
+       if { [string compare $firstRow ""] == 0 } {
+          if { [string compare $namespace1 ""] == 0 } { 
+             set namespace1 "$ns"
+          } else {
+             set namespace1 "$namespace1, $ns"
+          }
+          if { [string length $namespace1] > 80 } {
+             set temp "$namespace1"
+             set index [string last "," $temp]
+             set namespace1 "[string range $temp 0 $index]"
+             set firstRow "over"
+	     set namespace2 "[string range $temp [expr $index + 1] end]"
+	  }
+	 } else {
+	  if { [string compare $namespace2 ""] == 0 } {
+             set namespace2 "$ns"
+          } else {
+             set namespace2 "$namespace2, $ns"
+          }
+	  if { [string length $namespace2] > 80 } {
+            set namespace2 "[string range $namespace2 0 77]"
+            set namespace2 "$namespace2..."
+	    break
+         }
+      }
+    }
+    }
+  ?>
+   <tr class="<? if {[expr $cur_line % 2] == 0} {
+        tms::puts "listing_even"
+	set tr_cl "listing_even"
+    } else {
+        tms::puts "listing_odd"
+	set tr_cl "listing_odd"
+    }?>">
+
+    <td> <?=$resource?> </td>
+    <td> <?=$namespace1?> </td>
+    <td> Client Sessions</td>
+    <td> <?=$max_client?> </td>
+    <td> <?=$used_client?> </td>
+  </tr>
+  <tr class="<? if {[expr $cur_line % 2] == 0} {
+          tms::puts "listing_even"
+          set tr_cl "listing_even"
+    } else {
+          tms::puts "listing_odd"
+          set tr_cl "listing_odd"
+    }?>">
+    <td></td> <td><?=$namespace2?></td>
+    <td> Bandwidth (Mbps)</td>
+    <td> <?=$max_bw?> </td>
+    <td> <?=$used_bw?> </td>
+  </tr>
+  <!-- <tr class="<? if {[expr $cur_line % 2] == 0} {
+          tms::puts "listing_even"
+          set tr_cl "listing_even"
+      } else {
+          tms::puts "listing_odd"
+          set tr_cl "listing_odd"
+      }?>">
+    <td></td><td></td>
+    <td> Origin </td>
+    <td> <?=$max_origin?> </td>
+    <td> <?=$used_origin?> </td>
+  </tr>
+  -->
+    <?
+      incr cur_line
+    ?>
+
+  </FOREACH>
+  <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="6">
+          No Active Resources.
+      </tr>
+    </IF>
+
+  </table>
+</TAG>

@@ -1,0 +1,29 @@
+#include <limits.h>
+
+#define NKN_NFS_BLK_LEN (128 * 1024)
+#define NKN_NFS_LARGE_BLK_LEN (2 * 1024 * 1024)
+
+#define MAX_NFS_MOUNTS 500
+typedef enum {
+    NFS_CONFIG_CREATE = 1,
+    NFS_CONFIG_DELETE = 2,
+    NFS_CONFIG_FILE = 3,
+} nkn_config_flag_t;
+
+typedef struct NFS_mount_obj {
+    char 		      prefix[MAX_NFS_MOUNTS][PATH_MAX];
+    char 		      mntdir[PATH_MAX];
+    char		      remotedir[MAX_NFS_MOUNTS][PATH_MAX];
+    char		      localdir[MAX_NFS_MOUNTS][PATH_MAX];
+    char                      remotehost[MAX_NFS_MOUNTS][PATH_MAX];
+    char                      uri[MAX_NFS_MOUNTS][MAX_URI_SIZE];
+    char                      nfsconfigfile[PATH_MAX];
+    char                      nfscfgfiletoken[PATH_MAX];
+    nkn_config_flag_t         flag;
+    int                       mounted[MAX_NFS_MOUNTS];
+    uint64_t                  token;
+    int                       num_mounts;
+} NFS_mount_obj;
+
+void test_nfs_mount(void);
+void test_nfs_config_file(void);

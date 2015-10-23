@@ -1,0 +1,41 @@
+Certificate Request:
+    Data:
+        Version: 0 (0x0)
+        Subject: C=US, ST=CA, L=sunnyvale, O=juniper Networks, OU=CMBU, CN=satheesh/emailAddress=mailto:satram@juniper.net
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (1024 bit)
+                Modulus (1024 bit):
+                    00:ee:60:7f:d7:b2:44:bd:69:57:7e:94:69:15:00:
+                    f2:3b:d4:48:8b:c1:60:d9:82:a0:95:e6:0b:c6:98:
+                    b6:47:68:30:15:cb:d5:c2:5f:6b:77:2c:89:29:f1:
+                    8e:77:bb:49:94:77:e6:14:dd:11:c3:a9:10:00:d2:
+                    aa:32:c1:1c:1d:90:07:2a:10:69:d3:d2:b0:87:ed:
+                    1a:24:bd:aa:bb:97:22:e6:e7:5f:76:05:bf:7a:fb:
+                    fa:fd:8f:ab:fc:71:56:37:ce:0f:86:5f:55:51:9b:
+                    2d:a4:64:5b:d1:ce:e8:58:68:4d:25:82:f3:0c:80:
+                    69:85:4d:74:9e:ec:75:c0:b9
+                Exponent: 65537 (0x10001)
+        Attributes:
+            a0:00
+    Signature Algorithm: sha1WithRSAEncryption
+        05:f6:84:94:2b:8a:11:2f:18:79:ec:0c:e4:8e:11:6f:a1:1a:
+        dd:77:b8:96:98:e5:0d:9a:15:62:78:42:6c:e2:1f:ed:dc:9f:
+        d8:3e:19:4c:09:d7:1e:d0:05:97:12:9d:e8:3f:9d:f6:1d:6c:
+        86:53:c4:ba:69:da:9e:85:18:21:b3:77:0c:4c:67:10:8d:4f:
+        47:1f:05:54:2e:0b:5f:c5:1a:62:ff:34:5c:56:60:4d:65:bc:
+        ff:96:93:4d:f9:6c:cd:35:fc:55:69:3b:e4:ca:3e:35:0e:93:
+        44:88:50:da:7b:ae:ba:7e:78:5b:3c:43:26:60:37:12:6c:68:
+        09:f8
+-----BEGIN CERTIFICATE REQUEST-----
+MIIB1jCCAT8CAQAwgZUxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDQTESMBAGA1UE
+BxMJc3Vubnl2YWxlMRkwFwYDVQQKExBqdW5pcGVyIE5ldHdvcmtzMQ0wCwYDVQQL
+EwRDTUJVMREwDwYDVQQDEwhzYXRoZWVzaDEoMCYGCSqGSIb3DQEJARYZbWFpbHRv
+OnNhdHJhbUBqdW5pcGVyLm5ldDCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA
+7mB/17JEvWlXfpRpFQDyO9RIi8Fg2YKgleYLxpi2R2gwFcvVwl9rdyyJKfGOd7tJ
+lHfmFN0Rw6kQANKqMsEcHZAHKhBp09Kwh+0aJL2qu5ci5udfdgW/evv6/Y+r/HFW
+N84Phl9VUZstpGRb0c7oWGhNJYLzDIBphU10nux1wLkCAwEAAaAAMA0GCSqGSIb3
+DQEBBQUAA4GBAAX2hJQrihEvGHnsDOSOEW+hGt13uJaY5Q2aFWJ4QmziH+3cn9g+
+GUwJ1x7QBZcSneg/nfYdbIZTxLpp2p6FGCGzdwxMZxCNT0cfBVQuC1/FGmL/NFxW
+YE1lvP+Wk035bM01/FVpO+TKPjUOk0SIUNp7rrp+eFs8QyZgNxJsaAn4
+-----END CERTIFICATE REQUEST-----

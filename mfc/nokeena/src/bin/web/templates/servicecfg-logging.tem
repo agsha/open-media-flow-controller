@@ -1,0 +1,217 @@
+<?
+#
+# Filename:  servicecfg-logging.tem,v $
+# Date:      2009/02/06 
+# Author:    Chitra Devi R
+#
+# (C) Copyright 2008-2009 Nokeena Networks, Inc.
+# All rights reserved.
+#
+#
+?>
+
+<INCLUDE "servicecfg-layout">
+<TMS-PAGE "Logging">
+<TMS-MENU "servicecfg">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SERVICECFG-MENU "logging"></TMS-SERVICECFG-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Log Configuration">
+
+<CFG-FORM -div_id "loggging_param">
+  <h2> Access Log Configuration</h2>
+  <TMS-TABLE -div_id "accesslog">
+<!--
+    <TMS-TABLE-ENTRY "Enable">
+      <CFG-CHECKBOX -id "enable" -errname "Enable" -caps "set_basic"
+                   -type "bool" -span_id "set_enable"
+                    -name "/pm/process/nknaccesslog/auto_launch">
+    </TMS-TABLE-ENTRY>
+-->
+    <TMS-TABLE-ENTRY "Syslog Replicate Enable">
+      <CFG-CHECKBOX -id "syslog" -errname "syslog" -caps "set_basic"
+                   -type "bool" -span_id "set_syslog_enable"
+                   -name "/nkn/accesslog/config/syslog"> 
+    </TMS-TABLE-ENTRY>
+<!--
+    <TMS-TABLE-ENTRY "File Name">
+      <CFG-TEXTBOX -id "filename" -errname "filename"
+                   -caps "set_basic"
+                   -type "string" -span_id "configure_filename"
+                    -name "/nkn/accesslog/config/filename">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "File Size in MB">
+      <CFG-TEXTBOX -id "max-filesize" -errname "filesize in MB"
+                   -caps "set_basic"
+                   -type "uint16" -span_id "configure_filesize"
+                   -name "/nkn/accesslog/config/max-filesize">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Disk Size in MB">
+      <CFG-TEXTBOX -id "total-diskspace" -errname "Disk Size in MB"
+                   -caps "set_basic"
+                   -type "uint16" -span_id "configure_disksize"
+                    -name "/nkn/accesslog/config/total-diskspace">
+    </TMS-TABLE-ENTRY>
+-->
+    <TMS-TABLE-ENTRY "Log Format">
+      <CFG-TEXTAREA -id "format" -errname "Format"
+                   -caps "set_basic" -cols "64"
+                   -type "string" -span_id "configure_format"
+                   -name "/nkn/accesslog/config/format">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "log_apply_1">
+
+</CFG-FORM>
+
+<CFG-FORM -action "config-form-action" -div_id "loggging_param_1">
+  <h2> Access Log Copy/Auto Upload Configuration </h2>
+  <table border="0" cellpadding="3" cellspacing="0">
+  <tr class="listing_even">
+    <tr>
+      <td height="8">
+<!-- ......................................................................
+     .. Enter a URL
+     ...................................................................... -->
+<!--
+    <tr class="listing_even">
+      <td width="15"></td>
+      <td>
+        <CFG-RADIO -id "from" -caps "action_privileged" -value "url"
+          -checked "true" -span_id "copy_radio_1">
+          Upload to URL:&nbsp;
+          <CFG-TEXTBOX -id "url" -caps "action_privileged" -type "string"
+            -cols 40 -span_id "configure_url">
+      </td>
+    </tr>
+ -->
+<!-- ......................................................................
+     .. Enter an scp pseudo-URL
+     ...................................................................... -->
+
+    <tr class="listing_even">
+      <td width="15">
+      <td>
+<!--
+     <CFG-RADIO -id "from" -caps "action_privileged" -value "scp_url"
+                -checked "false" -span_id "copy_radio_1">
+-->
+     Upload via scp (pseudo-URL format:
+     scp://username@hostname/path/filename):
+     <br>
+       <table>
+         <tr class="listing_even">
+           <td width="45">
+           <td>
+              URL:
+           <td>
+           <CFG-TEXTBOX -id "remote_url" -caps "action_privileged" 
+                        -type "string" -name "remote_url"
+                        -cols 40 -span_id "configure_scp_url">
+         <tr class="listing_even">
+           <td>
+           <td>
+             Password:
+           <td>
+           <CFG-PASSWORDBOX -id "password" -caps "set_privileged" 
+                            -type "string" -name "password"
+                            -cols "40" -span_id "users_pass">
+       </table>
+      </td>
+    </tr>
+    <tr>
+      <td height="8">
+
+  </table>
+
+  <input type="hidden" name="f_mfd_action_binding" value="/nkn/accesslog/action/upload">
+  <input type="hidden" name="f_mfd_append_list" value="remote_url,password">
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "log_apply_2">
+</CFG-FORM>
+
+<CFG-FORM -div_id "loggging_param">
+  <h2> Stream Log Configuration </h2>
+  <TMS-TABLE -div_id "streamlog">
+<!--
+    <TMS-TABLE-ENTRY "Enable">
+      <CFG-CHECKBOX -id "enable_s" -errname "Enable" -caps "set_basic"
+                   -type "bool" -span_id "set_enable"
+                    -name "/pm/process/nknstreamlog/auto_launch">
+    </TMS-TABLE-ENTRY>
+-->
+    <TMS-TABLE-ENTRY "Syslog Replicate Enable">
+      <CFG-CHECKBOX -id "syslog_s" -errname "syslog" -caps "set_basic"
+                   -type "bool" -span_id "set_syslog_enable"
+                   -name "/nkn/streamlog/config/syslog">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Log Format">
+      <CFG-TEXTAREA -id "format_s" -errname "Format"
+                   -caps "set_basic" -cols "64"
+                   -type "string" -span_id "configure_format"
+                   -name "/nkn/streamlog/config/format">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "log_apply_2">
+
+</CFG-FORM>
+
+<CFG-FORM -action "config-form-action" -div_id "loggging_param_2">
+  <h2> Stream Log Copy/Auto Upload Configuration </h2>
+  <table border="0" cellpadding="3" cellspacing="0">
+  <tr class="listing_even">
+    <tr>
+      <td height="8">
+<!-- ......................................................................
+     .. Enter an scp pseudo-URL
+     ...................................................................... -->
+
+    <tr class="listing_even">
+      <td width="15">
+      <td>
+     Upload via scp (pseudo-URL format:
+     scp://username@hostname/path/filename):
+     <br>
+       <table>
+         <tr class="listing_even">
+           <td width="45">
+           <td>
+              URL:
+           <td>
+           <CFG-TEXTBOX -id "remote_url" -caps "action_privileged"
+                        -type "string" -name "remote_url"
+                        -cols 40 -span_id "configure_scp_url">
+         <tr class="listing_even">
+           <td>
+           <td>
+             Password:
+           <td>
+           <CFG-PASSWORDBOX -id "password" -caps "set_privileged"
+                            -type "string" -name "password"
+                            -cols "40" -span_id "users_pass">
+       </table>
+      </td>
+    </tr>
+    <tr>
+      <td height="8">
+
+  </table>
+  <input type="hidden" name="f_mfd_action_binding" value="/nkn/streamlog/action/upload">
+  <input type="hidden" name="f_mfd_append_list" value="remote_url,password">
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -span_id "log_apply_2">
+</CFG-FORM>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

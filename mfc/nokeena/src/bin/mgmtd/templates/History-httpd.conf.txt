@@ -1,0 +1,64 @@
+# The first httpd.conf file checked in here (6120) was based on
+# the Samara Elm Update 5 version (rev 110) with two added lines
+# after the SSLOptions line:
+#   SSLProtocol -all +SSLv3 +TLSv1
+#   SSLCipherSuite SSLv3:+HIGH:+MEDIUM
+# Note:
+#  The samara EucU2 added the SSLProtocl line as above
+#  and added the SSLCiperSuite line that we later updated to match
+#  in the seventh change.
+
+# The second change (6122) was to add "TraceEnable off" in the
+# secion <VirtualHost _default_:@HttpsPort@>
+# (This addition has never been made to the TallMaple version)
+
+# The third change (9930) added five lines to add a new virtual host section:
+#  Listen                127.0.0.1:8081
+#  ...
+#  NameVirtualHost 127.0.0.1:8081
+#  <VirtualHost 127.0.0.1:8081>
+#  
+#  </VirtualHost>
+
+# The fourth change (11070) removed the five lines added in the third change.
+
+# The fifth change (18486) added two things:
+# 1: Access to /nkn/ftphome with these added lines:
+#  <Directory "/nkn/ftphome/*_ftpuser/">
+#      Options FollowSymLinks
+#      AllowOverride None
+#      Order Allow,Deny
+#      Allow from all
+#  </Directory>
+#  
+# 2: A new virtual host with these nine added lines:
+#  Listen 127.0.0.1:8080
+#  ... 
+#  NameVirtualHost 127.0.0.1:8080
+#  
+#  <VirtualHost 127.0.0.1:8080>
+#      SetENV force-no-vary 1
+#      RewriteEngine on
+#      RewriteCond %{HTTP:X-Namespace-Name} !"" [NC]
+#      RewriteRule ^/(.*)$ /nkn/ftphome/%{HTTP:X-Namespace-Name}_ftpuser/$1
+#  </VirtualHost>
+
+# The sixth change (20332) removed the "Listen" line added in the fifth change.
+
+# The seventh change (20494) changed the SSLCipherSuite line
+# to match the setting in the Samara Ecualyptus Update 2 version (173).
+#   -SSLCipherSuite SSLv3:+HIGH:+MEDIUM
+#   +SSLCipherSuite ALL:!ADH:!aNULL:!eNULL:!LOW:!EXP:RC4+RSA:+HIGH:+MEDIUM
+# except the order is different in the EucU2 version:
+#    SSLCipherSuite ALL:!aNULL:!ADH:!eNULL:!LOW:!EXP:RC4+RSA:+HIGH:+MEDIUM
+# I don't think that this makes any difference.
+
+# The eight change deleted the file to clear the deck to better integrate
+# the changes that have been being made to httpd.conf in the Samara source.
+
+# So the only real things we have changed that are not in the Samara version
+# of this file are the second change, and the fifth and sixth changes.
+
+# So with the ninth change I am putting in a copy of the httpd.conf file
+# from Samara Fir without any of our changes, and have the next change
+# will be adding our changes (2nd, 5th, 6th) back in.

@@ -1,0 +1,179 @@
+:
+Usage()
+{
+  echo "${ME} syntax: default|least-ports|most-ports|<URL>|url|<HWaddr>[-<HWaddr>]"
+  echo "Examples of all the forms:"
+  echo " ${ME} default"
+  echo " ${ME} least-ports"
+  echo " ${ME} most-ports"
+  echo " ${ME} http://66.224.165.46/mfc-2.1.0_45_432_120"
+  echo " ${ME} url"
+  echo " ${ME} 00:30:48:B8:F8:22"
+  echo " ${ME} F8:22"
+  echo " ${ME} f8:23-a:A8"
+  echo 'When "default" is specified, eth0 and eth1 are assigned in the order that'
+  echo 'the devices are on the PCI bus and eth0 might not be assigned to the port'
+  echo 'that you want it to be.'
+  echo 'The other options allow you to specify which port to use as eth0 (and eth1).'
+  echo ''
+  echo 'When "least-ports" is specified, the first NIC card with the least number of'
+  echo 'ports is used for eth0 (and eth1 if there are two or more ports on that NIC).'
+  echo 'When "most-ports" is specified, the first NIC card with the most number of'
+  echo 'ports is used for eth0 and eth1.'
+  echo 'You may specify an http or https URL, and the ethernet device that provides'
+  echo 'access to that URL will be used for eth0.'
+  echo 'In the PXE-boot situation which installs from a URL you can specify the word'
+  echo '"url", and it will use that URL to select eth0 as described above.'
+  echo 'You may specify a HWaddr to force eth0 to use that device.'
+  echo 'You can specify a second HWaddr to be used for eth1.'
+  echo 'For the HWaddr, aka MAC addr, you do not have to specify all the octets,'
+  echo 'you may specify as little as two of the right most octets as long as that'
+  echo 'is unique across all the installed ethernet devices.'
+  echo 'Installed ethernet devices:'
+  for i in `/sbin/ifconfig -a | grep Ethernet | grep HWaddr | cut -f1 -d' '`
+  do
+      /sbin/ifconfig ${i} | grep -v "X " | grep -v collisions | grep -v Memory: | grep -v '^$'
+  done
+  echo ''
+  echo "${ME} syntax: default|least-ports|most-ports|<URL>|url|<HWaddr>[ HWaddr]"
+  if [ ! -z "${IMG_URL}" ] ; then
+    echo 'Note: install-mfg URL was:' ${IMG_URL}
+  fi
+}
+ME=`basename "${0}"`
+IMG_URL=
+[ -f /tmp/mfg.url ] && IMG_URL=`grep ^http /tmp/mfg.url`
+
+if [ -z "${1}" ] ; then
+  Usage
+  exit 1
+fi
+
+# The install-options.txt file the following (and others) from the boot command line:
+IOP_MAC_ADDR=
+# See S30_mfc_install for format and explanations.
+if [ -f /tmp/install-options.txt ] ; then
+  . /tmp/install-options.txt
+fi
+
+Validate_Input()
+{
+  ETH_0=
+  ETH_1=
+  DRY_RUN=no
+  UNMOUNT=yes
+  for i in ${*}
+  do
+    case "${i}" in
+    --dryrun|-d)
+      DRY_RUN=dry_run
+      ;;
+    --no-unmount|-n)
+      UNMOUNT=no
+      ;;
+    default|least-ports|most-ports|pxe|url|http://*|https://*)
+      if [ ! -z "${ETH_0}" ] ; then
+        echo "Cannot specify ${i} after ${ETH_0}"
+        echo
+        Usage
+        exit 1
+      fi
+      ETH_0=${i}
+      if [ "${ETH_0}" = "url" ] ; then
+        if [ -z "${IMG_URL}" ] ; then
+          echo "Cannot use 'url' option because was not PXE booted, or not properly PXE booted. "
+          Usage
+          exit 1
+        fi
+        ETH_0=${IMG_URL}
+      fi
+      if [ "${ETH_0}" = "pxe" ] ; then
+        if [ -z "${IOP_MAC_ADDR}" ] ; then
+          echo "Cannot use 'pxe' option because was not PXE booted, or not properly PXE booted. "
+          Usage
+          exit 1
+        fi
+        ETH_0=${IOP_MAC_ADDR}
+      fi
+      ;;
+    [0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]*)
+      if [ -z "${ETH_0}" ] ; then
+        ETH_0=`echo "${i}" | cut -f1 -d-`
+        ETH_1=`echo "${i}" | cut -f2 -d-`
+        case _${ETH_1} in
+        _|_[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f]*)
+          break ;;
+        *)
+          echo "HW address for second ethernet port is not valid"
+          #
+          exit 1
+          ;;
+        esac
+      elif [ -z "${ETH_1}" ] ; then
+        case "${ETH_0}" in
+        default|least-ports|most-ports|pxe|url|http*)
+          echo "Cannot specify ${i} address after ${ETH_0}"
+          echo
+          Usage
+          exit 1
+          ;;
+        esac
+        ETH_1=${i}
+      else
+        echo "Cannot specify more than two HW addresses"
+        echo
+        Usage
+        exit 1
+      fi
+      continue
+      ;;
+    *)
+      echo Invalid command line parameter ${i}
+      echo
+      Usage
+      exit 1
+    esac
+  done
+}
+Validate_Input
+
+if [ "${DRY_RUN}" = "dry_run" ] ; then
+  exit 0
+fi
+if [ ! -f /tmp/mfg.env ] ; then
+  echo "Cannot use this utility until a successful install-mfc has been done."
+  exit 1
+fi
+. /tmp/mfg.env
+
+if [ -z "${CONFIG_DEV}" ] ; then
+  echo "Cannot use this utility until a successful install-mfc has been done."
+  echo No CONFIG_DEV setting in /tmp/mfg.env
+  exit 1
+fi
+if [ -z "${CONFIG_MNT}" ] ; then
+  echo "Cannot use this utility until a successful install-mfc has been done."
+  echo No CONFIG_DEV setting in /tmp/mfg.env
+  exit 1
+fi
+mount ${CONFIG_DEV} ${CONFIG_MNT} 2> /dev/null
+
+CONFIG_NKN=${CONFIG_MNT}/nkn
+if [ ! -d ${CONFIG_NKN} ] ; then
+  echo "Cannot use this utility until a successful install-mfc has been done."
+  echo No directory ${CONFIG_NKN}
+  exit 1
+fi
+
+rm -f ${CONFIG_NKN}/ethreorder_options
+rm -f ${CONFIG_NKN}/ethreorder_eth0
+rm -f ${CONFIG_NKN}/ethreorder_eth1
+[ -z "${ETH_0}" ] && ETH_0=default
+echo ${ETH_0} > ${CONFIG_NKN}/ethreorder_eth0
+[ ! -z "${ETH_1}" ] && echo ${ETH_1} > ${CONFIG_NKN}/ethreorder_eth1
+
+sync
+if [ "${UNMOUNT}" = "yes" ] ; then
+  umount ${CONFIG_DEV}
+fi
+exit 0

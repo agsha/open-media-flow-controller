@@ -1,0 +1,1405 @@
+--- orig/image_kernel_smp/include/linux/skbuff.h	2015-02-14 10:16:10.773023000 -0800
++++ new/image_kernel_smp/include/linux/skbuff.h	2015-02-14 10:16:40.370803000 -0800
+@@ -468,6 +468,8 @@
+ 		__u32		dropcount;
+ 	};
+ 
++	__u32			tp_marker;
++
+ 	__u16			vlan_tci;
+ #ifndef __GENKSYMS__
+ 	__u16			rxhash;
+--- orig/image_kernel_smp/net/core/skbuff.c	2015-02-14 10:19:59.977050000 -0800
++++ new/image_kernel_smp/net/core/skbuff.c	2015-02-14 10:20:23.327548000 -0800
+@@ -657,6 +657,7 @@
+ 	n->hdr_len = skb->nohdr ? skb_headroom(skb) : skb->hdr_len;
+ 	n->cloned = 1;
+ 	n->nohdr = 0;
++	n->tp_marker = 0;
+ 	n->destructor = NULL;
+ 	C(tail);
+ 	C(end);
+--- orig/image_kernel_smp/net/ipv4/tcp_ipv4.c	2015-02-14 10:24:48.252998000 -0800
++++ new/image_kernel_smp/net/ipv4/tcp_ipv4.c	2015-02-14 10:26:48.743076000 -0800
+@@ -86,6 +86,7 @@
+ int sysctl_tcp_tw_reuse __read_mostly;
+ int sysctl_tcp_low_latency __read_mostly;
+ 
++int (*tp4_l3_fwd)(struct sock *sk, struct sk_buff *skb);
+ 
+ #ifdef CONFIG_TCP_MD5SIG
+ static struct tcp_md5sig_key *tcp_v4_md5_do_lookup(struct sock *sk,
+@@ -1556,6 +1557,8 @@
+ 
+ 	TCP_CHECK_TIMER(sk);
+ 	if (tcp_rcv_state_process(sk, skb, tcp_hdr(skb), skb->len)) {
++                if (tp4_l3_fwd && tp4_l3_fwd (sk, skb))
++                        goto discard;
+ 		rsk = sk;
+ 		goto reset;
+ 	}
+@@ -2537,6 +2540,7 @@
+ EXPORT_SYMBOL(tcp_v4_remember_stamp);
+ EXPORT_SYMBOL(tcp_v4_send_check);
+ EXPORT_SYMBOL(tcp_v4_syn_recv_sock);
++EXPORT_SYMBOL(tp4_l3_fwd);
+ 
+ #ifdef CONFIG_PROC_FS
+ EXPORT_SYMBOL(tcp_proc_register);
+--- orig/image_kernel_smp/net/ipv6/netfilter/Kconfig	2015-02-14 10:29:05.949872000 -0800
++++ new/image_kernel_smp/net/ipv6/netfilter/Kconfig	2015-02-14 10:30:10.011109000 -0800
+@@ -5,10 +5,15 @@
+ menu "IPv6: Netfilter Configuration"
+ 	depends on INET && IPV6 && NETFILTER
+ 
++config NF_DEFRAG_IPV6
++        tristate
++        default n
++
+ config NF_CONNTRACK_IPV6
+ 	tristate "IPv6 connection tracking support"
+ 	depends on INET && IPV6 && NF_CONNTRACK
+ 	default m if NETFILTER_ADVANCED=n
++	select NF_DEFRAG_IPV6
+ 	---help---
+ 	  Connection tracking keeps a record of what packets have passed
+ 	  through your machine, in order to figure out how they are related
+--- orig/image_kernel_smp/net/ipv6/netfilter/Makefile	2015-02-14 10:32:01.013323000 -0800
++++ new/image_kernel_smp/net/ipv6/netfilter/Makefile	2015-02-14 10:33:04.038322000 -0800
+@@ -12,11 +12,14 @@
+ 
+ # objects for l3 independent conntrack
+ nf_conntrack_ipv6-objs  :=  nf_conntrack_l3proto_ipv6.o nf_conntrack_proto_icmpv6.o
+-nf_defrag_ipv6-objs := nf_defrag_ipv6_hooks.o nf_conntrack_reasm.o
+ 
+ # l3 independent conntrack
+ obj-$(CONFIG_NF_CONNTRACK_IPV6) += nf_conntrack_ipv6.o nf_defrag_ipv6.o
+ 
++# defrag
++nf_defrag_ipv6-objs := nf_defrag_ipv6_hooks.o nf_conntrack_reasm.o
++obj-$(CONFIG_NF_DEFRAG_IPV6) += nf_defrag_ipv6.o
++
+ # matches
+ obj-$(CONFIG_IP6_NF_MATCH_AH) += ip6t_ah.o
+ obj-$(CONFIG_IP6_NF_MATCH_EUI64) += ip6t_eui64.o
+--- orig/image_kernel_smp/net/netfilter/Kconfig	2015-02-14 10:35:39.443325000 -0800
++++ new/image_kernel_smp/net/netfilter/Kconfig	2015-02-14 10:36:16.393782000 -0800
+@@ -874,7 +874,7 @@
+ 	depends on NETFILTER_ADVANCED
+ 	depends on !NF_CONNTRACK || NF_CONNTRACK
+ 	select NF_DEFRAG_IPV4
+-	select NF_CONNTRACK_IPV6 if (IPV6)
++	select NF_DEFRAG_IPV6 if IP6_NF_IPTABLES
+ 	help
+ 	  This option adds a `socket' match, which can be used to match
+ 	  packets for which a TCP or UDP socket lookup finds a valid socket.
+--- orig/image_kernel_smp/net/netfilter/Makefile	2015-02-14 10:37:30.771220000 -0800
++++ new/image_kernel_smp/net/netfilter/Makefile	2015-02-14 10:37:49.574247000 -0800
+@@ -3,6 +3,8 @@
+ nf_conntrack-y	:= nf_conntrack_core.o nf_conntrack_standalone.o nf_conntrack_expect.o nf_conntrack_helper.o nf_conntrack_proto.o nf_conntrack_l3proto_generic.o nf_conntrack_proto_generic.o nf_conntrack_proto_tcp.o nf_conntrack_proto_udp.o nf_conntrack_extend.o nf_conntrack_acct.o
+ nf_conntrack-$(CONFIG_NF_CONNTRACK_EVENTS) += nf_conntrack_ecache.o
+ 
++xt_TPROXY-objs := xt_tproxy.o tp_proc.o
++
+ obj-$(CONFIG_NETFILTER) = netfilter.o
+ 
+ obj-$(CONFIG_NETFILTER_NETLINK) += nfnetlink.o
+--- orig/image_kernel_smp/net/netfilter/tp_proc.c	2015-02-14 10:45:38.038841000 -0800
++++ new/image_kernel_smp/net/netfilter/tp_proc.c	2015-02-14 10:40:17.958560000 -0800
+@@ -0,0 +1,203 @@
++/**
++*  @file tp_proc.c
++*  @brief Proc FS stubs for tproxy.
++*
++*  This file contains proc FS stubs for the following features:
++*  - Enable/disable tproxy fall-through when nvsd is not running
++*  - Statistics of tproxy
++*
++*  Tproxy proc controls can be found under /proc/tproxy
++*
++*   Root: /proc/tproxy
++*   - tp_forward : 0 implifies disable and non-zero implies enable
++*   - tpstats : Tproxy statistics
++*   Format:
++*
++*   # TpSeen    TpEstHit    TpListenHit TpCskHit    TpNskHit    TpRedirect  TpMiss
++*   ==============================================================================
++*  
++* @author Arun Srinivasan <asriniv@juniper.net>
++* @bug Yet to come
++*/
++
++// Includes
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/proc_fs.h>
++#include <asm/uaccess.h>
++#include <linux/ctype.h>
++
++#include "tp_proc.h"
++
++// Defines/constants
++#define D_BUFFER_SIZE 11
++
++// Global variables/functions
++D_PUBLIC int tp_proc_forward = 0;
++D_PUBLIC int nvsd_state = 1;
++
++// Static variables/functions
++
++D_PRIVATE struct proc_dir_entry *tp_fs_dir;
++D_PRIVATE struct proc_dir_entry *tp_fs_entry_forward;
++D_PRIVATE struct proc_dir_entry *tp_fs_entry_stats;
++D_PRIVATE struct proc_dir_entry *tp_fs_entry_nvsd_state;
++
++D_PUBLIC tproxy_stats_t tp_proc_stats;
++
++D_PRIVATE int tp_fs_read_stats (char *page, char **buffer_location, off_t offset, 
++    int buffer_length, int *eof, void *data);
++D_PRIVATE int tp_fs_read_forward (char *page, char **buffer_location, off_t offset, 
++    int buffer_length, int *eof, void *data);
++D_PRIVATE int tp_fs_write_forward (struct file *file, const char *buffer, 
++    unsigned long count, void *data);
++
++// Function definitions
++
++D_PRIVATE int tp_fs_read_stats (char *page, char **buffer_location, off_t offset, 
++    int buffer_length, int *eof, void *data)
++{
++  int len = 0;
++  tproxy_stats_t *pTpStats = (tproxy_stats_t *)data; 
++
++  len += sprintf ((page + len), D_TP_STATS_HDR, M_READ_TP_STATS(pTpStats));
++
++  return len;
++}
++
++D_PRIVATE int tp_fs_read_forward (char *page, char **buffer_location, 
++    off_t offset, int buffer_length, int *eof, void *data)
++{
++  int len = 0;
++  int *pTpFwd = (int *)data;
++
++  len += sprintf (page, "%d\n", *pTpFwd);
++ 
++  return len;
++}
++
++
++D_PRIVATE inline int tp_atoi (char *x)
++{
++        int i = 0;
++        while (isdigit(*x))
++                i = i*10 + *(x++) - '0';
++	return i;
++}
++
++D_PRIVATE int tp_fs_write_forward (struct file *file, const char *buffer, 
++    unsigned long count, void *data)
++{
++  int len;
++  char tempBuffer [D_BUFFER_SIZE + 1];
++  int *pTpFwd = (int *)data;
++
++  if (count > D_BUFFER_SIZE)
++  {
++	len = D_BUFFER_SIZE;
++  }
++  else
++  {
++	len = count;
++  }
++
++  if (copy_from_user(tempBuffer, buffer, len))
++  {
++    return -EINVAL;
++  }
++
++  *pTpFwd = tp_atoi (tempBuffer);
++
++  if (pTpFwd == &nvsd_state) {
++      printk("MFC-TP: Nvsd state set to '%d'\n", nvsd_state);
++  }
++  if (pTpFwd == &tp_proc_forward) {
++      printk("MFC-TP: tp_forward set to '%d'\n", tp_proc_forward);
++  }
++ 
++  return len;
++}
++
++D_PUBLIC int tp_init_fs (void)
++{
++  int retVal = 0;
++  tp_fs_dir = proc_mkdir (D_TP_DIR, NULL);
++
++  if (NULL == tp_fs_dir)
++  {
++    printk (KERN_WARNING "MFC-TP: Failed to create proc directory\n");
++    retVal = -ENOMEM;
++    goto out;
++  }
++
++  tp_fs_entry_forward = create_proc_entry (D_TP_FWD, 0644, tp_fs_dir);
++
++  if (NULL == tp_fs_entry_forward)
++  {
++    printk (KERN_WARNING "MFC-TP: Failed to create tp_fwd entry\n");
++    retVal = -ENOMEM;
++    goto no_tp_fwd;
++  }
++
++  tp_fs_entry_forward->data = &tp_proc_forward;
++  tp_fs_entry_forward->read_proc = tp_fs_read_forward;
++  tp_fs_entry_forward->write_proc = tp_fs_write_forward;
++
++  tp_fs_entry_stats = create_proc_read_entry (D_TP_STATS, 0444, tp_fs_dir, 
++                        tp_fs_read_stats, &tp_proc_stats);
++
++  if (NULL == tp_fs_entry_stats)
++  {
++    printk (KERN_WARNING "MFC-TP: Failed to create tpstats entry\n");
++    retVal = -ENOMEM;
++    goto no_tp_stats;
++  }
++
++  tp_fs_entry_nvsd_state = create_proc_entry(D_NVSD_STATE, 0644, tp_fs_dir);
++
++  if (NULL == tp_fs_entry_nvsd_state) {
++      printk(KERN_WARNING "MFC-TP: Failed to create '%s' entry\n", D_NVSD_STATE);
++      retVal = -ENOMEM;
++      goto no_nvsd_state;
++  }
++
++  tp_fs_entry_nvsd_state->data = &nvsd_state;
++  tp_fs_entry_nvsd_state->read_proc = tp_fs_read_forward;
++  tp_fs_entry_nvsd_state->write_proc = tp_fs_write_forward;
++
++  printk (KERN_INFO "MFC-TP: TP proc initialized\n");
++
++  return retVal;
++
++no_nvsd_state:
++  remove_proc_entry(D_TP_STATS, tp_fs_dir);
++
++no_tp_stats:
++  remove_proc_entry (D_TP_FWD, tp_fs_dir);
++
++no_tp_fwd:
++  remove_proc_entry (D_TP_DIR, NULL);
++
++out:
++  return retVal;
++}
++
++D_PUBLIC void tp_finit_fs (void)
++{
++  remove_proc_entry (D_TP_STATS, tp_fs_dir);
++  remove_proc_entry (D_NVSD_STATE, tp_fs_dir);
++  remove_proc_entry (D_TP_FWD, tp_fs_dir);
++  remove_proc_entry (D_TP_DIR, NULL);
++
++  printk (KERN_INFO "MFC-TP: TP proc removed\n");
++  return;
++}
++
++#if 0
++#ifdef __MFC_TP_PROC_TEST__
++module_init(tp_init_fs);
++module_exit(tp_finit_fs);
++MODULE_LICENSE("GPL");
++#endif // __MFC_TP_PROC_TEST__
++#endif
+--- orig/image_kernel_smp/net/netfilter/tp_proc.h	2015-02-14 10:45:40.390185000 -0800
++++ new/image_kernel_smp/net/netfilter/tp_proc.h	2015-02-14 10:40:17.962562000 -0800
+@@ -0,0 +1,56 @@
++#ifndef __TP_PROC_H__
++#define __TP_PROC_H__
++
++// defines
++#define D_PRIVATE static
++#define D_PUBLIC
++#define D_FORWARD extern
++
++#define D_TP_DIR "tproxy"
++#define D_TP_FWD "tp_forward"
++#define D_TP_STATS "tpstats"
++#define D_NVSD_STATE "nvsd_state"
++
++#define D_TP_STATS_HDR "TpSeen:\t\t %20u\nTpEstHit:\t %20u\nTpListenHit:\t %20u\nTpCskHit:\t %20u\nTpListnMiss:\t %20u\nTpRedirect:\t %20u\nTpFwd:\t\t %20u\nTpFwdMiss:\t %20u\nTpMiss:\t\t %20u\n"
++#define D_AR atomic_read
++
++// Macros
++
++#define M_READ_TP_STATS(x) \
++  D_AR(&x->tpSeen), D_AR(&x->tpEstHit), D_AR(&x->tpListenHit), \
++    D_AR(&x->tpCskHit), D_AR(&x->tpListenMiss), D_AR(&x->tpRedirect), \
++    D_AR(&x->tpFwd), D_AR(&x->tpFwdMiss), D_AR(&x->tpMiss)
++
++#define M_TP_INC(x) atomic_inc(&tp_proc_stats.x)
++
++// Enums/structure
++
++/**
++  * \struct tproxy_stats
++  * \typedef tproxy_stats_t
++  * \tpSeen Number of Tproxy hits (every packet that xt_TPROXY.ko sees)
++  * \tpEstHit Number of socket hits in ESTABLISHED state
++  * \tpListenHit Number of socket hits in LISTEN state
++  * \tpCskHit Number of successful inet_csk_search_req hits
++  * \tpRedirect Number of successful redirect to NVSD (this shud be = tpEstHit + tpListenHit)
++  * \tpFwd Number of packets forwarded by TCP
++  * \tpFwdMiss Number of packets failed to be forwarded by TCP
++  * \tpMiss Number of match failures (this could be DROP or FORWARD depending upon tp_forward and ip_forward)
++  */
++typedef struct tproxy_stats
++{
++  atomic_t tpSeen; 
++  atomic_t tpEstHit; 
++  atomic_t tpListenHit; 
++  atomic_t tpCskHit; 
++  atomic_t tpListenMiss; 
++  atomic_t tpRedirect;
++  atomic_t tpFwd;
++  atomic_t tpFwdMiss;
++  atomic_t tpMiss;
++} tproxy_stats_t;
++
++// Declarations
++D_PUBLIC int tp_init_fs (void);
++D_PUBLIC void tp_finit_fs (void);
++#endif // !__TP_PROC_H__
+--- orig/image_kernel_smp/net/netfilter/xt_socket.c	2015-02-14 10:42:00.602043000 -0800
++++ new/image_kernel_smp/net/netfilter/xt_socket.c	2015-02-14 10:42:17.057785000 -0800
+@@ -27,7 +27,7 @@
+ #include <linux/netfilter/xt_socket.h>
+ 
+ #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
+-#define XT_SOCKET_HAVE_CONNTRACK 1
++//#define XT_SOCKET_HAVE_CONNTRACK 1
+ #include <net/netfilter/nf_conntrack.h>
+ #endif
+ 
+--- orig/image_kernel_smp/net/netfilter/xt_tproxy.c	2015-02-14 10:45:56.464182000 -0800
++++ new/image_kernel_smp/net/netfilter/xt_tproxy.c	2015-02-14 10:43:23.618124000 -0800
+@@ -0,0 +1,584 @@
++/*
++ * Transparent proxy support for Linux/iptables
++ *
++ * Copyright (c) 2006-2010 BalaBit IT Ltd.
++ * Author: Balazs Scheidler, Krisztian Kovacs
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/skbuff.h>
++#include <linux/ip.h>
++#include <net/checksum.h>
++#include <net/udp.h>
++#include <net/inet_sock.h>
++#include <linux/inetdevice.h>
++#include <linux/netfilter/x_tables.h>
++#include <linux/netfilter_ipv4/ip_tables.h>
++
++#include <net/netfilter/ipv4/nf_defrag_ipv4.h>
++#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
++#include <net/if_inet6.h>
++#include <net/addrconf.h>
++#include <linux/netfilter_ipv6/ip6_tables.h>
++#include <net/netfilter/ipv6/nf_defrag_ipv6.h>
++#endif
++
++#include <net/netfilter/nf_tproxy_core.h>
++#include <linux/netfilter/xt_TPROXY.h>
++
++#include <net/route.h>
++#include <net/dst.h>
++#include "tp_proc.h"
++
++D_FORWARD tproxy_stats_t tp_proc_stats;
++D_FORWARD int tp_proc_forward;
++D_FORWARD int nvsd_state;
++
++static int tp_proc_initialized;
++
++extern int (*tp4_l3_fwd)(struct sock *sk, struct sk_buff *skb);
++
++#define TP4_FWD_MAGIC 0x132DD7D
++
++static inline struct request_sock * tproxy_is_csk_request(struct sock *sk, __be16    port, 
++        __be32    saddr, __be32 daddr) 
++{
++    struct request_sock *req = NULL, **prev;
++    const struct inet_connection_sock *icsk = inet_csk(sk);
++    struct request_sock_queue *queue;
++
++    queue = (struct request_sock_queue *)&icsk->icsk_accept_queue;
++
++    read_lock (&queue->syn_wait_lock);
++    req = inet_csk_search_req(sk, &prev, port, saddr, daddr);
++    read_unlock (&queue->syn_wait_lock);
++
++    return (req);
++}
++
++
++static bool tproxy_sk_is_transparent(struct sock *sk)
++{
++	if (sk->sk_state != TCP_TIME_WAIT) {
++		if (inet_sk(sk)->transparent)
++			return true;
++		sock_put(sk);
++	} else {
++		if (inet_twsk(sk)->tw_transparent)
++			return true;
++		inet_twsk_put(inet_twsk(sk));
++	}
++	return false;
++}
++
++static inline __be32
++tproxy_laddr4(struct sk_buff *skb, __be32 user_laddr, __be32 daddr)
++{
++	struct in_device *indev;
++	__be32 laddr;
++
++	if (user_laddr)
++		return user_laddr;
++
++	laddr = 0;
++	rcu_read_lock();
++	indev = __in_dev_get_rcu(skb->dev);
++	for_primary_ifa(indev) {
++		laddr = ifa->ifa_local;
++		break;
++	} endfor_ifa(indev);
++	rcu_read_unlock();
++
++	return laddr ? laddr : daddr;
++}
++
++/**
++ * tproxy_handle_time_wait4() - handle IPv4 TCP TIME_WAIT reopen redirections
++ * @skb:	The skb being processed.
++ * @laddr:	IPv4 address to redirect to or zero.
++ * @lport:	TCP port to redirect to or zero.
++ * @sk:		The TIME_WAIT TCP socket found by the lookup.
++ *
++ * We have to handle SYN packets arriving to TIME_WAIT sockets
++ * differently: instead of reopening the connection we should rather
++ * redirect the new connection to the proxy if there's a listener
++ * socket present.
++ *
++ * tproxy_handle_time_wait4() consumes the socket reference passed in.
++ *
++ * Returns the listener socket if there's one, the TIME_WAIT socket if
++ * no such listener is found, or NULL if the TCP header is incomplete.
++ */
++static struct sock *
++tproxy_handle_time_wait4(struct sk_buff *skb, __be32 laddr, __be16 lport,
++			struct sock *sk)
++{
++	const struct iphdr *iph = ip_hdr(skb);
++	struct tcphdr _hdr, *hp;
++
++	hp = skb_header_pointer(skb, ip_hdrlen(skb), sizeof(_hdr), &_hdr);
++	if (hp == NULL) {
++		inet_twsk_put(inet_twsk(sk));
++		return NULL;
++	}
++
++	if (hp->syn && !hp->rst && !hp->ack && !hp->fin) {
++		/* SYN to a TIME_WAIT socket, we'd rather redirect it
++		 * to a listener socket if there's one */
++		struct sock *sk2;
++
++		sk2 = nf_tproxy_get_sock_v4(dev_net(skb->dev), iph->protocol,
++					    iph->saddr, laddr ? laddr : iph->daddr,
++					    hp->source, lport ? lport : hp->dest,
++					    skb->dev, NFT_LOOKUP_LISTENER);
++		if (sk2) {
++			inet_twsk_deschedule(inet_twsk(sk), &tcp_death_row);
++			inet_twsk_put(inet_twsk(sk));
++			sk = sk2;
++		}
++	}
++
++	return sk;
++}
++
++static int tp4_l3_fwd_fn(struct sock *sk, struct sk_buff *skb) 
++{
++    struct sk_buff *cskb;
++    struct rtable *rt;
++    struct iphdr *iph;
++    int err = 0;
++
++    if (!skb || !sk || (TCP_LISTEN != sk->sk_state) || (TP4_FWD_MAGIC != skb->tp_marker)) {
++        return 0;
++    }
++
++    cskb = skb_clone(skb, GFP_ATOMIC);
++    if (!cskb) {
++        M_TP_INC(tpFwdMiss);
++        return 0;
++    }
++
++    iph = ip_hdr(cskb);
++
++    {
++        struct flowi fl = {
++            .oif = 0,
++            .nl_u = {
++                .ip4_u = {
++                    .daddr = iph->saddr,
++                    // pretend like local packet for simplification
++                    .saddr = 0,
++                    .tos = 0, } },
++        };
++
++
++        if (ip_route_output_key(&init_net, &rt, &fl)) {
++            goto discard;
++        }
++    }
++
++    cskb->mark ^= cskb->mark;
++    cskb->dev = rt->u.dst.dev;
++    skb_dst_drop(cskb);
++    cskb->sk = NULL;
++
++    skb_push(cskb, skb_transport_offset(cskb) - skb_network_offset(cskb));
++
++    err = ip_route_input(cskb, iph->daddr, iph->saddr, iph->tos, rt->u.dst.dev);
++    ip_rt_put(rt);
++
++    if(unlikely(err)) {
++        goto discard;
++    }
++    else {
++        dst_input(cskb);
++        M_TP_INC(tpFwd);
++        return 1;
++    }
++
++discard:
++    kfree_skb(cskb);
++    M_TP_INC(tpFwdMiss);
++
++    return 0;
++
++}
++
++
++static unsigned int
++tproxy_tg4(struct sk_buff *skb, __be32 laddr, __be16 lport,
++	   u_int32_t mark_mask, u_int32_t mark_value)
++{
++	const struct iphdr *iph = ip_hdr(skb);
++	struct udphdr _hdr, *hp;
++    struct tcphdr _tcph, *tcph;
++	struct sock *sk;
++
++    M_TP_INC(tpSeen);
++
++    if (tp_proc_forward && !nvsd_state) {
++        goto do_exit;
++    }
++
++	hp = skb_header_pointer(skb, ip_hdrlen(skb), sizeof(_hdr), &_hdr);
++	if (hp == NULL)
++		return NF_DROP;
++
++	/* check if there's an ongoing connection on the packet
++	 * addresses, this happens if the redirect already happened
++	 * and the current packet belongs to an already established
++	 * connection */
++	sk = nf_tproxy_get_sock_v4(dev_net(skb->dev), iph->protocol,
++				   iph->saddr, iph->daddr,
++				   hp->source, hp->dest,
++				   skb->dev, NFT_LOOKUP_ESTABLISHED);
++
++    if (sk) {
++        M_TP_INC(tpEstHit);
++    }
++
++	laddr = tproxy_laddr4(skb, laddr, iph->daddr);
++	if (!lport)
++		lport = hp->dest;
++
++	/* UDP has no TCP_TIME_WAIT state, so we never enter here */
++	if (sk && sk->sk_state == TCP_TIME_WAIT)
++		/* reopening a TIME_WAIT connection needs special handling */
++		sk = tproxy_handle_time_wait4(skb, laddr, lport, sk);
++	else if (!sk) {
++		/* no, there's no established connection, check if
++		 * there's a listener on the redirected addr/port */
++		sk = nf_tproxy_get_sock_v4(dev_net(skb->dev), iph->protocol,
++					   iph->saddr, laddr,
++                       hp->source, lport,
++                       skb->dev, NFT_LOOKUP_LISTENER);
++
++        if (tp_proc_forward && sk) {
++            struct request_sock *req;
++
++            M_TP_INC(tpListenHit);
++            /* Listening socket available.. check if this is an ACK to a
++             * pending connection socket. */
++            tcph = skb_header_pointer(skb, ip_hdrlen(skb), sizeof(_tcph), &_tcph);
++            if (tcph == NULL) {
++                sock_put(sk);
++                return NF_DROP;
++            }
++
++            if (!tcph->syn && !tcph->rst)
++            {
++                req = tproxy_is_csk_request(sk, hp->source,
++                        iph->saddr, iph->daddr);
++
++                if (!req) {
++                    M_TP_INC(tpListenMiss);
++                    skb->tp_marker = TP4_FWD_MAGIC;
++                }
++                else {
++                    M_TP_INC(tpCskHit);
++                }
++            }
++        }
++
++    }
++
++	/* NOTE: assign_sock consumes our sk reference */
++	if (sk && tproxy_sk_is_transparent(sk)) {
++		/* This should be in a separate target, but we don't do multiple
++		   targets on the same rule yet */
++		skb->mark = (skb->mark & ~mark_mask) ^ mark_value;
++
++		pr_debug("redirecting: proto %hhu %pI4:%hu -> %pI4:%hu, mark: %x\n",
++			 iph->protocol, &iph->daddr, ntohs(hp->dest),
++			 &laddr, ntohs(lport), skb->mark);
++
++		nf_tproxy_assign_sock(skb, sk);
++        M_TP_INC(tpRedirect);
++		return NF_ACCEPT;
++	}
++
++	pr_debug("no socket, dropping: proto %hhu %pI4:%hu -> %pI4:%hu, mark: %x\n",
++		 iph->protocol, &iph->saddr, ntohs(hp->source),
++		 &iph->daddr, ntohs(hp->dest), skb->mark);
++do_exit:
++    M_TP_INC(tpMiss);
++
++	return (tp_proc_forward)?XT_CONTINUE:NF_DROP;
++}
++
++static unsigned int
++tproxy_tg4_v0(struct sk_buff *skb, const struct xt_target_param *par)
++{
++	const struct xt_tproxy_target_info *tgi = par->targinfo;
++
++	return tproxy_tg4(skb, tgi->laddr, tgi->lport, tgi->mark_mask, tgi->mark_value);
++}
++
++static unsigned int
++tproxy_tg4_v1(struct sk_buff *skb, const struct xt_target_param *par)
++{
++	const struct xt_tproxy_target_info_v1 *tgi = par->targinfo;
++
++	return tproxy_tg4(skb, tgi->laddr.ip, tgi->lport, tgi->mark_mask, tgi->mark_value);
++}
++
++#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
++
++static inline const struct in6_addr *
++tproxy_laddr6(struct sk_buff *skb, const struct in6_addr *user_laddr,
++	      const struct in6_addr *daddr)
++{
++	struct inet6_dev *indev;
++	struct inet6_ifaddr *ifa;
++	struct in6_addr *laddr;
++
++	if (!ipv6_addr_any(user_laddr))
++		return user_laddr;
++	laddr = NULL;
++
++	rcu_read_lock();
++	indev = __in6_dev_get(skb->dev);
++	if (indev) {
++		read_lock_bh(&indev->lock);
++		for (ifa = indev->addr_list; ifa; ifa = ifa->if_next) {
++			if (ifa->flags & (IFA_F_TENTATIVE | IFA_F_DEPRECATED))
++				continue;
++
++			laddr = &ifa->addr;
++			break;
++		}
++		read_unlock_bh(&indev->lock);
++	}
++	rcu_read_unlock();
++
++	return laddr ? laddr : daddr;
++}
++
++/**
++ * tproxy_handle_time_wait6() - handle IPv6 TCP TIME_WAIT reopen redirections
++ * @skb:	The skb being processed.
++ * @tproto:	Transport protocol.
++ * @thoff:	Transport protocol header offset.
++ * @par:	Iptables target parameters.
++ * @sk:		The TIME_WAIT TCP socket found by the lookup.
++ *
++ * We have to handle SYN packets arriving to TIME_WAIT sockets
++ * differently: instead of reopening the connection we should rather
++ * redirect the new connection to the proxy if there's a listener
++ * socket present.
++ *
++ * tproxy_handle_time_wait6() consumes the socket reference passed in.
++ *
++ * Returns the listener socket if there's one, the TIME_WAIT socket if
++ * no such listener is found, or NULL if the TCP header is incomplete.
++ */
++static struct sock *
++tproxy_handle_time_wait6(struct sk_buff *skb, int tproto, int thoff,
++			 const struct xt_target_param *par,
++			 struct sock *sk)
++{
++	const struct ipv6hdr *iph = ipv6_hdr(skb);
++	struct tcphdr _hdr, *hp;
++	const struct xt_tproxy_target_info_v1 *tgi = par->targinfo;
++
++	hp = skb_header_pointer(skb, thoff, sizeof(_hdr), &_hdr);
++	if (hp == NULL) {
++		inet_twsk_put(inet_twsk(sk));
++		return NULL;
++	}
++
++	if (hp->syn && !hp->rst && !hp->ack && !hp->fin) {
++		/* SYN to a TIME_WAIT socket, we'd rather redirect it
++		 * to a listener socket if there's one */
++		struct sock *sk2;
++
++		sk2 = nf_tproxy_get_sock_v6(dev_net(skb->dev), tproto,
++					    &iph->saddr,
++					    tproxy_laddr6(skb, &tgi->laddr.in6, &iph->daddr),
++					    hp->source,
++					    tgi->lport ? tgi->lport : hp->dest,
++					    skb->dev, NFT_LOOKUP_LISTENER);
++		if (sk2) {
++			inet_twsk_deschedule(inet_twsk(sk), &tcp_death_row);
++			inet_twsk_put(inet_twsk(sk));
++			sk = sk2;
++		}
++	}
++
++	return sk;
++}
++
++static unsigned int
++tproxy_tg6_v1(struct sk_buff *skb, const struct xt_target_param *par)
++{
++	const struct ipv6hdr *iph = ipv6_hdr(skb);
++	const struct xt_tproxy_target_info_v1 *tgi = par->targinfo;
++	struct udphdr _hdr, *hp;
++	struct sock *sk;
++	const struct in6_addr *laddr;
++	__be16 lport;
++	int thoff;
++	int tproto;
++
++	tproto = ipv6_find_hdr(skb, &thoff, -1, NULL, NULL);
++	if (tproto < 0) {
++		pr_debug("unable to find transport header in IPv6 packet, dropping\n");
++		return NF_DROP;
++	}
++
++	hp = skb_header_pointer(skb, thoff, sizeof(_hdr), &_hdr);
++	if (hp == NULL) {
++		pr_debug("unable to grab transport header contents in IPv6 packet, dropping\n");
++		return NF_DROP;
++	}
++
++	/* check if there's an ongoing connection on the packet
++	 * addresses, this happens if the redirect already happened
++	 * and the current packet belongs to an already established
++	 * connection */
++	sk = nf_tproxy_get_sock_v6(dev_net(skb->dev), tproto,
++				   &iph->saddr, &iph->daddr,
++				   hp->source, hp->dest,
++				   par->in, NFT_LOOKUP_ESTABLISHED);
++
++	laddr = tproxy_laddr6(skb, &tgi->laddr.in6, &iph->daddr);
++	lport = tgi->lport ? tgi->lport : hp->dest;
++
++	/* UDP has no TCP_TIME_WAIT state, so we never enter here */
++	if (sk && sk->sk_state == TCP_TIME_WAIT)
++		/* reopening a TIME_WAIT connection needs special handling */
++		sk = tproxy_handle_time_wait6(skb, tproto, thoff, par, sk);
++	else if (!sk)
++		/* no there's no established connection, check if
++		 * there's a listener on the redirected addr/port */
++		sk = nf_tproxy_get_sock_v6(dev_net(skb->dev), tproto,
++					   &iph->saddr, laddr,
++					   hp->source, lport,
++					   par->in, NFT_LOOKUP_LISTENER);
++
++	/* NOTE: assign_sock consumes our sk reference */
++	if (sk && tproxy_sk_is_transparent(sk)) {
++		/* This should be in a separate target, but we don't do multiple
++		   targets on the same rule yet */
++		skb->mark = (skb->mark & ~tgi->mark_mask) ^ tgi->mark_value;
++
++		pr_debug("redirecting: proto %hhu %pI6:%hu -> %pI6:%hu, mark: %x\n",
++			 tproto, &iph->saddr, ntohs(hp->source),
++			 laddr, ntohs(lport), skb->mark);
++
++		nf_tproxy_assign_sock(skb, sk);
++		return NF_ACCEPT;
++	}
++
++	pr_debug("no socket, dropping: proto %hhu %pI6:%hu -> %pI6:%hu, mark: %x\n",
++		 tproto, &iph->saddr, ntohs(hp->source),
++		 &iph->daddr, ntohs(hp->dest), skb->mark);
++
++	return NF_DROP;
++}
++
++static bool tproxy_tg6_check(const struct xt_tgchk_param *par)
++{
++	const struct ip6t_ip6 *i = par->entryinfo;
++
++	if ((i->proto == IPPROTO_TCP || i->proto == IPPROTO_UDP)
++	    && !(i->flags & IP6T_INV_PROTO))
++		return true;
++
++	pr_info("Can be used only in combination with "
++		"either -p tcp or -p udp\n");
++	return false;
++}
++#endif
++
++static bool tproxy_tg4_check(const struct xt_tgchk_param *par)
++{
++	const struct ipt_ip *i = par->entryinfo;
++
++	if ((i->proto == IPPROTO_TCP || i->proto == IPPROTO_UDP)
++	    && !(i->invflags & IPT_INV_PROTO))
++		return true;
++
++	pr_info("xt_TPROXY: Can be used only in combination with "
++		"either -p tcp or -p udp\n");
++	return false;
++}
++
++static struct xt_target tproxy_tg_reg[] __read_mostly = {
++	{
++		.name		= "TPROXY",
++		.family		= NFPROTO_IPV4,
++		.table		= "mangle",
++		.target		= tproxy_tg4_v0,
++		.revision	= 0,
++		.targetsize	= sizeof(struct xt_tproxy_target_info),
++		.checkentry	= tproxy_tg4_check,
++		.hooks		= 1 << NF_INET_PRE_ROUTING,
++		.me		= THIS_MODULE,
++	},
++	{
++		.name		= "TPROXY",
++		.family		= NFPROTO_IPV4,
++		.table		= "mangle",
++		.target		= tproxy_tg4_v1,
++		.revision	= 1,
++		.targetsize	= sizeof(struct xt_tproxy_target_info_v1),
++		.checkentry	= tproxy_tg4_check,
++		.hooks		= 1 << NF_INET_PRE_ROUTING,
++		.me		= THIS_MODULE,
++	},
++#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
++	{
++		.name		= "TPROXY",
++		.family		= NFPROTO_IPV6,
++		.table		= "mangle",
++		.target		= tproxy_tg6_v1,
++		.revision	= 1,
++		.targetsize	= sizeof(struct xt_tproxy_target_info_v1),
++		.checkentry	= tproxy_tg6_check,
++		.hooks		= 1 << NF_INET_PRE_ROUTING,
++		.me		= THIS_MODULE,
++	},
++#endif
++
++};
++
++static int __init tproxy_tg_init(void)
++{
++    tp_proc_initialized ^= tp_proc_initialized;
++
++    if (!tp_init_fs()) {
++        tp_proc_initialized = 1;
++    }
++
++	nf_defrag_ipv4_enable();
++#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
++	nf_defrag_ipv6_enable();
++#endif
++
++    tp4_l3_fwd = tp4_l3_fwd_fn;
++	return xt_register_targets(tproxy_tg_reg, ARRAY_SIZE(tproxy_tg_reg));
++}
++
++static void __exit tproxy_tg_exit(void)
++{
++    tp4_l3_fwd = NULL;
++    xt_unregister_targets(tproxy_tg_reg, ARRAY_SIZE(tproxy_tg_reg));
++    if (tp_proc_initialized) {
++        tp_finit_fs();
++    }
++
++}
++
++module_init(tproxy_tg_init);
++module_exit(tproxy_tg_exit);
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Balazs Scheidler, Krisztian Kovacs");
++MODULE_DESCRIPTION("Netfilter transparent proxy (TPROXY) target module.");
++MODULE_ALIAS("ipt_TPROXY");
++MODULE_ALIAS("ip6t_TPROXY");
+--- orig/image_kernel_smp/net/netfilter/xt_TPROXY.c	2015-02-14 10:44:39.703368000 -0800
++++ new/image_kernel_smp/net/netfilter/xt_TPROXY.c	2015-02-14 10:45:07.996221000 -0800
+@@ -1,433 +0,0 @@
+-/*
+- * Transparent proxy support for Linux/iptables
+- *
+- * Copyright (c) 2006-2010 BalaBit IT Ltd.
+- * Author: Balazs Scheidler, Krisztian Kovacs
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- */
+-
+-#include <linux/module.h>
+-#include <linux/skbuff.h>
+-#include <linux/ip.h>
+-#include <net/checksum.h>
+-#include <net/udp.h>
+-#include <net/inet_sock.h>
+-#include <linux/inetdevice.h>
+-#include <linux/netfilter/x_tables.h>
+-#include <linux/netfilter_ipv4/ip_tables.h>
+-
+-#include <net/netfilter/ipv4/nf_defrag_ipv4.h>
+-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+-#include <net/if_inet6.h>
+-#include <net/addrconf.h>
+-#include <linux/netfilter_ipv6/ip6_tables.h>
+-#include <net/netfilter/ipv6/nf_defrag_ipv6.h>
+-#endif
+-
+-#include <net/netfilter/nf_tproxy_core.h>
+-#include <linux/netfilter/xt_TPROXY.h>
+-
+-static bool tproxy_sk_is_transparent(struct sock *sk)
+-{
+-	if (sk->sk_state != TCP_TIME_WAIT) {
+-		if (inet_sk(sk)->transparent)
+-			return true;
+-		sock_put(sk);
+-	} else {
+-		if (inet_twsk(sk)->tw_transparent)
+-			return true;
+-		inet_twsk_put(inet_twsk(sk));
+-	}
+-	return false;
+-}
+-
+-static inline __be32
+-tproxy_laddr4(struct sk_buff *skb, __be32 user_laddr, __be32 daddr)
+-{
+-	struct in_device *indev;
+-	__be32 laddr;
+-
+-	if (user_laddr)
+-		return user_laddr;
+-
+-	laddr = 0;
+-	rcu_read_lock();
+-	indev = __in_dev_get_rcu(skb->dev);
+-	for_primary_ifa(indev) {
+-		laddr = ifa->ifa_local;
+-		break;
+-	} endfor_ifa(indev);
+-	rcu_read_unlock();
+-
+-	return laddr ? laddr : daddr;
+-}
+-
+-/**
+- * tproxy_handle_time_wait4() - handle IPv4 TCP TIME_WAIT reopen redirections
+- * @skb:	The skb being processed.
+- * @laddr:	IPv4 address to redirect to or zero.
+- * @lport:	TCP port to redirect to or zero.
+- * @sk:		The TIME_WAIT TCP socket found by the lookup.
+- *
+- * We have to handle SYN packets arriving to TIME_WAIT sockets
+- * differently: instead of reopening the connection we should rather
+- * redirect the new connection to the proxy if there's a listener
+- * socket present.
+- *
+- * tproxy_handle_time_wait4() consumes the socket reference passed in.
+- *
+- * Returns the listener socket if there's one, the TIME_WAIT socket if
+- * no such listener is found, or NULL if the TCP header is incomplete.
+- */
+-static struct sock *
+-tproxy_handle_time_wait4(struct sk_buff *skb, __be32 laddr, __be16 lport,
+-			struct sock *sk)
+-{
+-	const struct iphdr *iph = ip_hdr(skb);
+-	struct tcphdr _hdr, *hp;
+-
+-	hp = skb_header_pointer(skb, ip_hdrlen(skb), sizeof(_hdr), &_hdr);
+-	if (hp == NULL) {
+-		inet_twsk_put(inet_twsk(sk));
+-		return NULL;
+-	}
+-
+-	if (hp->syn && !hp->rst && !hp->ack && !hp->fin) {
+-		/* SYN to a TIME_WAIT socket, we'd rather redirect it
+-		 * to a listener socket if there's one */
+-		struct sock *sk2;
+-
+-		sk2 = nf_tproxy_get_sock_v4(dev_net(skb->dev), iph->protocol,
+-					    iph->saddr, laddr ? laddr : iph->daddr,
+-					    hp->source, lport ? lport : hp->dest,
+-					    skb->dev, NFT_LOOKUP_LISTENER);
+-		if (sk2) {
+-			inet_twsk_deschedule(inet_twsk(sk), &tcp_death_row);
+-			inet_twsk_put(inet_twsk(sk));
+-			sk = sk2;
+-		}
+-	}
+-
+-	return sk;
+-}
+-
+-static unsigned int
+-tproxy_tg4(struct sk_buff *skb, __be32 laddr, __be16 lport,
+-	   u_int32_t mark_mask, u_int32_t mark_value)
+-{
+-	const struct iphdr *iph = ip_hdr(skb);
+-	struct udphdr _hdr, *hp;
+-	struct sock *sk;
+-
+-	hp = skb_header_pointer(skb, ip_hdrlen(skb), sizeof(_hdr), &_hdr);
+-	if (hp == NULL)
+-		return NF_DROP;
+-
+-	/* check if there's an ongoing connection on the packet
+-	 * addresses, this happens if the redirect already happened
+-	 * and the current packet belongs to an already established
+-	 * connection */
+-	sk = nf_tproxy_get_sock_v4(dev_net(skb->dev), iph->protocol,
+-				   iph->saddr, iph->daddr,
+-				   hp->source, hp->dest,
+-				   skb->dev, NFT_LOOKUP_ESTABLISHED);
+-
+-	laddr = tproxy_laddr4(skb, laddr, iph->daddr);
+-	if (!lport)
+-		lport = hp->dest;
+-
+-	/* UDP has no TCP_TIME_WAIT state, so we never enter here */
+-	if (sk && sk->sk_state == TCP_TIME_WAIT)
+-		/* reopening a TIME_WAIT connection needs special handling */
+-		sk = tproxy_handle_time_wait4(skb, laddr, lport, sk);
+-	else if (!sk)
+-		/* no, there's no established connection, check if
+-		 * there's a listener on the redirected addr/port */
+-		sk = nf_tproxy_get_sock_v4(dev_net(skb->dev), iph->protocol,
+-					   iph->saddr, laddr,
+-					   hp->source, lport,
+-					   skb->dev, NFT_LOOKUP_LISTENER);
+-
+-	/* NOTE: assign_sock consumes our sk reference */
+-	if (sk && tproxy_sk_is_transparent(sk)) {
+-		/* This should be in a separate target, but we don't do multiple
+-		   targets on the same rule yet */
+-		skb->mark = (skb->mark & ~mark_mask) ^ mark_value;
+-
+-		pr_debug("redirecting: proto %hhu %pI4:%hu -> %pI4:%hu, mark: %x\n",
+-			 iph->protocol, &iph->daddr, ntohs(hp->dest),
+-			 &laddr, ntohs(lport), skb->mark);
+-
+-		nf_tproxy_assign_sock(skb, sk);
+-		return NF_ACCEPT;
+-	}
+-
+-	pr_debug("no socket, dropping: proto %hhu %pI4:%hu -> %pI4:%hu, mark: %x\n",
+-		 iph->protocol, &iph->saddr, ntohs(hp->source),
+-		 &iph->daddr, ntohs(hp->dest), skb->mark);
+-	return NF_DROP;
+-}
+-
+-static unsigned int
+-tproxy_tg4_v0(struct sk_buff *skb, const struct xt_target_param *par)
+-{
+-	const struct xt_tproxy_target_info *tgi = par->targinfo;
+-
+-	return tproxy_tg4(skb, tgi->laddr, tgi->lport, tgi->mark_mask, tgi->mark_value);
+-}
+-
+-static unsigned int
+-tproxy_tg4_v1(struct sk_buff *skb, const struct xt_target_param *par)
+-{
+-	const struct xt_tproxy_target_info_v1 *tgi = par->targinfo;
+-
+-	return tproxy_tg4(skb, tgi->laddr.ip, tgi->lport, tgi->mark_mask, tgi->mark_value);
+-}
+-
+-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+-
+-static inline const struct in6_addr *
+-tproxy_laddr6(struct sk_buff *skb, const struct in6_addr *user_laddr,
+-	      const struct in6_addr *daddr)
+-{
+-	struct inet6_dev *indev;
+-	struct inet6_ifaddr *ifa;
+-	struct in6_addr *laddr;
+-
+-	if (!ipv6_addr_any(user_laddr))
+-		return user_laddr;
+-	laddr = NULL;
+-
+-	rcu_read_lock();
+-	indev = __in6_dev_get(skb->dev);
+-	if (indev) {
+-		read_lock_bh(&indev->lock);
+-		for (ifa = indev->addr_list; ifa; ifa = ifa->if_next) {
+-			if (ifa->flags & (IFA_F_TENTATIVE | IFA_F_DEPRECATED))
+-				continue;
+-
+-			laddr = &ifa->addr;
+-			break;
+-		}
+-		read_unlock_bh(&indev->lock);
+-	}
+-	rcu_read_unlock();
+-
+-	return laddr ? laddr : daddr;
+-}
+-
+-/**
+- * tproxy_handle_time_wait6() - handle IPv6 TCP TIME_WAIT reopen redirections
+- * @skb:	The skb being processed.
+- * @tproto:	Transport protocol.
+- * @thoff:	Transport protocol header offset.
+- * @par:	Iptables target parameters.
+- * @sk:		The TIME_WAIT TCP socket found by the lookup.
+- *
+- * We have to handle SYN packets arriving to TIME_WAIT sockets
+- * differently: instead of reopening the connection we should rather
+- * redirect the new connection to the proxy if there's a listener
+- * socket present.
+- *
+- * tproxy_handle_time_wait6() consumes the socket reference passed in.
+- *
+- * Returns the listener socket if there's one, the TIME_WAIT socket if
+- * no such listener is found, or NULL if the TCP header is incomplete.
+- */
+-static struct sock *
+-tproxy_handle_time_wait6(struct sk_buff *skb, int tproto, int thoff,
+-			 const struct xt_target_param *par,
+-			 struct sock *sk)
+-{
+-	const struct ipv6hdr *iph = ipv6_hdr(skb);
+-	struct tcphdr _hdr, *hp;
+-	const struct xt_tproxy_target_info_v1 *tgi = par->targinfo;
+-
+-	hp = skb_header_pointer(skb, thoff, sizeof(_hdr), &_hdr);
+-	if (hp == NULL) {
+-		inet_twsk_put(inet_twsk(sk));
+-		return NULL;
+-	}
+-
+-	if (hp->syn && !hp->rst && !hp->ack && !hp->fin) {
+-		/* SYN to a TIME_WAIT socket, we'd rather redirect it
+-		 * to a listener socket if there's one */
+-		struct sock *sk2;
+-
+-		sk2 = nf_tproxy_get_sock_v6(dev_net(skb->dev), tproto,
+-					    &iph->saddr,
+-					    tproxy_laddr6(skb, &tgi->laddr.in6, &iph->daddr),
+-					    hp->source,
+-					    tgi->lport ? tgi->lport : hp->dest,
+-					    skb->dev, NFT_LOOKUP_LISTENER);
+-		if (sk2) {
+-			inet_twsk_deschedule(inet_twsk(sk), &tcp_death_row);
+-			inet_twsk_put(inet_twsk(sk));
+-			sk = sk2;
+-		}
+-	}
+-
+-	return sk;
+-}
+-
+-static unsigned int
+-tproxy_tg6_v1(struct sk_buff *skb, const struct xt_target_param *par)
+-{
+-	const struct ipv6hdr *iph = ipv6_hdr(skb);
+-	const struct xt_tproxy_target_info_v1 *tgi = par->targinfo;
+-	struct udphdr _hdr, *hp;
+-	struct sock *sk;
+-	const struct in6_addr *laddr;
+-	__be16 lport;
+-	int thoff = 0;
+-	int tproto;
+-
+-	tproto = ipv6_find_hdr(skb, &thoff, -1, NULL, NULL);
+-	if (tproto < 0) {
+-		pr_debug("unable to find transport header in IPv6 packet, dropping\n");
+-		return NF_DROP;
+-	}
+-
+-	hp = skb_header_pointer(skb, thoff, sizeof(_hdr), &_hdr);
+-	if (hp == NULL) {
+-		pr_debug("unable to grab transport header contents in IPv6 packet, dropping\n");
+-		return NF_DROP;
+-	}
+-
+-	/* check if there's an ongoing connection on the packet
+-	 * addresses, this happens if the redirect already happened
+-	 * and the current packet belongs to an already established
+-	 * connection */
+-	sk = nf_tproxy_get_sock_v6(dev_net(skb->dev), tproto,
+-				   &iph->saddr, &iph->daddr,
+-				   hp->source, hp->dest,
+-				   par->in, NFT_LOOKUP_ESTABLISHED);
+-
+-	laddr = tproxy_laddr6(skb, &tgi->laddr.in6, &iph->daddr);
+-	lport = tgi->lport ? tgi->lport : hp->dest;
+-
+-	/* UDP has no TCP_TIME_WAIT state, so we never enter here */
+-	if (sk && sk->sk_state == TCP_TIME_WAIT)
+-		/* reopening a TIME_WAIT connection needs special handling */
+-		sk = tproxy_handle_time_wait6(skb, tproto, thoff, par, sk);
+-	else if (!sk)
+-		/* no there's no established connection, check if
+-		 * there's a listener on the redirected addr/port */
+-		sk = nf_tproxy_get_sock_v6(dev_net(skb->dev), tproto,
+-					   &iph->saddr, laddr,
+-					   hp->source, lport,
+-					   par->in, NFT_LOOKUP_LISTENER);
+-
+-	/* NOTE: assign_sock consumes our sk reference */
+-	if (sk && tproxy_sk_is_transparent(sk)) {
+-		/* This should be in a separate target, but we don't do multiple
+-		   targets on the same rule yet */
+-		skb->mark = (skb->mark & ~tgi->mark_mask) ^ tgi->mark_value;
+-
+-		pr_debug("redirecting: proto %hhu %pI6:%hu -> %pI6:%hu, mark: %x\n",
+-			 tproto, &iph->saddr, ntohs(hp->source),
+-			 laddr, ntohs(lport), skb->mark);
+-
+-		nf_tproxy_assign_sock(skb, sk);
+-		return NF_ACCEPT;
+-	}
+-
+-	pr_debug("no socket, dropping: proto %hhu %pI6:%hu -> %pI6:%hu, mark: %x\n",
+-		 tproto, &iph->saddr, ntohs(hp->source),
+-		 &iph->daddr, ntohs(hp->dest), skb->mark);
+-
+-	return NF_DROP;
+-}
+-
+-static bool tproxy_tg6_check(const struct xt_tgchk_param *par)
+-{
+-	const struct ip6t_ip6 *i = par->entryinfo;
+-
+-	if ((i->proto == IPPROTO_TCP || i->proto == IPPROTO_UDP)
+-	    && !(i->flags & IP6T_INV_PROTO))
+-		return true;
+-
+-	pr_info("Can be used only in combination with "
+-		"either -p tcp or -p udp\n");
+-	return false;
+-}
+-#endif
+-
+-static bool tproxy_tg4_check(const struct xt_tgchk_param *par)
+-{
+-	const struct ipt_ip *i = par->entryinfo;
+-
+-	if ((i->proto == IPPROTO_TCP || i->proto == IPPROTO_UDP)
+-	    && !(i->invflags & IPT_INV_PROTO))
+-		return true;
+-
+-	pr_info("xt_TPROXY: Can be used only in combination with "
+-		"either -p tcp or -p udp\n");
+-	return false;
+-}
+-
+-static struct xt_target tproxy_tg_reg[] __read_mostly = {
+-	{
+-		.name		= "TPROXY",
+-		.family		= NFPROTO_IPV4,
+-		.table		= "mangle",
+-		.target		= tproxy_tg4_v0,
+-		.revision	= 0,
+-		.targetsize	= sizeof(struct xt_tproxy_target_info),
+-		.checkentry	= tproxy_tg4_check,
+-		.hooks		= 1 << NF_INET_PRE_ROUTING,
+-		.me		= THIS_MODULE,
+-	},
+-	{
+-		.name		= "TPROXY",
+-		.family		= NFPROTO_IPV4,
+-		.table		= "mangle",
+-		.target		= tproxy_tg4_v1,
+-		.revision	= 1,
+-		.targetsize	= sizeof(struct xt_tproxy_target_info_v1),
+-		.checkentry	= tproxy_tg4_check,
+-		.hooks		= 1 << NF_INET_PRE_ROUTING,
+-		.me		= THIS_MODULE,
+-	},
+-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+-	{
+-		.name		= "TPROXY",
+-		.family		= NFPROTO_IPV6,
+-		.table		= "mangle",
+-		.target		= tproxy_tg6_v1,
+-		.revision	= 1,
+-		.targetsize	= sizeof(struct xt_tproxy_target_info_v1),
+-		.checkentry	= tproxy_tg6_check,
+-		.hooks		= 1 << NF_INET_PRE_ROUTING,
+-		.me		= THIS_MODULE,
+-	},
+-#endif
+-
+-};
+-
+-static int __init tproxy_tg_init(void)
+-{
+-	nf_defrag_ipv4_enable();
+-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+-	nf_defrag_ipv6_enable();
+-#endif
+-
+-	return xt_register_targets(tproxy_tg_reg, ARRAY_SIZE(tproxy_tg_reg));
+-}
+-
+-static void __exit tproxy_tg_exit(void)
+-{
+-	xt_unregister_targets(tproxy_tg_reg, ARRAY_SIZE(tproxy_tg_reg));
+-}
+-
+-module_init(tproxy_tg_init);
+-module_exit(tproxy_tg_exit);
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Balazs Scheidler, Krisztian Kovacs");
+-MODULE_DESCRIPTION("Netfilter transparent proxy (TPROXY) target module.");
+-MODULE_ALIAS("ipt_TPROXY");
+-MODULE_ALIAS("ip6t_TPROXY");

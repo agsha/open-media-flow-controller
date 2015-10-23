@@ -1,0 +1,1948 @@
+----
+<font size="+1">SCL 6.6(Based on CentOS 6.6) based build machine setup</font>
+----
+
+'''Do all the following when logged in as root.  E.g.  sudo su -'''
+=System requirements=
+The build machine needs to be able to create and run VMs.
+To verify this use the command
+*virt-host-validate
+If for the test "QEMU: Checking for hardware virtualization" it prints out "WARN" then the machine is NOT set up properly.
+<br>This is only likely a problem when the build machine is a VM itself.
+
+Also make sure that the needed kernel modules are loaded with these commands:
+* modprobe kvm
+* modprobe kvm-intel
+
+
+=Base OS Updates=
+
+
+==Update /root/.bashrc==
+Delete the aliases for rm, cp and mv from /root/.bashrc
+
+ # alias rm='rm -i'
+ # alias cp='cp -i'
+ # alias mv='mv -i'
+
+Then re-login.
+
+==Update /etc/resolv.conf==
+Update /etc/resolv.conf.  Use settings from an existing machine.  E.g.
+<pre>
+search englab.juniper.net spg.juniper.net juniper.net jnpr.net
+nameserver 192.168.5.68
+nameserver 172.17.28.101
+</pre>
+==Update timezone info==
+<pre>
+rm /etc/localtime
+ln -s /usr/share/zoneinfo/US/Pacific /etc/localtime
+</pre>
+
+==Get files from /data/archive/thirdparty/build-machine-*==
+The /data/archive/thirdparty/build-machine-* trees has files needed to configure the build machine.
+Either NFS mount it from the file server where it is located, or create it from an archive.
+These files are archived there as a convenience, as they can also be pulled from the third-party locations.
+These files are also in the MFC SVN source tree under dist/
+* dist/build-machine/build-machine-binary
+* dist/build-machine/build-machine-rpm
+* dist/build-machine/build-machine-src
+* dist/modified/SCL6/arch_x86_64/
+
+Items used from /data/archive/thirdparty
+<ul>
+<li>/data/archive/thirdparty/build-machine-binary/epel.repo/epel-release-6-8.noarch.rpm
+* SVN dist/build-machine/build-machine-binary/epel.repo/epel-release-6-8.noarch.rpm
+* http://epel.mirror.constant.com/6/i386/epel-release-6-8.noarch.rpm
+
+<li>/data/archive/thirdparty/build-machine-binary/epel.repo/0608B895.txt
+* SVN dist/build-machine/build-machine-binary/epel.repo/0608B895.txt
+* https://www.fedoraproject.org/static/0608B895.txt
+
+
+<li>/data/archive/thirdparty/build-machine-binary/apache-ant-1.8.2-bin.tar.gz
+* SVN dist/build-machine/build-machine-binary/apache-ant-1.8.2-bin.tar.gz
+* http://archive.apache.org/dist/ant/binaries/apache-ant-1.8.2-bin.tar.gz
+
+
+<li>/data/archive/thirdparty/build-machine-binary/ant-contrib-0.6-bin.tar.gz
+* SVN dist/build-machine/build-machine-binary/ant-contrib-0.6-bin.tar.gz
+* http://sourceforge.net/projects/ant-contrib/files/ant-contrib/ant-contrib-0.6/ant-contrib-0.6-bin.tar.gz/download
+
+<li>/data/archive/thirdparty/build-machine-rpm/libatomic_ops-devel-1.2-2.el5.x86_64.rpm
+* SVN dist/build-machine/build-machine-rpm/libatomic_ops-devel-1.2-2.el5.x86_64.rpm
+* ftp://ftp.pbone.net/mirror/download.fedora.redhat.com/pub/fedora/epel/5/x86_64/libatomic_ops-devel-1.2-2.el5.x86_64.rpm
+
+<li>/data/archive/thirdparty/build-machine-src/clisp/clisp-2.49.tar.bz2 
+* SVN dist/build-machine/build-machine-src/clisp/clisp-2.49.tar.bz2 
+* http://downloads.sourceforge.net/project/clisp/clisp/2.49/clisp-2.49.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fclisp%2F&ts=1401825126&use_mirror=softlayer-dal
+<li>/data/archive/thirdparty/build-machine-src/libsigsegv/libsigsegv-2.8.tar.gz
+* SVN dist/build-machine/build-machine-src/libsigsegv/libsigsegv-2.8.tar.gz
+* http://ftp.gnu.org/pub/gnu/libsigsegv/libsigsegv-2.8.tar.gz
+<li>/data/archive/thirdparty/build-machine-src/python-2.7.6/Python-2.7.6.tgz
+* SVN dist/build-machine/build-machine-src/python-2.7.6/Python-2.7.6.tgz
+* https://www.python.org/ftp/python/2.7.6/Python-2.7.6.tgz
+<li>/data/archive/thirdparty/build-machine-src/python-utilities/distribute-0.6.49.tar.gz
+* SVN dist/build-machine/build-machine-src/python-utilities/distribute-0.6.49.tar.gz
+* https://pypi.python.org/packages/source/d/distribute/distribute-0.6.49.tar.gz
+<li>/data/archive/thirdparty/build-machine-src/python-utilities/get-pip.py 
+* SVN /data/archive/thirdparty/build-machine-src/python-utilities/get-pip.py 
+* https://raw.github.com/pypa/pip/master/contrib/get-pip.py
+<li>/data/archive/thirdparty/build-machine-src/python-utilities/virtualenv-1.9.1.tar.gz
+* SVN dist/build-machine/build-machine-src/python-utilities/virtualenv-1.9.1.tar.gz
+* https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz
+<li>/data/archive/thirdparty/build-machine-src/c-ares-1.7.1.tar.gz
+* SVN dist/build-machine/build-machine-src/c-ares-1.7.1.tar.gz
+* http://c-ares.haxx.se/download/c-ares-1.7.1.tar.gz
+<li>/data/archive/thirdparty/build-machine-src/cgic/cgic205.tar.gz
+* SVN dist/build-machine/build-machine-src/cgic/cgic205.tar.gz
+* http://www.boutell.com/cgic/cgic205.tar.gz
+<li>/data/archive/thirdparty/build-machine-src/libcprops/libcprops-0.1.8.zip
+* SVN dist/build-machine/build-machine-src/libcprops/libcprops-0.1.8.zip
+* http://sourceforge.net/projects/cprops/files/cprops/cprops-0.1.8/libcprops-0.1.8.zip/download
+<li>/data/archive/thirdparty/build-machine-src/curl/curl-7.20.1.tar.gz
+* SVN dist/build-machine/build-machine-src/curl/curl-7.20.1.tar.gz
+* http://curl.haxx.se/download/curl-7.20.1.tar.gz
+<li>/data/archive/thirdparty/build-machine-src/GeoIP/GeoIP-1.4.8.tar.gz
+* SVN dist/build-machine/build-machine-src/GeoIP/GeoIP-1.4.8.tar.gz
+* http://geolite.maxmind.com/download/geoip/api/c/GeoIP-1.4.8.tar.gz
+<li>/data/archive/thirdparty/build-machine-src/libpcap/libpcap-1.2.0rc1.tar.gz
+* SVN dist/build-machine/build-machine-src/libpcap/libpcap-1.2.0rc1.tar.gz
+* http://www.tcpdump.org/beta/libpcap-1.2.0rc1.tar.gz
+<li>/data/archive/thirdparty/build-machine-src/openssl/openssl-1.0.1p.tar.gz
+* SVN dist/build-machine/build-machine-src/openssl/openssl-1.0.1p.tar.gz
+* https://www.openssl.org/source/openssl-1.0.1p.tar.gz
+<li>/data/archive/thirdparty/build-machine-src/x264/x264-snapshot-20110126-2245.tar.bz2
+* SVN dist/build-machine/build-machine-src/x264/x264-snapshot-20110126-2245.tar.bz2
+* ftp://ftp.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20110126-2245.tar.bz2 
+
+<li>/data/archive/thirdparty/build-machine-modified/glib2-2.28.8-4.SCLC6_6.R1.0.1-modified-436/glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm 
+* SVN dist/modified/SCL6/arch_x86_64/glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+<li>/data/archive/thirdparty/build-machine-modified/glib2-2.28.8-4.SCLC6_6.R1.0.1-modified-436/glib2-devel-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+* SVN dist/modified/SCL6/arch_x86_64/glib2-devel-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+</ul>
+
+
+===/data from archive===
+Extract the archive into /source/data, and then make a symlink to it like this
+<pre>
+ln -s /source/data /data
+</pre>
+
+
+===/data via NFS===
+Append to /etc/fstab:
+<pre>
+#Mounts from cmbu-storage01
+cmbu-storage01.juniper.net:/data     /data  nfs  soft,bg  0 0
+</pre>
+On the machine we are mounting from make sure the permissions are set up to allow mounting by this new build machine.
+For machines doing autobuilds the permissions for /data on cmbu-storage01 need to be "rw,sync,no_root_squash", otherwise just "rw,sync" is fine.
+
+Edit /etc/exports on cmbu-storage01.juniper.net as needed and then run "exportfs -a" if changes were made.
+
+Then run as root
+<pre>
+mkdir /data 
+mount -a
+</pre>
+
+==Set up CentOS repo access==
+
+The SCL CentOS repo can be nfs mounted or create from an archive.
+
+===SCL CentOS repo from archive===
+
+Extract the archive into /source/ssdlinux, and then make a symlink to it like this
+<pre>
+mkdir -p /volume/ssd-linux-storage01/repo/
+cd /volume/ssd-linux-storage01/repo/
+ln -s /source/sdlinux ssdlinux
+</pre>
+
+===SCL CentOS repo via NFS===
+SCL 6.6 repo URL is internally available from
+* http://ssd-linux-inventory.juniper.net:8080/ssdlinux/scl6/release/6.6.R1.0
+Once set up, this is accessible over NFS as
+* /volume/ssd-linux-storage01/repo/ssdlinux/scl6/release/6.6.R1.0
+
+Do the following to nfs mount /ssdlinux
+
+Append to /etc/fstab:
+<pre>
+#SSD repo
+svl-eng010-cf2.jnpr.net:/vol/ssd_linux_storage01/ssd-linux-storage01/repo/ssdlinux /volume/ssd-linux-storage01/repo/ssdlinux-nfsmount  nfs  ro,soft,bg  0 0
+
+</pre>
+
+Then run as root
+<pre>
+mkdir -p /volume/ssd-linux-storage01/repo/ssdlinux-nfsmount
+mount -a
+cd /volume/ssd-linux-storage01/repo/
+ln -s ssdlinux-nfsmount ssdlinux
+</pre>
+
+==Add needed users & groups==
+
+The "buildcmbu" user is used for owning the build locations.
+
+<pre>
+# Add if not already there.
+groupadd -g 25 -o named
+groupadd -g 48 -o apache
+groupadd -g 935 -o others1
+
+useradd -d /homes/buildcmbu -c "CMBU builder" -g 935 -M -s /bin/bash -u 23677 buildcmbu
+
+# If qemu is not already set up, add the group and user
+# groupadd -g 107 -o qemu
+# useradd -d / -c "qemu user" -g 107 -M -s /sbin/nologin -u 107 qemu
+</pre>
+
+==qemu note==
+On stock CentOS 6.4, libvirt fails to install because group id 107 is already in use by the LDAP system. So make sure the group qemu is set to id 107.
+
+
+
+==Entropy Setup==
+Turn on random number (rngd) to generate entropy for key generation on EL6.
+
+On EL6 GnuPG needs more entropy than on EL5 to generate the keys used for signing.
+This will cause the build to stall when building the kernel.
+To avoid this, the rngd must be started.
+
+1: Update <b><tt>/etc/sysconfig/rngd</tt></b> to set EXTRAOPTIONS this way to make it use /dev/urandom, and to do it every 20 seconds:
+<pre>
+EXTRAOPTIONS="-r /dev/urandom -t 20"
+</pre>
+If this proves to be insufficient, try this step as well:
+Specify random device in <tt><b>/etc/default/rng-tools</b></tt>:
+<pre>
+echo HRNGDEVICE=/dev/urandom > /etc/default/rng-tools 
+</pre>
+
+2. To cause it to be automatically started on build system startup, do: 
+<pre>chkconfig rngd on</pre>
+In addition, to start the daemon immediately (without reboot), you should do 
+<pre>service rngd start</pre>
+You should do this to make sure the daemon starts correctly.
+
+To see what the current entropy value is run this command:
+  cat /proc/sys/kernel/random/entropy_avail
+
+It can take a minute to build up entropy.  A value above 1500 is ok.  3000+ is good.  Note that reading the entropy value decreased entropy.
+
+==Reconfigure tmpwatch==
+Update /etc/cron.daily/tmpwatch to not clean /tmp as aggressively.
+Comment out the tmpwatch of /tmp:
+<pre>
+#Juniper CHANGE: Do not automatically clean /tmp, we want to preserve most files that people put there.
+#/usr/sbin/tmpwatch "$flags" -x /tmp/.X11-unix -x /tmp/.XIM-unix \
+#       -x /tmp/.font-unix -x /tmp/.ICE-unix -x /tmp/.Test-unix \
+#       -X '/tmp/hsperfdata_*' 10d /tmp
+</pre>
+
+
+==Create Directories==
+Large filesystems are needed for /build and /source.  If the large filesystem is not named /build* or /source, then create /build and /source as symlinks to the large filesystem.
+E.g. if /home is the large filesystem:
+ mkdir /home/build
+ ln -s /home/build /build
+ mkdir /home/source
+ ln -s /home/source /source
+
+The Autobuild system needs /build/ab/ and users need /build/users/ created.
+
+Create /build/users and /build/ab
+
+On machines with just one /build* directory:
+<pre>
+mkdir /build/ab
+mkdir /build/users
+chown buildcmbu:others1 /build/ab
+chmod 775 /build/ab
+chmod 1777 /build/users
+</pre>
+
+Else, on machines with several /build* directory (such as /build1 and /build2):
+<pre>
+mkdir /build
+mkdir /build1/users
+mkdir /build2/ab
+chown buildcmbu /build2/ab
+chmod 1777 /build1/users
+chmod 775 /build2/ab
+ln -s /build1/users /build/users
+ln -s /build2/ab /build/ab
+</pre>
+
+Normal builds use /source/samara.  Autobuilds also use /source/ab.  Users can use /source/users
+<pre>
+mkdir /source/samara /source/ab /source/users
+chown buildcmbu:others1 /source/samara /source/ab /source/users
+chmod 755 /source/samara /source/ab
+chmod 1777 /source/users
+</pre>
+
+==Update yum configuration==
+===ssdlinux.repo===
+Duplicate the top repo setting, hard wiring a "i386" architecture setting.
+E.g. the first setting is:
+<pre>
+[ssdlinux-release]
+name=ssdlinux $basearch release repo
+baseurl=http://ssd-linux-inventory.juniper.net:8080/ssdlinux/scl6/release/6.6.R1.0/$basearch/rpm/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-scl
+priority=1
+</pre>
+Add the setting based on that:
+<pre>
+[ssdlinux-releasei386]
+name=ssdlinux i386 release repo
+baseurl=http://ssd-linux-inventory.juniper.net:8080/ssdlinux/scl6/release/6.6.R1.0/i386/rpm/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-scl
+priority=1
+</pre>
+
+===epel.repo===
+1. Add /etc/yum.repos.d/epel.repo if it is not there. Type "yum repolist" to see if it is there.  If not do the following:
+<br>(Instructions from http://www.thegeekstuff.com/2012/06/enable-epel-repository/)
+
+2. Download epel rpm.<br>
+For CentOS 6, download the rpm file from
+<tt>http://download.fedoraproject.org/pub/epel/6/i386/repoview/epel-release.html</tt>
+<br>For Example if it is http://epel.mirror.constant.com/6/i386/epel-release-6-8.noarch.rpm then do:
+<pre>
+cd /tmp
+curl -O http://epel.mirror.constant.com/6/i386/epel-release-6-8.noarch.rpm
+</pre>
+
+3. - Find out the GPG key value needed by the epel package you just downloaded using the --test option.  E.g.
+<pre>
+ rpm -ivh epel-release-6-8.noarch.rpm --test
+</pre>
+That prints out
+<tt>warning: epel-release-6-8.noarch.rpm: Header V3 RSA/SHA256 Signature, key ID 0608b895: NOKEY</tt>
+
+4. - Get the key file that has that key ID and install it using rpm.
+Download the key file, or use a local copy:
+<pre>
+wget https://www.fedoraproject.org/static/0608B895.txt
+mv 0608B895.txt /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+</pre>
+or
+<pre>
+cp /data/archive/thirdparty/gpg/0608B895.txt /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+</pre>
+Now install it
+<pre>
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+</pre>
+
+5. - Verify that the key got installed successfully:
+<pre>rpm -qa gpg-*</pre>
+This should print out for example: <tt>gpg-pubkey-0608b895-4bd22942</tt>
+
+6. - Now install the epel rpm which will enable the EPEL repository for use by yum.
+(http://fedoraproject.org/wiki/EPEL)
+<pre>rpm -ivh epel-release-6-8.noarch.rpm</pre>
+
+7. You might need to edit the two /etc/yum.repos.d/epel*.repo files.
+* If the command <tt>yum repolist</tt> prints out and error, then:
+** edit /etc/yum.repos.d/epel*.repo to switch from using mirrorlist to baseurl.
+
+Also note that any reference to "download.fedora.redhat.com" in any /etc/yum.repos.d/* files must be replaced with "dl.fedoraproject.org".
+<br>See http://lists.fedoraproject.org/pipermail/announce/2012-February/003040.html)
+8. - Verify that the EPEL repository is enabled.
+<pre>yum repolist</pre>
+
+9. Then run "'''yum clean all'''" to make it use the new settings.
+ yum clean all
+
+==Get initial file info==
+Create file /root/TOP_LIST with the names top level directories on local filesystems we want to track changes to.
+
+On CentOS 6.x
+ # cat TOP_LIST 
+ bin
+ etc
+ lib
+ lib64
+ opt
+ root
+ sbin
+ usr
+
+Then run this script:
+ FL=/root/LOCAL_FILES.orig
+ LL=/root/LOCAL_FILES_LS.orig
+ SL=/root/LOCAL_FILES_SUMS.orig
+ cd /
+ find `cat /root/TOP_LIST` -type f | sort > $FL
+ cat $FL | xargs ls -l  > $LL
+ cat $FL | xargs sum    > $SL
+
+==Save rpm info==
+Save a list of all the installed RPMS and other files so comparisons can be done later:
+
+ D=/root/`uname -n`
+ mkdir $D
+ V=orig
+ rpm -qa | sort | uniq > $D/rpm-$V.list
+ find /lib* /*/lib*  /usr/include | sort > $D/files1-$V.list
+ find /usr/share /var/local /usr/local | sort > $D/files2-$V.list
+ ls -l /lib* /*/lib* | sort > $D/ls-$V.list
+
+=Install Needed RPMs=
+
+For additional packages requests, or SCL issues, please file a JIRA ticket at https://engsupport.juniper.net<br>
+Project=  "Central Linux (SCL)"
+
+Note:  For SCL 6.6 R1.0 --
+<br>The location in the repo for the x86_64 rpms is
+<br>'''<tt>/volume/ssd-linux-storage01/repo/ssdlinux/scl6/release/6.6.R1.0/x86_64/rpm/</tt>'''
+<br>The location in the repo for the i686 rpms is
+<br>'''<tt>/volume/ssd-linux-storage01/repo/ssdlinux/scl6/release/6.6.R1.0/i386/rpm/</tt>'''
+<br>The location in the repo for the srpms is
+<br>'''<tt>/volume/ssd-linux-storage01/repo/ssdlinux/scl6/release/6.6.R1.0/srpm/</tt>'''
+==libatomic_ops-devel==
+Install the atomic-ops RPM that installs the necessary header files and libraries.
+Then remove one file:
+* /usr/lib64/libatomic_ops_gpl.a
+That has GPL code that we do not use, so remove it to make sure we are not using it.
+
+The current version of the RPM is : libatomic_ops-devel-1.2-2.el5.x86_64.rpm
+
+Currently the RPM is in '''/data/archive/thirdparty/build-machine-rpm''' on cmbu-storage01.
+<pre>
+rpm -ivh /data/archive/thirdparty/build-machine-rpm/libatomic_ops-devel-1.2-2.el5.x86_64.rpm
+rm -f /usr/lib64/libatomic_ops_gpl.a
+</pre>
+
+These are the files installed from the RPM:
+<pre>
+/usr/include/atomic_ops
+/usr/include/atomic_ops.h
+/usr/include/atomic_ops/generalize-small.h
+/usr/include/atomic_ops/generalize.h
+/usr/include/atomic_ops/sysdeps
+/usr/include/atomic_ops/sysdeps/README
+/usr/include/atomic_ops/sysdeps/acquire_release_volatile.h
+/usr/include/atomic_ops/sysdeps/aligned_atomic_load_store.h
+/usr/include/atomic_ops/sysdeps/all_acquire_release_volatile.h
+/usr/include/atomic_ops/sysdeps/all_aligned_atomic_load_store.h
+/usr/include/atomic_ops/sysdeps/all_atomic_load_store.h
+/usr/include/atomic_ops/sysdeps/ao_t_is_int.h
+/usr/include/atomic_ops/sysdeps/atomic_load_store.h
+/usr/include/atomic_ops/sysdeps/char_acquire_release_volatile.h
+/usr/include/atomic_ops/sysdeps/char_atomic_load_store.h
+/usr/include/atomic_ops/sysdeps/emul_cas.h
+/usr/include/atomic_ops/sysdeps/gcc
+/usr/include/atomic_ops/sysdeps/gcc/alpha.h
+/usr/include/atomic_ops/sysdeps/gcc/arm.h
+/usr/include/atomic_ops/sysdeps/gcc/cris.h
+/usr/include/atomic_ops/sysdeps/gcc/hppa.h
+/usr/include/atomic_ops/sysdeps/gcc/ia64.h
+/usr/include/atomic_ops/sysdeps/gcc/m68k.h
+/usr/include/atomic_ops/sysdeps/gcc/powerpc.h
+/usr/include/atomic_ops/sysdeps/gcc/s390.h
+/usr/include/atomic_ops/sysdeps/gcc/sparc.h
+/usr/include/atomic_ops/sysdeps/gcc/x86.h
+/usr/include/atomic_ops/sysdeps/gcc/x86_64.h
+/usr/include/atomic_ops/sysdeps/generic_pthread.h
+/usr/include/atomic_ops/sysdeps/hpc
+/usr/include/atomic_ops/sysdeps/hpc/hppa.h
+/usr/include/atomic_ops/sysdeps/hpc/ia64.h
+/usr/include/atomic_ops/sysdeps/ibmc
+/usr/include/atomic_ops/sysdeps/ibmc/powerpc.h
+/usr/include/atomic_ops/sysdeps/icc
+/usr/include/atomic_ops/sysdeps/icc/ia64.h
+/usr/include/atomic_ops/sysdeps/int_acquire_release_volatile.h
+/usr/include/atomic_ops/sysdeps/int_aligned_atomic_load_store.h
+/usr/include/atomic_ops/sysdeps/int_atomic_load_store.h
+/usr/include/atomic_ops/sysdeps/msftc
+/usr/include/atomic_ops/sysdeps/msftc/x86.h
+/usr/include/atomic_ops/sysdeps/ordered.h
+/usr/include/atomic_ops/sysdeps/ordered_except_wr.h
+/usr/include/atomic_ops/sysdeps/read_ordered.h
+/usr/include/atomic_ops/sysdeps/short_acquire_release_volatile.h
+/usr/include/atomic_ops/sysdeps/short_aligned_atomic_load_store.h
+/usr/include/atomic_ops/sysdeps/short_atomic_load_store.h
+/usr/include/atomic_ops/sysdeps/standard_ao_double_t.h
+/usr/include/atomic_ops/sysdeps/sunc
+/usr/include/atomic_ops/sysdeps/sunc/sparc.h
+/usr/include/atomic_ops/sysdeps/test_and_set_t_is_ao_t.h
+/usr/include/atomic_ops/sysdeps/test_and_set_t_is_char.h
+/usr/include/atomic_ops_malloc.h
+/usr/include/atomic_ops_stack.h
+/usr/lib64/libatomic_ops.a
+/usr/lib64/libatomic_ops_gpl.a
+/usr/share/doc/libatomic_ops-devel-1.2
+/usr/share/doc/libatomic_ops-devel-1.2/AUTHORS
+/usr/share/doc/libatomic_ops-devel-1.2/COPYING
+/usr/share/doc/libatomic_ops-devel-1.2/ChangeLog
+/usr/share/doc/libatomic_ops-devel-1.2/INSTALL
+/usr/share/doc/libatomic_ops-devel-1.2/NEWS
+/usr/share/doc/libatomic_ops-devel-1.2/README
+/usr/share/libatomic_ops
+/usr/share/libatomic_ops/COPYING
+/usr/share/libatomic_ops/LICENSING.txt
+/usr/share/libatomic_ops/README.txt
+/usr/share/libatomic_ops/README_malloc.txt
+/usr/share/libatomic_ops/README_stack.txt
+/usr/share/libatomic_ops/README_win32.txt
+
+</pre>
+
+==squashfs-tools==
+The 4.0 or later version of squashfs is needed to be installed on the build machine.
+SCL6.6 already has this installed.
+
+==expect==
+SCL6.6 already has this installed.
+
+==qemu-kvm, python-virtinst==
+* qemu-kvm is needed to run KVM virtual machines. SCL6.6 already has this installed.
+* python-virtinst is needed to create the kvm image from the mfc installation iso. SCL6.5 already has this installed.
+* Check to see if libvirtd is running.  If not, use "service libvirtd restart".
+<pre>
+rpm -qa | grep qemu-kvm
+rpm -qa | grep python-virtinst
+rpm -qa | grep libvirt-python
+service libvirtd status
+</pre>
+
+SCL 6.6 has these installed: (from /volume/ssd-linux-storage01/repo/ssdlinux/scl6/release/6.6.R1.0/x86_64/rpm/ )
+* libvirt-python-0.10.2-46.SCLC6_6.3.R1.0.1.x86_64.rpm
+* python-virtinst-0.600.0-24.SCLC6_6.R1.0.1.noarch.rpm
+* qemu-kvm-0.12.1.2-2.448.SCLC6_6.R1.0.1.x86_64.rpm
+
+==RPMS needed to compile qemu==
+<pre>
+yum install -y pciutils-devel
+yum install -y SDL-devel
+# yum install -y libjpeg-devel  # CentOS 6.3: libjpeg-devel-6b-46.el6.x86_64 is the latest version
+yum install -y libjpeg-turbo-devel # CentOS 6.4. 6.5, 6.6, installs same files as libjpeg-devel on 6.3.
+</pre>
+
+==RPMS needed to install ncclient==
+To install https://github.com/Juniper/ncclient.git into a virtual python environment, install these RPMS:
+<pre>
+yum install -y libxslt-devel
+yum install -y libxslt-python
+</pre>
+
+==Boost RPM==
+Install the boost and boost-devel RPM packages.  SCL 6.6
+ has this already installed.
+ yum install -y boost
+ yum install -y boost-devel
+This also installs the dependency: libicu
+Boost web site: http://www.boost.org
+
+The license is a free non-attribution style.<br>
+* License text: http://www.boost.org/LICENSE_1_0.txt
+* Info page for the 1.41.0 version: http://www.boost.org/users/history/version_1_41_0.html
+* Source download: http://sourceforge.net/projects/boost/files/boost/1.41.0/boost_1_41_0.tar.gz/download
+
+* Info page for the 1.33.1 version: http://www.boost.org/users/history/version_1_33_1.html
+* Source download: http://sourceforge.net/projects/boost/files/boost/1.33.1/boost_1_33_1.tar.gz/download
+
+==yasm==
+Yasm must be installed so that ffmpeg can be built.
+ yum install -y yasm
+<pre>
+===============================================
+Package  Arch    Version      Repository   Size
+===============================================
+yasm     x86_64  1.2.0-1.el6  epel        736 k  -- on CentOS 6.3,6.4,6.5
+</pre>
+
+==quilt==
+Quilt is needed to work with kernel and driver patches.  This is in the "epel" repository.
+
+ yum install -y quilt
+
+* This installs quilt-0.48-2.el6.x86_64 on CentOS 6.3,6.4,6.5,6.6
+
+==Java + Ant ==
+Java and Ant needs to be installed in order to build MFA.
+SCL 6.6 has this JAVA installed:
+* java-1.6.0-openjdk-devel-1.6.0.34-1.13.6.1.SCLC6_6.R1.0.1.x86_64
+
+Determine the directory for JAVA_HOME setting
+<pre>
+ J=`rpm -ql java-1.6.0-openjdk-devel | grep bin/javac`
+ K=`dirname $J`
+ JAVA_HOME=`dirname $K`
+ echo JAVA_HOME=$JAVA_HOME
+</pre>
+
+Install Ant and determine ANT_HOME
+ cd /var/local
+ tar zxvf /data/archive/thirdparty/build-machine-binary/apache-ant-1.8.2-bin.tar.gz
+ ANT_HOME=/var/local/apache-ant-1.8.2
+
+Install Ant-Contrib
+ mkdir /tmp/ant-contrib
+ cd /tmp/ant-contrib
+ tar zxvf /data/archive/thirdparty/build-machine-binary/ant-contrib-0.6-bin.tar.gz
+ cp lib/ant*jar ${ANT_HOME}/lib
+
+Then add to /etc/profile right after the after the "export PATH ..." line
+<pre>
+# Juniper added:
+# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+JAVA_HOME=/usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64
+export JAVA_HOME
+pathmunge ${JAVA_HOME}/bin after
+ANT_HOME=/var/local/apache-ant-1.8.2
+export ANT_HOME
+pathmunge ${ANT_HOME}/bin after
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+</pre>
+
+==ncurses-static==
+ncurses-static is needed on CentOS 6.4 for building grub.
+
+ yum -y install ncurses-static
+
+==gnu-efi==
+gnu-efi is needed on CentOS 6.4+ for building grub.
+
+ yum -y install gnu-efi
+
+==numactl-devel==
+The NUMA packages numad, numactl and numactl-devel need to be installed for building PR_RING.
+
+Normally numad and numactl are already installed, so to install numactl-devel use yum:
+ yum install numactl-devel
+
+==Modified glib2 RPM==
+We have modified the glib2 library to support the functionality to control the default stack size of thread pool.
+
+We need to have <b>glib2</b> and <b>glib2-devel</b> installed.
+
+The Wiki page following describes the process to modify the glib2 RPM:
+* [[How to modify glib2 RPM]]
+
+Note: SCL 6.6 uses glib2-2.28.8-4.SCLC6_6.R1.0.1.src.rpm
+
+The modified new RPMs that match are in the following location:
+<pre>
+Location : cmbu-storage01.juniper.net:/data/archive/thirdparty/build-machine-modified/glib2-2.28.8-4.SCLC6_6.R1.0.1-modified-436/
+</pre>
+<pre>
+cd /data/archive/thirdparty/build-machine-modified/glib2-2.28.8-4.SCLC6_6.R1.0.1-modified-436
+rpm -Uvh --force glib2-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm glib2-devel-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+#rpm -ivh --force glib2-static-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+#rpm -ivh --force glib2-debuginfo-2.28.8-4.SCLC6_6.R1.0.1_mfc.1.x86_64.rpm
+</pre>
+
+The same modified glib2 rpm must also be put into the Samara source, including the patch file used
+
+=RPM lists=
+
+Create a list of the RPMs and other installed files at this point.
+
+ D=${HOME}/`uname -n`
+ V=mid
+ rpm -qa | sort | uniq > $D/rpm-$V.list
+ find /lib* /*/lib* /usr/include | sort > $D/files1-$V.list
+ find /usr/share /var/local /usr/local | sort > $D/files2-$V.list
+ ls -l /lib* /*/lib* > $D/ls-$V.list
+
+=Install other needed system utilities=
+==Lisp==
+Lisp is needed to build the Qosmos DPI library.
+
+CLISP project page and source
+* http://sourceforge.net/projects/clisp/
+* http://sourceforge.net/projects/clisp/files/latest/download
+* http://downloads.sourceforge.net/project/clisp/clisp/2.49/clisp-2.49.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fclisp%2F&ts=1401825126&use_mirror=softlayer-dal
+* Local copy /data/archive/thirdparty/build-machine-src/clisp/clisp-2.49.tar.bz2 
+
+Libsigsegv is required to properly build Lisp
+* It is from http://ftp.gnu.org/pub/gnu/libsigsegv/libsigsegv-2.8.tar.gz
+* Local copy /data/archive/thirdparty/build-machine-src/libsigsegv/libsigsegv-2.8.tar.gz
+<pre>
+PREFIX=/usr
+# First extract the clisp source.
+tar xf /data/archive/thirdparty/build-machine-src/clisp/clisp-2.49.tar.bz2 
+cd clisp-2.49/
+# Now get the libsigsegv source.
+mkdir tools
+cd tools
+LIBSIGSEGV_PREFIX=/usr
+tar xfz /data/archive/thirdparty/build-machine-src/libsigsegv/libsigsegv-2.8.tar.gz
+# Configure and build libsigsegv
+cd libsigsegv-2.8
+./configure --prefix=${LIBSIGSEGV_PREFIX} 2>&1 | tee configure.log.txt
+make         2>&1 | tee make.log.txt
+make check   2>&1 | tee makecheck.log.txt
+make install 2>&1 | tee makeinstall.log.txt
+# This installed the following files under the prefix
+#    include/sigsegv.h
+#    lib/libsigsegv.a
+#    lib/libsigsegv.la
+ls -l ${LIBSIGSEGV_PREFIX}/include/sigsegv.h ${LIBSIGSEGV_PREFIX}/lib/libsigsegv.*
+# Move back to the top directory.
+pwd
+cd ../..
+pwd
+# Now configure clisp.
+rm -f src/config.cache
+./configure --with-libsigsegv-prefix=${LIBSIGSEGV_PREFIX} --prefix=${PREFIX} 2>&1 | tee configure.log.txt
+
+
+# If this fails then use --ignore-absence-of-libsigsegv
+#./configure --ignore-absence-of-libsigsegv --prefix=${PREFIX} 2>&1 | tee configure.log.txt
+
+
+
+# Now build
+cd src
+#vi config.lisp
+ulimit -s 16384
+make 2>&1 | tee make.log.txt
+make check 2>&1 makecheck.log.txt
+make install 2>&1 | tee install.log.txt
+
+</pre>
+This installs under /usr the following files
+<pre>
+bin/clisp
+bin/clisp-link
+lib/clisp-2.49/data/Symbol-Table.text
+lib/clisp-2.49/data/UnicodeDataFull.txt
+lib/clisp-2.49/build-aux/config.guess
+lib/clisp-2.49/build-aux/config.rpath
+lib/clisp-2.49/build-aux/config.sub
+lib/clisp-2.49/build-aux/warn-on-use.h
+lib/clisp-2.49/build-aux/arg-nonnull.h
+lib/clisp-2.49/build-aux/depcomp
+lib/clisp-2.49/build-aux/c++defs.h
+lib/clisp-2.49/linkkit/modules.c
+lib/clisp-2.49/linkkit/clisp.h
+lib/clisp-2.49/linkkit/modprep.lisp
+lib/clisp-2.49/base/calls.o
+lib/clisp-2.49/base/lisp.a
+lib/clisp-2.49/base/regexi.o
+lib/clisp-2.49/base/libgnu_rx.a
+lib/clisp-2.49/base/libgnu_cl.a
+lib/clisp-2.49/base/makevars
+lib/clisp-2.49/base/libnoreadline.a
+lib/clisp-2.49/base/lisp.run
+lib/clisp-2.49/base/bogomips.o
+lib/clisp-2.49/base/gettext.o
+lib/clisp-2.49/base/libgnu_sc.a
+lib/clisp-2.49/base/lispinit.mem
+lib/clisp-2.49/base/modules.h
+lib/clisp-2.49/base/modules.o
+share/vim/vimfiles/after/syntax/lisp.vim
+share/locale/da/LC_MESSAGES/clisp.mo
+share/locale/da/LC_MESSAGES/clisplow.mo
+share/locale/en/LC_MESSAGES/clisp.mo
+share/locale/en/LC_MESSAGES/clisplow.mo
+share/locale/es/LC_MESSAGES/clisp.mo
+share/locale/es/LC_MESSAGES/clisplow.mo
+share/locale/nl/LC_MESSAGES/clisp.mo
+share/locale/nl/LC_MESSAGES/clisplow.mo
+share/locale/de/LC_MESSAGES/clisp.mo
+share/locale/de/LC_MESSAGES/clisplow.mo
+share/locale/fr/LC_MESSAGES/clisp.mo
+share/locale/fr/LC_MESSAGES/clisplow.mo
+share/locale/ru/LC_MESSAGES/clisp.mo
+share/locale/ru/LC_MESSAGES/clisplow.mo
+share/doc/clisp-2.49/README
+share/doc/clisp-2.49/GNU-GPL
+share/doc/clisp-2.49/README.de
+share/doc/clisp-2.49/doc/impnotes.html
+share/doc/clisp-2.49/doc/CLOS-guide.txt
+share/doc/clisp-2.49/doc/clisp-link.1
+share/doc/clisp-2.49/doc/clisp.ps
+share/doc/clisp-2.49/doc/LISP-tutorial.txt
+share/doc/clisp-2.49/doc/clisp.html
+share/doc/clisp-2.49/doc/impnotes.css
+share/doc/clisp-2.49/doc/clisp.1
+share/doc/clisp-2.49/doc/clisp-link.ps
+share/doc/clisp-2.49/doc/clisp.pdf
+share/doc/clisp-2.49/doc/clisp.png
+share/doc/clisp-2.49/doc/clisp-link.html
+share/doc/clisp-2.49/doc/clisp-link.pdf
+share/doc/clisp-2.49/COPYRIGHT
+share/doc/clisp-2.49/NEWS
+share/doc/clisp-2.49/SUMMARY
+share/doc/clisp-2.49/MAGIC.add
+share/doc/clisp-2.49/README.es
+share/doc/clisp-2.49/ANNOUNCE
+share/emacs/site-lisp/clisp-indent.el
+share/emacs/site-lisp/clhs.el
+share/emacs/site-lisp/clisp-coding.el
+share/emacs/site-lisp/clisp-indent.lisp
+share/emacs/site-lisp/clisp-ffi.el
+share/man/man1/clisp-link.1
+share/man/man1/clisp.1
+share/aclocal/clisp.m4
+</pre>
+
+==Fuse==
+On SCL 6.6, fuse-2.8.3-4 can be installed using "yum".
+ yum install fuse fuse-libs fuse-devel
+
+=Python 2.7=
+Python 2.7 and several python utilities need to be installed on the build machine, and a tar of
+some of these files also need to be installed into MFC.  The python utilities are:
+* setuptools
+* pip
+* virtualenv
+Installing these packages via 'yum' (python-setuptools, python-pip, python-virtualenv) would install them for python2.6, which is not what is wanted.
+So we must get the source to these and build and install them using an alternative location.
+
+==Build and Install Python 2.7.6==
+The source archive can be downloaded from https://www.python.org/ftp/python/2.7.6/Python-2.7.6.tgz
+<br>This source tgz is in the MFC source tree: dist/build-machine/build-machine-src/python-2.7.6/Python-2.7.6.tgz
+<br>There is a copy of this on cmbu-storage01: /data/archive/thirdparty/build-machine-src/python-2.7.6/Python-2.7.6.tgz
+<br>Refer to the other files in that directory:
+*<tt>About-Python-2.7.6.txt</tt> for more info about this version of Python
+*<tt>License-Python-2.7.6.txt</tt> for the PSF license text.  (It is NOT GPL)
+<br>
+
+Note that we must build python on the build machine but it MUST NOT replace
+the default verison, 2.6.6, otherwise "yum" will break.
+To do this we use "make altinstall" instead of "make install".
+
+Do this to build:
+<pre>
+prefix=/usr
+cd /tmp
+tar zxf /data/archive/thirdparty/build-machine-src/python-2.7.6/Python-2.7.6.tgz
+cd Python-2.7.6
+./configure --prefix ${prefix}
+make
+[ -f ${prefix}/bin/pydoc ] && mv ${prefix}/bin/pydoc ${prefix}/bin/pydoc.old
+find /usr -type f | sort > /tmp/before-python.txt
+make altinstall
+find /usr -type f | sort > /tmp/after-python.txt
+diff /tmp/before-python.txt /tmp/after-python.txt  | grep -v ${prefix}/lib/python2.7/ | grep -v ${prefix}/include/python2.7/ | grep '>'
+</pre>
+The above diff should print out:
+<pre>
+> /usr/bin/2to3
+> /usr/bin/idle
+> /usr/bin/pydoc
+> /usr/bin/python2.7
+> /usr/bin/python2.7-config
+> /usr/bin/smtpd.py
+> /usr/lib/libpython2.7.a
+> /usr/lib/pkgconfig/python-2.7.pc
+> /usr/share/man/man1/python2.7.1
+</pre>
+
+For MFC, we only need to pick up /usr/bin/python2.7, /usr/lib/libpython2.7.a and the files under /usr/lib/python2.7/
+
+==Python setuptools/distribute==
+* CentOS now uses "distribute" instead of "setuptools".
+
+Download the source tarball, uncompress it, then run the install command:
+* Source: https://pypi.python.org/packages/source/d/distribute/distribute-0.6.49.tar.gz
+* Saved locally: /data/archive/thirdparty/build-machine-src/python-utilities/distribute-0.6.49.tar.gz
+<pre>
+cd /tmp
+mkdir distribute-tmp
+cd distribute-tmp
+tar -xzvf /data/archive/thirdparty/build-machine-src/python-utilities/distribute-0.6.49.tar.gz
+cd distribute-0.6.49
+find /usr/bin /usr/lib | sort > LIST.before.txt
+python2.7 setup.py install
+find /usr/bin /usr/lib | sort > LIST.after.txt
+</pre>
+
+This installs 132 files:
+* /usr/bin/easy_install
+* /usr/bin/easy_install-2.7
+* /usr/lib/python2.7/site-packages/distribute-0.6.49-py2.7.egg/*
+* /usr/lib/python2.7/site-packages/easy-install.pth
+* /usr/lib/python2.7/site-packages/setuptools-0.6c11-py2.7.egg-info
+* /usr/lib/python2.7/site-packages/setuptools.pth
+
+==Install Python pip==
+http://www.pip-installer.org/en/latest/installing.html
+* Download https://raw.github.com/pypa/pip/master/contrib/get-pip.py
+* This is saved locally: /data/archive/thirdparty/build-machine-src/python-utilities/get-pip.py
+* Execute:
+<pre>
+cd /tmp
+mkdir pip-tmp
+cd pip-tmp
+find /usr/bin /usr/lib | sort > LIST.before.txt
+python2.7 /data/archive/thirdparty/build-machine-src/python-utilities/get-pip.py
+find /usr/bin /usr/lib | sort > LIST.after.txt
+</pre>
+This installs:
+* /usr/bin/pip
+* /usr/bin/pip2
+* /usr/bin/pip2.7
+* /usr/lib/python2.7/site-packages/pip/*
+
+==Install Python virtualenv==
+Download the source tarball, uncompress it, then run the install command:
+
+*Source: https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz
+*Saved locally: /data/archive/thirdparty/build-machine-src/python-utilities/virtualenv-1.9.1.tar.gz
+<pre>
+cd /tmp
+mkdir virtualenv-tmp
+cd virtualenv-tmp
+tar -xzvf /data/archive/thirdparty/build-machine-src/python-utilities/virtualenv-1.9.1.tar.gz
+cd virtualenv-1.9.1
+find /usr/bin /usr/lib | sort > LIST.before.txt
+python2.7 setup.py install
+find /usr/bin /usr/lib | sort > LIST.after.txt
+</pre>
+This installs:
+* /usr/bin/virtualenv
+* /usr/bin/virtualenv-2.7
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/PKG-INFO
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/SOURCES.txt
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/dependency_links.txt
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/entry_points.txt
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/not-zip-safe
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/EGG-INFO/top_level.txt
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv.py
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv.pyc
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support/__init__.py
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support/__init__.pyc
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support/distribute-0.6.34.tar.gz
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support/pip-1.3.1.tar.gz
+* /usr/lib/python2.7/site-packages/virtualenv-1.9.1-py2.7.egg/virtualenv_support/setuptools-0.6c11-py2.7.egg
+
+==Make list of all the files installed==
+<pre>
+find /usr -type f | sort > /tmp/after-python+utils.txt
+</pre>
+This diff shows all the utilities files installed:
+ diff /tmp/after-python.txt /tmp/after-python+utils.txt | grep '>'
+
+==Create tar of the files needed in MFC==
+Making this tar file is only needed when we need to generate one so it can be put into MFC source control
+when the OS version or Python or the utilties versions change.
+<pre>
+cd /usr
+tar zcvf python2.7.tgz bin/python2.7 bin/easy_install* bin/pip* bin/virtualenv* lib/libpython2.7.a lib/python2.7/
+</pre>
+This tgz file is put in svn as nokeena/src/thirdparty/binary/virtualenv/python2.7.tgz
+
+==Create virtual env tar needed in MFC==
+Once Python and the utilities are installed on the build machine, we need to create a virtual Python environment
+for use by the dpi-analyzer feature, and then tar it up so it can be put into MFC source control in the location
+nokeena/src/thirdparty/binary/virtualenv/. For more info see the About.txt file there.
+
+First make sure the /opt directory exists and is writeable.  Then do these commands:
+<pre>
+cd /opt
+virtualenv dpi-analyzer
+cd dpi-analyzer
+source bin/activate
+pip install git+https://github.com/Juniper/ncclient.git
+pip install junos-eznc
+deactivate 
+cd ..
+tar -zcf dpi-analyzer.tgz dpi-analyzer
+</pre>
+This tgz file is put in svn as nokeena/src/thirdparty/binary/virtualenv/dpi-analyzer.tgz
+
+==Cleanup special python==
+In case you need to re-install python2.7 and the other python items, here is the cleanup list:
+<pre>
+/usr/lib/python2.7/
+/usr/include/python2.7/
+/usr/bin/2to3
+/usr/bin/idle
+/usr/bin/pydoc
+/usr/bin/python2.7
+/usr/bin/python2.7-config
+/usr/bin/smtpd.py
+/usr/lib/libpython2.7.a
+/usr/lib/pkgconfig/python-2.7.pc
+/usr/share/man/man1/python2.7.1
+/usr/bin/easy_install
+/usr/bin/easy_install-2.7
+/usr/bin/pip
+/usr/bin/pip2
+/usr/bin/pip2.7 
+/usr/bin/virtualenv
+/usr/bin/virtualenv-2.7
+</pre>
+
+=Libraries=
+* cares
+* cgic
+* cprops
+* curl
+* GeoIP
+* pcap
+* openssl
+* x264
+
+
+Note: The libraries c-ares and curl reference the following shared libraries:
+* libldap-2.3.so.0 -> libldap-2.3.so.0.2.31  (from openldap-2*.rpm)
+* liblber-2.3.so.0 -> liblber-2.3.so.0.2.31  (from openldap-2*.rpm)
+* libsasl2.so.2 -> libsasl2.so.2.0.22        (from cyrus-sasl-lib-2*.rpm)
+
+==c-ares library==
+Make and install 'libcares'
+
+c-ares is a C library that performs DNS requests and name resolves asynchronously. 
+
+Download from http://c-ares.haxx.se/
+<br>Use the version that is on all the other build machines, or if there is a new
+version and the developers agree, then update all the build machines.  It is important
+for all the build machines to have the same version.
+<br>The latest version is 1.10.0 released 12-may-2013.  (as of 2015-07)
+
+We have been using 1.7.1 from http://c-ares.haxx.se/download/c-ares-1.7.1.tar.gz  (23-mar-2010)
+<br>There is a copy of this on storage01: /data/archive/thirdparty/build-machine-src/c-ares-1.7.1.tar.gz
+
+* Untar c-ares-1.7.1.tar.gz into a temporary directory.
+* Create the directory /tmp/ca-src and extract the tar into it like this:
+<pre>
+T=c-ares-1.7.1
+FROM=/data/archive/thirdparty/build-machine-src/c-ares
+rm -rf /tmp/ca-src
+mkdir /tmp/ca-src
+cd /tmp/ca-src
+tar zxvf ${FROM}/${T}.tar.gz
+</pre>
+* Build and install with these commands (as root)
+<pre>
+cd /tmp/ca-src/c*
+find * -type f | sort > BEFORE_CONFIGURE.LIST
+./configure --prefix=/usr/local
+find * -type f | sort > BEFORE_MAKE.LIST
+make
+find * -type f | sort > AFTER_MAKE.LIST
+find /usr/local -type f | sort > BEFORE_INSTALL.LIST
+make install
+find /usr/local -type f | sort > AFTER_INSTALL.LIST
+diff BEFORE_INSTALL.LIST AFTER_INSTALL.LIST
+D=/root/`uname -n`
+mkdir ${D}/c-ares-install
+cp *.LIST ${D}/c-ares-install/
+</pre>
+
+These are the files installed:
+ /usr/local/include/ares_build.h
+ /usr/local/include/ares_dns.h
+ /usr/local/include/ares.h
+ /usr/local/include/ares_rules.h
+ /usr/local/include/ares_version.h
+ /usr/local/lib/libcares.a
+ /usr/local/lib/libcares.la
+ /usr/local/lib/libcares.so.2.0.0
+ /usr/local/lib/pkgconfig/libcares.pc
+ /usr/local/share/man/man3/ares_*.3
+
+c-ares license:
+ Copyright 1998 by the Massachusetts Institute of Technology.
+ 
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted, provided that
+ the above copyright notice appear in all copies and that both that copyright
+ notice and this permission notice appear in supporting documentation, and that
+ the name of M.I.T. not be used in advertising or publicity pertaining to
+ distribution of the software without specific, written prior permission.
+ M.I.T. makes no representations about the suitability of this software for any
+ purpose.  It is provided "as is" without express or implied warranty.
+
+==cgic library==
+Make and install 'libcgic'
+
+cgic is an ANSI C library for CGI Programming. The version needed is 2.05. 
+
+Download from http://www.boutell.com/cgic/cgic205.tar.gz
+
+There is a copy on cmbu-storage01: /data/archive/thirdparty/build-machine-src/cgic/cgic205.tar.gz 
+
+* Unzip libcprops-0.1.8.zip into a temporary directory.
+* Build and install with these commands (as root):
+<pre>
+cd /tmp
+tar zxvf /data/archive/thirdparty/build-machine-src/cgic/cgic205.tar.gz
+cd cgic205
+make
+make install
+</pre>
+These are the files installed: 
+<pre>
+/usr/local/lib/libcgic.a
+/usr/local/include/cgic.h
+</pre>
+
+'''We have purchased the Commercial License (May 2012).'''
+
+The license is in the source file license.txt and also available as http://www.boutell.com/cgic/license.html
+<pre>
+CGIC License Terms
+------------------
+
+Basic License
+-------------
+
+CGIC, copyright 1996-2011 by Thomas Boutell and Boutell.Com, Inc. Permission 
+is granted to use CGIC in any application, commercial or noncommercial, at no 
+cost. HOWEVER, this copyright paragraph must appear on a "credits" page 
+accessible in the public online and offline documentation of the program. 
+Modified versions of the CGIC library should not be distributed without 
+the attachment of a clear statement regarding the author of the 
+modifications, and this notice may in no case be removed. 
+Modifications may also be submitted to the author for inclusion 
+in the main CGIC distribution.                                 
+
+IF YOU WOULD PREFER NOT TO ATTACH THE ABOVE NOTICE to
+the public documentation of your application, consult the
+information which follows regarding the availability
+of a nonexclusive commercial license for CGIC.
+
+Commercial License
+------------------
+
+The price of a nonexclusive commercial license is $200 U.S. 
+To purchase the license, visit our online store here:
+
+https://www.boutell.com/
+
+Signed originals are available on request after purchase.
+
+Commercial licensees are entitled to ongoing email support
+and update notifications.
+
+* * *
+
+CGIC Nonexclusive Commercial License
+
+The party purchasing this license is granted the right
+to utilize CGIC, major version 1 or 2, any minor
+version thereof, in CGI applications without the
+need for a credit notice of any kind. CGI applications
+developed by the holder of this license may be
+distributed freely in source code or binary form
+without additional fees or royalties. This license does 
+not grant the right to use CGIC to create a development tool 
+which passes on substantially all of the capabilities of the 
+CGIC library to the user of the tool, unless that tool is 
+to be used internally by the license holder only in order
+to develop CGI applications. This license may not
+be resold, but applications developed in accordance
+with the terms of the license may be distributed
+freely subject to the limitations described above.
+
+Future minor (2.x) versions of CGIC will be covered by this
+license free of charge. If significant defects of workmanship
+are discovered in version 2.x, minor releases to correct them
+will be made available before or at the same time that 
+those defects are addressed in any future major version. 
+Future "major" (3.x) versions will be available to
+licensees at an upgrade price of $50.
+
+If, for any reason, any portion of this license is found 
+to be invalid, that portion of the license only
+is invalidated and the remainder of the agreement
+remains in effect.
+</pre>
+
+==cprops library==
+Make and install 'libcprops'
+
+libcprops is a c prototyping tools library.
+Release Date: version 0.1.8 on 2007-12-15 (lastest at of 2011-04-10)
+
+Download from http://sourceforge.net/projects/cprops/files/cprops/cprops-0.1.8/libcprops-0.1.8.zip/download
+
+There is a copy on cmbu-storage01: /data/archive/thirdparty/build-machine-src/libcprops/libcprops-0.1.8.zip
+
+* Unzip libcprops-0.1.8.zip into a temporary directory.
+* Build and install with these commands:
+<pre>
+T=libcprops-0.1.8
+FROM=/data/archive/thirdparty/build-machine-src/libcprops/
+rm -rf /tmp/libcprops
+mkdir /tmp/libcprops
+cd /tmp/libcprops
+unzip -d . ${FROM}/${T}.zip
+</pre>
+* Build and install with these commands (as root)
+<pre>
+cd /tmp/libcprops
+cd libcprops*
+./configure
+make
+find /usr/local /man -mount -type f | sort > BEFORE_INSTALL.LIST
+make install
+find /usr/local /man -mount -type f | sort > AFTER_INSTALL.LIST
+diff BEFORE_INSTALL.LIST AFTER_INSTALL.LIST
+</pre>
+
+These are the files installed: 
+<pre>
+/usr/local/bin/cpsp
+/usr/local/bin/cpsp-gen.sh
+/usr/local/bin/cpsvc
+/usr/local/bin/Makefile.cpsp
+/usr/local/bin/mime.types
+/usr/local/include/cprops/avl.h
+/usr/local/include/cprops/client.h
+/usr/local/include/cprops/collection.h
+/usr/local/include/cprops/common.h
+/usr/local/include/cprops/config.h
+/usr/local/include/cprops/db.h
+/usr/local/include/cprops/hashlist.h
+/usr/local/include/cprops/hashtable.h
+/usr/local/include/cprops/heap.h
+/usr/local/include/cprops/httpclient.h
+/usr/local/include/cprops/http.h
+/usr/local/include/cprops/linked_list.h
+/usr/local/include/cprops/log.h
+/usr/local/include/cprops/mempool.h
+/usr/local/include/cprops/mtab.h
+/usr/local/include/cprops/multimap.h
+/usr/local/include/cprops/nary.h
+/usr/local/include/cprops/priority_list.h
+/usr/local/include/cprops/rb.h
+/usr/local/include/cprops/socket.h
+/usr/local/include/cprops/sorted_hash.h
+/usr/local/include/cprops/splay.h
+/usr/local/include/cprops/str.h
+/usr/local/include/cprops/thread.h
+/usr/local/include/cprops/trie.h
+/usr/local/include/cprops/util.h
+/usr/local/include/cprops/vector.h
+/usr/local/lib/libcprops.a
+/usr/local/lib/libcprops.la
+/usr/local/lib/libcprops.so.10.2.0
+/usr/local/lib/libcprops.so.10 -> libcprops.so.10.2.0
+/usr/local/lib/libcprops.so -> libcprops.so.10.2.0
+/man/man3/cp_*
+/man/man3/libcprops.3
+</pre>
+
+The libcprops license (from the file COPYING)
+<pre>
+		  GNU LESSER GENERAL PUBLIC LICENSE
+		       Version 2.1, February 1999
+</pre>
+
+==curl library==
+Make and install 'libcurl'
+
+curl is a command line tool for transferring data with URL syntax.
+
+Download from http://curl.haxx.se/download/curl-7.20.1.tar.gz
+
+There is a copy on cmbu-storage01: /data/archive/thirdparty/build-machine-src/curl-7.20.1.tar.gz
+
+* Untar curl-7.20.1.tar.gz into a temporary directory.
+* Build and install with these commands:
+<pre>
+T=curl-7.20.1
+FROM=/data/archive/thirdparty/build-machine-src/curl
+rm -rf /tmp/curl-src
+mkdir /tmp/curl-src
+cd /tmp/curl-src
+tar zxvf ${FROM}/${T}.tar.gz
+</pre>
+* Build and install with these commands (as root)
+<pre>
+cd /tmp/curl-src/c*
+find * -type f | sort > BEFORE_CONFIGURE.LIST
+./configure --prefix=/usr/local --enable-ares=/usr/local
+find * -type f | sort > BEFORE_MAKE.LIST
+make
+find * -type f | sort > AFTER_MAKE.LIST
+find /usr/local -type f | sort > BEFORE_INSTALL.LIST
+make install
+find /usr/local -type f | sort > AFTER_INSTALL.LIST
+diff BEFORE_INSTALL.LIST AFTER_INSTALL.LIST
+D=/root/`uname -n`
+mkdir ${D}/curl-install
+cp *.LIST ${D}/curl-install/
+</pre>
+
+These are the files installed:
+ /usr/local/bin/curl
+ /usr/local/bin/curl-config
+ /usr/local/include/curl/curlbuild.h
+ /usr/local/include/curl/curl.h
+ /usr/local/include/curl/curlrules.h
+ /usr/local/include/curl/curlver.h
+ /usr/local/include/curl/easy.h
+ /usr/local/include/curl/mprintf.h
+ /usr/local/include/curl/multi.h
+ /usr/local/include/curl/stdcheaders.h
+ /usr/local/include/curl/typecheck-gcc.h
+ /usr/local/include/curl/types.h
+ /usr/local/lib/libcurl.a
+ /usr/local/lib/libcurl.la
+ /usr/local/lib/libcurl.so.4.2.0
+ /usr/local/lib/pkgconfig/libcurl.pc
+ /usr/local/share/man/man1/curl.1
+ /usr/local/share/man/man1/curl-config.1
+ /usr/local/share/man/man3/curl_*.3
+ /usr/local/share/man/man3/libcurl.3
+ /usr/local/share/man/man3/libcurl-*.3
+
+From the web site:
+ Curl and libcurl are true Open Source/Free Software and meet all definitions as such.
+ It means that you are free to modify and redistribute all contents of the curl
+ distributed archives. You may also freely use curl and libcurl in your commercial projects.
+ Curl and libcurl are licensed under a MIT/X derivate license, see below.
+ 
+The curl license:
+ COPYRIGHT AND PERMISSION NOTICE
+ Copyright (c) 1996 - 2010, Daniel Stenberg, <daniel@haxx.se>.
+ All rights reserved.
+ Permission to use, copy, modify, and distribute this software for any purpose
+ with or without fee is hereby granted, provided that the above copyright
+ notice and this permission notice appear in all copies.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS. IN
+ NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
+ 
+ Except as contained in this notice, the name of a copyright holder shall not
+ be used in advertising or otherwise to promote the sale, use or other dealings
+ in this Software without prior written authorization of the copyright holder.
+
+==GeoIP library==
+The GeoIP library must be installed in order to compile geodbd.
+
+The source came from: http://geolite.maxmind.com/download/geoip/api/c/GeoIP-1.4.8.tar.gz
+<br>
+It is archived at:  /data/archive/thirdparty/build-machine-src/GeoIP/GeoIP-1.4.8.tar.gz
+
+For more info go to: http://www.maxmind.com/app/c
+
+Extract this tar file in a new temp directory and configure, build and install it.
+<br>
+The MFC build must pick up the shared library (.so) put it in the MFC package. 
+
+Note: The license is LGPL, so we do NOT want to use the static libs, so we remove those.
+
+ cd /tmp
+ tar xvf /data/archive/thirdparty/build-machine-src/GeoIP/GeoIP-1.4.8.tar.gz
+ cd GeoIP-1.4.8
+ ./configure
+ make
+ make check
+ make install
+ rm -f /usr/local/lib/libGeoIP.a
+ rm -f /usr/local/lib/libGeoIPUpdate.a
+
+"make install" installs:
+ /usr/local/bin/geoiplookup
+ /usr/local/bin/geoiplookup6
+ /usr/local/bin/geoipupdate
+ /usr/local/etc/GeoIP.conf
+ /usr/local/etc/GeoIP.conf.default
+ /usr/local/include/GeoIPCity.h
+ /usr/local/include/GeoIP.h
+ /usr/local/include/GeoIPUpdate.h
+ /usr/local/lib/libGeoIP.a (deleted)
+ /usr/local/lib/libGeoIP.la
+ /usr/local/lib/libGeoIP.so -> libGeoIP.so.1.4.8
+ /usr/local/lib/libGeoIP.so.1 -> libGeoIP.so.1.4.8
+ /usr/local/lib/libGeoIP.so.1.4.8
+ /usr/local/lib/libGeoIPUpdate.a (deleted)
+ /usr/local/lib/libGeoIPUpdate.la
+ /usr/local/lib/libGeoIPUpdate.so -> libGeoIPUpdate.so.0.0.0
+ /usr/local/lib/libGeoIPUpdate.so.0 -> libGeoIPUpdate.so.0.0.0
+ /usr/local/lib/libGeoIPUpdate.so.0.0.0
+
+==pcap library==
+Libpcap.so is a shared lib having APIs to do packet capturing(developed by tcpdump team).
+* BSD License
+* Version: libpcap-1.2.0
+* http://www.tcpdump.org/
+* http://www.tcpdump.org/beta/libpcap-1.2.0rc1.tar.gz
+The source is archived locally as /data/archive/thirdparty/build-machine-src/libpcap/libpcap-1.2.0rc1.tar.gz
+
+Extract this tar file in a new temp directory and configure, build and install it.
+
+ mkdir /tmp/libpcap-build
+ cd /tmp/libpcap-build
+ tar zxvf /data/archive/thirdparty/build-machine-src/libpcap/libpcap-1.2.0rc1.tar.gz
+ cd libpcap-1.2.0
+ ./configure
+ make
+ make install
+
+Files installed (other than man pages):
+ /usr/local/include/pcap-bpf.h
+ /usr/local/include/pcap-namedb.h
+ /usr/local/include/pcap.h
+ /usr/local/include/pcap/bluetooth.h
+ /usr/local/include/pcap/bpf.h
+ /usr/local/include/pcap/ipnet.h
+ /usr/local/include/pcap/namedb.h
+ /usr/local/include/pcap/pcap.h
+ /usr/local/include/pcap/sll.h
+ /usr/local/include/pcap/usb.h
+ /usr/local/include/pcap/vlan.h
+ /usr/local/bin/pcap-config
+ /usr/local/lib/libpcap.a
+ /usr/local/lib/libpcap.so -> libpcap.so.1
+ /usr/local/lib/libpcap.so.1 -> libpcap.so.1.2.0
+ /usr/local/lib/libpcap.so.1.2.0
+
+The MFC build must pick up the shared library (.so) put it in the MFC package.
+
+License from the "LICENSE" file in the source:
+<pre>
+License: BSD
+ 
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+  
+  1. Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in
+     the documentation and/or other materials provided with the
+     distribution.
+  3. The names of the authors may not be used to endorse or promote
+     products derived from this software without specific prior
+     written permission.
+  
+THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+</pre>
+
+==openssl library==
+The latest openssl version needs to be compiled and installed on each build machine.
+* License is "OpenSSL License", which is "Apache-like".
+* The source is downloaded from http://www.openssl.org/source/
+* The versions that we have used are archived in:
+**  /data/archive/thirdparty/build-machine-src/openssl/
+
+Get the latest source if needed and archive it there and update this list and instructions.
+* https://www.openssl.org/source/openssl-1.0.1m.tar.gz (released 2015-03)
+
+Extract the tar file in a new temp directory and configure, build and install it.
+
+ mkdir /tmp/openssl-build
+ cd /tmp/openssl-build
+ tar zxvf /data/archive/thirdparty/build-machine-src/openssl/openssl-1.0.1m.tar.gz
+ cd openssl-1.0.1*
+ ./config --prefix=/usr/local/openssl --openssldir=/usr/local/openssl/openssl -fPIC
+ make
+ make install
+
+==x264 library==
+The x264 library must be installed in order to compile ffmpeg.
+
+The source came from:
+* ftp://ftp.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20110126-2245.tar.bz2
+It is archived at: /data/archive/thirdparty/build-machine-src/x264/x264-snapshot-20110126-2245.tar.bz2
+
+Extract this tar file in a new temp directory and configure, build and install it.
+
+ mkdir /tmp/x286-build
+ cd /tmp/x286-build
+ bunzip2 -c  /data/archive/thirdparty/build-machine-src/x264/x264-snapshot-20110126-2245.tar.bz2 | tar xvf -
+ cd x264-snapshot-20110126-2245
+ ./configure
+ make
+ make install
+
+Note that the license is GPL.  The ffmpeg binary is linked with this so it gets infected with GPL.
+
+=Usability=
+The setup done above just gets the system so that the MFC product can be built.
+Now configure the system to make it usable for development.
+
+
+==Adjust hostname==
+Also make sure that 'hostname' returns just the hostname, and that 'domainname' returns the full domain so that the script will work.
+ hostname
+ domainname
+"hostname -f" should return the host.domain name.
+
+==MySQL==
+MySQL might already be installed by puppet, or from the installation CD.  Make sure:
+ rpm -qa | grep mysql-devel
+If not, then install:
+ yum install mysql-devel
+
+==Perl DB Module==
+perl-DBD-MySQL might already be installed by puppet, or from the installation CD. Make sure: 
+ rpm -qa | grep perl-DBD-MySQL
+If not, then install:
+ yum install perl-DBD-MySQL
+
+==Apache httpd==
+httpd might already be installed by puppet, or from the installation CD. Make sure it is a recent 2.2 version:
+ rpm -qa | grep httpd
+
+If it is not installed, then install it this way:
+ yum install -y  httpd
+
+==Set up http index and links==
+* Doc root is /var/www/html
+* Configuration file: /etc/httpd/conf/httpd.conf
+
+'''1.''' Put symlinks in /var/www/html as needed to point to local filesystem locations.
+<pre>
+cd /var/www/html
+ln -s /data/ data
+ln -s /tmp/ tmp
+ln -s /source/ source
+ln -s /source/samara/current/tree/doc/ samara-tree-doc
+ln -s /source/samara/current/docs/ samara-docs
+</pre>
+If /build/users and /build/ab are on the same filesystems, then do this to create the needed symlink.
+<pre>
+cd /var/www/html
+ln -s /build/ build
+</pre>
+
+If /build/users and /build/ab are on different filesystems, then do this to make the same kind of symlinks that are in /build.
+<pre>
+cd /var/www/html
+mkdir build
+cd build
+ln -s /build2/ab ab
+ln -s /build1/users users
+</pre>
+
+'''2.''' If SecureLinux (SELinux) is enabled, you need to give permission for httpd to access directories outside of the httpd root (/var/www). Use chcon for each of the locations that are symlinked from /var/www/html. E.g.
+
+ chcon -Rv --type=httpd_sys_content_t /tmp
+ chcon -Rv --type=httpd_sys_content_t /source
+ chcon -Rv --type=httpd_sys_content_t /build
+ chcon -Rv --type=httpd_sys_content_t /build1
+ chcon -Rv --type=httpd_sys_content_t /build2
+
+
+'''3.''' Update /var/www/html/index.html file with host name and links to the local filesystem symlinks.
+<br>Create /var/www/html/index.html something like:
+<pre>
+&lt;html>&lt;body>&lt;h1>cmbu-build0N.juniper.net&lt;/h1>
+Build machine for Samara Hickory (SCL 6.5) based MFC
+&lt;p/>
+&lt;a href="/build">cmbu-build0N.juniper.net:/build directory</a>
+&lt;br/>
+&lt;a href="/tmp">cmbu-build0N.juniper.net:/tmp directory</a>
+&lt;hr>
+&lt;font size=-2>
+&lt;ul>
+&lt;li> /var/www/html
+&lt;li> HWaddr ______  
+&lt;li> Started by /etc/init.d/httpd
+&lt;/ul>
+&lt;/body>&lt;/html>
+</pre>
+
+'''4.''' To start it the first time run: <tt>/etc/init.d/httpd start</tt>
+
+'''5.''' ''OPTIONAL'': Update ''/etc/httpd/conf/httpd.conf''
+If you need to debug the web server you can change "LogLevel warn" to "LogLevel debug".
+
+==smbclient==
+We do not require smb client anymore. But if you want to install--
+*/usr/bin/smbclient
+ yum install -y samba-client
+
+==Vim==
+Make sure these are installed:
+*vim-common
+*vim-enhanced
+ yum install -y vim-common
+ yum install -y vim-enhanced
+
+==Emacs==
+We want emacs 23.4 or later installed.
+Emacs is probably already installed by puppet, or from the installation CD.
+See which version:
+ rpm -qa | grep emacs
+
+
+*From: https://ftp.gnu.org/gnu/emacs/emacs-24.4.tar.gz
+*Saved locally: /data/thirdparty/rpms/emacs-24.4.tar.gz
+ cd /root
+ #wget https://ftp.gnu.org/gnu/emacs/emacs-24.4.tar.gz
+ tar -xzf /data/thirdparty/rpms/emacs-24.4.tar.gz
+ cd emacs-24.4
+ ./configure --with-xpm=no --with-jpeg=no --with-gif=no --with-tiff=no --with-png=no --with-x-toolkit=no --without-x
+ make
+ make install
+
+That installs it as /usr/local/bin/emacs-24-4 and symlink emacs->emacs-24.4.
+<br>Remove the old version symlink from /usr/bin and make a new ones:
+ if [ -f /usr/local/bin/emacs-24.4 ] ; then
+   cd /usr/bin
+   rm -f emacs emacsclient
+   ln -s /usr/local/bin/emacs-24.4 emacs
+   ln -s /usr/local/bin/emacsclient emacsclient
+ else
+   echo emacs-24.4 was not built
+ fi
+
+==???==
+What is this for?  Do not install these.
+<s>
+ #yum -y install libXpm
+ #yum -y install libgif
+ #yum -y install libungif
+</s>
+
+==XLSFonts==
+ yum install -y xlsfonts
+
+==Bitmap Fonts==
+ yum -y install bitmap-fonts
+
+==libXScrnSaver==
+ yum -y install libXScrnSaver-devel
+
+==tk==
+ yum -y install tk
+
+==tcl==
+Make sure '''tcl''' is installed:
+ yum -y install tcl
+ yum -y install tcl-devel
+
+==telnet==
+Make sure '''telnet''' is installed:
+ yum -y install telnet
+
+==sendmail==
+Make sure that sendmail works. Do something like this to send a test email:
+<pre>
+cat << EOF | sendmail -t
+From: dpeet@juniper.net
+To: dpeet@juniper.net
+Subject: Test Email
+MIME-Version: 1.0
+Content-type: text/plain; charset=us-ascii
+
+Test email
+EOF
+</pre>
+
+=RPM lists=
+
+Create a list of the RPMs and other installed files at this point.
+
+ D=${HOME}/`uname -n`
+ V=pre-verify
+ rpm -qa | sort | uniq > $D/rpm-$V.list
+ find /lib* /*/lib* /usr/include | sort > $D/files1-$V.list
+ find /usr/share /var/local /usr/local | sort > $D/files2-$V.list
+ ls -l /lib* /*/lib* > $D/ls-$V.list
+
+=Get the source to build=
+To proceed with setting up the build system ("'''Install and update RPMS as indicated by the Samara source'''"),
+you need to use the MFC source.
+
+==Get the source==
+The following are the instructions for getting the source from Juniper's internal subversion server.
+
+Before proceeding, need to know what branch and revision of the Appliance source you need.
+The mainline is svn://cmbu-svn01.juniper.net/nkn/appliance/trunk
+
+===Checkout Appliance source===
+Svn checkout the Appliance and Samara source branches that will be used.
+The Appliance (MFC) source might be the trunk or a branch.
+
+Note that if the svn command fails with "svn: warning: cannot set LC_CTYPE locale"
+<br>
+Then set this in your environment:
+ export LC_ALL=C
+and put it in /etc/profile right before the after the "export PATH ..." line 
+
+Example with <b>TRUNK</b> source:<br>
+The following example checks out the latest '''trunk''' revision.
+* Get the source as the 'buildcmbu' user or any other account that has access:
+ cd /tmp
+ rm -rf /tmp/cr
+ mkdir -p /tmp/cr/appliance
+ cd /tmp/cr/appliance
+ svn checkout --username buildcmbu svn://cmbu-svn01.juniper.net/nkn/appliance/trunk
+ cd trunk
+ export PROD_CUSTOMER_ROOT=`pwd`
+ echo PROD_CUSTOMER_ROOT=${PROD_CUSTOMER_ROOT}
+
+Example with a <b>BRANCH</b> source:<br>
+The following example checks out the latest '''branches/jackson''' revision.
+* Get the source as the 'buildcmbu' user or any other account that has access:
+ cd /tmp
+ rm -rf /tmp/cr
+ mkdir -p /tmp/cr/appliance
+ cd /tmp/cr/appliance
+ svn checkout --username buildcmbu svn://cmbu-svn01.juniper.net/nkn/appliance/branches/jackson
+ cd jackson
+ export PROD_CUSTOMER_ROOT=`pwd`
+ echo PROD_CUSTOMER_ROOT=${PROD_CUSTOMER_ROOT}
+
+===Checkout Samara source===
+If you are setting up a build server for an existing revision of MFC, follow these instructions
+to determine the svn URL and revision.  If you are working on setting up a build server for a
+new Samara version that does not yet the the needed changes made to MFC, then you have to
+determine for yourself what Samara svn URL and revision to use.  "SAMARA_SVN_REV=HEAD" will get the most recent version.
+
+Dot in build_settings.dot to determine the svn url and revision to get.
+ . $PROD_CUSTOMER_ROOT/nokeena/src/mk/build_settings.dot
+
+For example it might set:
+<pre>
+SAMARA_SVN_REV=388
+SAMARA_SVN_BRANCH=current
+SAMARA_NAME=hickoryu0
+CENTOS_VER=6.5
+DMI_PKG=mfc-dmi-adapter-12.3.4-R1
+</pre>
+
+Then use those settings to checkout the Samara tree.  Here are the exact steps:
+ . $PROD_CUSTOMER_ROOT/nokeena/src/mk/build_settings.dot
+ echo SAMARA_SVN_BRANCH=${SAMARA_SVN_BRANCH}
+ SAMARA_SVN_URL_PROD_TREE_ROOT=svn://cmbu-svn01.juniper.net/thirdpartyall/samara/${SAMARA_SVN_BRANCH}/tree
+ echo SAMARA_SVN_URL_PROD_TREE_ROOT=${SAMARA_SVN_URL_PROD_TREE_ROOT}
+ echo SAMARA_SVN_REV=${SAMARA_SVN_REV}
+ SVN_TOP=`dirname ${SAMARA_SVN_URL_PROD_TREE_ROOT}`
+ rm -rf /tmp/tr
+ mkdir -p /tmp/tr/
+ cd /tmp/tr
+ echo svn checkout --username buildcmbu -r ${SAMARA_SVN_REV} ${SVN_TOP}
+ svn      checkout --username buildcmbu -r ${SAMARA_SVN_REV} ${SVN_TOP}
+ cd `basename ${SVN_TOP}`/tree
+ export PROD_TREE_ROOT=`pwd`
+ echo PROD_TREE_ROOT=${PROD_TREE_ROOT}
+
+
+
+=Install and update RPMS =
+Now that you have copied in the the MFC source, now you have to do a check for needed RPMS 
+as indicated by the Samara source as follows.  You need to set PROD_TARGET_HOST=X86_64 and
+PROD_TARGET_ARCH=X86_64, and set PROD_CUSTOMER_ROOT and PROD_TREE_ROOT to the checked-out source trees.
+<pre>
+export PROD_TARGET_HOST=X86_64
+export PROD_TARGET_ARCH=X86_64
+</pre>
+
+For example PROD_CUSTOMER_ROOT and PROD_TREE_ROOT are set to:
+<pre>
+export PROD_CUSTOMER_ROOT=/tmp/cr/appliance/jackson
+export PROD_TREE_ROOT=/tmp/tr/hickory/tree
+# or
+export PROD_CUSTOMER_ROOT=/tmp/cr/appliance/trunk
+export PROD_TREE_ROOT=/tmp/tr/current/tree
+#
+export TR=$PROD_TREE_ROOT 
+</pre>
+==Do the check==
+<B>As ROOT</b> do a 'make' in $PROD_TREE_ROOT/src/release to get list of RPMs that need to be installed or updated.
+<pre>
+cd $PROD_TREE_ROOT/src/release
+make | tee /root/make1.out
+</pre>
+The ouput prints out the yum command needed to update, e.g.:
+
+ yum install  elfutils-devel-0.137-3.el5.x86_64 mkisofs-2.01-10.7.el5.x86_64 .....
+
+ yum update  coreutils-5.97-23.el5_4.2.x86_64 cpio-2.6-23.el5_4.1.x86_64 .....
+
+==Install/update the indicated RPMs==
+Install or update the RPMS as indicated.
+
+You might need to downgrade some libs:  E.g.
+<pre>
+yum downgrade libxml2-2.7.6-8.el6_3.3.x86_64 libxml2-2.7.6-8.el6_3.3.i386 libxml2-python-2.7.6-8.el6_3.3.x86_64
+</pre>
+
+==i686 version of some rpms are needed to build grub==
+If when compiling grub you get the error "'''C compiler cannot create executables'''" or
+"'''error: Failed build dependencies: /usr/lib/crt1.o is needed by grub...'''" you need to install some glibc and libgcc packages.
+
+'''glibc-devel, glibc-static''' --  The i686 versions of these glibc packages are needed to build grub.
+
+Check to see if both i686 and x86_64 versions are installed:
+ rpm -qa glibc-devel
+ rpm -qa glibc-static
+To install the i686 versions do this:
+ yum install `rpm -qa glibc-devel  | grep x86_64 | sed /x86_64/s//i686/`
+ yum install `rpm -qa glibc-static | grep x86_64 | sed /x86_64/s//i686/`
+
+'''libgcc''' --  The i686 version of libgcc is needed to build grub.
+
+Check to see if both i686 and x86_64 versions are installed:
+ rpm -qa libgcc
+To install the i686 version do this:
+ yum install `rpm -qa libgcc | grep x86_64 | sed /x86_64/s//i686/`
+
+==Check again==
+Do the check again (running make in src/release) to make sure all the needed RPMs are installed.
+<pre>
+cd $PROD_TREE_ROOT/src/release
+make | tee /root/make2.out
+</pre>
+The ouput prints out the yum command needed to install, e.g.:
+ yum update  libacl-2.2.39-3.el5.x86_64 libacl-2.2.39-3.el5.i386 libacl-2.2.39-3.el5.x86_64
+
+'''Note: You might need to do a "downgrade" instead of "update" if update does not work because
+the installed version is newer than the version needed.'''  For example:
+
+ yum downgrade glibc-2.12-1.80.el6_3.5.i686   glibc-2.12-1.80.el6_3.5.x86_64 glibc-common-2.12-1.80.el6_3.5.x86_64 glibc-devel-2.12-1.80.el6_3.5.x86_64 glibc-headers-2.12-1.80.el6_3.5.x86_64 libxml2-2.7.6-8.el6_3.3.x86_64 libxml2-devel-2.7.6-8.el6_3.3.x86_64
+
+==Check again==
+Do the check again (running make in src/release) to make sure all the needed RPMs are installed.
+<pre>
+cd $PROD_TREE_ROOT/src/release
+make | tee /root/make3.out
+</pre>
+==Save RPM info==
+ D=/root/`uname -n`
+ mkdir ${D}
+ V=samara
+ rpm -qa | sort | uniq > $D/rpm-$V.list
+ find /lib* /*/lib*  /usr/include | sort > $D/files1-$V.list
+ find /usr/share /var/local /usr/local | sort > $D/files2-$V.list
+ ls -l /lib* /*/lib* > $D/ls-$V.list
+
+
+=Check needed RPMS again=
+Do the check and install the RPMS until the check succeeds
+==Check 1==
+Do the check again (running make in src/release) to make sure all the needed RPMs are installed.
+Set PROD_CUSTOMER_ROOT. 
+<pre>
+cd /tmp/cr/appliance
+cd *
+export PROD_CUSTOMER_ROOT=`pwd`
+echo PROD_CUSTOMER_ROOT=${PROD_CUSTOMER_ROOT}
+</pre>
+Now do:
+<pre>
+. $PROD_CUSTOMER_ROOT/nokeena/src/mk/build_settings.dot
+echo SAMARA_SVN_BRANCH=${SAMARA_SVN_BRANCH}
+SAMARA_SVN_URL_PROD_TREE_ROOT=svn://cmbu-svn01.juniper.net/thirdpartyall/samara/${SAMARA_SVN_BRANCH}/tree
+echo SAMARA_SVN_URL_PROD_TREE_ROOT=${SAMARA_SVN_URL_PROD_TREE_ROOT}
+echo SAMARA_SVN_REV=${SAMARA_SVN_REV}
+SVN_TOP=`dirname ${SAMARA_SVN_URL_PROD_TREE_ROOT}`
+cd /tmp/tr
+echo svn checkout -r ${SAMARA_SVN_REV} ${SVN_TOP}
+svn      checkout -r ${SAMARA_SVN_REV} ${SVN_TOP}
+cd `basename ${SVN_TOP}`
+cd tree
+export PROD_TREE_ROOT=`pwd`
+echo PROD_TREE_ROOT=${PROD_TREE_ROOT}
+ 
+export PROD_TARGET_HOST=X86_64
+export PROD_TARGET_ARCH=X86_64 
+cd $PROD_TREE_ROOT/src/release
+make | tee /root/make4.out
+</pre>
+
+=Create RPM and file lists again=
+Create a list of the RPMs and other installed files at this point.
+
+ D=/root/`uname -n`
+ mkdir $D
+ V=end
+ rpm -qa | sort | uniq > $D/rpm-$V.list
+ find /lib* /*/lib*  /usr/include | sort > $D/files1-$V.list
+ find /usr/share /var/local /usr/local | sort > $D/files2-$V.list
+ ls -l /lib* /*/lib* > $D/ls-$V.list
+
+Then run this script:
+ FL=/root/LOCAL_FILES.end
+ LL=/root/LOCAL_FILES_LS.end
+ SL=/root/LOCAL_FILES_SUMS.end
+ cd /
+ find `cat /root/TOP_LIST` -type f | sort > $FL
+ cat $FL | xargs ls -l  > $LL
+ cat $FL | xargs sum    > $SL
+
+=Samara source in /source/samara=
+Put the needed versions of samara under /source/samara.  It is specified in build_settings.dot with SAMARA_SVN_BRANCH and SAMARA_SVN_REV
+<pre>
+. $PROD_CUSTOMER_ROOT/nokeena/src/mk/build_settings.dot
+mkdir -p /source/samara/${SAMARA_SVN_BRANCH}-${SAMARA_SVN_REV}
+cd /source/samara/${SAMARA_SVN_BRANCH}-${SAMARA_SVN_REV}
+svn co -r ${SAMARA_SVN_REV} svn://cmbu-svn01.juniper.net/thirdpartyall/samara/${SAMARA_SVN_BRANCH}/tree
+</pre>
+E.g.
+* SAMARA_SVN_REV=410
+* SAMARA_SVN_BRANCH=branches/hickory
+** /source/samara/branches/hickory-410
+*SAMARA_SVN_REV=411
+* SAMARA_SVN_BRANCH=current
+** /source/samara/current-411
+
+=Start system services=
+The VM system needs to be started.
+ service libvirtd restart
+Also if the build machine is a VM, then the VM needs to be configured to runs VMs.
+
+Type this command to see what is printed:
+ virt-install
+It should print "'''ERROR --name is required ...'''".  If it prints 
+<br>"'''ERROR Host does not support any virtualization options'''" then the VM is not configured correctly.
+
+=Build it=
+Now build the product.  '''Do this as the root user'''. This requires several environment variables set:
+*PROD_CUSTOMER_ROOT -- Set as above
+*PROD_TREE_ROOT -- Set as above
+*PROD_OUTPUT_ROOT -- Set to full path directory name where the build output files are to be written.  Need at least 4GB
+*PROD_PRODUCT  -- Set to the subdir of $PROD_CUSTOMER_ROOT to build.  For MFC this is "nokeena".
+*PROD_TARGET_ARCH and PROD_TARGET_HOST -- Set to the target architecture.  For MFC this is "X86_64".
+
+You might need to update <tt>${PROD_CUSTOMER_ROOT}/nokeena/src/mk/build_settings.dot</tt> if you are setting up a build machine for a not-yet-supported version of Samara.
+
+NOTE: Set PROD_CUSTOMER_ROOT to the location that you used previously.  The example following has it for both examples.  Use only the correct one.
+E.g.
+ export PROD_CUSTOMER_ROOT=/tmp/cr/appliance/trunk
+ export PROD_TREE_ROOT=/tmp/tr/current/tree
+ 
+ export PROD_CUSTOMER_ROOT=/tmp/cr/appliance/jackson
+ export PROD_TREE_ROOT=/tmp/tr/hickory/tree
+ #
+ export PROD_OUTPUT_ROOT=/tmp/output-testbuild
+ export PROD_PRODUCT=nokeena
+ export PROD_TARGET_ARCH=X86_64
+ export PROD_TARGET_HOST=X86_64
+ export BUILD_WARNINGS_NO_EXTRA=1
+ export BUILD_WARNINGS_OK=1
+ #export PROD_BUILD_VERBOSE=1
+ export REAL_USER=root
+
+ mkdir ${PROD_OUTPUT_ROOT}
+ cd $PROD_TREE_ROOT
+ make
+ make install
+ make release
+ cd $PROD_TREE_ROOT/src/release
+ make mfgcd
+
+This generates:
+ $PROD_OUTPUT_ROOT/product-nokeena-x86_64/release/image/image*.img
+ $PROD_OUTPUT_ROOT/product-nokeena-x86_64/release/manufacture/manufacture-*.tgz
+ $PROD_OUTPUT_ROOT/product-nokeena-x86_64/release/rootflop/rootflop*.img
+ $PROD_OUTPUT_ROOT/product-nokeena-x86_64/release/bootflop/bootflop*.img
+ $PROD_OUTPUT_ROOT/product-nokeena-x86_64/release/mfgcd/mfgcd*.iso
