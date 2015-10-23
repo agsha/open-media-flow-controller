@@ -40,3 +40,14 @@ Open Media Flow Controller
   gzip samara-bin-30681_470.tar
 
 8) See "setup-build-machine.txt" for details on building MFC.
+   Note: At step 60) in "setup-build-machine.txt" replace the following after
+         the "exit" command.
+
+	 Replace
+
+	   cd nokeena/build
+
+	with
+
+	  ln -s /samara /home/builduser/samara
+	  cd /home/builduser/mfc/nokeena/build
