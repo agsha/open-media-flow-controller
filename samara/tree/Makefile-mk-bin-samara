@@ -1,0 +1,250 @@
+#
+# Copy build image binaries to Samara binary distribution tree
+#
+
+# Typical invocation:
+#
+#  ${MAKE} -f ${PROD_TREE_ROOT}/Makefile-mk-bin-samara \
+#    "SAMARA_TREE_ROOT=${PROD_TREE_ROOT}" \
+#    "BUILD_TREE_ROOT=${PROD_OUTPUT_ROOT}/product-nokeena-x86_64" \
+#    "DEST_ROOT=\
+#      ${PRODUCT_OUTPUT_ROOT}/product-nokeena-x86_64/release/opensource" \
+#    "DEST_DIR_TARNAME=Samara-bin-${NKN_BUILD_SCM_INFO_SHORT}"
+#
+.PHONY: all prepare copy_image_bin_obj copy_image_ilib_obj \
+	copy_image_lib_obj copy_image_lib_so done
+
+# e.g. <prefix path>/current/tree
+SAMARA_TREE_ROOT=./my_samara_tree_root
+
+# e.g. <prefix path>/product-nokeena-x86_64
+BUILD_TREE_ROOT=./my_build_tree_root
+
+# e.g. <prefix path>/product-nokeena-x86_64/release/opensource
+DEST_ROOT=./my_dest_root
+DEST_ROOT_DIR=${DEST_ROOT}/samara_root
+DEST_DIR=${DEST_ROOT}/samara_root/tree
+
+# e.g Samara-bin-432
+DEST_DIR_TARNAME=my_dest_dir_tarname
+
+SAMARA_TREE_COPYLIST=Makefile Makefile-mk-bin-samara src/Makefile License.txt README src/base_os src/bin src/include-clean src/lib src/mk src/release
+
+SAMARA_SRC_BIN_OBJ_DIRS= \
+	cli coreinfo crypt dumplicense \
+	lfi-host lfi-image lfi-rootflop  \
+	mddbreq mdreq \
+	mgmtd mgmtd-modules \
+	genlicense \
+	pm pm-create-snapshot \
+	progress \
+	snmptranslate snmptrap snmptrapd snmpwalk snmpkeys snmpd \
+	statsd stats_fix_file sched tvirtd tcons \
+	rh wsmd launch tmplcompiler_image tmplcompiler_host xg
+
+SAMARA_SRC_ILIB_OBJ_DIRS=\
+	libnetsnmp \
+	libnetsnmpaux \
+	libnetsnmpaux/hardware/cpu \
+	libnetsnmpaux/hardware/fsys \
+	libnetsnmpaux/hardware/memory \
+	libnetsnmpaux/host \
+	libnetsnmpaux/if-mib/data_access \
+	libnetsnmpaux/if-mib/ifTable \
+	libnetsnmpaux/if-mib/ifXTable \
+	libnetsnmpaux/ip-forward-mib/data_access \
+	libnetsnmpaux/ip-forward-mib/inetCidrRouteTable \
+	libnetsnmpaux/ip-forward-mib/ipCidrRouteTable \
+	libnetsnmpaux/ip-mib \
+	libnetsnmpaux/ip-mib/data_access \
+	libnetsnmpaux/ip-mib/inetNetToMediaTable \
+	libnetsnmpaux/ip-mib/ipAddressTable \
+	libnetsnmpaux/ip-mib/ipDefaultRouterTable \
+	libnetsnmpaux/ip-mib/ipIfStatsTable \
+	libnetsnmpaux/ip-mib/ipSystemStatsTable \
+	libnetsnmpaux/ip-mib/ipv4InterfaceTable \
+	libnetsnmpaux/ip-mib/ipv6InterfaceTable \
+	libnetsnmpaux/ip-mib/ipv6ScopeZoneIndexTable \
+	libnetsnmpaux/mibII \
+	libnetsnmpaux/mibgroup/mibII \
+	libnetsnmpaux/mibgroup/utilities \
+	libnetsnmpaux/notification \
+	libnetsnmpaux/notification-log-mib \
+	libnetsnmpaux/snmp-notification-mib/snmpNotifyFilterTable \
+	libnetsnmpaux/snmpv3 \
+	libnetsnmpaux/target \
+	libnetsnmpaux/tcp-mib/data_access \
+	libnetsnmpaux/tcp-mib/tcpConnectionTable \
+	libnetsnmpaux/tcp-mib/tcpListenerTable \
+	libnetsnmpaux/ucd-snmp \
+	libnetsnmpaux/udp-mib/data_access \
+	libnetsnmpaux/udp-mib/udpEndpointTable \
+	libnetsnmpaux/util_funcs \
+	libnetsnmpaux/utilities \
+	libnetsnmptms
+
+SAMARA_SRC_LIB_OBJ_DIRS= \
+	libcgi libcli libclish libcommon libcommon-security \
+	libevent libgcl libgd \
+	libgraph liblicense liblicense_validation libmdb libmdc_wrapper \
+	libremgcl libtacl \
+	libtc_mt libtc_st libtcrypt libtecla libtexpr libtxml \
+	libwebcli libweb libwebtmpl
+
+SAMARA_SRC_LIB_SO_DIRS=cli progress snmp stats web
+
+all:	prepare copy_image_bin_obj copy_image_ilib_obj \
+	copy_image_lib_obj copy_image_lib_so done
+
+prepare:
+	rm -rf ${DEST_DIR}
+	rm -rf ${DEST_ROOT}/${DEST_DIR_TARNAME}.tar.gz
+	mkdir -p ${DEST_DIR}
+	(cd ${SAMARA_TREE_ROOT}; tar --exclude-vcs -cf - ${SAMARA_TREE_COPYLIST} ) | (cd ${DEST_DIR}; tar xf - )
+	(cd ${SAMARA_TREE_ROOT}; cp Binary-License.txt ${DEST_ROOT_DIR}; cp License.txt ${DEST_ROOT_DIR}; cp  README ${DEST_ROOT_DIR} )
+	find ${DEST_DIR}/src/bin ${DEST_DIR}/src/lib -name "*.h" -o -name "*.c" | xargs rm -rf
+
+done:
+	(cd ${DEST_DIR}/src; ln -s include-clean include )
+	(cd ${DEST_DIR}/..; tar czf ${DEST_ROOT}/${DEST_DIR_TARNAME}.tar.gz Binary-License.txt License.txt README tree)
+	rm -rf ${DEST_ROOT_DIR}
+
+copy_image_bin_obj:
+	for dir in ${SAMARA_SRC_BIN_OBJ_DIRS}; do \
+	    copy_so=""; \
+	    src=""; \
+	    dest=""; \
+	    echo "Processing bin/$$dir objects" ; \
+	    if test $$dir = "snmptranslate" || test $$dir = "snmptrap" || \
+	    	test $$dir = "snmptrapd" || test $$dir = "snmpwalk" || \
+		test $$dir = "snmpkeys" || test $$dir = "snmpd" ; then \
+	    	src="${BUILD_TREE_ROOT}/build/image/bin/$$dir" ; \
+	    	dest="${DEST_DIR}/src/bin/snmp/bin/$$dir/BIN_DIST" ; \
+	    elif test $$dir = "rh" ; then \
+	    	src="${BUILD_TREE_ROOT}/build/image/bin/$$dir" ; \
+	    	dest="${DEST_DIR}/src/bin/web/request_handler/BIN_DIST" ; \
+	    elif test $$dir = "wsmd" ; then \
+	    	src="${BUILD_TREE_ROOT}/build/image/bin/$$dir" ; \
+	    	dest="${DEST_DIR}/src/bin/web/$$dir/BIN_DIST" ; \
+	    elif test $$dir = "launch" ; then \
+	    	src="${BUILD_TREE_ROOT}/build/image/bin/$$dir" ; \
+	    	dest="${DEST_DIR}/src/bin/web/cgi_launcher/BIN_DIST" ; \
+	    elif test $$dir = "lfi-host" ; then \
+	    	src="${BUILD_TREE_ROOT}/build/host/bin/lfi" ; \
+	    	dest="${DEST_DIR}/src/bin/lfi/bin/host/BIN_DIST" ; \
+	    elif test $$dir = "lfi-image" ; then \
+	    	src="${BUILD_TREE_ROOT}/build/image/bin/lfi" ; \
+	    	dest="${DEST_DIR}/src/bin/lfi/bin/image/BIN_DIST" ; \
+	    elif test $$dir = "lfi-rootflop" ; then \
+	    	src="${BUILD_TREE_ROOT}/build/rootflop/bin/lfi" ; \
+	    	dest="${DEST_DIR}/src/bin/lfi/bin/rootflop/BIN_DIST" ; \
+	    elif test $$dir = "mgmtd-modules" ; then \
+	    	src="${BUILD_TREE_ROOT}/build/image/lib/md/modules" ; \
+	    	dest="${DEST_DIR}/src/bin/mgmtd/modules/BIN_DIST" ; \
+		copy_so="1" ; \
+	    elif test $$dir = "pm-create-snapshot" ; then \
+		src="${BUILD_TREE_ROOT}/build/image/bin/pm_cs"; \
+		dest="${DEST_DIR}/src/bin/pm/pm_create_snapshot/BIN_DIST"; \
+	    elif test $$dir = "stats_fix_file" ; then \
+		src="${BUILD_TREE_ROOT}/build/image/bin/stats_fix_file"; \
+		dest="${DEST_DIR}/src/bin/statsd/stats_fix_file/BIN_DIST"; \
+	    elif test $$dir = "tmplcompiler_image" ; then \
+		src="${BUILD_TREE_ROOT}/build/image/bin/tmplcompiler"; \
+		dest="${DEST_DIR}/src/bin/web/template_compiler/src/BIN_DIST/image"; \
+	    elif test $$dir = "tmplcompiler_host" ; then \
+		src="${BUILD_TREE_ROOT}/build/host/bin/tmplcompiler"; \
+		dest="${DEST_DIR}/src/bin/web/template_compiler/src/BIN_DIST/host"; \
+	    elif test $$dir = "xg" ; then \
+		src="${BUILD_TREE_ROOT}/build/image/bin/xg"; \
+		dest="${DEST_DIR}/src/bin/web/xml_gw/BIN_DIST"; \
+	    elif test $$dir = "rendv_client" ; then \
+		src="${BUILD_TREE_ROOT}/build/image/bin/rendv_client"; \
+		dest="${DEST_DIR}/src/bin/cmc/rendv_client/BIN_DIST"; \
+	    else \
+	    	src="${BUILD_TREE_ROOT}/build/image/bin/$$dir" ; \
+	    	dest="${DEST_DIR}/src/bin/$$dir/BIN_DIST" ; \
+	    fi ; \
+	    if test -n $$src && test -n $$dest; then \
+		mkdir -p $$dest ; \
+		if test -z $$copy_so ; then \
+		    cp $$src/*.o $$dest ; \
+		    for file in $$src/*.o; do \
+		    	touch $$dest/`basename $$file .o`.c ; \
+		    done \
+		else \
+		    cp $$src/*.so $$dest ; \
+		    for file in $$src/*.so; do \
+		    	touch $$dest/`basename $$file .so`.c ; \
+		    done \
+		fi ; \
+	    fi ; \
+	done
+
+copy_image_ilib_obj:
+	for dir in ${SAMARA_SRC_ILIB_OBJ_DIRS}; do \
+	    echo "Processing ilib/bin/snmp/lib/$$dir objects" ; \
+	    src="${BUILD_TREE_ROOT}/build/image/ilib/bin/snmp/lib/$$dir" ; \
+	    if test $$dir = "libnetsnmp"; then \
+	    	dest="${DEST_DIR}/src/bin/snmp/net-snmp/snmplib/BIN_DIST" ; \
+	    elif test $$dir = "libnetsnmpaux"; then \
+	    	dest="${DEST_DIR}/src/bin/snmp/net-snmp/agent/BIN_DIST" ; \
+	    elif test $$dir = "libnetsnmpaux/mibgroup/mibII"; then \
+	    	dest="${DEST_DIR}/src/bin/snmp/net-snmp/agent/mibgroup/mibII/BIN_DIST/mibgroup/mibII" ; \
+	    elif test $$dir = "libnetsnmpaux/mibgroup/utilities"; then \
+	    	dest="${DEST_DIR}/src/bin/snmp/net-snmp/agent/mibgroup/utilities/BIN_DIST/mibgroup/utilities" ; \
+	    elif test $$dir = "libnetsnmptms"; then \
+	    	dest="${DEST_DIR}/src/bin/snmp/tms/BIN_DIST" ; \
+	    else \
+		dest="${DEST_DIR}/src/bin/snmp/net-snmp/agent/mibgroup/`echo $$dir|sed -e 's/libnetsnmpaux//'`/BIN_DIST/`echo $$dir|sed -e 's/libnetsnmpaux//'`" ; \
+	    fi ; \
+	    mkdir -p $$dest ; \
+	    cp $$src/*.o $$dest ; \
+	    for file in $$src/*.o; do \
+		touch $$dest/`basename $$file .o`.c ; \
+	    done \
+	done
+
+copy_image_lib_obj:
+	for dir in ${SAMARA_SRC_LIB_OBJ_DIRS}; do \
+	    echo "Processing lib/$$dir objects" ; \
+	    if test $$dir = "libcommon-security"; then \
+	    	src="${BUILD_TREE_ROOT}/build/image/lib/security/pam_radius" ; \
+	    	dest="${DEST_DIR}/src/lib/libcommon/BIN_DIST/security/BIN_DIST" ; \
+	    else \
+	    	src="${BUILD_TREE_ROOT}/build/image/lib/$$dir" ; \
+	    	dest="${DEST_DIR}/src/lib/$$dir/BIN_DIST" ; \
+	    fi ; \
+	    mkdir -p $$dest ; \
+	    cp $$src/*.o $$dest ; \
+	    for file in $$src/*.o; do \
+		touch $$dest/`basename $$file .o`.c ; \
+	    done \
+	done
+
+copy_image_lib_so:
+	for dir in ${SAMARA_SRC_LIB_SO_DIRS}; do \
+	    echo "Processing lib/$$dir shared libs" ; \
+	    src=""; \
+	    dest=""; \
+	    if test $$dir = "snmp"; then \
+	    	src="${BUILD_TREE_ROOT}/build/image/lib/$$dir/modules" ; \
+		dest="${DEST_DIR}/src/bin/$$dir/tms/modules/BIN_DIST" ; \
+	    elif test $$dir = "stats"; then \
+	    	src="${BUILD_TREE_ROOT}/build/image/lib/$$dir/modules" ; \
+		dest="${DEST_DIR}/src/bin/statsd/modules/BIN_DIST" ; \
+	    elif test $$dir = "web"; then \
+	    	src="${BUILD_TREE_ROOT}/build/image/lib/$$dir/modules" ; \
+		dest="${DEST_DIR}/src/bin/$$dir/request_handler/modules/BIN_DIST" ; \
+	    else \
+	    	src="${BUILD_TREE_ROOT}/build/image/lib/$$dir/modules" ; \
+		dest="${DEST_DIR}/src/bin/$$dir/modules/BIN_DIST" ; \
+	    fi ; \
+	    if test -n $$src && test -n $$dest; then \
+		mkdir -p $$dest ; \
+		cp $$src/*.so $$dest ; \
+		for file in $$src/*.so; do \
+		    touch $$dest/`basename $$file .so`.c ; \
+		    touch $$dest/`basename $$file .so`.lo ; \
+		done \
+	    fi ; \
+	done

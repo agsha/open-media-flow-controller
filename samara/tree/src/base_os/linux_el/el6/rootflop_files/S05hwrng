@@ -1,0 +1,58 @@
+#!/bin/sh
+
+#
+# (C) Copyright 2013-2015 Juniper Networks, Inc. All Rights reserved.
+# (C) Copyright 2002-2006 Tall Maple Systems, Inc.
+# All rights reserved.
+# The contents of this file are subject to the terms of the MIT License.
+# You may not use this file except in compliance with the License.
+# See the file License.txt at the top of this source tree.
+# You can obtain a copy of the license at https://opensource.org/licenses/MIT
+#
+
+# If we have a hardware random number generator, mix in some entropy from it
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export PATH
+
+KERNMODS="intel_rng via-rng amd-rng geode-rng trng4xx"
+DEVICELIST="hwrng hw_random hwrandom"
+HRNGDEVICE=/dev/hwrng
+OUTPUTDEVICE=/dev/random
+NUMBYTES=512
+
+probehardware() {
+    for i in ${KERNMODS} ; do
+        modprobe -q $i > /dev/null 2>&1
+    done
+}
+
+finddevice () {
+    [ -c "${HRNGDEVICE}" ] && return 0
+    for i in ${DEVICELIST} ; do
+        if [ -c "/dev/$i" ] ; then
+            HRNGDEVICE="/dev/$i"
+            return 0
+        fi
+        if [ -c "/dev/misc/$i" ] ; then
+            HRNGDEVICE="/dev/misc/$i"
+            return 0
+        fi
+    done
+    
+    echo "Cannot find a hardware RNG device to use." >&2
+    exit 1
+}
+
+echo "Probing for HRNG module"
+probehardware
+finddevice
+echo "Mixing in entropy from HRNG"
+FAILURE=0
+dd if=${HRNGDEVICE} of=${OUTPUTDEVICE} bs=${NUMBYTES} count=1 > /dev/null 2>&1 || FAILURE=1
+if [ ${FAILURE} -eq 1 ]; then
+    echo "Could not read from ${HRNGDEVICE}"
+    exit 1
+fi
+
+exit 0

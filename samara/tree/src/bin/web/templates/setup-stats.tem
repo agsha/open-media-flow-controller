@@ -1,0 +1,263 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Statistics Setup">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "stats"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Statistics Alarms">
+
+  <h2>Statistics Alarms</h2>
+
+  <CFG-FORM -action "config-form-list" -div_id "alarm_1">
+
+  <?
+    global stats_acl
+    set priv "set_privileged"
+    global color_main_pane_dark2
+    set cur_line 0
+  ?>
+
+  <?
+    set alarm_ids [tms::iterate-config "/stats/config/alarm"]
+    set cur_time [tms::get-config "/time/now/datetime"]
+  ?>
+
+  Current time:  <?^=$cur_time?>
+
+  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <tr bgcolor="<?^=$color_main_pane_dark2?>">
+        <td>
+        <td>
+          <p>Name</p>
+        <td>
+          <p><center>Rising Thresholds<br>Clear - Error</center></p>
+        <td>
+          <p><center>Falling Thresholds<br>Clear -  Error</center></p>
+        <td>
+          <p><center>Rate limit bucket counts<br>short, medium, long</center></p>
+        <td>
+          <p><center>Rate limit bucket windows<br>short, medium, long</center></p>
+        <td>
+          <p>Last Event Time</p>
+        <td>
+          <p>Enabled</p>
+        <td>
+      </tr>
+  <FOREACH alarm $alarm_ids>
+  <?
+    set prefix_len [string length "/stats/config/alarm/"]
+    set aname [string range $alarm $prefix_len end]
+    set enabled [tms::get-config "$alarm/enable"]
+    if {[string compare $enabled "true"] == 0} {
+      set al_enabled "ok"
+    } else {
+      set al_enabled "disabled"
+    }
+    set rising [tms::get-config "$alarm/rising/enable"]
+    if {[string compare $rising "true"] == 0} {
+      set al_ris_clr [tms::get-config "$alarm/rising/clear_threshold"]
+      set al_ris_err [tms::get-config "$alarm/rising/error_threshold"]
+    } else {
+      set al_ris_clr ""
+      set al_ris_err ""
+    }
+    set falling [tms::get-config "$alarm/falling/enable"]
+    if {[string compare $falling "true"] == 0} {
+      set al_fal_clr [tms::get-config "$alarm/falling/clear_threshold"]
+      set al_fal_err [tms::get-config "$alarm/falling/error_threshold"]
+    } else {
+      set al_fal_clr ""
+      set al_fal_err ""
+    }
+    set short_max [tms::get-config "$alarm/short/rate_limit_max"]
+    set short_win [tms::get-config "$alarm/short/rate_limit_win"]
+    set med_max [tms::get-config "$alarm/medium/rate_limit_max"]
+    set med_win [tms::get-config "$alarm/medium/rate_limit_win"]
+    set long_max [tms::get-config "$alarm/long/rate_limit_max"]
+    set long_win [tms::get-config "$alarm/long/rate_limit_win"]
+    set event_time [tms::get-config "$alarm/last_event_time"]
+
+    global color_main_pane
+    global color_main_pane_dark1
+  ?>
+
+    <tr bgcolor="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts [tms::html-escape $color_main_pane]
+    } else {
+        tms::puts [tms::html-escape $color_main_pane_dark1]
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps $priv
+                      -acl $stats_acl -acl_oper {set}
+                      -value "$alarm" -div_id "alarm_cbox_1">
+        </td>
+      <td>
+        <p><?^=$aname?></p></td>
+      <td>
+        <p><center><?^=$al_ris_clr?> - <?^=$al_ris_err?></center></p></td>
+      <td>
+        <p><center><?^=$al_fal_clr?> - <?^=$al_fal_err?></center></p></td>
+      <td>
+        <p><center><?^=$short_max?>, <?^=$med_max?>, <?^=$long_max?></center></p></td>
+      <td>
+        <p><center><?^=$short_win?>, <?^=$med_win?>, <?^=$long_win?></center></p></td>
+      <td>
+        <p><?^=$event_time?></p></td>
+      <td>
+        <p><?^=$al_enabled?></p></td>
+      <td>
+        <a href="/admin/launch?script=rh&amp;template=setup-stats-edit&amp;alarm=<?=[tms::uri-component-escape $aname]?>">Edit</a>
+    </tr>
+
+    <?
+      incr cur_line
+    ?>
+
+  </FOREACH>
+
+    <TMS-TABLE-SPACE>
+
+  </table>
+
+  <input type="hidden" name="f_list_custom_buttons" value="enable,disable">
+  <input type="hidden" name="f_list_button_enable_action" value="set">
+  <input type="hidden" name="f_list_button_enable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_enable_child_value" value="true">
+  <input type="hidden" name="f_list_button_disable_action" value="set">
+  <input type="hidden" name="f_list_button_disable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_disable_child_value" value="false">
+
+  <CFG-BUTTON -type "enable" -text "Enable" -caps $priv
+              -acl $stats_acl -acl_oper {set}
+              -div_id "alarm_enable_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "disable" -text "Disable" -caps $priv
+              -acl $stats_acl -acl_oper {set}
+              -div_id "alarm_disable_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+
+</CFG-FORM>
+
+  <FOREACH alarm $alarm_ids>
+  <?
+    set rising [tms::get-config "$alarm/rising/enable"]
+    set falling [tms::get-config "$alarm/falling/enable"]
+    set prefix_len [string length "/stats/config/alarm/"]
+    set aname [string range $alarm $prefix_len end]
+    set nodes [tms::iterate-config "/stats/state/alarm/$aname/node"]
+    set num_nodes 0
+    set nodata "No data gathered for this alarm."
+  ?>
+
+  <h3><?^=$aname?> Data</h3>
+
+  <FOREACH node $nodes>
+    <?
+      
+      set data "We have DATA!"
+      set tmpl $node
+      set units ""
+#
+# This is a hard coded if statement to give context for the values of
+# each alarm.  In the CLI version, this is declared in the initiation
+# of the CLI.  This is a bad practice since the strings here are hard
+# coded, but without a major overhaul to allow the web to access the CLI,
+# this is a quick solution.
+#
+      if {[string compare $aname "bad_char_count"] == 0} {
+        set tmpl "Bad character count"
+        set units "bad characters"
+      } elseif {[string compare $aname "cmc_status"] == 0} {
+        set temp_list [tms::binding-name-to-parts $node]
+        set temp_list_2 [tms::binding-name-to-parts [lindex $temp_list 5]]
+        set tmpl [lindex $temp_list_2 3]
+        set pre_tmpl "Status for appliance \""
+        set post_tmpl "\""
+        set tmpl $pre_tmpl$tmpl$post_tmpl
+      } elseif {[string compare $aname "cpu_util_indiv"] == 0} {
+        set temp_list [tms::binding-name-to-parts $node]
+        set temp_list_2 [tms::binding-name-to-parts [lindex $temp_list 5]]
+        set tmpl [lindex $temp_list_2 3]
+        set pre_tmpl "CPU "
+        set tmpl $pre_tmpl$tmpl
+        set units "percent utilization"
+      } elseif {[string compare $aname "disk_io"] == 0} {
+        set tmpl "Disk I/O activity"
+        set units "kilobytes per second"
+      } elseif {[string compare $aname "fs_mnt"] == 0} {
+        set temp_list [tms::binding-name-to-parts $node]
+        set temp_list_2 [tms::binding-name-to-parts [lindex $temp_list 5]]
+        set tmpl [lindex $temp_list_2 3]
+        set pre_tmpl "Free space on "
+        set post_tmpl " partition"
+        set tmpl $pre_tmpl$tmpl$post_tmpl
+        set units "percent of disk space free"
+      } elseif {[string compare $aname "intf_util"] == 0} {
+        set tmpl "Bandwidth utilization (tx and rx) across all interfaces"
+        set units "bytes per second"
+      } elseif {[string compare $aname "memory_pct_used"] == 0} {
+        set tmpl "Physical memory used"
+        set units "percent of physical memory used"
+      } elseif {[string compare $aname "paging"] == 0} {
+        set tmpl "Number of page faults"
+        set units "page faults"
+      }
+
+      set last_read [tms::get-config "$node/last_check_time"]
+      set last_value [tms::get-config "$node/last_check_value"]
+      set last_ris_error [tms::get-config "$node/rising/last_error"]
+      set last_ris_clear [tms::get-config "$node/rising/last_clear"]
+      set last_fall_error [tms::get-config "$node/falling/last_error"]
+      set last_fall_clear [tms::get-config "$node/falling/last_clear"]
+      incr num_nodes
+    ?>
+
+  <table>
+    <tr>
+        <p><?^=$tmpl?>:</p>
+    </tr>
+    <tr>
+      <td>
+      <td>
+        <p>Last reading taken at:</p>
+      <td>
+        <p><?^=$last_read?></p>
+    </tr>
+    <tr>
+      <td>
+      <td>
+        <p>Last read value:</p>
+      <td>
+        <p><?^=$last_value?> <?^=$units?></p>
+    </tr>
+  <?
+    if {[string compare $rising "true"] == 0} {
+      tms::puts "<tr><td><td><p>Last rising error at:</p><td><p>[tms::html-body-escape $last_ris_error]</p></tr><tr><td><td><p>Last rising clear at:</p><td><p>[tms::html-body-escape $last_ris_clear]</p></tr>"
+    }
+    if {[string compare $falling "true"] == 0} {
+      tms::puts "<tr><td><td><p>Last falling error at:</p><td><p>[tms::html-body-escape $last_fall_error]</p></tr><tr><td><td><p>Last falling clear at:</p><td><p>[tms::html-body-escape $last_fall_clear]</p></tr>"
+   }
+  ?>
+  </table>
+  </FOREACH>
+
+    <IF {$num_nodes == 0}>
+      <p><?^=$nodata?></p>
+    </IF>
+
+  </FOREACH>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

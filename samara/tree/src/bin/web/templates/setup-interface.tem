@@ -1,0 +1,936 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Network Interface Setup">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "interface"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Network Interfaces">
+
+<?
+  global net_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $net_acl {query}]}>
+
+<TAG IF_STATE_ROW left_label left_value right_label right_value>
+  <tr>
+    <td width="15"></td>
+    <td><b><?=[tms::html-body-escape-transcode-ws $left_label]?></b></td>
+    <td width="6"></td>
+    <td><?=[tms::html-body-escape-transcode-ws $left_value]?></td>
+    <td width="25"></td>
+    <td><b><?=[tms::html-body-escape-transcode-ws $right_label]?></b></td>
+    <td width="6"></td>
+    <td><?=[tms::html-body-escape-transcode-ws $right_value]?></td>
+</TAG>
+
+  <?
+    # Conditional on PROD_FEATURE_IPV6
+    set have_ipv6 [tms::have-prod-feature ipv6]
+    set ipv6_prohibited [tms::get-config "/net/general/config/ipv6/prohibit_ipv6_config"]
+
+    # Conditional on PROD_FEATURE_DHCP_CLIENT
+    set have_dhcp [tms::have-prod-feature dhcp_client]
+
+    # Conditional on PROD_FEATURE_ZEROCONF
+    set have_zeroconf [tms::have-prod-feature zeroconf]
+
+    set real_if_list [list]
+    set found_if_config "false"
+    set if_info [tms::get-if-info]
+    set if_count [llength $if_info]
+  ?>
+
+  <FOREACH if_rec $if_info>
+  <?
+  set do_config "false"
+  set dhcp_node ""
+  set dhcp ""
+  set zeroconf_node ""
+  set zeroconf ""
+  set found_if_config "true"
+  set iface [lindex $if_rec 0]
+
+  if {[string compare $iface "lo"] == 0} {
+       continue
+  }
+
+  set if_display [tms::get-config "/net/interface/config/$iface/display"]
+  if {[string compare $if_display "false"] == 0} {
+      continue
+  }
+  set if_state "/net/interface/state/$iface"
+  set if_cfg "/net/interface/config/$iface"
+  set if_cfg_exists [tms::get-config "$if_cfg"]
+  if {[string length $if_cfg_exists] != 0} {
+    set do_config "true"
+    set dhcp_node "/net/interface/config/$iface/addr/ipv4/dhcp"
+    set dhcp [tms::get-config "$dhcp_node"]
+    set zeroconf_node "/net/interface/config/$iface/addr/ipv4/zeroconf"
+    set zeroconf [tms::get-config "$zeroconf_node"]
+  }
+
+  if {[string length $dhcp] == 0} {
+    set dhcp "false"
+  }
+  if {[string length $zeroconf] == 0} {
+    set zeroconf "false"
+  }
+
+  if {[string compare $zeroconf "true"] == 0} {
+    set ipv4_mode_is_dhcp "false"
+    set ipv4_mode_is_zeroconf "true"
+    set ipv4_mode_is_static "false"
+  } elseif {[string compare $dhcp "true"] == 0} {
+    set ipv4_mode_is_dhcp "true"
+    set ipv4_mode_is_zeroconf "false"
+    set ipv4_mode_is_static "false"
+  } else {
+    set ipv4_mode_is_dhcp "false"
+    set ipv4_mode_is_zeroconf "false"
+    set ipv4_mode_is_static "true"
+  }
+
+  set if_admin_up [tms::get-config "$if_state/flags/oper_up"]
+  if {[string compare $if_admin_up "true"] == 0} {
+    set if_status "Admin up"
+  } else {
+    set if_status "Admin down"
+  }
+  set if_link_up [tms::get-config "$if_state/flags/link_up"]
+  if {[string compare $if_link_up "true"] == 0} {
+    set if_status "$if_status, link up"
+  } else {
+    set if_status "$if_status, link down"
+  }
+  set if_ipaddr [tms::get-config "$if_state/addr/ipv4/1/ip"]
+  set if_masklen [tms::get-config "$if_state/addr/ipv4/1/mask_len"]
+  set if_netmask [tms::masklen-to-mask $if_masklen]
+  set item_type [lindex $if_rec 1]
+  set if_type [lindex $if_rec 2]
+  set if_ifindex [tms::get-config "$if_state/ifindex"]
+  set if_dhcp [tms::get-config "$if_state/dhcp/v4/running" "yes"]
+  set if_bonding_master [tms::get-config "$if_state/bonding_master"]
+  set if_bridge_group [tms::get-config "$if_state/bridge_group"]
+
+  if {[string compare $have_ipv6 "true"] == 0} {
+    set ipv6_prefix "$if_state/addr/ipv6"
+    set ipv6_prefix_len [string length "$ipv6_prefix/"]
+    set ipv6_nodes [tms::iterate-config $ipv6_prefix]
+    set if_ipv6_enabled [tms::get-config "$if_state/addr/settings/ipv6/enable" "yes"]
+    set if_slaac_enabled [tms::get-config "$if_state/addr/settings/ipv6/slaac/enable" "yes"]
+    set if_slaac_default [tms::get-config "$if_state/addr/settings/ipv6/slaac/default_route" "yes"]
+    set if_slaac_privacy [tms::get-config "$if_state/addr/settings/ipv6/slaac/privacy" "yes"]
+    set if_dhcpv6 [tms::get-config "$if_state/dhcp/v6/running" "yes"]
+    foreach ipv6_inst_node $ipv6_nodes {
+      set ipv6_inst [string range $ipv6_inst_node $ipv6_prefix_len end]
+      set if_ipv6_ipaddr [tms::get-config "$ipv6_inst_node/ip"]
+      set if_ipv6_masklen [tms::get-config "$ipv6_inst_node/mask_len"]
+      set if_ipv6_status [tms::get-config "$ipv6_inst_node/status"]
+      set ipv6addr_list($if_ipv6_ipaddr,$if_ipv6_masklen,$if_ipv6_status,$ipv6_inst) $ipv6_inst_node
+    }
+    set if_num_ipv6_addrs [llength [array names ipv6addr_list]]
+  }
+
+  set if_devsource [tms::get-config "$if_state/devsource"]
+  if {[string compare $if_devsource "physical"] == 0} {
+      set if_type_devsource "$if_type"
+  } else {
+      set if_type_devsource "$if_type / $if_devsource"
+  }
+
+  if {[string compare $item_type "interface"] == 0} {
+    lappend real_if_list [list $iface $iface]
+    set if_speed [tms::get-config "$if_state/type/ethernet/speed"]
+    set if_duplex [tms::get-config "$if_state/type/ethernet/duplex"]
+    set if_mtu [tms::get-config "$if_state/mtu"]
+    set if_hwaddr [tms::get-config "$if_state/type/ethernet/mac"]
+  } else {
+    set if_speed ""
+    set if_duplex ""
+    set if_mtu ""
+    set if_hwaddr ""
+    if {[string length $if_ipaddr] == 0} {
+      set if_status "Down"
+    } else {
+      set if_status "Up"
+    }
+  }
+
+  if {[string length $if_hwaddr] == 0 || [string compare $if_hwaddr "N/A"] == 0} {
+     set if_hwaddr [tms::get-config "$if_state/hwaddr"]
+  }
+  ?>
+
+  <TMS-TABLE -div_id "if_table_1">
+    <tr>
+      <td colspan="99">
+        <h2><?^= $iface ?> state</h2>
+      </td>
+    </tr>
+
+<!-- ==================================================
+     = We need a custom processing function to make the 
+     = "Configure Interface" button work.
+     ================================================== -->
+
+<CFG-FORM -action "config-form-interface" -div_id "interface_1">
+
+<!-- ==================================================
+     = Interface state
+     ================================================== -->
+
+    <IF {[string compare $item_type "interface"] == 0}>
+      <IF_STATE_ROW Status $if_status Speed $if_speed>
+      <IF_STATE_ROW {IP address} $if_ipaddr Duplex $if_duplex>
+      <IF_STATE_ROW Netmask $if_netmask MTU $if_mtu>
+      <IF_STATE_ROW Type $if_type_devsource {HW addr} $if_hwaddr>
+      <IF_STATE_ROW Ifindex $if_ifindex "DHCP" $if_dhcp>
+      <IF {[string compare $have_ipv6 "true"] == 0}> 
+        <IF {[string compare -nocase $if_ipv6_enabled "yes"] == 0}>
+            <IF_STATE_ROW "" "" "" "">
+            <IF_STATE_ROW "" "" "" "">
+            <IF_STATE_ROW {IPv6 enabled} $if_ipv6_enabled {Autoconf enabled} $if_slaac_enabled>
+          <IF {$if_num_ipv6_addrs != 0}>
+            <IF_STATE_ROW {IPv6 addresses} $if_num_ipv6_addrs {Autoconf route} $if_slaac_default>
+          <ELSE>
+            <IF_STATE_ROW "" "" {Autoconf route} $if_slaac_default>
+          </IF>
+        <ELSE>
+            <IF_STATE_ROW {IPv6 enabled} $if_ipv6_enabled "" "">
+        </IF>
+
+        <?
+            set ipv6_addr_rec_num 0
+        ?>
+        <SET dhcpv6_displayed 0>
+        <FOREACH ipv6addr_rec [lsort -dictionary [array names ipv6addr_list]]>
+          <?
+            # XXXXX/SML:  display an indicator of how the address was derrived
+            # (right now we can only flag as static vs. dynamic)
+            set ipv6_rec [split "$ipv6addr_rec" ,]
+            set if_ipv6_ipaddr [lindex $ipv6_rec 0]
+            set if_ipv6_masklen [lindex $ipv6_rec 1]
+            set if_ipv6_status "([lindex $ipv6_rec 2])"
+            if {[string equal $if_ipv6_status "(preferred)"] == 1} {
+                set if_ipv6_status ""
+            }
+            incr ipv6_addr_rec_num
+          ?>
+          <IF {$ipv6_addr_rec_num == 1}>
+            <IF_STATE_ROW {IPv6 address} "$if_ipv6_ipaddr/$if_ipv6_masklen $if_ipv6_status" {Autoconf privacy} $if_slaac_privacy>
+          <ELSEIF {$ipv6_addr_rec_num == 2}>
+            <IF_STATE_ROW {IPv6 address} "$if_ipv6_ipaddr/$if_ipv6_masklen $if_ipv6_status" {DHCPv6} $if_dhcpv6>
+            <SET dhcpv6_displayed 1>
+          <ELSE>
+            <IF_STATE_ROW {IPv6 address} "$if_ipv6_ipaddr/$if_ipv6_masklen $if_ipv6_status" "" "">
+          </IF>
+        </FOREACH>
+        <?
+          # I guess we don't have to worry about the first row, because
+          # there will always be at least one address (the link-local)?
+        ?>
+        <IF {$dhcpv6_displayed == 0}>
+          <IF_STATE_ROW "" "" {DHCPv6} $if_dhcpv6>
+        </IF>
+        <?
+          foreach ipv6addr_rec [array names ipv6addr_list] {
+            unset ipv6addr_list($ipv6addr_rec)
+          }
+        ?>
+      </IF>
+
+      <IF {[string length $if_bonding_master] \> 0}>
+          <IF_STATE_ROW "Bonding master" "$if_bonding_master" "" "">
+      </IF>
+      <IF {[string length $if_bridge_group] \> 0}>
+          <IF_STATE_ROW "Bridge group" "$if_bridge_group" "" "">
+      </IF>
+
+      <?
+        set alias_list [lindex $if_rec 3]
+        if {[llength $alias_list] > 0} {
+          set alias_list_str ""
+          foreach alias_name $alias_list {
+            set alias_list_str "${alias_list_str}${alias_name}\n"
+          }
+      ?>
+          <IF_STATE_ROW Aliases $alias_list_str "" "">
+      <?
+        }
+      ?>
+    <ELSE>
+      <IF_STATE_ROW "Status" $if_status "" "">
+      <IF_STATE_ROW "IP address" $if_ipaddr "" "">
+      <IF_STATE_ROW "Netmask" $if_netmask "" "">
+      <IF_STATE_ROW "Type" $if_type "" "">
+    </IF>
+
+    <tr>
+      <td height="10">
+
+<!-- ==================================================
+     = Interface configuration: enabled flag / speed
+     ================================================== -->
+
+  <IF {[string compare $do_config "true"] == 0}>
+    <tr>
+      <td colspan="99">
+        <h2><?^= $iface ?> configuration</h2>
+
+    <tr>
+      <td>
+      <td colspan="3">
+        <CFG-CHECKBOX -id "enable_iface_$iface" -caps "set_restricted"
+                      -acl $net_acl -acl_oper {set}
+                      -name "$if_cfg/enable" -type "bool"
+                      -span_id "if_cbox_1_$iface">
+        Enabled
+      <td>
+
+    <IF {[string compare $item_type "interface"] == 0 && [string compare $if_type "ib"] != 0}>
+      <td>
+        Speed
+      <td>
+      <td>
+
+<?
+
+  set speeds [tms::iterate-config-last "$if_state/type/ethernet/supported/speeds"]
+
+  if {[llength $speeds] > 0} {
+    set speed_opts [list {"Auto" "auto"}]
+    foreach speed_opt $speeds {
+      lappend speed_opts [list "${speed_opt} MB/s" "${speed_opt}"]
+    }
+  } else {
+    set speed_opts [list {"Auto" "auto"} {"10000 Mb/s" "10000"} {"1000 Mb/s" "1000"} {"100 Mb/s" "100"} {"10 Mb/s" "10"}]
+  }
+
+?>
+
+        <CFG-DROPDOWN -id "speed_$iface" -caps "set_restricted" 
+                      -acl $net_acl -acl_oper {set}
+                      -name "$if_cfg/type/ethernet/speed"
+                      -type "string" -options $speed_opts
+                      -span_id "if_speed_$iface">
+
+    <CFG-RADIO-GROUP -id "ipv4_mode_$iface" -errname "$iface Mode" -type "string" >
+    </IF> <!-- interface -->
+
+<!-- ==================================================
+     = Interface configuration: DHCP enabled / duplex
+     ================================================== -->
+
+    <!-- Conditional on PROD_FEATURE_DHCP_CLIENT... -->
+    <IF {[string compare $have_dhcp "true"] == 0}>
+      <SET dhcp_prompt "Obtain IP Address Automatically via DHCP">
+      <SET dhcp_disable "false">
+    <ELSE>
+      <SET dhcp_prompt "DHCP (not available)">
+      <SET dhcp_disable "true">
+    </IF>
+
+    <IF {[string compare $item_type "interface"] == 0}>
+    <tr>
+      <td>
+      <td colspan="3">
+        <CFG-RADIO -id "ipv4_mode_$iface" -caps "set_restricted"
+                   -acl $net_acl -acl_oper {set}
+                   -disabled $dhcp_disable
+                   -checked "$ipv4_mode_is_dhcp"
+                   -name "" -value "ipv4_dhcp" -span_id "ipv4_mode_dhcp_$iface">
+        <?^=$dhcp_prompt?>
+      <td>
+
+      <IF {[string compare $if_type "ib"] != 0}>
+        <td>
+          Duplex
+        <td>
+        <td>
+
+          <CFG-DROPDOWN -id "duplex_$iface" -caps "set_restricted"
+                        -acl $net_acl -acl_oper {set}
+                        -name "$if_cfg/type/ethernet/duplex"
+                        -type "string" -options { {"Auto" "auto"}
+                         {"Full" "full"} {"Half" "half"} }
+                        -span_id "if_duplex_$iface">
+      </IF>
+
+<!-- ==================================================
+     = Interface configuration: IPv4 Zeroconf / MTU
+     ================================================== -->
+
+    <!-- Conditional on PROD_FEATURE_ZEROCONF... -->
+    <IF {[string compare $have_zeroconf "true"] == 0}>
+      <SET zeroconf_prompt "Obtain IP Address Automatically via Zeroconf">
+      <SET zeroconf_disable "false">
+    <ELSE>
+      <SET zeroconf_prompt "Zeroconf (not available)">
+      <SET zeroconf_disable "true">
+    </IF>
+
+    <tr>
+      <td>
+      <td colspan="3">
+        <CFG-RADIO -id "ipv4_mode_$iface" -caps "set_restricted"
+                   -acl $net_acl -acl_oper {set}
+                   -disabled $zeroconf_disable
+                   -checked "$ipv4_mode_is_zeroconf"
+                   -name "" -value "ipv4_zeroconf" -span_id "ipv4_mode_zeroconf_$iface">
+        <?^=$zeroconf_prompt?>
+      <td>
+
+      <td>
+        MTU
+      <td>
+      <td>
+
+        <CFG-TEXTBOX -id "mtu_$iface" -errname "$iface Interface MTU"
+                     -caps "set_restricted" 
+                     -acl $net_acl -acl_oper {set}
+                     -name "$if_cfg/mtu" -type "uint16" -cols 5
+                     -span_id "if_mtu_$iface">
+
+<!-- ==================================================
+     = Interface configuration: IPv4 Manual (Static) IP
+     ================================================== -->
+
+    <tr>
+      <td>
+      <td colspan="3">
+        <CFG-RADIO -id "ipv4_mode_$iface" -caps "set_restricted"
+                   -acl $net_acl -acl_oper {set}
+                   -checked "$ipv4_mode_is_static"
+                   -name "" -value "ipv4_static" -span_id "ipv4_mode_static_$iface">
+        Specify IP Address Manually
+      <td>
+
+    </IF> <!-- interface -->
+
+<!-- ==================================================
+     = Interface configuration: IP address and netmask
+     ================================================== -->
+
+    <tr>
+      <td>
+      <td colspan="3">
+        <table border="0" cellpadding="0" cellspacing="4">
+          <tr>
+    <IF {[string compare $item_type "interface"] == 0}>
+            <td width="30">
+    </IF>
+            <td>
+              IP address
+            <td width="4">
+            <td>
+              <CFG-IPV4 -id "ip_$iface" -errname "$iface IP address"
+                        -caps "set_restricted"
+                        -acl $net_acl -acl_oper {set}
+                        -name "$if_cfg/addr/ipv4/static/1/ip"
+                        -type "ipv4addr" -span_id "if_ip_$iface">
+
+          <tr>
+    <IF {[string compare $item_type "interface"] == 0}>
+            <td>
+    </IF>
+            <td>
+              Netmask
+            <td width="4">
+            <td>
+              <CFG-IPV4 -id "mask_$iface" -errname "$iface net mask"
+                        -caps "set_restricted"
+                        -acl $net_acl -acl_oper {set}
+                        -name "$if_cfg/addr/ipv4/static/1/mask_len"
+                        -type "uint8" -ctype "ipv4addr"
+                        -span_id "if_mask_$iface">
+
+        </table>
+
+<!-- ==================================================
+     = Interface configuration: IPv6 
+     ================================================== -->
+  <IF {[string compare $have_ipv6 "true"] == 0}> 
+    <IF {[string compare $item_type "interface"] == 0}>
+
+    <?
+      set ipv6_enable_node "$if_cfg/addr/ipv6/enable"
+      set ipv6_slaac_enable_node "$if_cfg/addr/ipv6/slaac/enable"
+      set ipv6_slaac_def_route_node "$if_cfg/addr/ipv6/slaac/default_route"
+      set ipv6_slaac_privacy_node "$if_cfg/addr/ipv6/slaac/privacy"
+      set ipv6_dhcpv6_node "$if_cfg/addr/ipv6/dhcp/enable"
+    ?>
+
+    <tr>
+      <td>
+      <td colspan="3">
+        <CFG-CHECKBOX -id "ipv6_enable_$iface" -caps "set_restricted"
+                      -acl $net_acl -acl_oper {set}
+                      -disabled $ipv6_prohibited
+                      -name "$ipv6_enable_node" -type "bool"
+                      -span_id "if_cbox_ipv6_enable_$iface">
+        IPv6 Enabled
+      <td>
+
+    <tr>
+      <td>
+      <td colspan="3">
+        <CFG-CHECKBOX -id "ipv6_slaac_enable_$iface" -caps "set_restricted"
+                      -acl $net_acl -acl_oper {set}
+                      -disabled $ipv6_prohibited
+                      -name "$ipv6_slaac_enable_node" -type "bool"
+                      -span_id "if_cbox_ipv6_slaac_enable_$iface">
+        IPv6 address autoconfiguration (SLAAC)
+      <td>
+
+      <tr>
+        <td>
+        <td colspan="3">
+          <CFG-CHECKBOX -id "ipv6_slaac_def_route_$iface" -caps "set_restricted"
+                        -acl $net_acl -acl_oper {set}
+                        -disabled $ipv6_prohibited
+                        -name "$ipv6_slaac_def_route_node" -type "bool"
+                        -span_id "if_cbox_ipv6_slaac_def_route_$iface">
+          IPv6 default route autoconfiguration (SLAAC)
+        <td>
+  
+      <tr>
+        <td>
+        <td colspan="3">
+          <CFG-CHECKBOX -id "ipv6_slaac_privacy_$iface" -caps "set_restricted"
+                        -acl $net_acl -acl_oper {set}
+                        -disabled $ipv6_prohibited
+                        -name "$ipv6_slaac_privacy_node" -type "bool"
+                        -span_id "if_cbox_ipv6_slaac_privacy_$iface">
+            IPv6 autoconfiguration address privacy (not MAC-based)
+        <td>
+
+      <tr>
+        <td>
+        <td colspan="3">
+          <CFG-CHECKBOX -id "ipv6_dhcpv6_$iface" -caps "set_restricted"
+                        -acl $net_acl -acl_oper {set}
+                        -disabled $ipv6_prohibited
+                        -name "$ipv6_dhcpv6_node" -type "bool"
+                        -span_id "if_cbox_ipv6_dhcpv6_$iface">
+            IPv6 DHCP (DHCPv6)
+        <td>
+
+    </IF> <!-- interface -->
+  </IF> <!-- have_ipv6 -->
+
+<!-- ==================================================
+     = Interface configuration: comment
+     ================================================== -->
+
+    <tr>
+      <td>
+      <td colspan="99">
+        Comment:
+        <CFG-TEXTBOX -id "comment_$iface" -errname "$iface comment"
+                     -caps "set_restricted" -name "$if_cfg/comment"
+                     -acl $net_acl -acl_oper {set}
+                     -type "string" -cols 40 -span_id "if_comment_$iface">
+
+    <tr>
+      <td height="8">
+
+
+  </IF> <!-- do_config -->
+
+  </table>
+
+  <input type="hidden" name="interface_name" value="<?^=$iface?>">
+
+  <IF {[string compare $do_config "true"] == 0}>
+    <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+                -acl $net_acl -acl_oper {set}
+                -span_id "interface_apply_1">
+    <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+                -acl $net_acl -acl_oper {set}
+                -span_id "interface_cancel_1">
+    <IF {[string compare $item_type "alias"] == 0}>
+      <CFG-BUTTON -type "remove" -text "Remove Alias" -caps "set_restricted"
+                  -acl $net_acl -acl_oper {set}
+                  -span_id "alias_remove_1">
+    </IF>
+  <ELSE>
+    <SET iface_virt [tms::get-config "/net/interface/state/$iface/from_virt"]>
+    <IF {[string compare $iface_virt "true"] != 0}>
+      <CFG-BUTTON -type "create" -text "Configure Interface"
+                  -caps "set_restricted"
+                  -acl $net_acl -acl_oper {set}
+                  -span_id "interface_create_1">
+    </IF>
+  </IF>
+  </CFG-FORM>
+  
+  <!-- ==================================================
+       = Interface configuration: IPv6 manual addresses
+       ================================================== -->
+  <CFG-FORM -action "config-form-interface" -div_id "interface_2">
+  <input type="hidden" name="interface_name" value="<?^=$iface?>">
+  <IF {[string compare $have_ipv6 "true"] == 0}> 
+    <IF {[string compare $do_config "true"] == 0}>
+      <IF {[string compare $item_type "interface"] == 0}>
+  
+        <h3>Static IPv6 addresses</h3>
+    
+        <TMS-TABLE -div_id "if_table_static_ipv6_list_$iface">
+          <?
+            set ipv6_cfg_prefix "$if_cfg/addr/ipv6/static"
+            set ipv6_cfg_prefix_len [string length "$ipv6_cfg_prefix/"]
+            set ipv6_cfg_static_nodes [tms::iterate-config $ipv6_cfg_prefix]
+            set if_num_ipv6_static_addrs [llength $ipv6_cfg_static_nodes]
+          ?>
+          <FOREACH ipv6_cfg_static_node $ipv6_cfg_static_nodes>
+            <?
+              set ipv6_cfg_static_inst [string range $ipv6_cfg_static_node $ipv6_cfg_prefix_len end]
+              set ipv6_cfg_static_ipaddr [tms::get-config "$ipv6_cfg_static_node/ip"]
+              set ipv6_cfg_static_masklen [tms::get-config "$ipv6_cfg_static_node/mask_len"]
+            ?>
+            <tr>
+            <td>
+            <td>
+              <CFG-CHECKBOX -id "row_ipv6_cfg_static_$ipv6_cfg_static_inst" -caps "set_restricted"
+                            -acl $net_acl -acl_oper {set}
+                            -disabled $ipv6_prohibited
+                            -value "$ipv6_cfg_static_node"
+                            -span_id "cbox_ipv6_cfg_ipv6addr_$iface">
+              <?^= ${ipv6_cfg_static_ipaddr}/${ipv6_cfg_static_masklen} ?>
+          </FOREACH>
+          <IF {$if_num_ipv6_static_addrs \> 0}>
+          <tr>
+            <td height="10">
+          <tr>
+            <td>
+            <td>
+              <CFG-BUTTON -type "remove_ipv6addr" -text "Delete IPv6 Address"
+                          -caps "set_restricted" -acl $net_acl -acl_oper {set}
+                          -disabled $ipv6_prohibited
+                          -span_id "if_ipv6_static_${iface}_remove_1">
+          <ELSE>
+            (No static IPv6 addresses configured)
+          </IF>
+          <TMS-TABLE-SPACE>
+        </TMS-TABLE>
+
+  </CFG-FORM>
+  <CFG-FORM -action "config-form-interface" -div_id "interface_3">
+  <input type="hidden" name="interface_name" value="<?^=$iface?>">
+        <TMS-TABLE -div_id "if_table_add_static_ipv6_$iface">
+        <tr>
+          <td>
+          <td>
+            IPv6 address
+          <td>
+          <td>
+            <CFG-IPV6 -id "ipv6_static_ip_$iface" -errname "$iface IPv6 address"
+                      -caps "set_restricted" -acl $net_acl -acl_oper {set}
+                      -disabled $ipv6_prohibited
+                      -type "ipv6addr" -span_id "if_ipv6_static_ip_$iface">
+    
+        <tr>
+          <td>
+          <td>
+            Mask length
+          <td>
+          <td>
+            <CFG-TEXTBOX -id "ipv6_static_mask_len_$iface" -errname "$iface IPv6 mask length" 
+                         -caps "set_restricted" -acl $net_acl -acl_oper {set}
+                         -disabled $ipv6_prohibited
+                         -type "uint8" -cols "3" -span_id "ipv6_static_mask_len_$iface">
+    
+        <tr>
+          <td>
+          <td>
+            <CFG-BUTTON -type "add_ipv6addr" -text "Add IPv6 Address"
+                        -caps "set_restricted" -acl $net_acl -acl_oper {set}
+                        -disabled $ipv6_prohibited
+                        -span_id "if_ipv6_static_${iface}_add_1">
+        </TMS-TABLE>
+      </IF> <!-- interface -->
+    </IF> <!-- do_config -->
+  </IF> <!-- have_ipv6 -->
+
+</CFG-FORM>
+
+  <br>
+  <hr>
+
+  </FOREACH>
+
+
+<!-- ==================================================
+     = Interface Aliases
+     ================================================== -->
+
+<CFG-FORM -action "config-form-interface" -div_id "interface_aliases">
+  <TMS-TABLE -div_id "if_table_alias">
+    <tr>
+      <td colspan="99">
+        <h2>Add new interface alias</h2>
+
+    <tr>
+      <td width="15">
+      <td>
+        Interface name
+      <td width="5">
+      <td>
+        <CFG-DROPDOWN -id "newalias_ifname" -caps "set_restricted" 
+                      -acl $net_acl -acl_oper {set}
+                      -options $real_if_list>
+
+    <tr>
+      <td>
+      <td>
+        Alias index
+      <td>
+      <td>
+        <CFG-TEXTBOX -id "newalias_index" -errname "Alias index" -cols 16
+                     -caps "set_restricted"
+                     -acl $net_acl -acl_oper {set}>
+
+    <tr>
+      <td>
+      <td>
+        IP address
+      <td>
+      <td>
+        <CFG-TEXTBOX -id "newalias_ipaddr" -errname "Alias IP address" -cols 16
+                     -caps "set_restricted"
+                     -acl $net_acl -acl_oper {set}>
+
+    <tr>
+      <td>
+      <td>
+        Netmask
+      <td>
+      <td>
+        <CFG-TEXTBOX -id "newalias_netmask" -errname "Alias netmask" -cols 16
+                      -caps "set_restricted"
+                      -acl $net_acl -acl_oper {set}>
+
+    <tr>
+      <td height="10">
+
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "addalias" -text "Apply" -caps "set_restricted"
+              -acl $net_acl -acl_oper {set}
+              -span_id "interface_apply_2">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $net_acl -acl_oper {set}
+              -span_id "interface_cancel_2">
+</CFG-FORM>
+
+    <IF {$if_count == 0}>
+      <span class="red">
+        <br>
+        No Interfaces Available.
+      </span>
+    </IF>
+
+<!-- ==================================================
+     = DHCP global options
+     ================================================== -->
+
+<!-- Conditional on PROD_FEATURE_DHCP_CLIENT... -->
+<IF {[string compare [tms::have-prod-feature dhcp_client] "true"] == 0}>
+
+<br>
+<hr>
+
+<CFG-FORM>
+  <TMS-TABLE>
+    <tr>
+      <td colspan="99">
+        <h2>DHCP global options</h2>
+
+    <tr>
+      <td width="15">
+      <td>
+        Configured primary interface
+      <td width="5">
+      <td>
+        <CFG-DROPDOWN -id "dhcp_primary_ifname" -caps "set_restricted" 
+                      -acl $net_acl -acl_oper {set}
+                      -name "/net/general/config/overlay_ifname" -type "string"
+                      -options $real_if_list>
+
+    <tr>
+      <td>
+      <td>
+        Acting primary interface
+      <td>
+      <td>
+<?
+    set acting_ifname [tms::get-config "/net/general/state/acting_overlay_ifname"]
+    if {[string length $acting_ifname] == 0} {
+        set acting_ifname "(none)"
+    }
+?>
+    <?^=$acting_ifname?>
+
+    <tr>
+      <td height="10">
+
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $net_acl -acl_oper {set}>
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $net_acl -acl_oper {set}>
+</CFG-FORM>
+
+
+<!-- ==================================================
+     = DHCPv6 global options
+     ================================================== -->
+
+<!-- Conditional on PROD_FEATURE_IPV6... -->
+<IF {[string compare [tms::have-prod-feature ipv6] "true"] == 0}>
+
+<br>
+<hr>
+
+<CFG-FORM>
+  <TMS-TABLE>
+    <tr>
+      <td colspan="99">
+        <h2>DHCPv6 global options</h2>
+
+    <tr>
+      <td width="15">
+      <td>
+        Configured primary interface
+      <td width="5">
+      <td>
+        <CFG-DROPDOWN -id "dhcpv6_primary_ifname" -caps "set_restricted" 
+                      -acl $net_acl -acl_oper {set}
+                      -name "/net/general/config/ipv6/overlay_ifname" -type "string"
+                      -options $real_if_list>
+
+    <tr>
+      <td>
+      <td>
+        Acting primary interface
+      <td>
+      <td>
+<?
+    set acting_ifname [tms::get-config "/net/general/state/ipv6/acting_overlay_ifname"]
+    if {[string length $acting_ifname] == 0} {
+        set acting_ifname "(none)"
+    }
+    tms::puts "[tms::html-body-escape $acting_ifname]"
+?>
+
+    <tr>
+      <td>
+      <td>
+        Stateless (DNS only)
+      <td>
+      <td>
+        <CFG-CHECKBOX -id "dhcpv6_stateless" -caps "set_restricted"
+                      -acl $net_acl -acl_oper {set}
+                      -name "/net/general/config/ipv6/dhcp/stateless"
+                      -type "bool">
+
+    <tr>
+      <td height="10">
+
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $net_acl -acl_oper {set}>
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $net_acl -acl_oper {set}>
+</CFG-FORM>
+
+</IF>
+
+</IF>
+
+  <?
+    set ipv6_supported [tms::get-config "/net/general/state/ipv6/supported" "yes"]
+    set ipv6_admin_enable_node "/net/general/config/ipv6/enable"
+    set ipv6_admin_enabled [tms::get-config $ipv6_admin_enable_node "yes"]
+    set ipv6_num_ifs [tms::get-config "/net/general/state/ipv6/num_enabled_interfaces" "yes"]
+  ?>
+
+  <br>
+  <hr>
+
+    <TMS-TABLE -div_id "if_ipv6_summary">
+      <tr>
+        <td colspan="99">
+          <h2>IPv6 Summary</h2>
+      <tr>
+      <td width="15"></td>
+      <td><b>IPv6 supported:</b></td>
+      <td width="5"></td>
+      <td width="5"><?^=$ipv6_supported?></td>
+
+<!-- Only tell them the admin setting if they can change it -->
+<IF {[string compare $have_ipv6 "true"] == 0}>
+      <tr>
+      <td width="15"></td>
+      <td><b>IPv6 administratively enabled:</b></td>
+      <td width="5"></td>
+      <td width="5"><?^=$ipv6_admin_enabled?></td>
+</IF>
+
+      <tr>
+      <td width="15"></td>
+      <td><b>IPv6 interface count:</b></td>
+      <td width="5"></td>
+      <td width="5"><?^=$ipv6_num_ifs?></td>
+
+      <tr>
+        <td height="10">
+    </TMS-TABLE>
+
+<IF {[string compare $have_ipv6 "true"] == 0}>
+  <CFG-FORM>
+    <TMS-TABLE -div_id "if_ipv6_summary_cfg">
+      <tr>
+        <td>
+        <td colspan="3">
+          <CFG-CHECKBOX -id "ipv6_admin_enable" -caps "set_restricted"
+                        -acl $net_acl -acl_oper {set}
+                        -name "$ipv6_admin_enable_node" -type "bool"
+                        -span_id "if_cbox_ipv6_admin_enable">
+            Administratively enable IPv6
+        <td>
+
+      <tr>
+        <td height="10">
+
+    </TMS-TABLE>
+          <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+                -acl $net_acl -acl_oper {set}
+                -span_id "ipv6_admin_enable_apply_1">
+          <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+                      -acl $net_acl -acl_oper {set}
+                      -span_id "ipv6_admin_enable_cancel_1">
+
+  </CFG-FORM>
+</IF>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view interface configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

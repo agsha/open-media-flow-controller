@@ -1,0 +1,247 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Network statistics">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "network"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Network Usage (Last Hour)">
+
+<?
+  global ref_ui_graph_ver
+  global graph_net_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $graph_net_acl {action}]}>
+
+<?
+#.............................................................................
+#  - Dropdown list to let the user choose between two graph types.
+#  -
+#  - It's unfortunate that we need the two hidden fields, but otherwise they
+#  - are not carried foward into our next page.
+?>
+
+<?
+    # Do we have virtualization?
+    # Conditional on PROD_FEATURE_VIRT
+    set have_virt [tms::have-prod-feature virt]
+    set virt_capab [tms::get-config "/virt/state/capabilities/virtualization"]
+
+    # Is a license required, and if so is it enabled?
+    # Conditional on PROD_FEATURE_VIRT_LICENSED
+    set virt_license_required [tms::have-prod-feature virt_licensed]
+    set virt_lic_active [tms::get-config "/virt/internal_state/license/enable"]
+
+    if {([string compare $have_virt "true"] == 0) &&
+        ([string compare $virt_capab "true"] == 0) &&
+        (([string compare $virt_license_required "false"] == 0) ||
+        ([string compare $virt_lic_active "true"] == 0))} {
+        set virt_offered "true"
+    } else {
+        set virt_offered "false"
+    }    
+
+    # Set our graph type options based on feature set
+    set graph_types {
+        {"All Displayable Interfaces"       "all"       "intf_hour"}
+    }
+    if {[string compare $virt_offered "true"] == 0} {
+        lappend graph_types {"Non-Virtualization Interfaces"    "not_virt"  "intf_hour_not_virt"}
+        set network_graph_type_default "not_virt"
+    }
+    lappend graph_types {"Physical Interfaces"              "phys"      "intf_hour_phys"}
+
+    # Set the current selection to the default
+    set gtype_selected [tms::get-param "query" "gtype_selected"]
+    if {[string length $gtype_selected] == 0} {
+        set gtype_selected $network_graph_type_default
+    }
+?>
+
+<br>
+<form method="get">
+
+  <input type="hidden" name="script" value="rh">
+  <input type="hidden" name="template" value="mon-network">
+
+  Graph type:
+
+  <select name="gtype_selected" onchange="this.form.submit();">
+
+  <FOREACH graph_type $graph_types>
+      <SET graph_type_name [lindex $graph_type 0]>
+      <SET graph_type_value [lindex $graph_type 1]>
+      <IF {[string equal $gtype_selected $graph_type_value] == 1}>
+          <SET selected "selected">
+          <SET graph_action [lindex $graph_type 2]>
+      <ELSE>
+          <SET selected "">
+      </IF>
+
+      <option value="<?^=$graph_type_value?>" <?^=$selected?>><?^=$graph_type_name?></option>
+  </FOREACH>
+  </select>
+
+  <noscript>
+    <img src="/images/em.gif" width="5" height="1" alt="">
+    <input type="submit" id="gsubmit" value="Submit">
+  </noscript>
+</form>
+
+<?
+#.............................................................................
+#  - Figure out which graph type they wanted, and draw it.
+?>
+
+<SET clear_data_url "/admin/launch?script=rh&template=mon-network&action=clear_stats_data&stats_obj_type=chd&stats_obj_name=intf_hour">
+
+<TMS-AJAX-GRAPH $graph_action $graph_action 30 auto $ref_ui_graph_ver "$clear_data_url">
+
+
+<?
+#.............................................................................
+#  - Display the current interface statistics for interfaces matching
+#    the graph selection filter.
+?>
+
+  <?
+    # Sort them because these do NOT come back in alpha order (a quirk
+    # of the implementation of these nodes and the caching of their state),
+    # but we want to list them in alpha order.
+    #
+    # (XXX/EMT: if there were >10 of any one kind of interface, they would
+    # want a numeric sort...)
+    set interface_ids [lsort [tms::iterate-config "/net/interface/state"]]
+
+    set prefix_len [string length "/net/interface/state/"]
+  ?>
+
+  <FOREACH iface_bn $interface_ids>
+  <?
+    set iface [string range $iface_bn $prefix_len end]
+
+    # We don't want to display loopback interface statistics
+    if {[string compare $iface "lo"] == 0} {
+       continue
+    }
+
+    # Do not display the statistics of the interface if the config display
+    # variable is set to false, or if the graph filter selection doesn't
+    # include this kind of interface.
+
+    set iface_display [tms::get-config "/net/interface/config/$iface/display"]
+
+    # NOTE: If the display flag is missing, treat it as true
+    if {[string compare $iface_display false] == 0} {
+        continue
+    }
+
+    if {[string compare $gtype_selected "phys"] == 0} {
+        set devsource [tms::get-config "/net/interface/state/$iface/devsource"]
+        if {[string compare $devsource "physical"] != 0} {
+            continue
+        }
+    }
+
+    if {[string compare $gtype_selected "not_virt"] == 0} {
+        set from_virt [tms::get-config "/net/interface/state/$iface/from_virt"]
+        if {[string compare $from_virt "true"] == 0} {
+            continue
+        }
+    }
+
+  ?>
+
+  <h2><?^= $iface ?> statistics (since boot)</h2>
+
+  <table border="0" cellspacing="0" cellpadding="2" class="tms_mon">
+    <tr>
+      <td width="15">
+      <td><b>RX bytes</b>
+      <td width="8">
+      <td><TMS-INTF-STAT $iface "stats/rx/bytes">
+      <td width="25">
+      <td><b>TX bytes</b>
+      <td width="8">
+      <td><TMS-INTF-STAT $iface "stats/tx/bytes">
+
+    <tr>
+      <td>
+      <td><b>RX packets</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/packets">
+      <td>
+      <td><b>TX packets</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/packets">
+
+    <tr>
+      <td>
+      <td><b>RX mcast packets</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/multicast_packets">
+      <td>
+      <td><b>TX discards</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/discards">
+
+    <tr>
+      <td>
+      <td><b>RX discards</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/discards">
+      <td>
+      <td><b>TX errors</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/errors">
+
+    <tr>
+      <td>
+      <td><b>RX errors</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/errors">
+      <td>
+      <td><b>TX overruns</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/overruns">
+
+    <tr>
+      <td>
+      <td><b>RX overruns</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/overruns">
+      <td>
+      <td><b>TX carrier</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/carrier">
+
+    <tr>
+      <td>
+      <td><b>RX frame</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/rx/frame">
+      <td>
+      <td><b>TX collisions</b>
+      <td>
+      <td><TMS-INTF-STAT $iface "stats/tx/collisions">
+  </table>
+
+  </FOREACH>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view network statistics.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

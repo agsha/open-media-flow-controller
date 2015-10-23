@@ -1,0 +1,27 @@
+<?
+#
+#
+#
+#
+?>
+
+<?
+#
+# Target for AJAX status update on setup-upgrade-status page
+#
+?>
+
+<INCLUDE "tms-utils">
+<INCLUDE "setup-upgrade-status-common">
+
+<html>
+<head>
+  <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+  <meta http-equiv="PRAGMA" content="NO-CACHE">
+</head>
+<body>
+
+<SETUP-UPGRADE-STATUS-BODY>
+
+</body>
+</html>

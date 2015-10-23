@@ -1,0 +1,103 @@
+<?
+#
+#
+#
+#
+?>
+
+<?
+ # Get operation - reboot or shutdown
+ set oper [tms::get-param "query" "oper"]
+?>
+
+<INCLUDE "tms-layout">
+
+<?
+  global boot_acl
+?>
+
+<IF {[string match "*shutdown*" $oper] == 1}>
+    <TMS-PAGE "Shutdown Confirmation">
+    <TMS-MENU "shutdown-confirm">
+    <TMS-BODY>
+
+    <TMS-SIDEBAR>
+        <TMS-SETUP-MENU "reboot-confirm" "oper" "shutdown">
+    </TMS-SIDEBAR>
+    <TMS-PAGE-CONTENT "Confirm Shutdown">
+<ELSE>
+    <TMS-PAGE "Reboot Confirmation">
+    <TMS-MENU "reboot-confirm">
+    <TMS-BODY>
+
+    <TMS-SIDEBAR>
+        <TMS-SETUP-MENU "reboot-confirm" "oper" "reboot">
+    </TMS-SIDEBAR>
+    <TMS-PAGE-CONTENT "Confirm Reboot">
+</IF>
+
+<?
+ # Conditional on PROD_FEATURE_CLUSTER
+ set have_cluster [tms::have-prod-feature cluster]
+?>
+
+<IF {[string match "*shutdown*" $oper] == 1}>
+    <SET save_text "Save and Shutdown">
+    <SET discard_text "Discard and Shutdown">
+    <SET dest $logout_shutdown_url>
+    <IF $have_cluster>
+        <SET action "cluster-shutdown-all">
+    <ELSE>
+        <SET action "shutdown">
+    </IF>
+<ELSE>
+    <SET save_text "Save and Reboot">
+    <SET discard_text "Discard and Reboot">
+    <SET dest $logout_reboot_url>
+    <IF $have_cluster>
+        <SET action "cluster-reboot-all">
+    <ELSE>
+        <SET action "reboot">
+    </IF>
+</IF>
+
+<h2>Configuration Database modified</h2>
+
+    <td>
+<IF {[string match "*shutdown*" $oper] == 1}>
+        The configuration database is modified, but not saved. 
+        All modifications will be lost, if you choose to shutdown
+        without saving the configuration. <br><br><br>
+<ELSE>
+        The configuration database is modified, but not saved. 
+        All modifications will be lost, if you choose to reboot
+        without saving the configuration. <br><br><br>
+</IF>
+
+  <tr>
+  <table border="0" cellspacing="0" cellpadding="10">
+    <tr>
+      <td align="right">
+        <CFG-FORM -action $action -div_id "save_reboot_1">
+          <CFG-BUTTON -type "save" -text $save_text
+          -caps "action_privileged"
+          -acl $boot_acl -acl_oper {action}
+          -destination "$dest"
+          -span_id "save_reboot_ok_1">
+        </CFG-FORM>
+
+      <td align="right">
+        <CFG-FORM -action $action -div_id "discard_reboot_1">
+          <CFG-BUTTON -type "discard" -text $discard_text
+          -caps "action_privileged"
+          -acl $boot_acl -acl_oper {action}
+          -destination "$dest"
+          -span_id "discard_reboot_ok_1">
+        </CFG-FORM>
+
+  </table>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>
+

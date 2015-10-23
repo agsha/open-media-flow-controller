@@ -1,0 +1,50 @@
+#
+#
+
+
+Rationale for import
+====================
+
+One reason we're building libgd is so that we do not need libfontconfig,
+libjpeg and libxpm.
+
+Another is to undo the application of gd-2.0.35-AALineThick.patch, as
+described in our bug 14779.  Someone upstream had introduced this patch
+in an attmept to fix a bug, but in the process ended up introducing a
+more serious bug which affected our usage of libgd more than the
+original one.
+
+
+Import process
+==============
+
+  1. Download the SRPM for the EL6 'gd' RPM (see VERSION file for
+     version & download location).
+
+  2. Install and prep the SRPM
+
+  3. Edit config.h and disable the lines that define HAVE_LIBFONTCONFIG,
+     HAVE_LIBJPEG and HAVE_LIBXPM.  We do not want to have to link with
+     those libraries.  We do not import config.h , but rather check it
+     in after the import.
+
+  4. Remove source files that are not needed for compilation:
+     all standalone tests and utilities including image type
+     converters, plus gd_jpeg.c, gd_wbmp.c, gdxpm.c, wbmp.c,
+     webpng.c.
+
+  5. Import as per doc/dev/import.txt, and create a Makefile that
+     builds it.
+
+
+Notes
+=====
+
+Header files for this library are in src/lib/libgd, rather
+than source include, to keep all imported files together.
+
+Anyone wishing to call APIs in this library should use a -I
+directive to include the gd.h from the source tree, rather than
+from the build machine.  gd-devel is not in the required RPMs list,
+so the version of gd.h on the build machine may not match the version
+in the tree.

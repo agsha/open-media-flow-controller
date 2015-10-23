@@ -1,0 +1,1320 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "IPSec">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "ipsec"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "IPSec">
+
+  <?
+    global ipsec_acl
+  ?>
+
+<IF {[tms::check-authorization "query_basic" $ipsec_acl {query}]}>
+
+  <?
+    set ipsec_cap "set_privileged"
+    set ipsec_action_cap "action_privileged"
+    set obfuscate [tms::may-obfuscate]
+    # Conditional on PROD_FEATURE_IPV6
+    set have_ipv6 [tms::have-prod-feature ipv6]
+    set ip_field_width 16
+    if {[string compare $have_ipv6 "true"] == 0} {
+      set ip_field_width 46
+    }
+    set daemon_name [tms::get-config "/crypto/config/ipsec/daemon"]
+    set using_pluto [expr {[string compare $daemon_name "pluto"] == 0}]
+    if {$using_pluto} {
+        set daemon_process_name "ipsec"
+        set daemon_descr "pluto (Openswan)"
+    } else {
+        if {[expr {[string compare $daemon_name "racoon"] == 0}]} {
+            set daemon_process_name $daemon_name
+            set daemon_descr "racoon (KAME)"
+        } elseif {[string length $daemon_name] > 0} {
+            set daemon_process_name "($daemon_name)"
+            set daemon_descr $daemon_name
+        } else {
+            set daemon_descr "(unknown daemon)"
+            set daemon_process_name ""
+        }
+    }
+    set daemon_pm_state [tms::get-config "/pm/monitor/process/$daemon_process_name/state"]
+  ?>
+
+  <h2>IPSec IKE Peering Configuration</h2>
+  <CFG-FORM -action "config-form-array" -div_id "ipsec_ike_peers">
+
+  <?
+    set cur_line 0
+    set peering_prefix "/crypto/config/ipsec/peering"
+    set prefix_len [string length "$peering_prefix/"]
+    set peering_cfg_token [tms::get-binding-children "$peering_prefix" "false" "true"]
+    set peering_cfg_nodes [tms::get-binding-children-names $peering_cfg_token "$peering_prefix/*"]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+ 
+    <tr class="listing_head"> 
+      <td>
+      <td>
+        Enabled
+  <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+      <td>
+        IP Type
+  <? } ?>
+      <td>
+        <p>Peer Address</p>
+      <td>
+        <p>Local Address</p>
+      <td>
+        <p>Mode</p>
+      <td>
+        <p>Encryption</p>
+      <td>
+        <p>Authentication</p>
+      <td>
+        <p>Exch Mode</p>
+      <td>
+        <p>DH Grp</p>
+      <td>
+        <p>Transforms</p>
+      <td>
+        <p>PFS Grp</p>
+      <td>
+        <p>Lifespan (sec)</p>
+    </tr>
+
+    <?
+      foreach peering_cfg_node $peering_cfg_nodes {
+        set peering_keying [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/keying"]
+        if {[string compare $peering_keying "ike"] != 0} {
+            continue
+        }
+        set peering_peer_addr [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/peer/addr/inet_address"]
+        set peering_local_addr [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/local/addr/inet_address"]
+        set peering_family [tms::inetaddr-to-family $peering_peer_addr]
+        set ike_cfg_table($peering_family,$peering_peer_addr,$peering_local_addr) $peering_cfg_node
+      }
+    ?>
+
+    <FOREACH sorted_peering [lsort -dictionary [array names ike_cfg_table]]>
+    <?
+      set peering_cfg_node $ike_cfg_table($sorted_peering)
+      set peering_id [string range $peering_cfg_node $prefix_len end]
+      set peering_enabled [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/enable" "yes"]
+      set peering_peer_addr [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/peer/addr/inet_address"]
+      set peering_family [tms::inetaddr-to-family $peering_peer_addr]
+      set peering_local_addr [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/local/addr/inet_address"]
+      set peering_mode [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/mode"]
+      set peering_ike_exch_mode [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/ike/phase1/exchange_mode"]
+      set peering_ike_dh_group [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/ike/phase1/dh_group"]
+      set peering_ike_transform_set [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/ike/phase2/transform_set"]
+      set peering_ike_pfs_group [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/ike/phase2/pfs_group"]
+      set peering_ike_lifetime [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/ike/phase2/lifetime"]
+      # XXX/SML On a secure node, this is obfuscated anyway, so there's no way
+      # of assuring it's been provisioned.  Even on an insecure node, it
+      # doesn't seem appropriate to display security keys any more than it
+      # would be to display user passwords.
+      #    set peering_ike_key [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/ike/presharedkey"]
+      set peering_encrypt [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/esp/algorithm"]
+      set peering_auth [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/ah/algorithm"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$peering_id" 
+                      -caps $ipsec_cap
+                      -acl $ipsec_acl -acl_oper {set_delete}
+                      -value "/crypto/config/ipsec/peering/$peering_id"
+                      -span_id "ipsec_cbox_1">
+        </td>
+      <td>
+        <p><?^=$peering_enabled?></p></td>
+    <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+      <td>
+        <?^=$peering_family?>
+    <? } ?>
+      <td>
+        <p><?^=$peering_peer_addr?></p></td>
+      <td>
+        <p><?^=$peering_local_addr?></p></td>
+      <td>
+        <p><?^=$peering_mode?></p></td>
+      <td>
+        <p><?^=$peering_encrypt?></p></td>
+      <td>
+        <p><?^=$peering_auth?></p></td>
+      <td>
+        <p><?^=$peering_ike_exch_mode?></p></td>
+      <td>
+        <p><?^=$peering_ike_dh_group?></p></td>
+      <td>
+        <p><?^=$peering_ike_transform_set?></p></td>
+      <td>
+      <IF {$peering_ike_pfs_group == 0}>
+        <p>(none)</p></td>
+      <ELSE>
+        <p><?^=$peering_ike_pfs_group?></p></td>
+      </IF>
+      <td>
+      <IF {$peering_ike_lifetime == 0}>
+        <p>(unlimited)</p></td>
+      <ELSE>
+        <p><?^=$peering_ike_lifetime?></p></td>
+      </IF>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No IPSec IKE peerings.
+      <SET disab "true">
+    <ELSE>
+      <SET disab "false">
+      <tr>
+        <td colspan="99">
+          <sub>* Preshared keys are sensitive and therefore are not displayed.</sub>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <input type="hidden" name="f_array_root" value="/crypto/config/ipsec/peering">
+  <input type="hidden" name="f_array_shift" value="true">
+
+  <input type="hidden" name="f_array_custom_buttons" value="remove,enable,disable">
+
+  <input type="hidden" name="f_array_button_enable_action" value="set">
+  <input type="hidden" name="f_array_button_enable_child_name" value="enable">
+  <input type="hidden" name="f_array_button_enable_child_value" value="true">
+  <input type="hidden" name="f_array_button_disable_action" value="set">
+  <input type="hidden" name="f_array_button_disable_child_name" value="enable">
+  <input type="hidden" name="f_array_button_disable_child_value" value="false">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps $ipsec_cap 
+              -acl $ipsec_acl -acl_oper {set_delete}
+              -disabled $disab
+              -span_id "ipsec_remove_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "enable" -text "Enable Selected"
+              -caps $ipsec_cap 
+              -acl $ipsec_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "ipsec_enable_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "disable" -text "Disable Selected"
+              -caps $ipsec_cap 
+              -acl $ipsec_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "ipsec_disable_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  </p></td>
+ </CFG-FORM>
+ </tr></table>
+
+  <h2>IPSec Manual Peering Configuration</h2>
+  <CFG-FORM -action "config-form-array" -div_id "ipsec_manual_peers">
+
+  <?
+    set cur_line 0
+    set peering_prefix "/crypto/config/ipsec/peering"
+    set prefix_len [string length "$peering_prefix/"]
+    set peering_cfg_token [tms::get-binding-children "$peering_prefix" "false" "true"]
+    set peering_cfg_nodes [tms::get-binding-children-names $peering_cfg_token "$peering_prefix/*"]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+
+    <tr class="listing_head">  
+      <td>
+      <td>
+        Enabled
+  <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+      <td>
+        IP Type
+  <? } ?>
+      <td>
+        <p>Peer Address</p>
+      <td>
+        <p>Local Address</p>
+      <td>
+        <p>Mode</p>
+      <td>
+        <p>Encryption</p>
+      <td>
+        <p>Authentication</p>
+      <td>
+        <p>Local SPI</p>
+      <td>
+        <p>Remote SPI</p>
+    </tr>
+
+    <?
+      foreach peering_cfg_node $peering_cfg_nodes {
+        set peering_keying [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/keying"]
+        if {[string compare $peering_keying "manual"] != 0} {
+          continue
+        }
+        set peering_peer_addr [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/peer/addr/inet_address"]
+        set peering_local_addr [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/local/addr/inet_address"]
+        set peering_family [tms::inetaddr-to-family $peering_peer_addr]
+        set manual_cfg_table($peering_family,$peering_peer_addr,$peering_local_addr) $peering_cfg_node
+        }
+    ?>
+
+    <FOREACH sorted_peering [lsort -dictionary [array names manual_cfg_table]]>
+    <?
+      set peering_cfg_node $manual_cfg_table($sorted_peering)
+      set peering_id [string range $peering_cfg_node $prefix_len end]
+      set peering_enabled [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/enable" "yes"]
+      set peering_peer_addr [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/peer/addr/inet_address"]
+      set peering_family [tms::inetaddr-to-family $peering_peer_addr]
+      set peering_local_addr [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/local/addr/inet_address"]
+      set peering_mode [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/mode"]
+      set peering_lspi [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/ah/lspi"]
+      set peering_rspi [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/ah/rspi"]
+      set peering_encrypt [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/esp/algorithm"]
+      set peering_auth [tms::get-child-value-by-name $peering_cfg_token "$peering_cfg_node/security/ah/algorithm"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$peering_id"
+                      -caps $ipsec_cap
+                      -acl $ipsec_acl -acl_oper {set_delete}
+                      -value "/crypto/config/ipsec/peering/$peering_id"
+                      -span_id "ipsec_cbox_2">
+        </td>
+      <td>
+        <p><?^=$peering_enabled?></p></td>
+    <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+      <td>
+        <?^=$peering_family?>
+    <? } ?>
+      <td>
+        <p><?^=$peering_peer_addr?></p></td>
+      <td>
+        <p><?^=$peering_local_addr?></p></td>
+      <td>
+        <p><?^=$peering_mode?></p></td>
+      <td>
+        <p><?^=$peering_encrypt?></p></td>
+      <td>
+        <p><?^=$peering_auth?></p></td>
+      <td>
+        <p><?^=$peering_lspi?></p></td>
+      <td>
+        <p><?^=$peering_rspi?></p></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No IPSec manual peerings.
+      <SET disab "true">
+    <ELSE>
+      <SET disab "false">
+      <tr>
+        <td colspan="99">
+          <sub>* AH and ESP keys are sensitive and therefore are not displayed.</sub>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <input type="hidden" name="f_array_root" value="/crypto/config/ipsec/peering">
+  <input type="hidden" name="f_array_shift" value="true">
+
+  <input type="hidden" name="f_array_custom_buttons" value="remove,enable,disable">
+
+  <input type="hidden" name="f_array_button_enable_action" value="set">
+  <input type="hidden" name="f_array_button_enable_child_name" value="enable">
+  <input type="hidden" name="f_array_button_enable_child_value" value="true">
+  <input type="hidden" name="f_array_button_disable_action" value="set">
+  <input type="hidden" name="f_array_button_disable_child_name" value="enable">
+  <input type="hidden" name="f_array_button_disable_child_value" value="false">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps $ipsec_cap
+              -acl $ipsec_acl -acl_oper {set_delete}
+              -disabled $disab
+              -span_id "ipsec_remove_2">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "enable" -text "Enable Selected"
+              -caps $ipsec_cap 
+              -acl $ipsec_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "ipsec_enable_2">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "disable" -text "Disable Selected"
+              -caps $ipsec_cap 
+              -acl $ipsec_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "ipsec_disable_2">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  </p></td>
+ </CFG-FORM>
+ </tr></table>
+
+
+  <h2>IPSec IKE Peering State</h2>
+  <p>IKE daemon <?^=$daemon_descr?> is <?^=$daemon_pm_state?></p>
+  <CFG-FORM -action "ipsec-ike-clear-sa" -div_id "ipsec_actions_ike_clear_sa">
+  <?
+    set cur_line 0
+    set peering_prefix "/crypto/state/ipsec/peer"
+    set prefix_len [string length "$peering_prefix/"]
+    set peering_state_token [tms::get-binding-children "$peering_prefix" "false" "true"]
+    set peering_state_nodes [tms::get-binding-children-names $peering_state_token "$peering_prefix/*"]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+ 
+    <tr class="listing_head"> 
+    <td width="1%" nowrap align="left" valign="middle">
+      <IF {$using_pluto}>
+        <td>
+            Up
+      </IF>
+  <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+      <td>
+        IP Type
+  <? } ?>
+      <td>
+        <p>Peer Address</p>
+      <IF {$using_pluto}>
+        <td>
+          <p>Local Address</p>
+      </IF>
+      <td>
+        <p>Port</p>
+      <td>
+        <p>Initiator</p>
+      <IF {$using_pluto}>
+        <td>
+          <p>Exchange</p>
+        <td>
+          <p>ISAKMP State</p>
+        <td>
+          <p>ISAKMP DH Group</p>
+        <td>
+          <p>IPsec State</p>
+        <td>
+          <p>IPsec PFS Group</p>
+      <ELSE>
+        <td>
+          <p>Created</p>
+        <td>
+          <p>State</p>
+      </IF>
+      <IF {$using_pluto}>
+        <td>
+          <p>ISAKMP ID</p>
+        <td>
+          <p>IPsec ID</p>
+      <ELSE>
+        <td>
+          <p>Initiator Cookie</p>
+        <td>
+          <p>Responder Cookie</p>
+        <td>
+          <p>Exchange</p>
+        <td>
+          <p>Phase2 Count</p>
+      </IF>
+    </tr>
+
+    <?
+      foreach peering_state_node $peering_state_nodes {
+        set peer_addr [tms::get-child-value-by-name $peering_state_token "$peering_state_node/inet_address"]
+        set peering_family [tms::inetaddr-to-family $peer_addr]
+        set ike_state_table($peering_family,$peer_addr) $peering_state_node
+      }
+    ?>
+
+    <FOREACH sorted_peering [lsort -dictionary [array names ike_state_table]]>
+    <?
+      set peering_state_node $ike_state_table($sorted_peering)
+      set peering_id [string range $peering_state_node $prefix_len end]
+
+      set peer_addr [tms::get-child-value-by-name $peering_state_token "$peering_state_node/inet_address"]
+      set peering_family [tms::inetaddr-to-family $peer_addr]
+      set peer_port [tms::get-child-value-by-name $peering_state_token "$peering_state_node/port"]
+      set peer_initiator [tms::get-child-value-by-name $peering_state_token "$peering_state_node/initiator"]
+      set peer_exchange [tms::get-child-value-by-name $peering_state_token "$peering_state_node/exchange"]
+      if {$using_pluto} {
+        set peering_up [tms::get-child-value-by-name $peering_state_token "$peering_state_node/oper_up" "yes"]
+        set peer_local_addr [tms::get-child-value-by-name $peering_state_token "$peering_state_node/local_inet_address"]
+        set peer_state_ipsec [tms::get-child-value-by-name $peering_state_token "$peering_state_node/state_ipsec"]
+        set peer_state_isakmp [tms::get-child-value-by-name $peering_state_token "$peering_state_node/state_isakmp"]
+        set peer_state_ipsec_descr [tms::get-child-value-by-name $peering_state_token "$peering_state_node/state_ipsec_descr"]
+        set peer_state_isakmp_descr [tms::get-child-value-by-name $peering_state_token "$peering_state_node/state_isakmp_descr"]
+        set peer_state_id_ipsec [tms::get-child-value-by-name $peering_state_token "$peering_state_node/state_id_ipsec"]
+        set peer_state_id_isakmp [tms::get-child-value-by-name $peering_state_token "$peering_state_node/state_id_isakmp"]
+        set peer_isakmp_dh_group [tms::get-child-value-by-name $peering_state_token "$peering_state_node/isakmp/dh_group"]
+        set peer_ipsec_pfs_group [tms::get-child-value-by-name $peering_state_token "$peering_state_node/ipsec/pfs_group"]
+        set peer_state ""
+        set peer_icookie ""
+        set peer_rcookie ""
+        set peer_date ""
+        set peer_time ""
+        set peer_phase2_count ""
+        if {[string compare $peer_state_ipsec_descr ""] == 0} {
+            set peer_state_ipsec_descr "No phase2 IPsec SA"
+        }
+        if {[string compare $peer_state_isakmp_descr ""] == 0} {
+            set peer_state_isakmp_descr "No phase1 ISAKMP SA"
+        }
+      } else {
+        set peering_up ""
+        set peer_state [tms::get-child-value-by-name $peering_state_token "$peering_state_node/state"]
+        set peer_icookie [tms::get-child-value-by-name $peering_state_token "$peering_state_node/icookie"]
+        set peer_rcookie [tms::get-child-value-by-name $peering_state_token "$peering_state_node/rcookie"]
+        set peer_date [tms::get-child-value-by-name $peering_state_token "$peering_state_node/date"]
+        set peer_time [tms::get-child-value-by-name $peering_state_token "$peering_state_node/time"]
+        set peer_phase2_count [tms::get-child-value-by-name $peering_state_token "$peering_state_node/phase2_count"]
+        set peer_local_addr ""
+        set peer_state_ipsec ""
+        set peer_state_isakmp ""
+        set peer_state_ipsec_descr ""
+        set peer_state_isakmp_descr ""
+        set peer_state_id_ipsec ""
+        set peer_state_id_isakmp ""
+      }
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$peering_id" 
+                      -caps $ipsec_cap
+                      -acl $ipsec_acl -acl_oper {set_delete}
+                      -value "$peer_addr $peer_local_addr"
+                      -span_id "ipsec_cbox_3">
+      </td>
+
+      <IF {$using_pluto}>
+        <td>
+            <p><?^=$peering_up?></p>
+      </IF>
+
+      <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+        <td>
+          <?^=$peering_family?>
+      <? } ?>
+        <td>
+        <p><?^=$peer_addr?></p></td>
+      <IF {$using_pluto}>
+        <td>
+          <p><?^=$peer_local_addr?></p></td>
+      </IF>
+      <td>
+        <p><?^=$peer_port?></p></td>
+      <td>
+        <IF {[string compare $peer_initiator "true"] == 0}>
+          <p>yes</p></td>
+        <ELSE>
+          <p>no</p></td>
+        </IF>
+      <IF {$using_pluto}>
+        <td>
+          <p><?^=$peer_exchange?></p></td>
+        <td>
+          <p><?^=$peer_state_isakmp?></p><p>(<?^=$peer_state_isakmp_descr?>)</p></td>
+        <td>
+          <p><?^=$peer_isakmp_dh_group?></p></td>
+        <td>
+          <p><?^=$peer_state_ipsec?></p><p>(<?^=$peer_state_ipsec_descr?>)</p></td>
+        <td>
+          <p><?^=$peer_ipsec_pfs_group?></p></td>
+      <ELSE>
+        <td>
+          <p><?^=$peer_date?> <?^=$peer_time?></p></td>
+        <td>
+          <p><?^=$peer_state?></p></td>
+      </IF>
+      <IF {$using_pluto}>
+        <td>
+          <p><?^=$peer_state_id_isakmp?></p></td>
+        <td>
+          <p><?^=$peer_state_id_ipsec?></p></td>
+      <ELSE>
+        <td>
+          <p><?^=$peer_icookie?></p></td>
+        <td>
+          <p><?^=$peer_rcookie?></p></td>
+        <td>
+          <p><?^=$peer_exchange?></p></td>
+        <td>
+          <p><?^=$peer_phase2_count?></p></td>
+      </IF>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No IPSec IKE peerings active.
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <CFG-BUTTON -type "clear_selected" -text "Clear Selected IKE SAs" -caps $ipsec_action_cap
+              -acl $ipsec_acl -acl_oper {action}
+              -span_id "ike_clear_ok_1">
+  </p></td>
+    </tr></table>
+  </CFG-FORM>
+
+  <h2>IPSec Policy State</h2>
+  <?
+    set cur_line 0
+    set policy_prefix "/crypto/state/ipsec/policy"
+    set policy_state_token [tms::get-binding-children "$policy_prefix" "false" "true"]
+    set policy_state_nodes [tms::get-binding-children-names $policy_state_token "$policy_prefix/*"]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+ 
+    <tr class="listing_head"> 
+  <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+      <td>
+        IP Type
+  <? } ?>
+      <td>
+        <p>Src IP Range</p>
+      <td>
+        <p>Dst IP Range</p>
+      <td>
+        <p>IP Protocol</p>
+      <td>
+        <p>Dir</p>
+      <td>
+        <p>Policy ID</p>
+      <td>
+        <p>Action</p>
+      <td>
+        <p>Mode</p>
+      <td>
+        <p>Protocols</p>
+      <td>
+        <p>Created</p>
+      <td>
+        <p>Last Used</p>
+    </tr>
+
+    <?
+      # sort by policy selector fields
+      foreach policy_state_node $policy_state_nodes {
+        set policy_id [tms::get-child-value-by-name $policy_state_token "$policy_state_node"]
+        set policy_action [tms::get-child-value-by-name $policy_state_token "$policy_state_node/action"]
+        set policy_match_src_ipaddr [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/src/inet_address"]
+        set policy_family [tms::inetaddr-to-family $policy_match_src_ipaddr]
+        set policy_match_src_masklen [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/src/masklen"]
+        set policy_match_src_port [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/src/port"]
+        set policy_match_dst_ipaddr [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/dst/inet_address"]
+        set policy_match_dst_masklen [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/dst/masklen"]
+        set policy_match_dst_port [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/dst/port"]
+        set policy_direction [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/direction"]
+        set policy_ip_nlp [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/next_layer_protocol"]
+        set policy_icmp_type [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/icmp/type"]
+        set policy_icmp_code [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/icmp/code"]
+        set policy_priority_absolute [tms::get-child-value-by-name $policy_state_token "$policy_state_node/priority_absolute"]
+        set policy_table_sorted($policy_family,$policy_match_src_ipaddr,$policy_match_src_masklen,$policy_match_src_port,$policy_match_dst_ipaddr,$policy_match_dst_masklen,$policy_match_dst_port,$policy_direction,$policy_priority_absolute,$policy_id,$policy_action,$policy_ip_nlp,$policy_icmp_type,$policy_icmp_code) $policy_state_node
+      }
+    ?>
+    <FOREACH sorted_policy [lsort -dictionary [array names policy_table_sorted]]>
+    <?
+    set policy_state_node $policy_table_sorted($sorted_policy)
+    set policy_id [tms::get-child-value-by-name $policy_state_token "$policy_state_node"]
+    set policy_action [tms::get-child-value-by-name $policy_state_token "$policy_state_node/action"]
+    set policy_match_src_ipaddr [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/src/inet_address"]
+    set policy_family [tms::inetaddr-to-family $policy_match_src_ipaddr]
+    set policy_match_src_masklen [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/src/masklen"]
+    set policy_match_src_port [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/src/port"]
+    set policy_match_dst_ipaddr [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/dst/inet_address"]
+    set policy_match_dst_masklen [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/dst/masklen"]
+    set policy_match_dst_port [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/dst/port"]
+    set policy_direction [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/direction"]
+    set policy_ip_nlp [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/next_layer_protocol"]
+    set policy_icmp_type [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/icmp/type"]
+    set policy_icmp_code [tms::get-child-value-by-name $policy_state_token "$policy_state_node/selector/1/match/icmp/code"]
+    set policy_ip_proto $policy_ip_nlp
+    if {[string compare $policy_ip_nlp "ICMPv6"] == 0 ||
+        [string compare $policy_ip_nlp "ICMP"] == 0} {
+        set policy_ip_proto "$policy_ip_nlp\n\[type=$policy_icmp_type,code=$policy_icmp_code\]"
+    }
+    set policy_priority_base [tms::get-child-value-by-name $policy_state_token "$policy_state_node/priority_base"]
+    set policy_priority_offset [tms::get-child-value-by-name $policy_state_token "$policy_state_node/priority_offset"]
+    set policy_priority_absolute [tms::get-child-value-by-name $policy_state_token "$policy_state_node/priority_absolute"]
+
+    # XXX/SML:  While the policy datasbase allows for transport mode to be
+    # specified on a per IPSec protocol basis, we do support configuration of
+    # this in the product, so we'll take this from the first instance.
+
+    set policy_mode [tms::get-child-value-by-name $policy_state_token "$policy_state_node/ipsec_proto/1/mode"]
+    set policy_proto1 [tms::get-child-value-by-name $policy_state_token "$policy_state_node/ipsec_proto/1/protocol"]
+    set policy_proto2 [tms::get-child-value-by-name $policy_state_token "$policy_state_node/ipsec_proto/2/protocol"]
+    set protocols $policy_proto1
+    if {[string length $policy_proto2] > 0} {
+        set protocols "$policy_proto1, $policy_proto2"
+    }
+
+    set policy_created [tms::get-child-value-by-name $policy_state_token "$policy_state_node/time_created"]
+    regexp "^(\[0-9\]+)/" $policy_created match year
+    if {$year <= 1970} {
+        set policy_created "(never)"
+    }
+    set policy_lastused [tms::get-child-value-by-name $policy_state_token "$policy_state_node/time_lastused"]
+    regexp "^(\[0-9\]+)/" $policy_lastused match year
+    if {$year <= 1970} {
+        set policy_lastused "(never)"
+    }
+
+    # XXX/SML:  Iterate over the ipsec_proto nodes if we ever support
+    # granular configuration of the IP protocol stack
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+
+    <IF {[string compare $have_ipv6 "true"] == 0}>
+      <td>
+        <?^=$policy_family?>
+    </IF>
+      <td>
+        <IF {$policy_match_src_masklen != 32}>
+            <p><?^=$policy_match_src_ipaddr?>/<?^=$policy_match_src_masklen?></p>
+        <ELSE>
+            <p><?^=$policy_match_src_ipaddr?></p>
+        </IF>
+        </td>
+      <td>
+        <IF {$policy_match_dst_masklen != 32}>
+            <p><?^=$policy_match_dst_ipaddr?>/<?^=$policy_match_dst_masklen?></p>
+        <ELSE>
+            <p><?^=$policy_match_dst_ipaddr?></p>
+        </IF>
+        </td>
+      <td>
+        <p><?^=$policy_ip_proto?></p></td>
+      <td>
+        <p><?^=$policy_direction?></p></td>
+      <td>
+        <p><?^=$policy_id?></p></td>
+      <td>
+        <p><?^=$policy_action?></p></td>
+      <td>
+        <p><?^=$policy_mode?></p></td>
+      <td>
+        <p><?^=$protocols?></p></td>
+      <td>
+        <p><?^=$policy_created?></p></td>
+      <td>
+        <p><?^=$policy_lastused?></p></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No policies active.
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  </p></td>
+ </tr></table>
+
+
+  <h2>IPSec Security Association State</h2>
+  <?
+    set cur_line 0
+    set sa_node_prefix "/crypto/state/ipsec/sa"
+    set sa_state_token [tms::get-binding-children "$sa_node_prefix" "false" "true"]
+    set sa_state_nodes [tms::get-binding-children-names $sa_state_token "$sa_node_prefix/*"]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+ 
+    <tr class="listing_head"> 
+  <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+      <td>
+        IP Type
+  <? } ?>
+      <td>
+        <p>Src IP Address</p>
+      <td>
+        <p>Dst IP Address</p>
+      <td>
+        <p>SPI</p>
+      <td>
+        <p>Mode</p>
+      <td>
+        <p>Encr Type</p>
+      <td>
+        <p>Auth Type</p>
+      <td>
+        <p>Created</p>
+      <td>
+        <p>First Used</p>
+      <td>
+        <p>Lifespan (sec)</p>
+      <td>
+        <p>Expiration (sec)</p>
+      <td>
+        <p>State</p>
+    </tr>
+
+
+    <FOREACH sa_state_node $sa_state_nodes>
+    <?
+    set sa_src_ipaddr [tms::get-child-value-by-name $sa_state_token "$sa_state_node/src/inet_address"]
+    set sa_dst_ipaddr [tms::get-child-value-by-name $sa_state_token "$sa_state_node/dst/inet_address"]
+    set sa_spi [tms::get-child-value-by-name $sa_state_token "$sa_state_node/spi"]
+    set sa_mode [tms::get-child-value-by-name $sa_state_token "$sa_state_node/mode"]
+    set sa_trans1_alg [tms::get-child-value-by-name $sa_state_token "$sa_state_node/transform/1/algorithm"]
+    set sa_trans1_proto [tms::get-child-value-by-name $sa_state_token "$sa_state_node/transform/1/protocol"]
+    set sa_trans2_alg [tms::get-child-value-by-name $sa_state_token "$sa_state_node/transform/2/algorithm"]
+    set sa_trans2_proto [tms::get-child-value-by-name $sa_state_token "$sa_state_node/transform/2/protocol"]
+    set sa_time_created [tms::get-child-value-by-name $sa_state_token "$sa_state_node/time_created"]
+    regexp "^(\[0-9\]+)/" $sa_time_created match year
+    if {$year <= 1970} {
+        set sa_time_created "(never)"
+    }
+    set sa_time_firstused [tms::get-child-value-by-name $sa_state_token "$sa_state_node/time_firstused"]
+    regexp "^(\[0-9\]+)/" $sa_time_firstused match year
+    if {$year <= 1970} {
+        set sa_time_firstused "(never)"
+    }
+    set sa_lifespan_sec [tms::get-child-value-by-name $sa_state_token "$sa_state_node/life/limit_time_age_hard"]
+    set sa_life_rem_sec [tms::get-child-value-by-name $sa_state_token "$sa_state_node/life/remaining_time_age_hard"]
+    if {$sa_lifespan_sec == 0} {
+      set sa_lifespan_sec "(unlimited)"
+      set sa_life_rem_sec "(never)"
+    }
+    set sa_state [tms::get-child-value-by-name $sa_state_token "$sa_state_node/life/state"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+
+    <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+      <td>
+        <?^=[tms::inetaddr-to-family $sa_src_ipaddr]?>
+    <? } ?>
+      <td>
+        <p><?^=$sa_src_ipaddr?></p></td>
+      <td>
+        <p><?^=$sa_dst_ipaddr?></p></td>
+      <td>
+        <p><?^=$sa_spi?></p></td>
+      <td>
+        <p><?^=$sa_mode?></p></td>
+      <td>
+        <IF {[string compare $sa_trans1_proto "ESP"] == 0}>
+          <p><?^=$sa_trans1_alg?></p></td>
+        <ELSE>
+          <IF {[string compare $sa_trans2_proto "ESP"] == 0}>
+            <p><?^=$sa_trans2_alg?></p></td>
+          <ELSE>
+            <p>(none)</p></td>
+          </IF>
+        </IF>
+      <td>
+        <IF {[string compare $sa_trans1_proto "AH"] == 0}>
+          <p><?^=$sa_trans1_alg?></p></td>
+        <ELSE>
+          <IF {[string compare $sa_trans2_proto "AH"] == 0}>
+            <p><?^=$sa_trans2_alg?></p></td>
+          <ELSE>
+            <p>(none)</p></td>
+          </IF>
+        </IF>
+      <td>
+        <p><?^=$sa_time_created?></p></td>
+      <td>
+        <p><?^=$sa_time_firstused?></p></td>
+      <td>
+        <p><?^=$sa_lifespan_sec?></p></td>
+      <td>
+        <p><?^=$sa_life_rem_sec?></p></td>
+      <td>
+        <p><?^=$sa_state?></p></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No security associations active.
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  </p></td>
+ </tr></table>
+
+  <?
+      # Get IP interface addresses for IKE and Manual config cut/paste availability
+
+      set def_if_ipaddr ""
+      set iflist [list]
+      set if_info [tms::get-if-info]
+      set if_count [llength $if_info]
+  ?>
+  <FOREACH if_rec $if_info>
+    <?
+      set iface [lindex $if_rec 0]
+
+      if {[string compare $iface "lo"] == 0} {
+          set if_count [expr {$if_count - 1}]
+          continue
+      }
+
+      set if_display [tms::get-config "/net/interface/config/$iface/display"]
+      if {[string compare $if_display "false"] == 0} {
+          set if_count [expr {$if_count - 1}]
+          continue
+      }
+      set if_type [lindex $if_rec 2]
+      set if_state "/net/interface/state/$iface"
+      set if_ipaddr [tms::get-config "$if_state/addr/ipv4/1/ip"]
+      if {[string length $if_ipaddr] == 0} {
+      set if_count [expr {$if_count - 1}]
+          continue
+      }
+
+      lappend iflist "$iface:  $if_ipaddr"
+      set def_if_ipaddr "$if_ipaddr"
+
+      if {[string compare $have_ipv6 "true"] == 0} {
+        set if_ipv6addr_nodes [tms::iterate-config "$if_state/addr/ipv6"]
+          foreach if_ipv6addr_node $if_ipv6addr_nodes {
+            set if_ipv6addr [tms::get-config "$if_ipv6addr_node/ip"]
+            set def_if_ipaddr "$if_ipaddr"
+            # XXX/SML: we could append the mask, but we don't take zoned
+            # addresses as endpoints, so no need to confuse the user.
+            # Note also that we display link local addresses which are not
+            # presently supported, but might be in the future.
+          lappend iflist "$iface:  $if_ipv6addr"
+        }
+      }
+
+    ?>
+  </FOREACH>
+  <?
+      if {$if_count != 1} {
+          set def_if_ipaddr ""
+      }
+  ?>
+
+<CFG-FORM -action "config-form-array" -div_id "ipsec_config_ike_form1">
+  <h2>Add New (IKE Preshared Key) IPSec Peer</h2>
+
+  <TMS-TABLE -div_id "ipsec_config_ike_form1_table1">
+    <TMS-TABLE-ENTRY "Peer IP">
+      <CFG-TEXTBOX -id "peer" -errname "Peer IP address"
+                   -caps $ipsec_cap
+                   -acl $ipsec_acl -acl_oper {set}
+                   -type "inetaddr" -cols "$ip_field_width" -span_id "ipsec_peer">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Local IP">
+      <CFG-TEXTBOX -id "local" -errname "Local IP address"
+                   -caps $ipsec_cap
+                   -acl $ipsec_acl -acl_oper {set}
+                   -value "$def_if_ipaddr"
+                   -type "inetaddr" -cols "$ip_field_width" -span_id "ipsec_local">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "">
+      <IF {$if_count == 0}>
+        <span class="red">
+          No Interfaces Available.
+        </span>
+      <ELSE>
+        <FOREACH line $iflist>
+          <?^=$line?> <br> 
+        </FOREACH>
+      </IF>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps $ipsec_cap
+                    -acl $auth_acl -acl_oper {set}
+                    -type "bool"
+                    -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "ike_enabled">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Security Protocol Mode">
+      <CFG-DROPDOWN -id "sec_mode" 
+                    -caps $ipsec_cap 
+                    -acl $ipsec_acl -acl_oper {set}
+                    -type "string"
+                    -options {{"Transport" "transport"} {"Tunnel" "tunnel"}}>
+    </TMS-TABLE-ENTRY>
+
+    <tr class="listing_even">
+      <td colspan="99" align="center">
+        <br><hr>IKE Phase 1 (ISAKMP)<hr>
+      </td>
+    </tr>
+
+    <TMS-TABLE-ENTRY "Preshared Key">
+      <IF {[string compare $obfuscate "true"] == 0}>
+        <CFG-PASSWORDBOX -id "pkey" -errname "Preshared Key"
+                     -caps $ipsec_cap 
+                     -acl $ipsec_acl -acl_oper {set}
+                     -name "security/ike/presharekey"
+                     -type "string" -cols "30" -span_id "ipsec_pkey">
+      <ELSE>
+        <CFG-TEXTBOX -id "pkey" -errname "Preshared Key"
+                     -caps $ipsec_cap
+                     -acl $ipsec_acl -acl_oper {set}
+                     -name "security/ike/presharekey"
+                     -type "string" -cols "30" -span_id "ipsec_pkey">
+      </IF>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Exchange Mode">
+      <CFG-DROPDOWN -id "exchange_mode" 
+                    -caps $ipsec_cap 
+                    -acl $ipsec_acl -acl_oper {set}
+                    -type "string"
+                    -options {{"Main (Identity Protect)" "main"}
+                              {"Aggressive" "aggressive"}}>
+<?
+# Base mode has been deprecated as per bug 13747:
+#                              {"Base" "base"}
+?>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "DH Group">
+      <CFG-DROPDOWN -id "dh_group" 
+                    -caps $ipsec_cap
+                    -acl $ipsec_acl -acl_oper {set}
+                    -type "uint8"
+                    -options {{"Group 1 (768-bit modulus)" "1"}
+                              {"Group 2 (1024-bit modulus)" "2"}
+                              {"Group 5 (1536-bit modulus)" "5"}
+                              {"Group 14 (2048-bit modulus)" "14"}
+                              {"Group 15 (3072-bit modulus)" "15"}
+                              {"Group 16 (4096-bit modulus)" "16"}
+                              {"Group 17 (6144-bit modulus)" "17"}
+                              {"Group 18 (8192-bit modulus)" "18"}
+                              {"Group 22 (1024-bit modulus, 160-bit prime order subgroup)" "22"}
+                              {"Group 23 (2048-bit modulus, 224-bit prime order subgroup)" "23"}
+                              {"Group 24 (2048-bit modulus, 256-bit prime order subgroup)" "24"}}
+                    -value "2">
+    </TMS-TABLE-ENTRY>
+
+    <tr class="listing_even">
+      <td colspan="99" align="center">
+        <br><hr>IKE Phase 2 (IPSec)<hr>
+      </td>
+    </tr>
+
+    <TMS-TABLE-ENTRY "Transform Set">
+      <CFG-DROPDOWN -id "transform_set" 
+                    -caps $ipsec_cap 
+                    -acl $ipsec_acl -acl_oper {set}
+                    -type "string"
+                    -options {{"IPsec authentication and authenticated encryption" "ah-and-esp-ah"}
+                              {"IPsec authenticated encryption" "esp-ah"}
+                              {"IPsec authentication only" "ah"}}
+                    -value "ah-and-esp-ah">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "PFS Group">
+      <CFG-DROPDOWN -id "pfs_group" 
+                    -caps $ipsec_cap 
+                    -acl $ipsec_acl -acl_oper {set}
+                    -type "uint8"
+                    -options {{"none (propose no PFS)" "0"}
+                              {"Group 1 (768-bit modulus)" "1"}
+                              {"Group 2 (1024-bit modulus)" "2"}
+                              {"Group 5 (1536-bit modulus)" "5"}
+                              {"Group 14 (2048-bit modulus)" "14"}
+                              {"Group 15 (3072-bit modulus)" "15"}
+                              {"Group 16 (4096-bit modulus)" "16"}
+                              {"Group 17 (6144-bit modulus)" "17"}
+                              {"Group 18 (8192-bit modulus)" "18"}
+                              {"Group 22 (1024-bit modulus, 160-bit prime order subgroup)" "22"}
+                              {"Group 23 (2048-bit modulus, 224-bit prime order subgroup)" "23"}
+                              {"Group 24 (2048-bit modulus, 256-bit prime order subgroup)" "24"}}
+                    -value "2">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Key Lifespan (sec)">
+      <CFG-TEXTBOX -id "lifetime" -errname "Lifespan" 
+                   -caps $ipsec_cap
+                   -acl $ipsec_acl -acl_oper {set}
+                   -type "duration_sec" -cols "10" -span_id "ipsec_lifetime"
+                   -value "3600">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "">
+        <? tms::puts "(Use 0 for unlimited)"?>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Encryption">
+      <CFG-DROPDOWN -id "encrypt" 
+                    -caps $ipsec_cap 
+                    -acl $ipsec_acl -acl_oper {set}
+                    -type "string"
+                    -value "3des-cbc"
+                    -options {{"3DES-CBC" "3des-cbc"} {"AES-CBC" "aes-cbc"}
+                              {"Null Encryption (RFC 2410)" "null"}}>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Authentication">
+      <CFG-DROPDOWN -id "auth" 
+                    -caps $ipsec_cap 
+                    -acl $ipsec_acl -acl_oper {set}
+                    -type "string"
+                    -value "hmac-sha1"
+                    -options {{"HMAC-MD5" "hmac-md5"} {"HMAC-SHA1" "hmac-sha1"} {"HMAC-SHA2-256" "hmac-sha256"}
+                              {"Null Authentication" "null"}}>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+  <input type="hidden" name="f_array_root" value="/crypto/config/ipsec/peering">
+  <input type="hidden" name="f_array_children" value="peer,local,sec_mode,encrypt,auth,pkey,exchange_mode,dh_group,transform_set,pfs_group,lifetime">
+  <input type="hidden" name="f_array_altchildren" value="peer/addr/inet_address,local/addr/inet_address,mode,security/esp/algorithm,security/ah/algorithm,security/ike/presharedkey,security/ike/phase1/exchange_mode,security/ike/phase1/dh_group,security/ike/phase2/transform_set,security/ike/phase2/pfs_group,security/ike/phase2/lifetime">
+  <CFG-BUTTON -type "add" -text "Add IKE IPSec Peer" 
+              -caps $ipsec_cap
+              -acl $ipsec_acl -acl_oper {set}
+              -span_id "ipsec_add_1">
+</CFG-FORM>
+
+
+<?
+# XXX/SML:  In the future we should support independent bundling of
+#           ESP, AH, IPCOMP, as well as discard and reject actions.
+?>
+<CFG-FORM -action "config-form-array" -div_id "ipsec_config_manual_form1">
+  <h2>Add New (Manual) IPSec Peer</h2>
+  <TMS-TABLE -div_id "ipsec_config_manual_form1_table1">
+    <input type="hidden" name="f_keying" value="manual">
+    <input type="hidden" name="t_keying" value="string">
+
+    <TMS-TABLE-ENTRY "Peer IP">
+      <CFG-TEXTBOX -id "peer" -errname "Peer IP address" 
+                   -caps $ipsec_cap
+                   -acl $ipsec_acl -acl_oper {set}
+                   -type "inetaddr" -cols "$ip_field_width" -span_id "ipsec_peer">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Local IP">
+      <CFG-TEXTBOX -id "local" -errname "Local IP address"
+                   -caps $ipsec_cap
+                   -acl $ipsec_acl -acl_oper {set}
+                   -type "inetaddr" -cols "$ip_field_width" -span_id "ipsec_local">
+    </TMS-TABLE-ENTRY>
+
+    <? # IP interface address list gathered in previous section ?>
+    <TMS-TABLE-ENTRY "">
+      <IF {$if_count == 0}>
+        <span class="red">
+          No Interfaces Available.
+        </span>
+      <ELSE>
+        <FOREACH line $iflist>
+          <?^=$line?> <br>
+        </FOREACH>
+      </IF>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps $ipsec_cap
+                    -acl $auth_acl -acl_oper {set}
+                    -type "bool"
+                    -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "manual_enabled">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Security Protocol Mode">
+      <CFG-DROPDOWN -id "sec_mode" 
+                    -caps $ipsec_cap -type "string"
+                    -acl $ipsec_acl -acl_oper {set}
+                    -options {{"Transport" "transport"} {"Tunnel" "tunnel"}}>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Encryption">
+      <CFG-DROPDOWN -id "encrypt" 
+                    -caps $ipsec_cap -type "string"
+                    -acl $ipsec_acl -acl_oper {set}
+                    -value "3des-cbc"
+                    -options {{"3DES-CBC" "3des-cbc"} {"AES-CBC" "aes-cbc"}
+                              {"Null Encryption (RFC 2410)" "null"}}>
+
+    <TMS-TABLE-ENTRY "Encryption Key">
+      <IF {[string compare $obfuscate "true"] == 0}>
+        <CFG-PASSWORDBOX -id "espkey" -errname "Encryption Key"
+                         -required "false"
+                         -caps $ipsec_cap 
+                         -acl $ipsec_acl -acl_oper {set}
+                         -type "string"
+                         -cols "24" -span_id "ipsec_espkey">
+      <ELSE>
+        <CFG-TEXTBOX -id "espkey" -errname "Encryption Key"
+                      -required "false"
+                      -caps $ipsec_cap 
+                      -acl $ipsec_acl -acl_oper {set}
+                      -type "string"
+                      -cols "24" -span_id "ipsec_espkey">
+      </IF>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Authentication">
+      <CFG-DROPDOWN -id "auth"
+                    -caps $ipsec_cap 
+                    -acl $ipsec_acl -acl_oper {set}
+                    -type "string"
+                    -value "hmac-sha1"
+                    -options {{"HMAC-MD5" "hmac-md5"} {"HMAC-SHA1" "hmac-sha1"} {"HMAC-SHA2-256" "hmac-sha256"}
+                              {"Null Authentication" "null"}}>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Authentication Key">
+      <IF {[string compare $obfuscate "true"] == 0}>
+        <CFG-PASSWORDBOX -id "ahkey" -errname "Authentication Key"
+                         -required "false"
+                         -caps $ipsec_cap 
+                         -acl $ipsec_acl -acl_oper {set}
+                         -type "string"
+                         -cols "20" -span_id "ipsec_ahkey">
+      <ELSE>
+        <CFG-TEXTBOX -id "ahkey" -errname "Authentication Key"
+                      -required "false"
+                      -caps $ipsec_cap
+                      -acl $ipsec_acl -acl_oper {set}
+                      -type "string"
+                      -cols "20" -span_id "ipsec_ahkey">
+      </IF>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Local SPI">
+      <CFG-TEXTBOX -id "lspi" -errname "Local SPI" 
+                   -caps $ipsec_cap
+                   -acl $ipsec_acl -acl_oper {set}
+                   -type "uint32" -cols "10" -span_id "ipsec_lspi">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Remote SPI">
+      <CFG-TEXTBOX -id "rspi" -errname "Remote SPI" 
+                   -caps $ipsec_cap
+                   -acl $ipsec_acl -acl_oper {set}
+                   -type "uint32" -cols "10" -span_id "ipsec_rspi">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+  <input type="hidden" name="f_array_root" value="/crypto/config/ipsec/peering">
+  <input type="hidden" name="f_array_children" value="peer,local,keying,sec_mode,encrypt,espkey,lspi,rspi,auth,ahkey,lspi,rspi">
+    <input type="hidden" name="f_array_altchildren" value="peer/addr/inet_address,local/addr/inet_address,security/keying,mode,security/esp/algorithm,security/esp/key,security/esp/lspi,security/esp/rspi,security/ah/algorithm,security/ah/key,security/ah/lspi,security/ah/rspi">
+  <CFG-BUTTON -type "add" -text "Add Manual IPSec Peer" 
+              -caps $ipsec_cap
+              -acl $ipsec_acl -acl_oper {set}
+              -span_id "ipsec_add_2">
+</CFG-FORM>
+
+<h2>Manage Dynamic Peerings (IKE / ISAKMP)</h2>
+
+<table border="0" cellspacing="0" cellpadding="10">
+  <tr>
+    <td align="left">
+      <CFG-FORM -action "ipsec-ike-clear-sa" -div_id "ipsec_actions_ike_clear_sa">
+        <CFG-BUTTON -type "clear_all" -text "Clear All IKE SAs" -caps $ipsec_action_cap
+                    -acl $ipsec_acl -acl_oper {action}
+                    -span_id "ike_clear_ok_1">
+      </CFG-FORM>
+    <td>
+      Clear All IKE ISAKMP and IPsec Security Associations
+  <tr>
+    <td align="left">
+      <CFG-FORM -action "ipsec-ike-restart" -div_id "ipsec_actions_ike_restart">
+        <CFG-BUTTON -type "ok" -text "Restart IKE Daemon" 
+                    -caps $ipsec_action_cap
+                    -acl $ipsec_acl -acl_oper {action}
+                    -span_id "ike_clear_ok_2">
+      </CFG-FORM>
+    <td>
+      Restart the IKE daemon
+  <tr>
+    <td colspan="99">
+    <sub>&dagger; All IKE peerings are affected and peers may need to be cleared or restarted</sub>
+</table>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view IPSEC configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

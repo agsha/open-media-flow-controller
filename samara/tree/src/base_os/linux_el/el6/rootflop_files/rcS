@@ -1,0 +1,62 @@
+#!/bin/sh
+
+PATH=/sbin:/bin:/usr/bin:/usr/sbin
+
+if [ ! -e /proc/mounts ]; then
+    /bin/mount -n -t proc /proc /proc
+    /bin/mount -n -t sysfs /sys /sys >/dev/null 2>&1
+fi
+
+# Get the mdev (mini-udev) setup.  We need this, among other reasons, to
+# be able to modprobe drivers that need firmware.
+echo "/sbin/mdev" > /proc/sys/kernel/hotplug
+/sbin/mdev -s
+
+# This is an attempt to modprobe devices which are "cold plugged", but
+# do not have a device file, like network devices.  mdev seems to just
+# ignore these.
+find /sys/devices -name 'modalias' -type f -exec sort -u '{}' \; | xargs -r modprobe -b -a 2>/dev/null
+# wait for things like usb to finish
+sleep 2
+find /sys/devices -name 'modalias' -type f -exec sort -u '{}' \; | xargs -r modprobe -b -a 2>/dev/null
+
+if [ -f /etc/sysctl.conf ]; then
+    /sbin/sysctl -e -p /etc/sysctl.conf >/dev/null 2>&1
+fi
+
+# Read the hardware clock (in UTC) and use it to set the system clock
+/sbin/hwclock --hctosys --utc
+
+# Mount filesystems in /etc/fstab.
+if [ -x /bin/mount ]; then
+    /bin/mount -a -t nonfs -O no_netdev
+fi
+
+if [ -x /sbin/syslogd ]; then
+    /sbin/syslogd
+fi
+if [ -x /sbin/klogd ]; then
+    /sbin/klogd -c 6
+fi
+
+if [ -r /etc/issue ]; then
+    /bin/cat /etc/issue
+fi
+
+STARTUP_DIR=/etc/init.d/rcS.d
+
+# Run any rootfloppy startup scripts from the startup dir, in order.
+# The scripts are named S##CUSTOMERNAME_FEATURE, for instance S30tms_autostart
+
+esm=0
+for ss in ${STARTUP_DIR}/S* ; do
+    [ -f "$ss" ] || continue
+    if [ "$esm" = "0" ]; then
+        echo "Running startup scripts."
+        esm=1
+    fi
+    echo "Running $ss"
+    ${ss} || echo "Error: failed running $ss"
+done
+
+exit 0

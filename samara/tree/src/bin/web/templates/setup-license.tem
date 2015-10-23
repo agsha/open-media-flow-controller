@@ -1,0 +1,223 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "License Keys">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "license"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Licensing">
+
+<?
+  global lic_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $lic_acl {query}]}>
+
+<TAG TR-EVEN-ODD>
+<? global cur_line ?>
+        <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+            tms::puts "listing_even"
+        } else {
+            tms::puts "listing_odd"
+        }?>">
+</TAG>
+
+<TAG LICENSE-OPTIONS want_tag_type>
+  <? global lic_token ?>
+  <? global l_options ?>
+  <FOREACH opt_root $l_options>
+    <SET lo_descr [tms::get-child-value-by-name $lic_token "$opt_root/descr_brief"]>
+    <SET lo_value [tms::get-child-value-by-name $lic_token "$opt_root/value_str"]>
+    <SET lo_passed [tms::get-child-value-by-name $lic_token "$opt_root/passed"]>
+    <SET lo_invisible [tms::get-child-value-by-name $lic_token "$opt_root/invisible"]>
+    <SET lo_tag_type [tms::get-child-value-by-name $lic_token "$opt_root/tag_type"]>
+    <IF {[string equal $lo_tag_type $want_tag_type]}>
+      <IF {[string equal $lo_passed "false"]}>
+        <SET lo_passed_str " (FAILED)">
+      <ELSE>
+        <SET lo_passed_str " (ok)">
+      </IF>
+      <IF {[string equal $lo_invisible "false"]}>
+        <TR-EVEN-ODD>
+        <td>
+        <td>
+          <?^=$lo_descr?>
+        <td>
+          <?^=$lo_value?><?^=$lo_passed_str?>
+      </IF>
+    </IF>
+  </FOREACH>
+</TAG>
+
+  <?
+    set cur_line 0
+    set license_prefix "/license/key"
+    set lic_token [tms::get-binding-children $license_prefix "false" "true"]
+    set license_ids [tms::get-binding-children-names $lic_token "/license/key/*"]
+  ?>
+
+  <h2>Installed Licenses</h2>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <CFG-FORM -action "config-form-licenses" -div_id "license_1">
+    <tr>
+      <td>
+      <table width="100%" border="0" cellspacing="0" cellpadding="2" 
+       class="listing">
+        <tr class="listing_head"> 
+          <td>
+          <td colspan=99>
+            License
+        </tr>
+
+        <FOREACH key_id $license_ids>
+        <?
+          set l_key [tms::get-child-value-by-name $lic_token "$key_id/license_key"]
+          set l_active [tms::get-child-value-by-name $lic_token "$key_id/properties/active" "yes"]
+          set l_inactive_reason [tms::get-child-value-by-name $lic_token "$key_id/properties/inactive_reason"]
+          set l_revoked [tms::get-child-value-by-name $lic_token "$key_id/properties/revoked" "yes"]
+          set l_registered [tms::get-child-value-by-name $lic_token "$key_id/properties/registered"]
+          set l_valid [tms::get-child-value-by-name $lic_token "$key_id/properties/valid" "yes"]
+          set l_feature [tms::get-child-value-by-name $lic_token "$key_id/properties/feature"]
+          set l_feature_descr [tms::get-child-value-by-name $lic_token "$key_id/properties/feature_descr"]
+          set l_options [tms::get-binding-children-names $lic_token "$key_id/properties/option/*"]
+
+          if {[string equal $l_revoked "yes"]} {
+            set l_revoked_str " (REVOKED)"
+          } else {
+            set l_revoked_str ""
+          }
+        ?>
+
+        <TR-EVEN-ODD>
+
+          <td>
+            <CFG-CHECKBOX -id "del_$key_id" -caps "set_privileged"
+                          -acl $lic_acl -acl_oper {set}
+                          -value "$l_key" -span_id "license_cbox_1">
+          <td colspan=99>
+            <?^=$l_key?>
+
+        <TR-EVEN-ODD>
+
+          <td width=15>
+          <td>
+            Feature
+          <td>
+            <?^=$l_feature?>
+            <IF [string equal $l_registered "false"]>
+              <i>(unrecognized)</i>
+            </IF>
+
+        <TR-EVEN-ODD>
+
+          <td width=15>
+          <td>
+            Description
+          <td>
+            <?^=$l_feature_descr?>
+
+        <TR-EVEN-ODD>
+
+          <td>
+          <td>
+            Valid
+          <td>
+            <?^=$l_valid?><?^=$l_revoked_str?>
+
+        <LICENSE-OPTIONS "activation">
+
+        <TR-EVEN-ODD>
+
+          <td>
+          <td>
+            Active
+          <td>
+            <?^=$l_active?>
+            <IF {[string equal $l_registered "false"] && [string equal $l_active "yes"]}>
+              <i>(However, because this license is for an unrecognized 
+              feature, it probably has no effect)</i>
+            </IF>
+
+        <IF {[string length $l_inactive_reason] != 0}>
+          <TR-EVEN-ODD>
+            <td>
+            <td>
+              Inactive reason
+            <td>
+              <?^=$l_inactive_reason?>
+        </IF>
+
+        <LICENSE-OPTIONS "info">
+
+        <?
+          incr cur_line
+        ?>
+        </FOREACH>
+
+        <IF {$cur_line == 0}>
+          <tr>
+            <td colspan="5">
+              No licenses installed.
+          <SET lic_disabled "true">
+        <ELSE>
+          <SET lic_disabled "false">
+        </IF>
+      </table>
+    </td>
+    <TMS-TABLE-SPACE>
+    <tr>
+    <td>
+      <CFG-BUTTON -type "remove" -text "Remove" -caps "set_privileged"
+                  -acl $lic_acl -acl_oper {set}
+                  -disabled $lic_disabled
+                  -span_id "license_remove_1">
+      
+    </td>
+    </tr>
+  </CFG-FORM>
+  </table>
+
+  <h2>Add New License(s)</h2>
+
+  <table border="0" cellpadding="0" cellspacing="0">
+  <CFG-FORM -action "config-form-licenses" -div_id "license_2">
+    <tr>
+      <td width="10">
+      <td>
+        Please enter one or more licenses, each on a separate line.
+    <TMS-TABLE-SPACE>
+    <tr>
+      <td>
+      <td>
+        <textarea name="f_licenses" rows="10" cols="70"
+        <?
+         if {[tms::check-authorization "set_privileged" $lic_acl {set}] == 0} {
+           tms::puts "disabled"
+         }
+        ?>></textarea>
+    <TMS-TABLE-SPACE>
+  </table>
+
+  <CFG-BUTTON -type "add" -text "Add Licenses" -caps "set_privileged"
+              -acl $lic_acl -acl_oper {set}
+              -span_id "license_add_1">
+
+  </CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view licensing configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

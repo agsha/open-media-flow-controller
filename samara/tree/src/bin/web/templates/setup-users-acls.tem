@@ -1,0 +1,159 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+
+<?
+  global access_label
+  set access_label "Roles"
+?>
+
+<TAG SETUP-USERS-GET-ACCESS-INFO user_name>
+<?
+    global access_info
+    set roles [tms::iterate-config-last "/aaa/acl/config/user/$user_name/role"]
+    set access_info ""
+    set i 0
+    foreach role $roles {
+      if {$i != 0} {
+        set access_info "${access_info}\n"
+      }
+      set access_info "${access_info}${role}"
+      incr i
+    }
+?>
+</TAG>
+
+<TAG SETUP-USERS-GET-ACCESS-INFO-DYNAMIC sess_id>
+<?
+    global access_info
+    set roles [tms::iterate-config-last "/mgmtd/session/id/$sess_id/roles"]
+    set access_info ""
+    set i 0
+    foreach role $roles {
+      if {$i != 0} {
+        set access_info "${access_info}\n"
+      }
+      set access_info "${access_info}${role}"
+      incr i
+    }
+?>
+</TAG>
+
+<TAG SETUP-USERS-SET-NEW-PRIVS-1>
+</TAG>
+
+<TAG SETUP-USERS-SET-NEW-PRIVS-2>
+<?
+  global auth_acl_lo
+  set roles [tms::acl-get-roles]
+  set role_opts [list [list "(none)" "none"]]
+  foreach role $roles {
+    set role_name [lindex $role 0]
+    set role_descr [lindex $role 1]
+    lappend role_opts [list $role_name $role_name]
+  }
+
+  set num_roles [tms::get-param either "num_roles"]
+  if {[string length $num_roles] == 0} {
+    set num_roles 1
+  }
+?>
+
+  <input type="hidden" name="num_roles" value="<?^=$num_roles?>">
+
+  <FOR {set rnum 1} {$rnum <= $num_roles} {incr rnum}>
+    <IF {$num_roles == 1}>
+      <SET label "Role">
+    <ELSE>
+      <SET label "Role $rnum">
+    </IF>
+    <IF {$rnum == 1}>
+      <SET dft "monitor">
+    <ELSE>
+      <SET dft "none">
+    </IF>
+    <TMS-TABLE-ENTRY $label>
+      <CFG-DROPDOWN -id "role$rnum" -errname "Role" 
+                    -acl $auth_acl_lo -acl_oper {set}
+                    -value "$dft"
+                    -type "string" -options $role_opts
+                    -span_id "users_role"> 
+    </TMS-TABLE-ENTRY>
+  </FOR>
+
+  <?
+  # XXXX/EMT: will users figure out how to remove roles, i.e. changing 
+  # them to "(none)"?  One possibility to aid discoverability would be 
+  # to have a "Remove" button next to each role.  (Or something like 
+  # Netflix has with their queue: a smaller "X" button, with a column
+  # heading above.)
+  ?>
+
+  <TMS-TABLE-ENTRY "">
+    <CFG-BUTTON -type "add_role" -text "Add more roles..."
+                -acl $auth_acl_lo -acl_oper {set}
+                -span_id "users_add_1">
+  </TMS-TABLE-ENTRY>
+
+</TAG>
+
+<TAG SETUP-USERS-EDIT-PRIVS-1 user_name enabled>
+</TAG>
+
+<TAG SETUP-USERS-EDIT-PRIVS-2 user_name enabled>
+<?
+  global auth_acl_lo
+  set roles [tms::acl-get-roles]
+  set role_opts [list [list "(none)" "none"]]
+  foreach role $roles {
+    set role_name [lindex $role 0]
+    set role_descr [lindex $role 1]
+    lappend role_opts [list $role_name $role_name]
+  }
+
+  set num_roles [tms::get-param either "num_roles"]
+  if {[string length $num_roles] == 0} {
+    set num_roles 1
+  }
+
+  set curr_roles [tms::iterate-config-last "/aaa/acl/config/user/$user_name/role"]
+  set num_curr_roles [llength $curr_roles]
+  if {$num_curr_roles > $num_roles} {
+    set num_roles $num_curr_roles
+  }
+?>
+
+  <input type="hidden" name="num_roles" value="<?^=$num_roles?>">
+
+  <FOR {set rnum 1} {$rnum <= $num_roles} {incr rnum}>
+    <IF {$num_roles == 1}>
+      <SET label "Role">
+    <ELSE>
+      <SET label "Role $rnum">
+    </IF>
+    <IF {$rnum <= $num_curr_roles}>
+      <SET dft [lindex $curr_roles [expr {$rnum - 1}]]>
+    <ELSE>
+      <SET dft "none">
+    </IF>
+    <TMS-TABLE-ENTRY $label>
+      <CFG-DROPDOWN -id "role$rnum" -errname "Role" 
+                    -acl $auth_acl_lo -acl_oper {set}
+                    -value "$dft"
+                    -type "string" -options $role_opts
+                    -span_id "users_role"> 
+    </TMS-TABLE-ENTRY>
+  </FOR>
+
+  <TMS-TABLE-ENTRY "">
+    <CFG-BUTTON -type "add_role" -text "Add more roles..."
+                -acl $auth_acl_lo -acl_oper {set}
+                -span_id "users_add_1">
+  </TMS-TABLE-ENTRY>
+</TAG>

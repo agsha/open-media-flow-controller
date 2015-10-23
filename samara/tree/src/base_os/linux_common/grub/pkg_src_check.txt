@@ -1,0 +1,3 @@
+lfiv1 010 - - - - - 1344899 - - - md5 cf4bdcfd9a7e4d805f9bc67ab08a61f2 ./grub-0.97-77.el6.src.rpm
+lfiv1 010 - - - - - 1045918 - - - md5 07eee142055f1d10772b8ab0133415b4 ./grub-0.97-13.5.src.rpm
+lfiv1 010 - - - - - 1369965 - - - md5 e520047767c4c30600f461f428757b30 ./grub-0.97-93.SCLC6_6.R1.0.1.src.rpm

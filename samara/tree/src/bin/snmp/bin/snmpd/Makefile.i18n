@@ -1,0 +1,26 @@
+#
+# 
+#
+#
+
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+# Define this manually; our directory structure here is unconventional,
+# so the auto-computation would not work.
+FILES=\
+	sn_config.c        \
+	sn_main.c          \
+	sn_mgmt.c          \
+	sn_modules.c       \
+	sn_notifs.c        \
+	sn_registration.c  \
+	sn_scalars.c       \
+	sn_tables_new.c    \
+	sn_utils.c
+
+SRCS_BASE=$(addprefix ../../tms/,${FILES})
+
+PO_OUTPUT_DIR=${PROD_BASE_I18N_ROOT}/src/bin/snmp/bin/snmpd
+MO_OUTPUT_DIR=${BIN_DIR}/snmpd/mo
+
+include ${PROD_TREE_ROOT}/src/mk/po.mk

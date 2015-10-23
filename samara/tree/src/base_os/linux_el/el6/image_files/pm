@@ -1,0 +1,77 @@
+#! /bin/bash
+#
+# pm          Start/Stop the pm daemon
+#
+# chkconfig: 3 27 73
+# description: pm starts various system components
+# processname: pm
+# pidfile: /var/run/pm.pid
+
+# Source function library.
+. /etc/init.d/functions
+
+RETVAL=0
+
+prog="pm"
+pm="/opt/tms/bin/pm"
+
+start() {
+        echo -n $"Starting $prog: "
+        daemon $pm
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/pm
+        return $RETVAL
+}
+
+stop() {
+        echo -n $"Stopping $prog: "
+        killproc_patient $pm
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/pm
+        return $RETVAL
+}
+
+restart() {
+        stop
+        start
+}
+
+reload() {
+        echo -n $"Reloading pm: "
+        killproc $pm -HUP
+        RETVAL=$?
+        echo
+        return $RETVAL
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        stop
+        start
+        ;;
+  reload)
+        reload
+        ;;
+  status)
+        status $pm
+        ;;
+  condrestart)
+        if [ -f /var/run/pm.pid ] ; then
+                stop
+                start
+        fi
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|reload|restart|condrestart}"
+        exit 1
+esac
+
+exit $?

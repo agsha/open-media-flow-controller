@@ -1,0 +1,15 @@
+#!/bin/sh
+
+PATH=/sbin:/bin:/usr/bin:/usr/sbin
+
+# Write the system clock into the hardware clock (in UTC)
+/sbin/hwclock --systohc --utc
+
+/bin/umount -a -r > /dev/null 2>&1
+/sbin/swapoff -a
+
+# Note that after this script finishes, busybox init will try to kill
+# all the remaining processes, call sync, and do whatever shutdown type
+# was requested.
+
+exit 0

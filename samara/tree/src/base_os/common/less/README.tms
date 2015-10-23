@@ -1,0 +1,128 @@
+Local modifications to Less
+===========================
+
+The following are the modifications we have made to 'less' since the
+beginning.  Some of them were removed during the upgrade to less 436.
+
+
+1. 2004/03/11 16:37:00 -0800 (versions 381, 394): add '-A' command line
+   option to support CLI paging.  This option caused it not to move the
+   cursor to the bottom of the screen before beginning to print anything.
+
+   This was important for the case where the output of a CLI command or
+   help text was not enough to fill the screen.  The stock version of
+   'less' always advanced the cursor to the bottom of the screen before
+   beginning to print anything.  This was fine as long as paging is
+   actually needed, but if its input is not long enough to fill the
+   screen, and the '-F' option is specified, these blank lines turned out
+   to be undesirable.
+
+   Less 436 import: removed, since they have now fixed this, though with
+   dummy option still supported so as not to break code.  See item 112
+   on http://www.greenwoodsoftware.com/less/bugs.html, which suggests it 
+   was fixed in less 399.
+
+
+2. 2005/12/09 14:47:15 -0800 (versions 381, 394): I18N fix to detect a
+   UTF-8 locale.
+
+   Less 436 import: removed, since they have now fixed this.
+
+
+3. 2006/01/13 17:24:24 -0800 (versions 381, 394, 436): add
+   "(with modifications by Tall Maple Systems)" to "less -V" output, so we
+   can detect if we are running our modified version of 'less'.  If not, we
+   can disable paging altogether.
+
+   Less 436 import: kept.  Though we no longer need this for the '-A',
+   we kept it to verify 'less' for our other fixes, like SECURE_COMPILE.
+
+
+4. 2006/07/20 19:05:02 -0700 (versions 381, 394, 436): fix broken text
+   search behavior, caused by incorrect redefinition of regcomp().
+
+   Less 436 import: kept this change.
+
+
+5. 2009/12/07 15:41:20 -0800 (versions 381, 394, 436): compile less with
+   SECURE_COMPILE, to irrevocably disable certain security-compromising 
+   features, like the ability to run shell commands.  (Bug 12735)
+
+   Less 436 import: kept this change, as the stock 'less' is not built
+   with SECURE_COMPILE.  You can get the behavior by defining the
+   LESSSECURE environment variable to "1", but we don't want to have to
+   worry about doing that.
+
+
+6. 2011/05/13 19:45:43 -0700 (versions 381, 394, 436): fix ungraceful 
+   handling when the user asks to view the help screen in 'less'.
+   (Bug 13968)
+
+   Less 436 import: kept this change, as the stock 'less' still has this
+   same problem.
+
+
+Notes on import of 'Less' version 436
+=====================================
+
+This was done for CentOS 6, partly so we could switch to using terminfo
+instead of termcap.  It also fixed bug 11730, and some other problems that
+we had patched Less 394 to fix ourselves.
+
+1. Start with the Less 436 SRPM from CentOS 6.3.
+
+2. Trim extraneous files before importing:
+
+   rm Makefile.*
+   rm *.*.*
+   rm *.awk
+   rm mkinstalldirs
+   rm -rf autom4te.cache
+   rm configure*
+   rm COPYING
+   rm regexp.c
+   rm install.sh
+   rm *.man
+   rm *.nro
+   rm defines.*
+
+3. Do the import:
+
+   Change into the directory containing the trimmed new version of Less,
+   being sure it is not underneath $PROD_TREE_ROOT.  Then:
+
+   cvs import -I\! -m 'Import of Less version 436-10.el6' \
+              src/base_os/common/less/src LESS LESS_436_10_EL6 \
+              > ~/less-import.txt
+
+4. Do the merge:
+
+   cd $PROD_TREE_ROOT
+   cvs checkout -jLESS_394 -jLESS_436_10_EL6 \
+                src/base_os/common/less/src > ~/less-merge.txt
+
+5. Update defines.h.  Use its configure script to generate it:
+
+   ./configure --with-secure
+
+   This was done on EL5 i386, EL5 x86_64, EL6, and PPC.  EL5/EL6 turn
+   out to have no differences in output, so defines.h was conditionalized
+   three ways.  (The i386 and PPC ones happen to be the same, but we do
+   not take advantage of that.)
+
+
+6. Finish: resolve merge conflicts, add new files to Makefile, 
+
+
+Notes on import of 'Less' version 381
+=====================================
+
+The import of Less was fairly straightworward.  The only noteworthy
+deviation was the handling of the less.hlp file.  Less comes with a
+file that is to be displayed using the Less pager itself when help
+is requested.  But instead of installing the file on the system, it
+is converted into a .c file and built into the main binary.  There
+is a separate program, mkhelp.c, which is built and run on less.hlp
+to produce help.c during the build process.  Rather than try to
+duplicate this process, the resultant help.c file was simply
+pre-built and checked into the tree.

@@ -1,0 +1,105 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "SSH">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "ssh"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "SSH">
+
+<?
+  global ssh_acl
+  global ssh_acl_gen
+?>
+
+<IF {[tms::check-authorization "query_basic" [concat $ssh_acl $ssh_acl_gen] {query}]}>
+
+  <?
+    set rsa1_hostkey_fp [tms::get-config "/ssh/server/hostkey/finger_print/rsa1"]
+    set rsa2_hostkey_fp [tms::get-config "/ssh/server/hostkey/finger_print/rsa2"]
+    set dsa2_hostkey_fp [tms::get-config "/ssh/server/hostkey/finger_print/dsa2"]
+    set rsa1_hostkey_length [tms::get-config "/ssh/server/hostkey/key_length/rsa1"]
+    set rsa2_hostkey_length [tms::get-config "/ssh/server/hostkey/key_length/rsa2"]
+    set dsa2_hostkey_length [tms::get-config "/ssh/server/hostkey/key_length/dsa2"]
+  ?>
+
+<h2>SSH Server</h2>
+
+  <h3>Host Keys</h3>
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+  <td>
+  <table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+ 
+    <tr class="listing_head"> 
+      <td>
+        Key Type</td>
+      <td>
+        Key Length</td>
+      <td>
+        Finger Print</td>
+    </tr>
+
+    <tr class="listing_even">
+      <td>
+        RSA1</td>
+      <td>
+        <?^=$rsa1_hostkey_length?></td>
+      <td>
+        <?^=$rsa1_hostkey_fp?></td>
+    </tr>
+
+    <tr class="listing_odd">
+      <td>
+        RSA2</td>
+      <td>
+        <?^=$rsa2_hostkey_length?></td>
+      <td>
+        <?^=$rsa2_hostkey_fp?></td>
+    </tr>
+
+    <tr class="listing_even">
+      <td>
+        DSA2</td>
+      <td>
+        <?^=$dsa2_hostkey_length?></td>
+      <td>
+        <?^=$dsa2_hostkey_fp?></td>
+    </tr>
+
+     <tr>
+       <td height="8">
+
+   </table>
+   </table>
+
+<h2>Generate New Host Keys</h2>
+
+<table border="0" cellspacing="0" cellpadding="10">
+  <tr>
+    <td align="right">
+      <CFG-FORM -action "gen-host-keys" -div_id "ssh_1">
+        <CFG-BUTTON -type "ok" -text "Generate" -caps "action_privileged"
+                    -acl $ssh_acl_gen
+                    -acl_oper {action} -span_id "ssh_ok_1">
+      </CFG-FORM>
+    <td>
+      Generate Host Keys
+</table>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view SSH configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

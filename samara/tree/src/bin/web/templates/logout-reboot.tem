@@ -1,0 +1,34 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Logged Out">
+
+<?
+set shutdown [tms::get-param query "shutdown"]
+?>
+
+<p>
+You have been logged out
+
+<IF {[string compare $shutdown "t"] == 0}>
+    and the system is now shutting down.
+<ELSE>
+    and the system is now rebooting.  After a few minutes, you may
+<?
+    # XXX/SML: login_url needs to be ensured html-escaped wherever it is set.  This is
+    # typically in tms-defines.tem, and since it's usually a static "&amp;"
+    # encoded value we don't escape it here.
+?>
+    <a href="<?=$login_url?>">click here</a>
+    to log in again.
+</IF>
+
+</p>
+
+</TMS-PAGE>

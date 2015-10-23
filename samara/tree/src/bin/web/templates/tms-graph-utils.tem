@@ -1,0 +1,374 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-defines">
+<INCLUDE "tms-utils">
+
+<?
+ # ===========================================================================
+ # This file contains support for placing multiple AJAX-updated graphs
+ # on the same page.  The original tag TMS-AJAX-GRAPH in tms-layout.tem
+ # only supports a single graph per page.  The tags in this file provide
+ # a superset of the functionality of TMS-AJAX-GRAPH, so it should not be
+ # necessary to use TMS-AJAX-GRAPH at all; however, since these are
+ # newer, they have not been as extensively field-tested.
+ #
+ # When there was only a single graph, we had "Pause", "Resume", and
+ # optionally a "Clear Data" button, next to it, along with some text
+ # that says when it was last updated.  With multiple graphs, you could
+ # want each graph to be fully independent, with its own set of buttons
+ # and update time; or you could want to have centralized controls.
+ # This template supports either mode of operation, or the two can be
+ # combined on the same page.
+ #
+ # The basic idea is that there can be one or more "graph groups",
+ # and then one or more graphs within each graph group.  Each graph group
+ # has its own set of controls and status message.
+ #
+ # There are three tags you need to use:
+ #
+ #   - TMS-AJAX-GRAPH-COMMMON: use this once per page.  Tell it how many 
+ #     graph groups you might have, and the maximum number of graphs you
+ #     might have within a given group.  These are just upper bounds;
+ #     you do not need to reach any of these limits.
+ #
+ #   - TMS-AJAX-GRAPH-MULT: use this once per graph.  Tell it the index of
+ #     the graph group in which to place the graph, and the index that this
+ #     graph is to have within the graph group.  If you omit either of
+ #     these, zero is assumed.
+ #
+ #     Note that this will NOT emit the controls for the group, even if this
+ #     is the only graph in that group.  Use the separate tag 
+ #     TMS-AJAX-GRAPH-CONTROLS wherever you want the controls.
+ #
+ #   - TMS-AJAX-GRAPH-CONTROLS: use this once per graph group.  Emit
+ #     controls for this graph group.  This means the Pause and Resume
+ #     buttons, the Clear button if there is one, and the message which
+ #     says when the graphs were last updated (and whether or not the 
+ #     updates are currently paused).
+ #
+ # XXX/EMT: we currently only support one Clear button per group, meaning
+ # that if the group has more than one graph, the Clear button must clear
+ # ALL of the graphs in the group.  Later, we could support having a 
+ # separate Clear button per graph, even within the same group.  But we
+ # should still always support a single clear button for an entire Group.
+ #
+ # XXX/EMT: newGraphLoadedHack() has been disabled, as it does not seem to
+ # be necessary on Firefox 3, or IE 7 or 8.  Should still test on IE 6...
+ ?>
+
+<?
+# =============================================================================
+# TMS-AJAX-GRAPH-COMMON -max_groups <maximum number of graph groups>
+#                       -max_graphs <maximum number of graphs per group>
+#
+# This tag must be called exactly once per page that is to have
+# AJAX graphs using TMS-AJAX-GRAPH-MULT and TMS-AJAX-GRAPH-CONTROLS,
+# before either of those tags are used.  The maximum number of graphs
+# and graph groups, you pass it determines how large to allocate various
+# arrays, etc.
+#
+# The graph group number you pass TMS-AJAX-GRAPH-MULT must be between 0 and
+# max_groups minus one, inclusive.  Similarly, the graph index number must
+# be between 0 and max_graphs minus one, inclusive.
+?>
+<TAG TMS-AJAX-GRAPH-COMMON args>
+  <?
+    tms-utils::named-args $args {-max_groups "1" -max_graphs "5"}
+  ?>
+
+  <script type="text/javascript" src="/tms-utils.js">
+  </script>
+
+  <script type="text/javascript" src="/tms-graph-utils.js">
+  </script>
+
+  <script type="text/javascript">
+
+    var maxGroups = Number('<?^j=$(-max_groups)?>');
+    var maxGraphs = Number('<?^j=$(-max_graphs)?>');
+
+    <?
+     # ------------------------------------------------------------------------
+     # Global variables.
+     #
+     # (Note that these were specifically not moved to tms-graph-utils.js
+     # because we want to be able to have comments which are not sent down
+     # to the browser.)
+     ?>
+
+    <?
+     # Each of these will be a two-dimensional array, holding one entry per
+     # potential graph.  The primary subscript selects a graph group, and
+     # the secondary subscript selects a graph within that group.
+     #   - ajaxUsed: whether or not this slot is in use by a graph.
+     #   - ajaxWidthStyle: width 'style' for this graph, meaning generally
+     #     how are we supposed to figure out the width.  Three options:
+     #        * percent: specified percentage of available space
+     #        * fixed: specified number of pixels (NOT YET IMPLEMENTED)
+     #   - ajaxWidthParam: width parameter.  If ajaxWidthStyle for this 
+     #     graph is 'percent' this is a percentage in [1..100].  If it's
+     #     fixed, then this is the number of pixels.
+     #   - ajaxWidthDiff: differential (fudge factor) for graph widths.
+     #     Depends on whether this is an "old-style" or "new-style" graph,
+     #     since the two mechanisms interpret their size numbers differently,
+     #     and we have to make up the size number to give to it!
+     #   - ajaxDestUrls: URL from which to fetch graph
+     #   - ajaxLastUpdateGraph: timestamp at which this graph was last 
+     #     updated.
+     ?>
+    var ajaxUsed;
+    var ajaxWidthStyle;
+    var ajaxWidthParam;
+    var ajaxWidthDiff;
+    var ajaxDestUrls;
+    var ajaxLastUpdateGraph;
+
+    <?
+     # Each of these with be an array, holding one entry per potential
+     # graph group.
+     #   - ajaxUpdate: 'false' if updates are paused, 'true' if enabled.
+     #   - ajaxTimeout: timer to be used for auto refreshes of the graph.
+     #   - ajaxRefreshInterval: graph refresh interval, in seconds
+     #   - ajaxClearDataUrls: URL to be visited to clear data from this group
+     #     of graphs.
+     #   - ajaxLastUpdateGroup: timestamp at which this group was last
+     #     updated.  This is updated every time we choose to update the
+     #     visible timestamp on the group.  We know to do this at the 
+     #     point when the ajaxLastUpdateGraph values for all graphs in the
+     #     group are greater than our current value for the group.
+     #
+     # XXX/EMT: we might also want to have one ajaxClearDataUrls per graph.
+     ?>
+    var ajaxUpdate;
+    var ajaxTimeout;
+    var ajaxRefreshInterval;
+    var ajaxClearDataUrls;
+    var ajaxLastUpdateGroup;
+     
+    ajaxGraphInit(maxGroups, maxGraphs);
+
+  </script>
+</TAG>
+
+
+<?
+# =============================================================================
+# TMS-AJAX-GRAPH-MULT -grp          <index of the graph group to use>
+#                                   (Defaults to 0 if not specified)
+#                     -idx          <index for this graph within the group>
+#                                   (Defaults to 0 if not specified)
+#                     -graph_action <action node name, assumed to be under
+#                                   '/tms/graphs/' if not absolute name>
+#                     -graph_name   <unique string to identify graph,
+#                                   used in filename of images>
+#                     -width        <"auto", or a percentage like "50%",
+#                                   meaning 50% of available width>
+#                     -graph_ver    <1 for old-style graph, 2 for new-style>
+#
+# (Note: we don't currently support expressing width as a fixed number
+# of pixels.)
+?>
+<TAG TMS-AJAX-GRAPH-MULT args>
+  <?
+    # -------------------------------------------------------------------------
+    # Interpret parameters
+    #
+    tms-utils::named-args $args {-grp "0" -idx "0"
+                                 -graph_action "" -graph_name "" 
+                                 -width "auto" -graph_ver "2"}
+
+    # analyze width parameter
+    set width_style "auto"
+    set width_param 0
+    if {[string compare -nocase $(-width) "auto"] == 0} {
+        # automatic width 
+        set width_style "percent"
+        set width_param "100"
+    } elseif {[string match {[0-9]*%} $(-width)] == 1} {
+        # percent of div width
+        set width_style "percent"
+        set width_param [string trimright $(-width) "%"]
+    } else {
+        error "TMS-AJAX-GRAPH: Bad width spec \"$(-width)\""
+        set width_style "ERR"
+        set width_param "ERR"
+    }
+
+    if {[string match "/*" $(-graph_action)] == 0} {
+        set graph_action_path "/tms/graphs/$(-graph_action)"
+    } else {
+        set graph_action_path "$(-graph_action)"
+    }
+  ?>
+
+  <p>
+  <div id="graphArea">
+
+  <?
+    # -------------------------------------------------------------------------
+    # Handle the no-Javascript case.
+    #
+  ?>
+  <noscript>
+    <?
+      # Just fall back to static images with default width.
+      global color_main_pane
+      global graph_ext
+      set imgFilename graph-$(-graph_name).ns.$graph_ext
+      if {$(-graph_ver) == 2} {
+          if {[catch {tms::call-action "$graph_action_path" \
+             [list "bgcolor"  "string" $color_main_pane] \
+             [list "filename" "string" $imgFilename] \
+             [list "graphver" "uint32" $(-graph_ver)]}]} {
+              set imgFilename ""
+          }
+      } else {
+          if {[catch {tms::call-action "$graph_action_path" \
+             [list "bgcolor"  "string" $color_main_pane] \
+             [list "gif_name" "string" $imgFilename] \
+             [list "graphver" "uint32" $(-graph_ver)]}]} {
+              set imgFilename ""
+          }
+      }
+      if {$imgFilename != ""} {
+          tms::puts "<img border=0 src=\"/graphs/[tms::html-escape ${imgFilename}]\">";
+          tms::puts "<div id=\"graphMsgStatic[tms::html-escape $(-grp)]_[tms::html-escape $(-idx)]\"></div>";
+      } else {
+          tms::puts "<div id=\"graphMsgStatic[tms::html-escape $(-grp)]_[tms::html-escape $(-idx)]\">";
+          tms::puts "<p>No data available for graph at present</p>";
+          tms::puts "</div>";
+      }
+    ?>
+  </noscript>
+
+  <div id="graphMsg<?^=$(-grp)?>_<?^=$(-idx)?>"></div>
+  </div>
+  </p>
+  <div id="graphStaging<?^=$(-grp)?>_<?^=$(-idx)?>" style="display: none;">
+  </div>
+
+  <div id="graphControls">
+
+  <?
+    # -------------------------------------------------------------------------
+    # Javascript stuff
+    #
+  ?>
+  <script type="text/javascript">
+
+    <?
+     # .......................................................................
+     # 1. Copy parameters into Javascript variables for easier access
+     ?>
+    grp = Number('<?^j=$(-grp)?>');
+    idx = Number('<?^j=$(-idx)?>');
+
+    <?
+     # ........................................................................
+     # 2. Write a blank image into the doc for the initial load, since it
+     #    will immediately be overwritten by one with custom width.
+     ?>
+    document.write('<img border=0 src="/images/em.gif" ' +
+                   'id="displayImg' + grp + '_' + idx + '" alt="">');
+  </script>
+
+  </div>
+
+  <?
+    # .........................................................................
+    # 3. Build the URL to fetch the next graph, and some other params
+    #
+    tms::set-url-param "name"      "$(-graph_name)"
+    tms::set-url-param "action"    "$(-graph_action)"
+    tms::set-url-param "graphver"  "$(-graph_ver)"
+    tms::set-url-param "group"     "$(-grp)"
+    tms::set-url-param "index"     "$(-idx)"
+    set destURL [tms::url-builder -a template=get-graph-mult tms_noninteractive]
+    if {$(-graph_ver) == 2} {
+        set graph_width_diff 80
+    } else {
+        set graph_width_diff 200
+    }
+  ?>
+
+  <script type="text/javascript">
+    <?
+     # ........................................................................
+     # 4. Save values in global arrays for later, and then kick off the
+     #    initial loading of the image.
+     ?>
+    ajaxUsed[grp][idx] =             true;
+    ajaxWidthStyle[grp][idx] =       '<?^j=$width_style?>';
+    ajaxWidthParam[grp][idx] =       '<?^j=$width_param?>';
+    ajaxWidthDiff[grp][idx] =        '<?^j=$graph_width_diff?>';
+    ajaxDestUrls[grp][idx] =         '<?^j=$destURL?>';
+    ajaxLastUpdateGraph[grp][idx] =  0;
+
+    // Also called when the page is initially rendered, as well as on resize
+    window.onresize = resizeHandler;
+
+    <?
+     # The refresh below is not strictly necessary, because the resizeHandler
+     # is called (as mentioned above) when the page is initially rendered,
+     # and it refreshes all of the graphs.  And the refresh below does cause
+     # an extra request to be sent to the server for every graph (though
+     # the server does not regenerate the graph, since the version we just
+     # generated is not stale yet).
+     #
+     # However, we have this here because it helps the page layout come out
+     # right the first time.  Without this (at least on some browsers),
+     # the page is laid out first with no images, and then soon afterwards
+     # re-laid out with the images.  But with this, it shows up for the 
+     # first time with the images.
+     ?>
+     graphRefresh(grp, idx);
+  </script>
+</TAG>
+
+
+<?
+# =============================================================================
+# TMS-AJAX-GRAPH-CONTROLS -grp       <index of the graph group>
+#                         -interval  <number of seconds between refreshes>
+#                         -clear_data_url  <URL to be invoked to clear data
+#                                           from graphs in this group>
+?>
+<TAG TMS-AJAX-GRAPH-CONTROLS args>
+  <?
+    global stats_acl
+
+    tms-utils::named-args $args {-grp "0" -interval "10" -clear_data_url ""}
+
+    # scale interval to milliseconds
+    set interval_ms [expr {$(-interval) * 1000}]
+  ?>
+
+  <script type="text/javascript">
+    grp = Number('<?^j=$(-grp)?>');
+    ajaxUpdate[grp] =           true;
+    ajaxTimeout[grp] =          null;
+    ajaxRefreshInterval[grp] =  Number('<?^j=$interval_ms?>');
+    ajaxClearDataUrls[grp] =    '<?^j=$(-clear_data_url)?>';
+    ajaxLastUpdateGroup[grp] =  0;
+
+    <?
+     # Do this to set the refresh timer, but do not refresh all the graphs,
+     # as they were already initially loaded by their respective 
+     # TMS-AJAX-GRAPH-MULT tags.
+     ?>
+    groupRefresh(grp, false);
+
+    <? if {[tms::check-authorization "action_restricted" $stats_acl {action}] == 0} { ?>
+      isUserRestricted = true;
+    <? } else { ?>
+      isUserRestricted = false;
+    <? } ?>
+
+    ajaxWriteControls(grp, isUserRestricted);
+  </script>
+</TAG>

@@ -1,0 +1,60 @@
+#! /bin/bash
+#
+# tun          Load the 'tun' kernel module.
+#
+# chkconfig: 3 24 76
+# description: Load the 'tun' kernel module.
+
+# Source function library.
+. /etc/init.d/functions
+
+RETVAL=0
+
+start() {
+        echo $"Loading tun module"
+	modprobe tun
+	RETVAL=$?
+	if [ $RETVAL = 1 ]; then
+	    echo "Failed to load tun module."
+	fi
+	return $RETVAL
+}
+
+stop() {
+        rmmod tun
+	RETVAL=$?
+	return $RETVAL
+}	
+
+restart() {
+  	stop
+	start
+}	
+
+reload() {
+	start
+}	
+
+case "$1" in
+  start)
+  	start
+	;;
+  stop)
+  	stop
+	;;
+  restart)
+	stop
+	start
+	;;
+  reload)
+  	reload
+	;;
+  status)
+        lsmod
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|status|reload|restart}"
+	exit 1
+esac
+
+exit $?

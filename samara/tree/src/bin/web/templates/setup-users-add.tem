@@ -1,0 +1,148 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Add New User">
+<TMS-MENU "setup">
+<TMS-BODY>
+<?
+  global auth_acl_lo
+  set user [tms::get-param query "user"]
+  set user_caps "set_privileged"
+?>
+
+<!-- Conditional on PROD_FEATURE_CAPABS -->
+<IF {[string compare [tms::have-prod-feature capabs] "true"] == 0}>
+  <INCLUDE "setup-users-capabs">
+</IF>
+
+<!-- Conditional on PROD_FEATURE_ACLS -->
+<IF {[string compare [tms::have-prod-feature acls] "true"] == 0}>
+  <INCLUDE "setup-users-acls">
+</IF>
+
+<TMS-SIDEBAR><TMS-SETUP-MENU "users-add"></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Add New User">
+
+<CFG-FORM -action "config-form-users" -div_id "user_add_form">
+
+  <CFG-BUTTON-HIDDEN-DEFAULT -type "add" -text "Add User"
+                             -caps $user_caps
+                             -acl $auth_acl_lo -acl_oper {set}>
+
+  <h2>Add New User</h2>
+  <TMS-TABLE -div_id "user_add_table_1">
+    <TMS-TABLE-ENTRY "Username">
+      <CFG-TEXTBOX -id "user" -errname "User"
+                   -caps $user_caps
+                   -acl $auth_acl_lo -acl_oper {set}
+                   -type "string" -cols 24 -span_id "users_user">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Full Name">
+      <CFG-TEXTBOX -id "fullname" -errname "Full Name"
+                   -caps $user_caps
+                   -acl $auth_acl_lo -acl_oper {set}
+                   -type "string" -cols 24 -span_id "users_fullname">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps $user_caps
+                    -acl $auth_acl_lo -acl_oper {set}
+                    -type "bool"
+                    -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "user_enabled">
+    </TMS-TABLE-ENTRY>
+
+    <SETUP-USERS-SET-NEW-PRIVS-1>
+
+    <TMS-TABLE-ENTRY "Account status">
+
+      <script type="text/javascript">
+        function fixPasswordBoxes() {
+          var sel = document.getElementById('sel_acct_status').value;
+          var pwd1 = document.getElementById('password');
+          var pwd2 = document.getElementById('confirm');
+          if (sel == 'password') {
+            pwd1.disabled=false;
+            pwd2.disabled=false;
+          } else {
+            pwd1.value='';
+            pwd2.value='';
+            pwd1.disabled=true;
+            pwd2.disabled=true;
+          }
+        }
+      </script>
+
+      <CFG-DROPDOWN -id "acct_status" -errname "Account Status"
+                    -caps $user_caps
+                    -onchange "fixPasswordBoxes()"
+                    -acl $auth_acl_lo -acl_oper {set}
+                    -type "string" -options { {"No password (unsecured)" "nopassword"} {"Password set" "password"} {"Local password login disabled" "password_disabled"} {"Locked out" "locked_out"} }
+                    -value "password_disabled"
+                    -span_id "users_acct_status">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Password:">
+      <CFG-PASSWORDBOX -id "password" -caps $user_caps -cols "24"
+                       -acl $auth_acl_lo -acl_oper {set}
+                       -span_id "users_pass">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Confirm password:">
+      <CFG-PASSWORDBOX -id "confirm" -caps $user_caps -cols "24"
+                       -acl $auth_acl_lo -acl_oper {set}
+                       -span_id "users_confirm">
+    </TMS-TABLE-ENTRY>
+
+    <?
+    # We had to start the password fields as enabled, even though the default
+    # for acct_status would have it disabled, because some browsers might have
+    # Javascript disabled, in which case they would be stuck as disabled.
+    # But we don't want it to be out of sync until they change the selection,
+    # so we have Javascript kick in immediately to make sure it's correct.
+    # Note that we don't just blindly disable it, in case the dropdown has a
+    # value preserved from before (e.g. a failed form submission).
+    #
+    ?>
+    <script type="text/javascript">
+      fixPasswordBoxes();
+    </script>
+
+    <SETUP-USERS-SET-NEW-PRIVS-2>
+
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+<?
+# XXX/EMT: the "Add User" button takes you back to the main users
+# page.  It would be nice to have another button next to it which
+# adds the user, but leaves you on this page, so you could add another.
+#
+# It's trivial to implement -- the main stumbling block is how to
+# label both buttons.  Quickbooks has a similar UI with its invoices,
+# and it calls them "Save and close", and "Save and next", or something
+# like that...
+?>
+
+  <CFG-BUTTON -type "add" -text "Add User"
+              -caps $user_caps
+              -acl $auth_acl_lo -acl_oper {set}
+              -span_id "users_add_1">
+
+  <CFG-BUTTON -type "cancel" -text "Cancel"
+              -caps $user_caps
+              -acl $all_acl -acl_oper {set}
+              -span_id "user_edit_cancel">
+
+</CFG-FORM>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

@@ -1,0 +1,226 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "logging-layout">
+
+<TMS-PAGE "Log Viewer">
+<TMS-MENU "logs">
+<TMS-BODY>
+
+<!-- ==================================================
+     == Sidebar
+     ================================================== -->
+
+<?
+  # XXX/EMT this should be configurable!
+  set log_lines_per_page 100
+  # XXX/BBK so should this!
+  set log_update_interval 10
+  set log_update_interval_ms [expr {$log_update_interval * 1000}]
+
+  set log_page_padding 2
+  set lognum [tms::get-param query "log"]
+
+  set page [tms::get-param query "page"]
+
+  if {[string length $page] == 0} {
+    set page 1
+  } elseif {[string is integer -strict $page] == 0} {
+    # Bug 14933, make sure we prevent arbitrary TCL code from being evaluated.
+    set page 1
+  }
+
+?>
+
+<TMS-LOGGING-MENU "logging&amp;log=[tms::uri-component-escape $lognum]">
+
+<div id="pageContent-logging" style="height: 1%">
+
+
+<!-- ==================================================
+     = Log Page Navigator
+     ================================================== -->
+
+<TAG LOG-NAV-ONE pg page lognum>
+          <IF {[expr {$pg == $page}] == 0}>
+          <a href="/admin/launch?script=rh&amp;template=logging&amp;log=<?=[tms::uri-component-escape $lognum]?>&amp;page=<?=[tms::uri-component-escape $pg]?>">
+          <ELSE>
+            [</IF><?=$pg?><IF {[expr {$pg == $page}] == 0}></a><ELSE>]</IF>
+          &nbsp;
+</TAG>
+
+<TAG LOG-NAV lognum page num_pages>
+        <IF {[expr {$page < 2}] == 0}>
+          <a href="/admin/launch?script=rh&amp;template=logging&amp;log=<?=[tms::uri-component-escape $lognum]?>&amp;page=<?= [tms::uri-component-escape [expr {$page - 1}]] ?>">
+        </IF>
+          &lt;&lt; Prev
+        <IF {[expr {$page < 2}] == 0}>
+          </a>
+        </IF>
+        &nbsp;&nbsp;
+        <IF {[expr {$page \>= $num_pages}] == 0}>
+          <a href="/admin/launch?script=rh&amp;template=logging&amp;log=<?=[tms::uri-component-escape $lognum]?>&amp;page=<?= [tms::uri-component-escape [expr {$page + 1}]] ?>">
+        </IF>
+          Next &gt;&gt;
+        <IF {[expr {$page \>= $num_pages}] == 0}>
+          </a>
+        </IF>
+        &nbsp;&nbsp;&nbsp;
+        Page&nbsp;
+
+        <?
+          global log_page_padding
+          set chunk_size [expr {($log_page_padding * 2) + 1}]
+          if {[expr {$num_pages < ($chunk_size * 3) + 2}] == 1} {
+        ?>
+            <FOR {set pg 1} {$pg <= $num_pages} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+        <?
+          } elseif {[expr {$page <= ($log_page_padding + 1) * 2}]} {
+        ?>
+            <FOR {set pg 1} {$pg <= $page + $log_page_padding} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+            &nbsp;...&nbsp;&nbsp;
+            <FOR {set pg [expr {$num_pages - $log_page_padding}]} {$pg <= $num_pages} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+        <?
+          } elseif {[expr {$page >= ($num_pages - ($log_page_padding * 2) - 1)}] == 1} {
+        ?>
+            <FOR {set pg 1} {$pg <= $log_page_padding + 1} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+            &nbsp;...&nbsp;&nbsp;
+            <FOR {set pg [expr {$page - $log_page_padding}]} {$pg <= $num_pages} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+        <?
+          } else {
+        ?>
+            <FOR {set pg 1} {$pg <= $log_page_padding + 1} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+            &nbsp;...&nbsp;&nbsp;
+            <FOR {set pg [expr {$page - $log_page_padding}]} { $pg <= $page + $log_page_padding} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+            &nbsp;...&nbsp;&nbsp;
+            <FOR {set pg [expr {$num_pages - $log_page_padding}]} {$pg <= $num_pages} {incr pg}>
+              <LOG-NAV-ONE $pg $page $lognum>
+            </FOR>
+        <?
+          }
+        ?>
+
+</TAG>
+
+
+<!-- ==================================================
+     = Log Viewer
+     ================================================== -->
+
+<table width="100%" border="0" cellspacing="0">
+  <tr>
+    <td>
+      <img src="/images/em.gif" width="15" alt="">
+    <td align="left" valign="top"
+        bgcolor="<? global color_main_pane ?><?^= $color_main_pane ?>">
+
+       <?
+         # We don't use tms::check-authorization here because it doesn't have
+         # a "max" variant, and checking only current capabilities could
+         # miss set_privileged in some cases, e.g. on a CMC client which 
+         # has not yet enabled sets for this session.
+         #
+         # Conditional on PROD_FEATURE_CAPABS
+       ?>  
+      <IF {[string compare [tms::have-prod-feature capabs] "true"] == 0}>
+        <SET logs_viewable [tms::has-capability-max "set_privileged"]>
+      </IF>
+
+      <?
+        # Conditional on PROD_FEATURE_ACLS
+      ?>
+      <IF {[string compare [tms::have-prod-feature acls] "true"] == 0}>
+        <SET logs_viewable [tms::acl-check $log_view_acl {query}]>
+      </IF>      
+
+      <IF {$logs_viewable == 0}>
+          <p>You do not have permission to view the logs.</p>
+      <ELSE>
+
+        <?
+          set num_log_lines 0
+          switch -- $lognum {
+            "current" -
+            "continuous" {
+                set num_log_lines [tms::get-log-line-count]
+            }
+            default {
+                set num_log_lines [tms::get-log-line-count "$lognum"]
+            }
+          }
+          set num_pages [expr {int(ceil(double($num_log_lines)/$log_lines_per_page))}]
+          set line_begin [expr {($page -1) * $log_lines_per_page + 1}]
+          set num_lines $log_lines_per_page
+          if {[string equal $lognum "current"] == 1 || 
+             [string equal $lognum "continuous"] == 1} {
+            set log_lines [tms::get-log-lines $line_begin $num_lines]
+          } else {
+            set log_lines [tms::get-log-lines  $line_begin $num_lines "$lognum"]
+          }
+        ?>
+
+        <h2>
+          <IF {[string equal $lognum "current"] == 1}>
+            Current log, page <?^=$page?> of <?^=$num_pages?>
+          <ELSE>
+            <IF {[string equal $lognum "continuous"] == 1}>
+               Continuous Log (Updated every <?^=$log_update_interval?> seconds)
+            <ELSE>
+               Archived log <?^=$lognum?>, page <?^=$page?> of <?^=$num_pages?>
+            </IF>
+          </IF>
+        </h2>
+
+        <IF  {[string equal $lognum "continuous"] == 1}>
+            <div id="logArea"></div>
+
+            <script type="text/javascript">
+                function logWrapper() {
+                    getAjaxText ('<?=$ajax_logging_url?>','logArea')
+                    setTimeout(logWrapper, <?=$log_update_interval_ms?>);
+                }
+                logWrapper();
+            </script>
+            <noscript>
+               <i>Continuous log updates require that JavaScript be enabled.</i>
+            </noscript>
+        <ELSE>
+
+        <LOG-NAV $lognum $page $num_pages>
+<?
+# log_lines is already html-entity escaped from within tms::get-log-lines
+?>
+<pre><FOREACH line $log_lines><?= $line ?>
+</FOREACH></pre>
+        <LOG-NAV $lognum $page $num_pages>
+
+        </IF>
+      </IF>
+    </td>
+  </tr>
+</table>
+
+     <div id="pageContentLast-logging"></div>
+</div>
+</TMS-BODY>
+</div>

@@ -1,0 +1,96 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: User Accounts">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"]
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "users" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "User Accounts CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_users "username **"
+    set cmd_start_index 800
+    set cmd_end_index 999
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "User account" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_users]>
+
+  <?
+    # ==================================================
+    # User accounts
+    #
+    # XXX/EMT: this needs to be changed to allow accounts to be 
+    # disabled altogether, have password login disabled, or to have
+    # no password required.  Should use upcoming facility to choose
+    # command pattern based on a radio button selection.
+    # ==================================================
+  ?>
+
+  <h2>User accounts for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE>
+      <TMS-TABLE-ENTRY "Username">
+        <CFG-TEXTBOX -id "username" -errname "Username"
+                     -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "string" -cols "30">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Password">
+        <CFG-TEXTBOX -id "password" -errname "Password"
+                     -caps $prof_priv 
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "string" -cols "30">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"              "setpw"
+      "cmd_setpw_fields"      "username,password"
+      "cmd_setpw_pat_1"       "username * password *"
+      "cmd_setpw_fields_1"    "username,password">
+
+  <CFG-BUTTON -type "add" -text "Add User Settings" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

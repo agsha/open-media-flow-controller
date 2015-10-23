@@ -1,0 +1,24 @@
+Notes on login import
+=====================
+
+This login program was retrieved from a source rpm.
+
+The stock directory structure in util-linux-2.11y was not followed
+as only files for login were imported from 'login-utils' and 'lib' (as
+well as defines.h).
+
+Imported by the command:
+cvs import -m 'Import of login version 2.11y'
+     src/base_os/linux_common/login/src  LOGIN VERS_2_11_y
+
+
+Modifications made by TMS
+=========================
+
+* Improvements to logging: log template username as well as the one typed
+  by the user (in remote authentication cases); standardize format of
+  logging of user logins across methods (console, ssh, and Web UI).
+
+* Logging calls which logged usernames now consult the
+  aaa_log_unknown_usernames_flag, and possibly log the username at a lower
+  logging level (see bug 14599).

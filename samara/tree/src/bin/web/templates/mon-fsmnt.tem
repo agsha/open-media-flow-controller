@@ -1,0 +1,174 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-graph-utils">
+
+<TMS-PAGE "File system statistics">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "fsmnt"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "File System Usage">
+
+<?
+  global ref_ui_graph_ver
+  global graph_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $graph_acl {action}] == 1}>
+
+  <?
+    set fs_mnt_ids [tms::iterate-config "/system/fs/mount"]
+    # We want var to come first in display order since it's more volatile.
+    set fs_mnt_ids [lsort -decreasing $fs_mnt_ids]
+    set prefix_len [string length "/system/fs/mount/"]
+    set fs_index 0
+    set fs_descr(config) "system configuration databases"
+    set fs_descr(var) "logs, system images, temporary storage, etc."
+  ?>
+
+<SET clear_data_url "/admin/launch?script=rh&template=mon-fsmnt&action=clear_stats_data&stats_obj_type=chd&stats_obj_name=fs_mnt_day">
+
+<TMS-AJAX-GRAPH-COMMON -max_groups 1 -max_graphs 2>
+
+<?
+# To add back the old fs graph, comment the TMS-AJAX-GRAPH-COMMON
+# tag above and replace it with an uncommented copy of the section below:
+#
+#<TMS-AJAX-GRAPH-COMMON -max_groups 2 -max_graphs 3>
+#<TMS-AJAX-GRAPH-MULT -grp             "1"
+#                     -idx             "0"
+#                     -graph_action    "fs_day_used" 
+#                     -graph_name      "fs_day_used"
+#                     -width           "auto"
+#                     -graph_ver       "$ref_ui_graph_ver">
+#
+?>
+
+  <FOREACH fs_mnt_bn $fs_mnt_ids>
+  <?
+    set fs_mnt [string range $fs_mnt_bn $prefix_len end]
+    set partition [tms::binding-name-last-part $fs_mnt_bn]
+    set fs_mnt_name [string range $partition 1 end]
+    if {[string length $fs_mnt_name] == 0} {
+      #set fs_mnt_name "root"
+      continue
+    }
+    if {[string compare $fs_mnt_name "var"] == 0 ||
+        [string compare $fs_mnt_name "config"] == 0} {
+  ?>
+
+
+  <h2><span class="resource_name"><?^= $fs_mnt_name ?></span> partition:&nbsp;&nbsp;<?^= $fs_descr($fs_mnt_name) ?></h2>
+
+  <TMS-AJAX-GRAPH-MULT -grp             "0"
+                       -idx             "$fs_index"
+                       -graph_action    "fs_day_used_vs_free_$fs_mnt_name"
+                       -graph_name      "fs_day_used_vs_free_$fs_mnt_name"
+                       -width           "100%"
+                       -graph_ver       "$ref_ui_graph_ver">
+
+
+  <table>
+  <tr><td colspan="99"><h3>Current Statistics:</h3></td></tr>
+  <tr>
+  <td>
+  <table border="0" cellspacing="0" cellpadding="2" class="tms_mon">
+    <tr>
+      <td width="15">
+      <td><b>Space Total</b>
+      <td width="8">
+      <td><TMS-FS-MNT-STAT $fs_mnt "bytes-total">
+      <td width="25">
+      <td><b>Space Percent Free</b>
+      <td width="8">
+      <td><TMS-FS-MNT-STAT $fs_mnt "bytes-percent-free">%
+
+    <tr>
+      <td>
+      <td><b>Space Used</b>
+      <td>
+      <td><TMS-FS-MNT-STAT $fs_mnt "bytes-used">
+      <td>
+      <td><b>Inodes Percent Free</b>
+      <td>
+      <td><TMS-FS-MNT-STAT $fs_mnt "inodes-percent-free">%
+
+    <tr>
+      <td>
+      <td><b>Space Free</b>
+      <td>
+      <td><TMS-FS-MNT-STAT $fs_mnt "bytes-free">
+      <td>
+      <td>
+      <td>
+      <td>
+
+    <tr>
+      <td>
+      <td><b>Space Available</b>
+      <td>
+      <td><TMS-FS-MNT-STAT $fs_mnt "bytes-avail">
+      <td>
+      <td>
+      <td>
+      <td>
+
+  </table>
+
+  <td width="25">
+  <td align="center" valign="center">
+
+<?
+  global ref_ui_graph_ver
+  if {$ref_ui_graph_ver == 2} {
+    global graph_ext
+    set graph_name "fs_pie_$fs_mnt_name"
+    set imgFilename graph-$graph_name.ns.$graph_ext
+    set graph_action_path "/tms/graphs/disk_part_pie"
+    set pie_image_width 210
+    set pie_image_height 240
+
+    if {[catch {tms::call-action "$graph_action_path" \
+        [list "bgcolor"  "string" $color_page_background] \
+        [list "filename" "string" $imgFilename] \
+        [list "graphver" "uint32" $ref_ui_graph_ver] \
+        [list "image_width" "uint32" $pie_image_width] \
+        [list "image_height" "uint32" $pie_image_height] \
+        [list "partition" "string" $partition]}]} {
+      tms::puts "No data available<br>for graph at present.";
+    } else {
+      tms::puts "<img border=0 src=\"/graphs/[tms::html-escape ${imgFilename}]\">";
+    }
+  }
+?>
+
+  </table>
+
+  <?
+        incr fs_index
+    }
+  ?>
+
+  </FOREACH>
+
+  <h2>Controls for File System History Graphs</h2>
+
+  <TMS-AJAX-GRAPH-CONTROLS -grp             "0"
+                           -interval        "60"
+                           -clear_data_url  "$clear_data_url">
+
+<ELSE>
+
+<br>
+Insufficient authorization to view filesystem statistics.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

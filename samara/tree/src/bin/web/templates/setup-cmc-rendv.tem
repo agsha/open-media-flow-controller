@@ -1,0 +1,159 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "CMC Rendezvous">
+<TMS-MENU "cmc_setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-CMC-SETUP-MENU "rendv"></TMS-SIDEBAR>
+
+<?
+    global cmc_acl
+    global cmc_acl_accept
+?>
+
+<TMS-PAGE-CONTENT "CMC Rendezvous">
+
+<IF {[tms::check-authorization "query_basic" $cmc_acl {query}]}>
+
+  <TMS-CMC-MSG>
+
+  <h2>CMC Rendezvous Configuration</h2>
+
+<?
+    set pending_prefix "/cmc/state/rendezvous/tentative_inetz"
+    set pending_ids [tms::iterate-config $pending_prefix]
+?>
+
+<CFG-FORM>
+
+  <TMS-TABLE>
+    <TMS-TABLE-ENTRY "Accept new clients automatically">
+        <CFG-CHECKBOX -id "auto_accept" -caps "set_restricted"
+                      -acl $cmc_acl -acl_oper {set}
+                      -name "/cmc/config/rendezvous/auto_accept"
+                      -type "bool">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "CMC Service Name">
+      <CFG-TEXTBOX -id "servname" -errname "Service Name"
+                   -caps "set_restricted"
+                   -acl $cmc_acl -acl_oper {set}
+                   -name "/cmc/common/config/service_name" -type "hostname"
+                   -cols "20">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}>
+  <img src="/images/em.gif" width="10" height="1" alt="">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}>
+
+</CFG-FORM>
+
+  <h2>Rendezvous Requests Pending</h2>
+
+  <CFG-FORM -action "cmc-rendezvous-accept">
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+ 
+    <tr class="listing_head"> 
+      <td>
+      <td>
+        Hostname
+      <td>
+        Address
+    </tr>
+
+    <?
+      set cur_line 0
+    ?>
+
+    <FOREACH pending_id $pending_ids>
+    <?
+      set prefix_len [string length "$pending_prefix/"]
+      set pending_addr [string range $pending_id $prefix_len end]
+      set pending_hostname [tms::get-config "$pending_id/hostname"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "action_privileged"
+                      -acl $cmc_acl_accept -acl_oper {action}
+                      -value "$pending_addr">
+        </td>
+      <td><?^=$pending_hostname?></td>
+      <td><?^=$pending_addr?></td>
+       <?
+         incr cur_line
+       ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No pending appliances.
+      <SET acc_disab "true">
+    <ELSE>
+      <SET acc_disab "false">
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <CFG-BUTTON -type "refresh" -text "Refresh Listing" -caps "query_basic"
+              -acl $cmc_acl -acl_oper {query}>
+
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "accept_sel" -text "Accept Selected"
+              -caps "action_privileged"
+              -acl $cmc_acl_accept -acl_oper {action} 
+              -disabled $acc_disab>
+
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "accept_all" -text "Accept All" 
+              -caps "action_privileged"
+              -acl $cmc_acl_accept -acl_oper {action} 
+              -disabled $acc_disab>
+
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "reject_sel" -text "Reject Selected"
+              -caps "action_privileged"
+              -acl $cmc_acl_accept -acl_oper {action}
+              -disabled $acc_disab>
+
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "reject_all" -text "Reject All" 
+              -caps "action_privileged"
+              -acl $cmc_acl_accept -acl_oper {action} 
+              -disabled $acc_disab>
+
+  </CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view CMC rendezvous configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

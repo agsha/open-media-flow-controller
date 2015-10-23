@@ -1,0 +1,36 @@
+Rationale for import
+====================
+
+* Add a new command, "busy", to check programmatically if a particular
+  device is busy (and so cannot be operated on).
+
+* Improve scriptability by removing interactive user prompts in cases
+  where they were not needed.
+
+
+Import procedure
+================
+
+The following steps were taken to import Parted:
+
+1. Start with the version of parted that was current in FC6 as
+   of 11/1/2006.  At that time, it could fetched from:
+   http://download.fedora.redhat.com/pub/fedora/linux/core/6/source/SRPMS/
+   parted-1.7.1-16.fc6.src.rpm
+
+2. Unpack it and apply any included patches, using 'rpmbuild -bp'.
+
+3. One file was edited prior to import, to fix up a compatibility issue:
+   libparted/arch/linux.c
+   (Probably this file should have been imported unmodified, and then
+   the change checked into the tree separately.)
+
+4. The files were imported.
+
+5. The 'configure' script was run with the following parameters:
+   ./configure --enable-shared --enable-part-static --enable-pc98=no --enable
+   -Werror=no --disable-dynamic-loading --disable-nls --without-readline
+   The resulting config.h file was checked in.
+
+6. Samara Makefiles were made up to build libparted, parted, and
+   partprobe; and checked in.

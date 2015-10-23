@@ -1,0 +1,32 @@
+Notes on pam_ldap import
+========================
+
+Our local modifications:
+
+  * Fix a bug in PAM LDAP's template user implementation.  This corresponds
+    to PADL's Bug 280 "pam_template_login_attribute doesn't work".  This
+    bug was filed in 2006, and never fixed.
+    
+  * Add our LOGIN_USER and AUTH_USER environment variables to PAM LDAP.
+    These correspond to the remote (the one entered by the user) and
+    local (mapped) usernames, respectively.
+
+  * Make PAM LDAP take our TMS-standard template_user and
+    use_vendor_attr "command line" parameters.  These override any
+    config file settings (which me never emit in any case).  Allow
+    template user mapping without a template user attrib, which our
+    usage requires.
+    
+  * Make PAM LDAP only ever set PAM_USER (in template user mapping
+    cases) if the local user is in the password file.  Do fall back from
+    the per-user local user attrib to the global default in missing user
+    cases.
+ 
+  * Don't double prompt and authenticate if we're doing try_first_pass,
+    and we already had a password, but the first authentication was bad.
+    This meant LDAP was previously letting a user trying to log in have
+    two shots at getting a password correct per call to LDAP's
+    pam_sm_authenticate() , which was incorrect.
+
+  * Link with our libpam_common library, and use it to set
+    TRUSTED_AUTH_INFO.

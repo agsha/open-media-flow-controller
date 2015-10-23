@@ -1,0 +1,94 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Storage Device Statistics">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "disks"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Storage Device Usage">
+
+<?
+set graph_action disk_device_io_hour
+
+# Conditional on PROD_FEATURE_OLD_GRAPHING
+set old_graph [tms::have-prod-feature old_graphing]
+
+global graph_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $graph_acl {action}]}>
+
+<IF {[string compare $old_graph "false"] == 0}>
+
+  <SET clear_data_url "/admin/launch?script=rh&template=mon-disks&action=clear_stats_data&stats_obj_type=chd&stats_obj_name=disk_device_io_hour">
+
+  <TMS-AJAX-GRAPH $graph_action $graph_action 15 auto 2 "$clear_data_url">
+</IF>
+
+<?
+#..............................................................................
+#  - Display the current (mostly cumulative) I/O statistics for each device.
+#    Presently, we only display "disk" devices, not their partition devices.
+    set disk_device_nodes [lsort [tms::iterate-config "/system/disks"]]
+    set disk_devices_filtered [list]
+    foreach disk_device_node $disk_device_nodes {
+        set disk_device [tms::get-config "$disk_device_node"]
+        set is_parent [tms::get-config "/system/disks/$disk_device/is_parent_device"]
+        if {[string compare $is_parent "true"] == 0} {
+            lappend disk_devices_filtered $disk_device
+        }
+    }
+
+?>
+  <FOREACH disk_device $disk_devices_filtered>
+
+    <h2>Storage device <?^=$disk_device?> statistics (since boot)</h2>
+    <SET cur_time [tms::get-config "/time/now/datetime"]>
+
+    <table border="0" cellspacing="0" cellpadding="2" class="tms_mon">
+      <tr>
+        <td width="15">
+        <td><b>Total data read</b>
+        <td width="8">
+        <td><TMS-DISK-IO-STAT $disk_device "read_bytes">
+        <td width="25">
+        <td><b>Total data written</b>
+        <td width="8">
+        <td><TMS-DISK-IO-STAT $disk_device "write_bytes">
+<?
+# XXX/SML:  Omit total time stats due to bug 14345:  Total write stats provided
+# by /proc/diskstats are either "overstated" or perhaps for some valid reason
+# such as parallel request handling they do not reflect wall clock time. This
+# can be misleading and alarming in the event that e.g. disk write time exceeds
+# system uptime.
+#      <tr>
+#        <td width="15">
+#        <td><b>Total time reading</b>
+#        <td width="8">
+#        <td><TMS-DISK-IO-STAT $disk_device "read_time_ms">
+#        <td width="25">
+#        <td><b>Total time writing</b>
+#        <td width="8">
+#        <td><TMS-DISK-IO-STAT $disk_device "write_time_ms">
+?>
+    </table>
+
+    <p>Updated:&nbsp;<?^=$cur_time?></p> 
+
+  </FOREACH>
+<ELSE>
+
+<br>
+Insufficient authorization to view storage device statistics.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

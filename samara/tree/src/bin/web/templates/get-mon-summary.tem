@@ -1,0 +1,27 @@
+<?
+#
+#
+#
+#
+?>
+
+<?
+#
+# Target for AJAX status update on mon-summary page
+#
+?>
+
+<INCLUDE "tms-utils">
+<INCLUDE "mon-summary-common">
+
+<html>
+<head>
+  <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+  <meta http-equiv="PRAGMA" content="NO-CACHE">
+</head>
+<body>
+
+<MON-SUMMARY-BODY>
+
+</body>
+</html>

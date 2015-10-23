@@ -1,0 +1,443 @@
+F_auto-fill-mode
+Toggle Auto Fill mode.
+In Auto Fill mode, inserting a space at a column beyond `fill-column'
+automatically breaks the line at a previous space.
+F_backward-char
+Move point left one character.
+On attempt to pass beginning or end of buffer, stop and signal error.
+F_backward-delete-char
+Delete the previous character.
+Join lines if the character is a newline.
+F_beginning-of-buffer
+Move point to the beginning of the buffer; leave mark at previous position.
+F_beginning-of-line
+Move point to beginning of current line.
+F_c-mode
+Turn on the mode for editing K&R and ANSI/ISO C code.
+F_c++-mode
+Turn on the mode for editing ANSI/ISO C++ code.
+F_call-last-kbd-macro
+Call the last keyboard macro that you defined with C-x (.
+A prefix argument serves as a repeat count.  Zero means repeat until error.
+F_cd
+Make the user specified directory become the current buffer's default
+directory.
+F_copy-region-as-kill
+Save the region as if killed, but don't kill it.
+F_copy-to-register
+Copy region into the user specified register.
+F_delete-char
+Delete the following character.
+Join lines if the character is a newline.
+F_delete-other-windows
+Make the selected window fill the screen.
+F_delete-window
+Remove the current window from the screen.
+F_describe-function
+Display the full documentation of a function.
+F_describe-key
+Display documentation of the function invoked by a key sequence.
+F_describe-variable
+Display the full documentation of a variable.
+F_downcase-region
+Convert the region to lower case.
+F_end-kbd-macro
+Finish defining a keyboard macro.
+The definition was started by C-x (.
+The macro is now available for use via C-x e.
+F_end-of-buffer
+Move point to the end of the buffer; leave mark at previous position.
+F_end-of-line
+Move point to end of current line.
+F_enlarge-window
+Make current window one line bigger.
+F_exchange-point-and-mark
+Put the mark where point is now, and point where the mark is now.
+F_execute-extended-command
+Read function name, then read its arguments and call it.
+F_find-alternate-file
+Find the file specified by the user, select its buffer, kill previous buffer.
+If the current buffer now contains an empty file that you just visited
+(presumably by mistake), use this command to visit the file you really want.
+F_find-file
+Edit a file specified by the user.  Switch to a buffer visiting the file,
+creating one if none already exists.
+F_font-lock-mode
+Toggle Font Lock mode.
+When Font Lock mode is enabled, text is fontified as you type it.
+F_font-lock-refresh
+Refresh the Font Lock mode internal structures.
+This may be called when the fontification looks weird.
+F_forward-char
+Move point right one character.
+On reaching end of buffer, stop and signal error.
+F_goto-line
+Move cursor to the beginning of the specified line.
+F_help
+Show a help window.
+F_help-config-sample
+Show a configuration file sample.
+F_help-faq
+Show the Zile Frequently Asked Questions (FAQ).
+F_help-latest-version
+Show informations about getting the latest version.
+F_help-tutorial
+Show a tutorial window.
+F_insert-buffer
+Insert after point the contents of the user specified buffer.
+Puts mark after the inserted text.
+F_insert-file
+Insert contents of the user specified file into buffer after point.
+Set mark after the inserted text.
+F_insert-register
+Insert contents of the user specified register.
+Puts point before and mark after the inserted text.
+F_isearch-backward
+Do incremental search backward.
+As you type characters, they add to the search string and are found.
+Type return to exit, leaving point at location found.
+Type C-r to search again backward, C-s to search again forward.
+C-g when search is successful aborts and moves point to starting point.
+F_isearch-forward
+Do incremental search forward.
+As you type characters, they add to the search string and are found.
+Type return to exit, leaving point at location found.
+Type C-s to search again forward, C-r to search again backward.
+C-g when search is successful aborts and moves point to starting point.
+F_keyboard-quit
+Cancel current command.
+F_kill-buffer
+Kill the current buffer or the user specified one.
+F_kill-line
+Kill the rest of the current line; if no nonblanks there, kill thru newline.
+F_kill-region
+Kill between point and mark.
+The text is deleted but saved in the kill ring.
+The command C-y (yank) can retrieve it from there.
+If the buffer is read-only, Zile will beep and refrain from deleting
+the text, but put the text in the kill ring anyway.  This means that
+you can use the killing commands to copy text from a read-only buffer.
+If the previous command was also a kill command,
+the text killed this time appends to the text killed last time
+to make one entry in the kill ring.
+F_list-bindings
+List defined bindings.
+F_list-buffers
+Display a list of names of existing buffers.
+The list is displayed in a buffer named `*Buffer List*'.
+Note that buffers with names starting with spaces are omitted.
+
+The M column contains a * for buffers that are modified.
+The R column contains a % for buffers that are read-only.
+F_list-functions
+List defined functions.
+F_list-registers
+List defined registers.
+F_list-variables
+List defined variables.
+F_mark-whole-buffer
+Put point at beginning and mark at end of buffer.
+F_newline
+Insert a newline at the current point position into
+the current buffer.
+F_next-line
+Move cursor vertically down one line.
+If there is no character in the target line exactly under the current column,
+the cursor is positioned after the character in that line which spans this
+column, or at the end of the line if it is not long enough.
+F_other-window
+Select the first different window on the screen.
+All windows are arranged in a cyclic order.
+This command selects the window one step away in that order.
+F_overwrite-mode
+In overwrite mode, printing characters typed in replace existing text
+on a one-for-one basis, rather than pushing it to the right.  At the
+end of a line, such characters extend the line.
+C-q still inserts characters in overwrite mode; this
+is supposed to make it easier to insert characters when necessary.
+F_previous-line
+Move cursor vertically up one line.
+If there is no character in the target line exactly over the current column,
+the cursor is positioned after the character in that line which spans this
+column, or at the end of the line if it is not long enough.
+F_query-replace
+Replace occurrences of a string with other text.
+As each match is found, the user must type a character saying
+what to do with it.
+F_quoted-insert
+Read next input character and insert it.
+This is useful for inserting control characters.
+F_recenter
+Center point in window and redisplay screen.
+The desired position of point is always relative to the current window.
+F_replace-string
+Replace occurrences of a string with other text.
+F_rotate-minihelp-window
+Show the next mini help entry.
+F_save-buffer
+Save current buffer in visited file if modified. By default, makes the
+previous version into a backup file if this is the first save.
+F_save-buffers-kill-zile
+Offer to save each buffer, then kill this Zile process.
+F_save-some-buffers
+Save some modified file-visiting buffers.  Asks user about each one.
+F_scroll-down
+Scroll text of current window downward near full screen.
+F_scroll-up
+Scroll text of current window upward near full screen.
+F_search-backward
+Search backward from point for the user specified text.
+F_search-forward
+Search forward from point for the user specified text.
+F_self-insert-command
+Insert the character you type.
+F_set-fill-column
+Set the fill column.
+If an argument value is passed, set the `fill-column' variable with
+that value, otherwise with the current column value.
+F_set-mark-command
+Set mark at where point is.
+F_set-variable
+Set a variable value to the user specified value.
+F_shell-command
+Reads a line of text using the minibuffer and creates an inferior shell
+to execute the line as a command.
+Standard input from the command comes from the null device.  If the
+shell command produces any output, the output goes to a Zile buffer
+named `*Shell Command Output*', which is displayed in another window
+but not selected.
+If the output is one line, it is displayed in the echo area.
+A numeric argument, as in `M-1 M-!', directs this command to insert
+any output into the current buffer.
+F_shell-command-on-region
+Reads a line of text using the minibuffer and creates an inferior shell
+to execute the line as a command; passes the contents of the region as
+input to the shell command.
+If the shell command produces any output, the output goes to a Zile buffer
+named `*Shell Command Output*', which is displayed in another window
+but not selected.  
+If the output is one line, it is displayed in the echo area.
+A numeric argument, as in `M-1 M-!', directs output to the current buffer,
+then the old region is deleted first and the output replaces it as the
+contents of the region.
+F_shell-script-mode
+Turn on the mode for editing shell script code.
+F_split-window
+Split current window into two windows, one above the other.
+Both windows display the same buffer now current.
+F_start-kbd-macro
+Record subsequent keyboard input, defining a keyboard macro.
+The commands are recorded even as they are executed.
+Use C-x ) to finish recording and make the macro available.
+F_suspend-zile
+Stop Zile and return to superior process.
+F_switch-to-buffer
+Select to the user specified buffer in the current window.
+F_switch-to-correlated-buffer
+Find and open a file correlated with the current buffer.
+Some examples of correlated files are the following:
+    anyfile.c  --> anyfile.h
+    anyfile.h  --> anyfile.c
+    anyfile.in --> anyfile
+    anyfile    --> anyfile.in
+F_tabify
+Convert multiple spaces in region to tabs when possible.
+A group of spaces is partially replaced by tabs
+when this can be done without changing the column they end at.
+The variable `tab-width' controls the spacing of tab stops.
+F_tab-to-tab-stop
+Insert a tabulation at the current point position into
+the current buffer.  Convert the tabulation into spaces
+if the `expand-tabs' variable is bound and set to true.
+F_text-mode
+Turn on the mode for editing text intended for humans to read.
+F_toggle-minihelp-window
+Toggle the mini help window.
+F_toggle-read-only
+Change whether this buffer is visiting its file read-only.
+F_undo
+Undo some previous changes.
+Repeat this command to undo more changes.
+F_universal-argument
+Begin a numeric argument for the following command.
+Digits or minus sign following C-u make up the numeric argument.
+C-u following the digits or minus sign ends the argument.
+C-u without digits or minus sign provides 4 as argument.
+Repeating C-u without digits or minus sign multiplies the argument
+by 4 each time.
+F_untabify
+Convert all tabs in region to multiple spaces, preserving columns.
+The variable `tab-width' controls the spacing of tab stops.
+F_upcase-region
+Convert the region to upper case.
+F_write-file
+Write current buffer into the user specified file.
+Makes buffer visit that file, and marks it not modified.
+F_yank
+Reinsert the last stretch of killed text.
+More precisely, reinsert the stretch of killed text most recently
+killed OR yanked.  Put point at end, and set mark at beginning.
+F_zile-version
+Show the zile version.
+V_alternative-bindings
+false
+Remap the help functions (bound by default to `C-h') to `M-h'.  This may
+be useful when `C-h' is already bound to Backspace or Delete.
+
+Please note that changing this variable at run-time has no effect; you
+need instead to modify your `~/.zilerc' configuration file and restart Zile.
+V_auto-font-lock
+true
+Automatically turn on Font Lock Mode when a C/C++ source file or shell
+script is opened.
+V_auto-font-lock-refresh
+true
+If enabled, the file will be reparsed by font lock on every C-l press.
+This may be disabled on slow machines.
+V_backup-directory
+~/.backup
+Specify target backup directory.  Directory must be existent.
+This value is used only when the `backup-with-directory' value is true.
+V_backup-method
+simple
+Specify the file backup method.
+
+Possible values are: none, simple and revision.
+
+ - If `none' is specified, Zile will not create backup files.
+ - If `simple' is specified, Zile will create a backup file with a
+   tilde `~' appended to the name (e.g.: on saving `foo.c' it will
+   create the backup `foo.c~').
+ - If `revision' is specified, Zile will create a new backup file on
+   each file saving preserving the old backups of the original file
+   (e.g.: on saving `foo.c' it will create the backup `foo.c~1~', then
+   on next save `foo.c~2~', etc.).
+V_backup-with-directory
+false
+If enabled Zile will backup files to a user specified directory;
+the directory must exist and must be specified in the
+variable `backup-directory'.
+V_beep
+true
+If enabled, a sound will be emitted on any error.
+V_colors
+true
+If your terminal supports colors, you should leave this enabled.
+V_display-time
+true
+If enabled the time is displayed in the status line.
+V_display-time-format
+%I:%M%p
+The format of the displayed time in the status line.
+
+Conversion specifiers are introduced by a `%' character, and are replaced
+in the time format string as follows:
+
+   %a	The abbreviated weekday name according to the current locale.
+   %A	The full weekday name according to the current locale.
+   %b	The abbreviated month name according to the current locale.
+   %B	The full month name according to the current locale.
+   %c	The preferred date and time representation for the current locale.
+   %d	The day of the month as a decimal number (range 01 to 31).
+   %H	The hour as a decimal number using a 24-hour clock (range 00 to 23).
+   %I	The hour as a decimal number using a 12-hour clock (range 01 to 12).
+   %j	The day of the year as a decimal number (range 001 to 366).
+   %m	The month as a decimal number (range 01 to 12).
+   %M	The minute as a decimal number.
+   %p	Either `am' or `pm' according to the given time value, or the
+	corresponding strings for the current locale.
+   %S	The second as a decimal number.
+   %U	The week number of the current year as a decimal number, starting
+	with the first Sunday as the first day of the first week.
+   %W	The week number of the current year as a decimal number, starting
+	with the first Monday as the first day of the first week.
+   %w	The day of the week as a decimal, Sunday being 0.
+   %x	The preferred date representation for the current locale without
+	the time.
+   %X	The preferred time representation for the current locale without
+	the date.
+   %y	The year as a decimal number without a century (range 00 to 99).
+   %Y	The year as a decimal number including the century.
+   %Z	The time zone or name or abbreviation.
+   %%	A literal `%' character.
+V_displayable-characters
+0x20-0x7e
+Specify the set of characters that can be shown as-is on the screen.
+The characters not included in this set are shown as octal
+sequences (like \261).
+
+The set syntax is the following:
+
+    set       ::= range | value ( ',' range | value )*
+    range     ::= value '-' value
+    value     ::= hex_value | oct_value | dec_value
+    hex_value ::= '0x'[0-9a-fA-F]+
+    oct_value ::= '0'[0-7]*
+    dec_value ::= [1-9][0-9]*
+
+For example, the following are valid sets:
+
+    0x20-0x7e			(standard English-only character set)
+    0x20-0x7e,0xa1-0xff		(typical European character set)
+    0-15,17,0xef-0xff
+    012,015-0x50		(two correct but useless character sets)
+V_expand-tabs
+false
+If disabled, Zile will insert hard tabs (the character `\t'),
+otherwise it will insert spaces.
+V_fill-column
+72
+The default fill column (used in Auto Fill Mode).
+V_font-character
+green
+The color used in Font Lock Mode for characters.
+V_font-character-delimiters
+white
+The color used in Font Lock Mode for character delimiters.
+V_font-comment
+red
+The color used in Font Lock Mode for comments.
+V_font-directive
+blue
+The color used in Font Lock Mode for preprocessor directives.
+V_font-identifier
+white
+The color used in Font Lock Mode for identifiers.
+V_font-keyword
+magenta
+The color used in Font Lock Mode for keywords.
+V_font-number
+cyan
+The color used in Font Lock Mode for numbers.
+V_font-other
+white
+The color used in Font Lock Mode for the text.
+V_font-string
+green
+The color used in Font Lock Mode for strings.
+V_font-string-delimiters
+white
+The color used in Font Lock Mode for string delimiters.
+V_highlight-region
+true
+If enabled, highlight the current region with reversed colors.
+V_novice-level
+true
+Enable this if you are novice to Emacs in general.
+Disabling this variable the Mini Help window and the message in
+the scratch buffer will be disabled.
+V_show-eob-marker
+true
+If enabled, a marker will be displayed at the end of the buffer.
+V_skip-splash-screen
+false
+If enabled, the splash screen at startup will be avoided.
+V_status-line-color
+cyan
+The color of the status line.
+V_tab-width
+8
+The default tabulation width.
+V_text-mode-auto-fill
+false
+If enabled, the Auto Fill Mode is automatically enabled in Text Mode.

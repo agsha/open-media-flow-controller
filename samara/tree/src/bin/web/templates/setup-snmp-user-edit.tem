@@ -1,0 +1,158 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Edit SNMP v3 User">
+<TMS-MENU "setup">
+<TMS-BODY>
+<?
+  global auth_acl
+  set user [tms::get-param query "user"]
+  set snmp_user_caps "set_privileged"
+
+  # Conditional on PROD_FEATURE_SNMP_SETS
+  set have_sets [tms::have-prod-feature snmp_sets]
+
+  # Conditional on PROD_FEATURE_CAPABS
+  set have_capabs [tms::have-prod-feature capabs]
+
+  set auth_key [tms::get-config "/snmp/v3/users/$user/auth_key"]
+  set priv_key [tms::get-config "/snmp/v3/users/$user/privacy_key"]
+?>
+
+<?
+# XXX/EMT: this leaves the 'user=username' parameter in the URLs
+# for all of the other sidebar menu items too.  It doesn't do any
+# real harm, but it is undesirable.
+?>
+<TMS-SIDEBAR><TMS-SETUP-MENU "snmp-user-edit" "user" $user></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Edit SNMP v3 User">
+
+<IF {[tms::check-authorization "query_basic" $snmp_acl {query}]}>
+
+<h2>Edit SNMP v3 User: <?^=$user?></h2>
+
+<CFG-FORM -action "config-form-snmp-edit-user">
+  <TMS-TABLE -div_id "user_edit_table_1">
+    <TMS-TABLE-ENTRY "Username">
+      <?^=$user?>
+    </TMS-TABLE-ENTRY>
+
+    <input type="hidden" name="f_username" value="<?^=$user?>">
+
+    <TMS-TABLE-ENTRY "Enable user">
+      <CFG-CHECKBOX -id "user_enable"
+                    -caps $snmp_user_caps
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/snmp/v3/users/$user/enable"
+                    -type "bool">
+    </TMS-TABLE-ENTRY>
+
+    <IF {[string compare $have_sets "true"] == 0}>
+      <TMS-TABLE-ENTRY "Enable SETs">
+        <CFG-CHECKBOX -id "sets_enable"
+                      -caps $snmp_user_caps
+                      -acl $auth_acl -acl_oper {set}
+                      -name "/snmp/v3/users/$user/access/sets/enable"
+                      -type "bool">
+      </TMS-TABLE-ENTRY>
+
+      <IF {[string compare $have_capabs "true"] == 0}>
+        <?
+            set sets_gid [tms::get-config "/snmp/v3/users/$user/access/gid"]
+            set sets_capab [tms::gid-to-capab "$sets_gid"]
+        ?>
+
+        <TMS-TABLE-ENTRY "SET capability">
+          <SET capab_opts [tms::get-capability-list]>
+          <CFG-DROPDOWN -id "sets_capab" -errname "Capability" 
+                        -caps $snmp_user_caps
+                        -type "string" -options $capab_opts
+                        -value "$sets_capab"
+                        -span_id "users_capab"> 
+        </TMS-TABLE-ENTRY>
+      </IF>
+    </IF>
+
+    <TMS-TABLE-ENTRY "Authentication type">
+      <CFG-DROPDOWN -id "authtype" -caps $snmp_user_caps
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/snmp/v3/users/$user/hash_type"
+                    -type "string" -options {{"MD5" "md5"} {"SHA1" "sha"}}>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Privacy type">
+      <CFG-DROPDOWN -id "privtype" -caps $snmp_user_caps
+                    -acl $auth_acl -acl_oper {set}
+                    -type "string"
+                    -name "/snmp/v3/users/$user/privacy_type"
+                    -options {{"DES" "des"} {"AES-128" "aes-128"}}>
+    </TMS-TABLE-ENTRY>
+
+    <IF {[string length $auth_key] == 0}>
+      <TMS-TABLE-ENTRY "Set authentication password">
+        <CFG-PASSWORDBOX -id "auth_pwd" -caps $snmp_user_caps
+                         -acl $auth_acl -acl_oper {set} -cols "20">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "(No password currently set)">
+      </TMS-TABLE-ENTRY>
+    <ELSE>
+      <TMS-TABLE-ENTRY "Change authentication password">
+        <CFG-PASSWORDBOX -id "auth_pwd" -caps $snmp_user_caps
+                         -acl $auth_acl -acl_oper {set} -cols "20">
+      </TMS-TABLE-ENTRY>
+    </IF>
+
+    <IF {[string length $priv_key] == 0}>
+      <TMS-TABLE-ENTRY "Set privacy password">
+        <CFG-PASSWORDBOX -id "priv_pwd" -caps $snmp_user_caps
+                         -acl $auth_acl -acl_oper {set} -cols "20">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "(No password currently set)">
+      </TMS-TABLE-ENTRY>
+    <ELSE>
+      <TMS-TABLE-ENTRY "Change privacy password">
+        <CFG-PASSWORDBOX -id "priv_pwd" -caps $snmp_user_caps
+                         -acl $auth_acl -acl_oper {set} -cols "20">
+      </TMS-TABLE-ENTRY>
+    </IF>
+
+    <TMS-TABLE-ENTRY "Require privacy">
+      <CFG-CHECKBOX -id "require_privacy"
+                    -caps $snmp_user_caps
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/snmp/v3/users/$user/require_privacy"
+                    -type "bool">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "ok" -text "OK" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "user_edit_ok">
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "user_edit_apply">
+
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "query_basic"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "user_edit_cancel">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view SNMP configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

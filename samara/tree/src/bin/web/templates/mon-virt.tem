@@ -1,0 +1,328 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "mon-virt-common">
+
+<TMS-PAGE "Virtualization Status">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "virt"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Virtualization status">
+
+<?
+  global graph_virt_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $graph_virt_acl {action}] == 1}>
+
+    <MON-VIRT-CHECK-USABLE>
+<?
+    global virt_lic_ok
+    global virt_enabled
+    if {([string compare $virt_lic_ok "true"] == 0) && ([string compare $virt_enabled "true"] == 0)} {
+?>
+
+<!-- ********************************************************************** -->
+
+  <SET sten1 [tms::get-config "/stats/config/sample/virt_cpu/enable"]>
+  <SET sten2 [tms::get-config "/stats/config/chd/virt_cpu/enable"]>
+
+  <IF {[string compare $sten1 "true"] == 0 && [string compare $sten2 "true"] == 0}>
+
+<h2>Virtual Machine VCPU Usage</h2>
+
+    <SET clear_data_url "/admin/launch?script=rh&template=mon-virt&action=clear_stats_data&stats_obj_type=chd&stats_obj_name=virt_cpu">
+
+    <TMS-AJAX-GRAPH "virt_cpu_all" "virt_cpu_all" 10 auto 2 "$clear_data_url">
+  </IF>
+
+<?
+    }
+?>
+
+<!-- ********************************************************************** -->
+
+<div id="statusArea"></div>
+
+<noscript>
+<MON-VIRT-BODY>
+</noscript>
+
+<script type="text/javascript">
+    function statsWrapper() {
+        getAjaxText ('<?^j=$ajax_mon_virt_url?>','statusArea')
+        setTimeout(statsWrapper, 5000);
+    }
+    statsWrapper();
+</script>
+
+<!-- ********************************************************************** -->
+
+<?
+    if {([string compare $virt_lic_ok "true"] == 0) && ([string compare $virt_enabled "true"] == 0)} {
+?>
+
+<h2>Virtual Networks</h2>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr height="12">
+   <td>
+  <tr>
+   <td>
+
+   <table width="100%" border="0" cellspacing="0" cellpadding="5" 
+    class="listing">
+
+    <tr class="listing_head">  
+      <td>
+        <p>Virtual Network</p>
+      <td>
+        <p>Virtual Bridge</p>
+      <td>
+        <p>Forwarding Mode</p>
+      <td>
+        <p>Forwarding Interface</p>
+      <td>
+        <p>Network Address</p>
+      <td>
+        <p>DHCP</p>
+      <td>
+        <p>DHCP address range</p>
+      <td>
+        <p>Status</p>
+      <td>
+    </tr>
+
+<?
+    set vnet_prefix "/virt/state/vnet"
+    set token [tms::get-binding-children $vnet_prefix "false" "true"]
+    tms::sort-bindings $token
+
+    set green "<img src=\"/images/status_green.png\" alt=\"Green\">"
+    set yellow "<img src=\"/images/status_yellow.png\" alt=\"Yellow\">"
+    set red "<img src=\"/images/status_red.png\" alt=\"Red\">"
+
+    # This info technically exists already in the token, but it's easier
+    # to get at this way.
+    set vnet_ids [tms::iterate-config $vnet_prefix]
+
+    set cur_line 0
+?>
+
+    <FOREACH vnet_root $vnet_ids>
+    <?
+      set prefix_len [string length "$vnet_prefix/"]
+      set vnet_name [string range $vnet_root $prefix_len end]
+      set vnet_vbridge [tms::get-child-value-by-name $token "$vnet_root/vbridge/name"]
+      set fwd_mode [tms::get-child-value-by-name $token "$vnet_root/forward/mode"]
+      set fwd_intf [tms::get-child-value-by-name $token "$vnet_root/forward/interface"]
+      if {[string length $fwd_intf] == 0} {
+        set fwd_intf "any"
+      }
+      set vnet_active [tms::get-child-value-by-name $token "$vnet_root/active"]
+      set vnet_addr [tms::get-child-value-by-name $token "$vnet_root/ip/address"]
+      set vnet_masklen [tms::get-child-value-by-name $token "$vnet_root/ip/mask_len"]
+      set dhcp [tms::get-child-value-by-name $token "$vnet_root/dhcp/enable"]
+      if {[string compare $dhcp "true"] == 0} {
+        set dhcp_descr "enabled"
+        set dhcp_low [tms::get-child-value-by-name $token "$vnet_root/dhcp/range/low"]
+        set dhcp_high [tms::get-child-value-by-name $token "$vnet_root/dhcp/range/high"]
+        set dhcp_range "[tms::html-escape $dhcp_low]&nbsp;-<br>[tms::html-escape $dhcp_high]"
+      } else {
+        set dhcp_descr "disabled"
+        set dhcp_range ""
+      }
+
+      if {[string compare $vnet_active "true"] == 0} {
+        set vnet_status_msg "up"
+        set vnet_status_img $green
+      } else {
+        set vnet_status_msg "down"
+        set vnet_status_img $red
+      }
+
+    ?>
+    
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <p><?^=$vnet_name?></a></p>
+      </td>
+      <td>
+        <p><?^=$vnet_vbridge?></p>
+      </td>
+      <td>
+        <p><?^=$fwd_mode?></p>
+      </td>
+      <td>
+        <p><?^=$fwd_intf?></p>
+      </td>
+      <td>
+        <p><?^=$vnet_addr?>/<?^=$vnet_masklen?></p>
+      </td>
+      <td>
+        <p><?^=$dhcp_descr?></p>
+      </td>
+      <td>
+<?
+# dhcp_range may contain html directives and is already html-escaped above
+?>
+        <p><?=$dhcp_range?></p>
+      </td>
+      <td>
+        <p>
+<?
+# XXX/EMT: for some reason, the &nbsp; doesn't keep these together,
+# at least in Firefox, even when there's plenty of padding on some of 
+# the other columns, like "Forwarding Interface".  Perhaps because it 
+# makes the width of the table cells proportional to the width of the
+# contents of each; and just doesn't honor &nbsp; between an image and
+# text.
+
+# XXX/SML:  vnet_status_img already contains html tag text that is set
+# (above) to a static value, so it is not html-escaped.
+?>
+          <?=$vnet_status_img?>&nbsp;<?^=$vnet_status_msg?>
+        </p>
+      </td>
+      <td>
+      </td>
+    </tr>
+    <?
+      incr cur_line
+    ?>
+    </FOREACH>
+    <tr>
+      <td height="6">
+  </table>
+  </table>
+
+
+<!-- ********************************************************************** -->
+
+<?
+    set vol_prefix "/virt/state/volume/pool"
+    set token [tms::get-binding-children $vol_prefix "false" "true"]
+    tms::sort-bindings $token
+
+    # This info technically exists already in the token, but it's easier
+    # to get at this way.
+    set pool_ids [tms::iterate-config $vol_prefix]
+    set pool_prefix_len [string length "$vol_prefix/"]
+
+    if {[llength $pool_ids] > 1} {
+      set mult_pools 1
+     } else {
+       set mult_pools 0
+     }
+
+    foreach pool_root $pool_ids {
+      set pool_name [string range $pool_root $pool_prefix_len end]
+      set pool_avail_bytes [tms::get-child-value-by-name $token $pool_root/bytes_avail]
+      if {[string length $pool_avail_bytes] == 0} {
+        set pool_avail_str ""
+      } else {
+        set pool_avail_gb [format "%.1f" [expr {$pool_avail_bytes / 1024.0 / 1024.0 / 1024.0}]]
+        set pool_avail_str " ($pool_avail_gb GB available)"
+      }
+
+?>
+
+<IF {$mult_pools == 1}>
+  <h2>Virtual Volumes: storage pool <em><?^=$pool_name?></em> <?^=$pool_avail_str?></h2>
+<ELSE>
+  <h2>Virtual Volumes <?^=$pool_avail_str?></h2>
+</IF>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr height="12">
+   <td>
+  <tr>
+   <td>
+
+   <table width="100%" border="0" cellspacing="0" cellpadding="5" 
+    class="listing">
+
+    <tr class="listing_head">  
+      <td>
+        <p>Filename</p>
+      <td>
+        <p>Type</p>
+      <td>
+        <p>Capacity</p>
+      <td>
+        <p>Size</p>
+      <td>
+        <p>Format</p>
+      <td>
+    </tr>
+
+<?
+      set fnames [tms::iterate-config "$pool_root/file"]
+
+      set cur_line 0
+      foreach fname_root $fnames {
+        set fname_prefix_len [string length "$pool_root/file/"]
+        set fname [string range $fname_root $fname_prefix_len end]
+        set vol_type [tms::get-child-value-by-name $token "$fname_root/vol_type"]
+        set alloc [tms::get-child-value-by-name $token "$fname_root/allocation"]
+        set capac [tms::get-child-value-by-name $token "$fname_root/capacity"]
+        set fmt_type [tms::get-child-value-by-name $token "$fname_root/format_type"]
+?>
+    
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <p><?^=$fname?></a></p>
+      </td>
+      <td>
+        <p><?^=$vol_type?></p>
+      </td>
+      <td>
+        <p><?^=$capac?> MB</p>
+      </td>
+      <td>
+        <p><?^=$alloc?> MB</p>
+      </td>
+      <td>
+        <p><?^=$fmt_type?></p>
+      </td>
+      <td>
+      </td>
+    </tr>
+<?
+        incr cur_line
+      }
+?>
+    <tr>
+      <td height="6">
+  </table>
+  </table>
+
+<?
+    }
+  }
+?>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view virtualization status information.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

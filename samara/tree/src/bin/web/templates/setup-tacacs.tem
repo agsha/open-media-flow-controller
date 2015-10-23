@@ -1,0 +1,310 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "TACACS+">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "tacacs"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "TACACS+">
+
+<? # ==================================================
+   # Default TACACS+ settings
+   # ==================================================
+
+   global auth_acl
+   global auth_acl_hi
+?>
+
+<IF {[tms::check-authorization "query_basic" $auth_acl {query}]}>
+
+  <h2>Default TACACS+ Settings</h2>
+
+<CFG-FORM -div_id "tac_1">
+
+  <TMS-TABLE -div_id "tac_table_1">
+    <TMS-TABLE-ENTRY "Key">
+      <CFG-TEXTBOX -id "gkey" -errname "Key" -caps "set_privileged"
+                   -acl $auth_acl_hi -acl_oper {set}
+                   -name "/tacacs/global/key" -type "string" -cols "20"
+                   -span_id "tac_gkey">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Timeout">
+      <CFG-TEXTBOX -id "gtimeout" -errname "Timeout" -caps "set_restricted"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/tacacs/global/timeout" -type "duration_sec"
+                   -cols "8" -span_id "tac_gtimeout">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Retransmit">
+      <CFG-TEXTBOX -id "gretransmit" -errname "Retransmit"
+                   -caps "set_restricted"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/tacacs/global/retransmit" -type "int32" -cols "8"
+                   -span_id "tac_gretrans">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "tac_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "tac_cancel_1">
+
+</CFG-FORM>
+
+<? # ==================================================
+   # List of TACACS+ servers
+   # ==================================================
+?>
+
+  <h2>TACACS+ Servers</h2>
+  <CFG-FORM -action "config-form-array" -div_id "tac_2">
+
+  <?
+    set cur_line 0
+    set server_prefix "/tacacs/server"
+    set server_ids [tms::iterate-config $server_prefix]
+
+    set glob_timeout [tms::get-config "/tacacs/global/timeout"]
+    set glob_retransmit [tms::get-config "/tacacs/global/retransmit"]
+    set glob_key [tms::get-config "/tacacs/global/key"]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+ 
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        Server</td>
+      <td>
+        Auth-Port</td>
+      <td>
+        Auth-Type</td>
+      <td>
+        Key</td>
+      <td>
+        Timeout</td>
+      <td>
+        Retransmit</td>
+      <td>
+        Enabled</td>
+    </tr>
+
+    <FOREACH server_id $server_ids>
+    <?
+    set prefix_len [string length "$server_prefix/"]
+    set row_id [string range $server_id $prefix_len end]
+    set server_address [tms::get-config "$server_id/address"]
+    set server_port [tms::get-config "$server_id/auth-port"]
+    set server_auth_type [tms::get-config "$server_id/auth-type"]
+    set server_key [tms::get-config "$server_id/key"]
+    set server_timeout [tms::get-config "$server_id/timeout"]
+    set server_retransmit [tms::get-config "$server_id/retransmit"]
+    set server_enable [tms::get-config "$server_id/enable" "yes"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$row_id" -caps "set_privileged"
+                         -acl $auth_acl -acl_oper {set}
+                         -value "/tacacs/server/$row_id"
+                         -span_id "tac_cbox_1">
+         </td>
+      <td>
+        <?^=$server_address?></td>
+      <td>
+        <?^=$server_port?></td>
+      <td>
+        <?^=$server_auth_type?></td>
+      <td>
+        <?
+        # This won't actually trigger if PROD_FEATURE_SECURE_NODES is enabled,
+        # since even the empty string shows up as eight asterisks.  So not only
+        # can the user not tell what the key is, but they also can't tell
+        # whether the default key is used.  XXX/EMT: we could figure this out
+        # by doing a 'cleartext' query, but we need a new TCL command that lets
+        # us pass arbitrary query flags.
+        ?>
+        <IF {$server_key == ""}>
+            <?^=$glob_key?> &nbsp;<em>(default)</em>
+        <ELSE>
+            <?^=$server_key?></td>
+        </IF>
+      <td>
+        <IF {$server_timeout == "-1"}>
+            <?^=$glob_timeout?> &nbsp;<em>(default)</em>
+        <ELSE>
+            <?^=$server_timeout?></td>
+        </IF>
+      <td>
+        <IF {$server_retransmit == "-1"}>
+            <?^=$glob_retransmit?> &nbsp;<em>(default)</em>
+        <ELSE>
+            <?^=$server_retransmit?></td>
+        </IF>
+      <td>
+        <?^=$server_enable?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No TACACS+ servers.
+      <SET disab "true">
+    <ELSE>
+      <SET disab "false">
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <input type="hidden" name="f_array_root" value="/tacacs/server">
+  <input type="hidden" name="f_array_shift" value="true">
+
+  <input type="hidden" name="f_array_custom_buttons" value="enable,disable,remove">
+  <input type="hidden" name="f_array_button_enable_action" value="set">
+  <input type="hidden" name="f_array_button_enable_child_name" value="enable">
+  <input type="hidden" name="f_array_button_enable_child_value" value="true">
+  <input type="hidden" name="f_array_button_disable_action" value="set">
+  <input type="hidden" name="f_array_button_disable_child_name" value="enable">
+  <input type="hidden" name="f_array_button_disable_child_value" value="false">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected Server"
+              -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "tac_remove_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "enable" -text "Enable Server" 
+              -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "tac_enable-1"> 
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "disable" -text "Disable Server" 
+              -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "tac_disable_1"> 
+
+  </td>
+ </tr></table>
+ </CFG-FORM>
+
+  <?
+    set authport [tms::get-param post "f_auth-port"]
+    if {[string length $authport] == 0} {
+        tms::set-param post replace "f_auth-port" "49"
+    }
+  ?>
+
+<? # ==================================================
+   # Add new TACACS+ server
+   # ==================================================
+?>
+
+<CFG-FORM -action "config-form-array" -div_id "tac_3">
+  <h2>Add New TACACS+ Server</h2>
+  <TMS-TABLE -div_id "tac_table_2">
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps "set_privileged" 
+                    -acl $auth_acl -acl_oper {set}
+                    -type "bool" -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "tac_enabled">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Server IP">
+      <CFG-TEXTBOX -id "address" -errname "IP address" -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -type "ipv4addr" -cols "20" -span_id "tac_addr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Auth Port">
+      <CFG-TEXTBOX -id "auth-port" -errname "Auth Port" -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -type "uint16" -cols "8" -span_id "tac_aport">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Auth Type">
+      <CFG-DROPDOWN -id "auth-type" -errname "Auth Type" -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -type "string" -options {{"pap" "pap"}
+                                             {"ascii" "ascii"}}
+                    -span_id "tac_atype">
+    </TMS-TABLE-ENTRY>
+
+    <tr class="listing_even">
+      <td height=10 colspan=99>
+
+    <tr class="listing_even">
+      <td colspan=99>Enter overrides, or leave blank to use default setting:
+
+    <IF {[string compare [tms::may-obfuscate] "true"] == 0}>
+      <!-- NOTE: see note in setup-radius.tem about UI problem here... -->
+      <TMS-TABLE-ENTRY "Key">
+        <CFG-PASSWORDBOX -id "key" -errname "Key" -caps "set_privileged"
+                     -acl $auth_acl -acl_oper {set}
+                     -type "string" -cols "20" -required "false" 
+                     -span_id "rad_key">
+      </TMS-TABLE-ENTRY>
+    <ELSE>
+      <TMS-TABLE-ENTRY "Key">
+        <CFG-TEXTBOX -id "key" -errname "Key" -caps "set_privileged"
+                     -acl $auth_acl -acl_oper {set}
+                     -type "string" -cols "20" -required "false"
+                     -span_id "rad_key">
+      </TMS-TABLE-ENTRY>
+    </IF>
+
+    <TMS-TABLE-ENTRY "Timeout">
+      <CFG-TEXTBOX -id "timeout" -errname "Timeout" -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -type "duration_sec" -cols "8" -span_id "tac_timeout"
+                   -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Retransmit">
+      <CFG-TEXTBOX -id "retransmit" -errname "Retransmit"
+                   -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -type "int32" -cols "8" -span_id "tac_retrans"
+                   -required "false">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+  <input type="hidden" name="f_array_root" value="/tacacs/server">
+  <input type="hidden" name="f_array_children"
+            value="address,auth-port,auth-type,key,timeout,retransmit,enable">
+  <CFG-BUTTON -type "add" -text "Add TACACS+ Server" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "tac_add_1">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view TACACS+ configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

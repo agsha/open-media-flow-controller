@@ -1,0 +1,70 @@
+#! /bin/bash
+#
+# iptables         Load the 'ip_conntrack' kernel module.
+#
+# This is only installed if PROD_FEATURE_VIRT is enabled.  The module
+# would get loaded automatically anyway; the purpose is simply to cause
+# the message it prints to the console to be printed earlier.
+# Left to its own devices, it gets printed right after the login prompt
+# on boot, which looks messy (see bug 12742).
+#
+# chkconfig: 3 24 76
+# description: Load the 'ip_conntrack' kernel module.
+
+# Source function library.
+. /etc/init.d/functions
+
+RETVAL=0
+
+start() {
+	# We don't print anything here because the kmod prints something too,
+	# and they sometimes get interleaved, which looks sloppy.  If we 
+	# succeed, we'll have its message; and if we fail, we'll at least
+	# have ours below (if not also one from the module).
+	modprobe ip_conntrack
+	RETVAL=$?
+	if [ $RETVAL = 1 ]; then
+	    echo "Failed to load ip_conntrack module."
+	fi
+	return $RETVAL
+}
+
+stop() {
+	# We don't actually need to remove anything.  We can't remove
+	# just ip_conntrack, since other things depend on it; we'd have
+	# to do them all in the right order.
+	return 0
+}	
+
+restart() {
+  	stop
+	start
+}	
+
+reload() {
+	start
+}	
+
+case "$1" in
+  start)
+  	start
+	;;
+  stop)
+  	stop
+	;;
+  restart)
+	stop
+	start
+	;;
+  reload)
+  	reload
+	;;
+  status)
+        lsmod
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|status|reload|restart}"
+	exit 1
+esac
+
+exit $?

@@ -1,0 +1,23 @@
+Notes on pam_tacplus import
+===========================
+
+This TACACS+ PAM library module was retrieved via:
+http://echelon.pl/pubs/pam_tacplus.html
+
+The stock directory structure in src was perserved from the original
+distribution.
+
+Imported by the command:
+cvs import -m 'Import of pam_tacplus version 1.2.9'
+     src/base_os/linux_common/pam/pam_tacplus  PAM_TACPLUS VERS_1_2_9
+
+Some modifications made to this module (maybe not complete):
+
+  * Logging calls which logged usernames now consult the
+    aaa_log_unknown_usernames_flag, and possibly log the username at
+    a lower logging level (see bug 14599).
+
+  * Set the TRUSTED_AUTH_INFO environment variable.  See comment above
+    lpc_get_trusted_auth_info() in pam_common.h for details.  Note that
+    this includes accepting a list of additional ACL role strings as part
+    of the local user attribute.

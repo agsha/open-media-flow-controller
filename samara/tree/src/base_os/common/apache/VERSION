@@ -1,0 +1,12 @@
+Apache 2.2.15-15.el6.centos.1 (plus supporting components):
+CentOS 6.3 latest as of 2012/09/21.
+
+Downloadable from:
+
+http://vault.centos.org/6.3/os/Source/SPackages/httpd-2.2.15-15.el6.centos.1.src.rpm
+http://vault.centos.org/6.3/updates/Source/SPackages/apr-1.3.9-5.el6_2.src.rpm
+http://vault.centos.org/6.3/os/Source/SPackages/apr-util-1.3.9-3.el6_0.1.src.rpm
+http://vault.centos.org/6.3/os/Source/SPackages/pcre-7.8-4.el6.src.rpm
+
+(The contents of the upstream Apache distributions we used to use are
+now split across these four RPMs.)

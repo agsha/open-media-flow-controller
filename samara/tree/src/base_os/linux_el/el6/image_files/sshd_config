@@ -1,0 +1,17 @@
+SyslogFacility AUTH
+LogLevel INFO
+X11Forwarding no
+PermitEmptyPasswords yes
+Banner /etc/issue.net
+UseDNS no
+UsePAM yes
+Subsystem       sftp    /usr/libexec/openssh/sftp-server
+IgnoreRhosts yes
+StrictModes yes
+PermitUserEnvironment no
+IgnoreUserKnownHosts yes
+HostbasedAuthentication no
+RhostsRSAAuthentication no
+Protocol 2
+AddressFamily any
+Port 22

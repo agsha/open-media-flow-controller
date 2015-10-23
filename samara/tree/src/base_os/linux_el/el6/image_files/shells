@@ -1,0 +1,4 @@
+/bin/sh
+/bin/bash
+/sbin/nologin
+/opt/tms/bin/cli

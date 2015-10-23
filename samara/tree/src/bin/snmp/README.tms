@@ -1,0 +1,1302 @@
+#
+#
+
+
+Rationale for import
+====================
+
+* So we could modify its main event loop to make it a GCL client.
+
+* Because the "magic" number it passed to modules when one of their
+  variables was requested was only a u_char, which was not large enough to
+  hold the 'void *' we needed.
+
+* To build with different configuration options than the stock binary
+  distribution.
+
+* To fix several bugs we have found over the years.
+
+* See CVS revision history for more.
+
+
+Notes from most recent (September 2012) NET-SNMP import: 5.5-41.el6_3.1
+=======================================================================
+
+1. Download the SRPM from the CentOS vault:
+   http://vault.centos.org/6.3/updates/Source/SPackages/net-snmp-5.5-41.el6_3.1.src.rpm
+
+
+2. Install the 'chrpath' RPM, which the NET-SNMP RPM now depends on.
+   It only uses it for the following part of its prep script:
+
+     # remove rpath from compiled perl libs
+     find perl/blib -type f -name "*.so" -print -exec chrpath --delete {} \;
+
+   We later remove the 'perl' directory, so this is not relevant to us,
+   i.e. we don't need to add chrpath to the required RPM list or anything.
+   We just need it so rpmbuild can extract and patch the sources for us.
+
+
+3. Extract the patched sources:
+   rpmbuild --recompile -bp net-snmp-5.5-41.el6_3.1.src.rpm
+
+   Ctrl+C it when it is done applying patches, and starts running
+   'configure'.  (We are not aware of an rpmbuild invocation that
+   (a) can be run as non-root, and (b) applies all the patches but does
+   not start a build.)
+
+   Find the sources in ~/rpmbuild/BUILD/net-snmp-5.5.  Tar them up for
+   safe-keeping, and then untar them as needed for new working copies.
+
+
+4. Starting from a virgin copy of the sources, without the 'configure'
+   script having been run, and trim out files we don't want to import:
+
+     find . -name \*.c.\* | xargs rm -f
+     find . -name \*.h.\* | xargs rm -f
+     find . -name Makefile\* | xargs rm -f
+     find . -name \*.o | xargs rm -f
+
+     rm -rf win32 man testing doc dist perl python local configure.d m4 ov \
+            config* sedscript.in stamp-h stamp-h.in \
+            README.aix README.hpux11 README.irix README.krb5 README.osX \
+            README.Panasonic_AM3X.txt README.win32 README.sql README.tru64 \
+            acconfig.h aclocal.m4 install-sh ltmain.sh maketarget \
+            CodingStyle net-snmp-config.in net-snmp-create-v3-user.in* \
+            mkinstalldirs TODO INSTALL
+
+     rm -f ./mibs/DISMAN-EVENT-MIB.txt     \
+           ./mibs/DISMAN-SCHEDULE-MIB.txt  \
+           ./mibs/DISMAN-SCRIPT-MIB.txt    \
+           ./mibs/RMON-MIB.txt             \
+           ./mibs/UCD-DISKIO-MIB.txt       \
+           ./mibs/UCD-IPFILTER-MIB.txt     \
+           ./mibs/UCD-IPFWACC-MIB.txt      \
+           ./mibs/UCD-SNMP-MIB-OLD.txt
+
+
+5. To get a general idea of how much has changed since the previous
+   version, make sure your cwd is still at the root of the new
+   NET-SNMP sources which you just trimmed in step #2, and use
+   something like this:
+
+   diff -r --brief --exclude CVS --exclude \*.linux --exclude \*.solaris \
+       --exclude \*.freebsd $PROD_TREE_ROOT/src/bin/snmp/net-snmp . | \
+       grep "Only in" | awk '{path = $3; fname = $4; \
+       pathtrim = substr(path, 0, length(path) - 1); \
+       printf "%s/%s\n", pathtrim, fname}' | sort
+
+   Results: besides the generated config files only being present in the
+   version in our tree, the one difference was that our tree also had:
+
+     include/net-snmp/library/snmp_locking.h
+
+   Presumably this header has simply been removed from the new version.
+   The only file that references it has had its reference commented out.
+   The NET-SNMP ChangeLog has an entry:
+
+       2005-09-13 14:49  rstory
+
+          * include/net-snmp/library/snmp_locking.h:
+
+          remove unused file
+
+   which suggests it was removed long ago.  Probably one of our long-ago
+   merges (the 2007 one?) failed to remove it somehow, and then it was not
+   corrected by our subsequent merges, since the file was already gone
+   from the older vendor branch.  I have now removed it manually from the
+   tree.
+
+
+6. Import the sources from the trimmed copy:
+
+   (a) Change your current working directory to the root of the directory
+       where the trimmed (but otherwise unpolluted) NET-SNMP sources are.
+       Make sure this is NOT anywhere underneath $PROD_TREE_ROOT.
+
+   (b) Import with CVS:
+
+       cvs import -m 'Update NET-SNMP to version 5.5-41.el6_3.1' \
+           src/bin/snmp/net-snmp NET_SNMP \
+           NET_SNMP_5_5_41_EL6_3_1 > ~/net-snmp-import.txt
+
+   This will trigger a commit to CVS.
+
+
+7. Get CVS to do the merge.  Make sure you don't have any outstanding 
+   changes in your tree against src/bin/snmp/net-snmp, then:
+
+   cd $PROD_TREE_ROOT
+   cvs checkout -jNET_SNMP_5_5_37_EL6_2_1 -jNET_SNMP_5_5_41_EL6_3_1 \
+       src/bin/snmp/net-snmp > ~/net-snmp-merge.txt
+
+   This will apply the changes to your local checkout, but will not
+   commit anything to CVS.  It is now up to you to review these
+   changes, and commit them when you are happy with them.
+
+
+8. Review the changes.  There should be three kinds:
+
+   (a) Lines beginning with "C ": merge conflicts.  Review the conflicts
+       and fix them.
+
+   (b) Lines beginning with "M ": file was modified from previous version.
+       Review the diffs.   (This time around, since it is a minor update,
+       we are skipping the more involved step of comparing our working
+       copy of NET-SNMP against the original; we have a lot of diffs!)
+
+   (c) Lines beginning with "R ": file removals.  If there are any of
+       these, you can ignore them; they were simply not present in the
+       new NET-SNMP, and will be removed when you do the commit at the
+       end of this step.
+
+   Note that there will be no file additions (e.g. lines beginning
+   with "N ") here.  They were added to the tree in step 6, and
+   nothing further needs to be done with them right now.
+
+   When all conflicts are resolved, check this in.
+
+
+9. Run the 'configure' script to see if there has been any change in
+   generated files.  Use the original untrimmed copy, since our 
+   trimming for import removed the 'configure' script.
+
+       ./configure                                                     \
+       --with-out-mib-modules="ucd_snmp agent_mibs agentx disman/event disman/schedule" \
+       --with-mib-modules="ip-mib/ipv4InterfaceTable ip-mib/ipDefaultRouterTable"       \
+       --with-enterprise-oid=16858                                     \
+       --with-enterprise-sysoid="1.3.6.1.4.1.16858.3.2.1"              \
+       --with-enterprise-notification-oid="1.3.6.1.4.1.16858.4"        \
+       --with-pic --disable-embedded-perl
+
+   When it starts asking you questions, answer "2" for the default
+   SNMP version, and "Unknown" for the default contact.  Accept the
+   defaults (hit Enter) for all of the remaining questions.  Then:
+
+   (a) Confirm the set of files generated is the same.  Use this
+       to compare an unconfigured directory to a configured one:
+
+          diff -r --brief --exclude=\*.mk --exclude=Makefile --exclude config\*
+
+       The list was the same as last time.
+
+   (b) Compare the files generated this time around to the ones generated
+       at the last import.  No differences were encountered.  This was only
+       checked on 'point' (EL6, 64-bit), and it is assumed that there are
+       also no differences on other platforms.
+
+   (c) Update net-snmp-config.h.* to reflect the new version number.
+       This did not show up in step (b) because the generated version of 
+       this file lists the version only as "5.5", which is still the
+       upstream version on which the EL6 version is based.  It was our
+       modification to give a more specific version number.
+
+
+10. No new source files were added during this import, so no Makefile
+    updates are required.
+
+
+11. Build from src/bin/snmp and test.
+
+
+New Local Changes to NET-SNMP (at completion of 5.5-41.el6_3.1 merge)
+=====================================================================
+
+NOTE: the "...Local Changes..." sections below list our local changes to
+NET-SNMP as of previous imports, and unless noted otherwise here, we
+still have those changes.  This section lists any new changes we have
+made since then.
+
+  * For safety, in a couple places, replace variable format string to
+    printf() with a "%s", in case the variable happens to have a '%'
+    in it.
+
+  * Fix bug 14552: ifTable...ifOperStatus does not immediately reflect new
+    link state after linkUp/linkDown trap.  Refresh ifTable cache when
+    processing link_up/link_down event.
+
+  * Fix bug 978 (MIB-2's sysName doesn't get new hostname until snmpd
+    restarted) and bug 13538 (sysDescr not immediately updated to reflect
+    hostname change).
+
+  * Fix bug 14678: IPv4 interface alias addresses don't reliably show up in
+    ipAddressTable.  Although it elsewhere acknowledges the existence of
+    interface aliases, there was some code in NET-SNMP which assumed that
+    IPv4 interface addresses mapped one-to-one with ifindices, which
+    is not true in the case of aliases.  This assumption was causing
+    some of the addresses to get dropped.  So make it consider the
+    interface name as well, which is unique for aliases.
+
+  * Fix bug 14686: if multiple addresses on same subnet, only one will
+    show up in ipAddressTable.
+
+
+Notes from most recent (January 2012) NET-SNMP import: 5.5-37.el6_2.1
+=====================================================================
+
+This section describes the steps taken for the most recent NET-SNMP
+import.  They are generally similar to those used in March 2011.
+
+
+1. Download the SRPM from a CentOS mirror, and extract the patched sources:
+
+      rpmbuild --recompile -bp net-snmp-5.5-37.el6_2.1.src.rpm
+
+   Ctrl+C it when it is done applying patches, and starts building.
+   I did not find an rpmbuild invocation, which works as non-root,
+   which applies all the patches but does not start a build.
+
+   At this point, tar up the sources for safe-keeping, and then untar
+   them as needed for new working copies.
+
+
+2. Starting from a virgin copy of the sources, without the 'configure'
+   script having been run, and trim out files we don't want to import:
+
+     find . -name \*.c.\* | xargs rm -f
+     find . -name \*.h.\* | xargs rm -f
+     find . -name Makefile\* | xargs rm -f
+     find . -name \*.o | xargs rm -f
+
+     rm -rf win32 man testing doc dist perl python local configure.d m4 ov \
+            config* sedscript.in stamp-h stamp-h.in \
+            README.aix README.hpux11 README.irix README.krb5 README.osX \
+            README.Panasonic_AM3X.txt README.win32 README.sql README.tru64 \
+            acconfig.h aclocal.m4 install-sh ltmain.sh maketarget \
+            CodingStyle net-snmp-config.in net-snmp-create-v3-user.in* \
+            mkinstalldirs TODO INSTALL
+
+
+3. To get a general idea of how much has changed since the previous
+   version, make sure your cwd is still at the root of the new
+   NET-SNMP sources which you just trimmed in step #2, and use
+   something like this:
+
+   diff -r --brief --exclude CVS --exclude \*.linux --exclude \*.solaris \
+       --exclude \*.freebsd $PROD_TREE_ROOT/src/bin/snmp/net-snmp . | \
+       grep "Only in" | awk '{path = $3; fname = $4; \
+       pathtrim = substr(path, 0, length(path) - 1); \
+       printf "%s/%s\n", pathtrim, fname}' | sort
+
+   This may help you validate the "N" and "R" changes you see in the
+   list of changed files in step 6.
+
+
+4. Import the sources:
+
+   (a) Change your current working directory to the root of the directory
+       where the trimmed (but otherwise unpolluted) NET-SNMP sources are.
+       Make sure this is NOT anywhere underneath $PROD_TREE_ROOT.
+
+   (b) Import with CVS:
+
+       cvs import -m 'Update NET-SNMP to version 5.5-37.el6_2.1' \
+           src/bin/snmp/net-snmp NET_SNMP \
+           NET_SNMP_5_5_37_EL6_2_1 > ~/net-snmp-import-output.txt
+
+   This will trigger a commit to CVS.
+
+
+5. Get CVS to do the merge.  Make sure you don't have any outstanding 
+   changes in your tree against src/bin/snmp/net-snmp, then:
+
+   cd $PROD_TREE_ROOT
+   cvs checkout -jNET_SNMP_5_5_27_EL6_0_1 -jNET_SNMP_5_5_37_EL6_2_1 \
+       src/bin/snmp/net-snmp
+
+   This will apply the changes to your local checkout, but will not
+   commit anything to CVS.  It is now up to you to review these
+   changes, and commit them when you are happy with them.
+
+
+6. Review the changes.  There should be three kinds:
+
+   (a) Lines beginning with "C ": merge conflicts.  Review the conflicts
+       and fix them.
+
+   (b) Lines beginning with "M ": file was modified from previous version.
+       You can ignore these for now, as they will be dealt with in the
+       next step.
+
+   (c) Lines beginning with "R ": file removals.  If there are any of
+       these, you can ignore them; they were simply not present in the
+       new NET-SNMP, and will be removed when you do the commit at the
+       end of this step.
+
+   Note that there will be no file additions (e.g. lines beginning
+   with "N ") here.  They were added to the tree in step 5, and
+   nothing further needs to be done with them right now.
+
+   When all conflicts are resolved, check this in.
+
+
+7. Review the diffs now in your local checkout vs. the virgin NET-SNMP
+   sources you just imported from.  Make sure the reason for each change
+   is understood.  See the "Local Changes to NET-SNMP" section in this
+   file for some info, and update it as needed.  (Note that some of the
+   fixes which we had made to earlier revisions of NET-SNMP were fixed
+   upstream; and if we adopted those upstream fixes, they no longer
+   appear in this list.)
+
+   This invocation can be used to generate diffs:
+
+   diff -r -I '$Id:' -C 5 --exclude=CVS \
+       ~/net-snmp-5.5-37.el6_2.1/net-snmp-5.5-trimmed \
+       src/bin/snmp/net-snmp
+
+
+8. Run the 'configure' script in various contexts, as described below.
+   The invocation used in all of these cases was:
+
+       ./configure                                                     \
+       --with-out-mib-modules="ucd_snmp agent_mibs agentx disman/event disman/schedule" \
+       --with-mib-modules="ip-mib/ipv4InterfaceTable ip-mib/ipDefaultRouterTable"       \
+       --with-enterprise-oid=16858                                     \
+       --with-enterprise-sysoid="1.3.6.1.4.1.16858.3.2.1"              \
+       --with-enterprise-notification-oid="1.3.6.1.4.1.16858.4"        \
+       --with-pic --disable-embedded-perl
+
+   When it starts asking you questions, answer "2" for the default
+   SNMP version, and "Unknown" for the default contact.  Accept the
+   defaults (hit Enter) for all of the remaining questions.
+
+   There are three sub-steps to this:
+
+   (a) Run it once to determine the list of files it generates.
+       The following comparison (used between the virgin copy and the
+       configured copy) can help produce this list:
+
+          diff -r --brief --exclude=\*.mk --exclude=Makefile --exclude config\*
+
+       The list generated was the same as last time:
+
+          agent/mibgroup/agent_module_dot_conf.h
+          agent/mibgroup/agent_module_includes.h
+          agent/mibgroup/agent_module_inits.h
+          agent/mibgroup/agent_module_shutdown.h
+          agent/mibgroup/mib_module_dot_conf.h
+          agent/mibgroup/mib_module_includes.h
+          agent/mibgroup/mib_module_inits.h
+          agent/mibgroup/mib_module_shutdown.h
+          include/net-snmp/agent/agent_module_config.h
+          include/net-snmp/agent/mib_module_config.h
+          include/net-snmp/library/snmpv3-security-includes.h
+          include/net-snmp/net-snmp-config.h
+          snmplib/snmpsm_init.h
+
+   (b) In a given environment, generally the baseline one used for the
+       last import (in this case, EL5 x86_64), run the 'configure' script
+       on both the old and new versions.  Compare the results, to see
+       what diffs we need to apply.
+
+       This time, there were no diffs to any of the files, even
+       net-snmp-config.h.  So we should be OK leaving them all as 
+       they were.
+
+   (c) Run it on all five of the platforms we support:
+
+         i386 CentOS 5.x
+         i386 CentOS 6.x
+         x86_64 CentOS 5.x
+         x86_64 CentOS 6.x
+         PowerPC (PPC)
+
+       Look at the diffs between these, and verify that the
+       conditionalization in the file adequately provides for all of
+       these.  Use the following 'diff' invocation:
+
+          diff -r --exclude config\* --exclude Makefile\* --exclude libtool ...
+
+       Our baseline will be x86_64 CentOS 6.x, and we will
+       conditionalize relative to that.  The differences found were:
+
+         * 64-bit to 32-bit: SIZEOF_LONG in net-snmp-config.h.
+           Already conditionalized.
+
+         * CentOS 6.x to CentOS 5.x (all in net-snmp-config.h):
+
+             - 5.x has HAVE_ASM_PAGE_H: already commented out because
+               we don't have it in 6.x, and NET-SNMP does not need it.
+
+             - 5.x has HAVE_NETLINK_NETLINK_H: already commented out
+               (reason unknown, but it will not be a regression to
+               leave it commented out).
+
+             - 5.x has HAVE_PCI_PCI_H: this seems to be because
+               Octagon (CentOS 5.x) happens to have the pciutils-devel
+               RPm, while Star (CentOS 6.x) does not.  This is not
+               listed in build_required.inc, so it should be disabled
+               for safety.  (However, this doesn't matter much either
+               way, since none of the NET-SNMP code tests for this.)
+
+             - 6.x has HAVE_RPM_RPMFILEUTIL_H: this is set based on
+               the presence of /usr/include/rpm/rpmfileutil.h, which
+               in CentOS 6.x is part of the rpm-devel RPM.  Octagon
+               (CentOS 5.x) has this RPM installed, but not this file,
+               so probably the file is new.  Since nothing seems to
+               have needed it (there is one reference, but it only
+               controls a single #include), it seems simplest to just
+               leave it undefined.
+
+         * 32-bit CentOS 6.x to (32-bit) PPC (all in net-snmp-config.h):
+
+             - PPC has HAVE_ASM_PAGE_H: see above, no change needed.
+
+             - PPC lacks HAVE_LPSTAT: already commented out in our
+               config file, so no change needed.
+
+             - PPC has HAVE_PCI_PCI_H: see above, no change needed.
+
+             - PPC lacks HAVE_RPM_RPMFILEUTIL_H: see above, no change needed.
+
+             - PPC has WORDS_BIGENDIAN: already conditionalized based on
+               PROD_TARGET_CPU_ENDIAN_LITTLE and PROD_TARGET_CPU_ENDIAN_BIG.
+
+   Note that although we have *.linux, *.solaris, and *.freebsd
+   variants of each file, we only actively maintain the *.linux
+   ones now.
+
+
+9. This time around, skip steps #4 and #11 from the previous import
+   instructions, which were to update the Makefiles to build the right
+   set of files.  Since no source files were added or removed for this
+   import, and there were no changes to any of the config files, there
+   is unlikely to be any change in the set of files built.
+
+
+10. Build from src/bin/snmp.  This succeeded on the first try.
+
+    Before installing the results of this build, capture the output
+    of the following command, for comparison:
+
+      snmpwalk -Of -c public localhost . 
+
+    Then install the newly-built version, run the same command again,
+    and compare the results.
+
+    However, now is not the time for serious testing, as we have one
+    more step to do first.
+
+
+11. Validate conditionals in configuration files.  The configuration
+    options we used for NET-SNMP above had three of our PROD_FEATUREs
+    disabled.  Hoping that everything will be unchanged, we'll just
+    run 'configure' again with all three of these added, and compare
+    it to the results from last time.
+
+    The necessary changes are:
+
+      * PROD_FEATURE_IPV6
+          Add --enable-ipv6
+          Add 'ip-mib/ipv6InterfaceTable' to --with-mib-modules
+      * PROD_FEATURE_UCD_SNMP_MIB
+          Remove 'ucd_snmp' from --with-out-mib-modules
+      * PROD_FEATURE_SNMP_AGENTX
+          Remove 'agentx' from --with-out-mib-modules
+
+    So the invocation with all of these features enabled is:
+
+       ./configure                                                      \
+       --with-out-mib-modules="agent_mibs disman/event disman/schedule" \
+       --with-mib-modules="ip-mib/ipv4InterfaceTable ip-mib/ipv6InterfaceTable ip-mib/ipDefaultRouterTable" \
+       --with-transports="UDPIPv6 TCPIPv6"                              \
+       --with-enterprise-oid=16858                                      \
+       --with-enterprise-sysoid="1.3.6.1.4.1.16858.3.2.1"               \
+       --with-enterprise-notification-oid="1.3.6.1.4.1.16858.4"         \
+       --enable-ipv6 --with-pic --disable-embedded-perl
+
+    As in step 8b, there were no diffs to any of the files generated,
+    so no modifications are expected to be necessary.
+
+    As a sanity check, try the build both ways, to make sure it builds
+    in both cases:
+
+    Test 1:
+
+      PROD_FEATURE_IPV6=0
+      PROD_FEATURE_UCD_SNMP_MIB=0
+      PROD_FEATURE_SNMP_AGENTX=0
+
+    Test 2:
+
+      PROD_FEATURE_IPV6=1
+      PROD_FEATURE_UCD_SNMP_MIB=1
+      PROD_FEATURE_SNMP_AGENTX=1
+
+
+New Local Changes to NET-SNMP (at completion of 5.5-37 merge)
+=============================================================
+
+NOTE: the section below, "Local Changes to NET-SNMP (at completion of
+5.5-27 merge)", lists our local changes as of the previous import.
+Most or all of those are probably still there.  Additionally, we have
+the following new ones:
+
+  * Add a handler for inetCidrRouteDiscards in IP-FORWARD-MIB, which
+    always returns zero.  (Bug 13716)
+
+  * Fix bug 13871: IPv6: "unexpected nlmsg_type" errors logged
+    intermittently by snmpd.
+
+  * Fix bug 13875: snmpd crash on SIGHUP.
+
+  * Allow engine ID to be constructed from custom data.  (Bug 13870)
+
+  * Fix bug 13990: snmpd sends coldStart trap on SIGHUP, even though
+    sysUpTime (and counters) not reset.
+
+  * Fix a design limitation / bug in NET-SNMP, where it would only
+    accept the scope of an IPv6 link-local address (in its config
+    file) as an interface name string.  We want to use the ifindex,
+    and this change makes it accept that as well.
+
+  * Fail all SNMP SET requests which include an OID not in the 
+    'enterprises' subtree (or in the enterprises.ucdavis subtree,
+    the only one under 'enterprises' included with NET-SNMP).
+    (Requirement #11 for SNMP SETs, generally tracked in bug 10755)
+
+  * Add 'sn_shared_auth_info' global variable, which helps us learn
+    how a given SNMP SET request was authenticated.  (Bug 13735, and
+    requirement #13 for SNMP SETs, bug 10755)
+
+  * Add SNMP Request ID to 'sn_shared_auth_info' global variable.
+    (Bug 14187)
+
+  * Fix bug 14182: snmpTrapEnterprise.0 omitted (or wrong) in standard
+    SNMP traps unless set in mfdb.
+
+  * Add room for 32 more file descriptors that NET-SNMP can watch
+    for us.  This gives us more breathing room, given that we are
+    opening a separate GCL session for each different user account
+    that makes SNMP SET requests.
+
+  * Support an optional new constant in customer.h,
+    SNMP_ENGINEID_ENTERPRISE_OID.  By default ENTERPRISE_OID is used
+    in constructing the engine ID, but this allows that to be
+    overridden without affecting the base enterprise OID that is used
+    in other contexts.
+
+  * Add experimental feature to sidestep NET-SNMP's practice of getting
+    the value of an SNMP variable before setting it.  (Bug 14172)
+
+  * Fix bug 13915: SNMP logs at WARNING on v3 auth failure.
+
+  * Fix bug 14368: Valgrind flags "Invalid read" errors in snmpd.
+    This fixes a design flaw in NET-SNMP's 'struct address_flag_info',
+    making it contain an actual 'struct in_addr' rather than a pointer
+    to one (as memory ownership was handled incorrectly).
+
+
+Notes from March 2011 NET-SNMP import: version 5.5-27.el6_0.1
+=============================================================
+
+The full version and origin of the NET-SNMP source distribution used
+is described in the VERSION file in this directory.  The notes in this
+file are up to date as of the import of NET-SNMP 5.5 (with Redhat's
+patches from RHEL 6) in March 2011.
+
+
+1. Install the SRPM, and make a copy of the files to work from:
+
+   sudo rpm -U net-snmp-5.5-27.el6_0.1.src.rpm
+   sudo rpmbuild -bp /usr/src/redhat/SPECS/net-snmp.spec
+   mkdir ~/snmp-import
+   cp -r /usr/src/redhat/BUILD/net-snmp-5.5 ~/snmp-import/
+
+   Save a copy of this subtree so you can revert back to it, or
+   compare a new modified subtree to it.
+
+
+2. Run the configure script:
+
+       ./configure                                                     \
+       --with-out-mib-modules="ucd_snmp agent_mibs agentx disman/event disman/schedule" \
+       --with-mib-modules="ip-mib/ipv4InterfaceTable ip-mib/ipDefaultRouterTable"       \
+       --with-enterprise-oid=16858                                     \
+       --with-enterprise-sysoid="1.3.6.1.4.1.16858.3.2.1"              \
+       --with-enterprise-notification-oid="1.3.6.1.4.1.16858.4"        \
+       --with-pic --disable-embedded-perl
+
+   Accept the defaults for all of the questions it asks you, except
+   answer "2" for the default SNMP version, and "Unknown" for the
+   default contact.
+
+   Notes:
+
+     * This invocation is with the following PROD_FEATUREs disabled:
+         PROD_FEATURE_IPV6
+         PROD_FEATURE_UCD_SNMP_MIB
+         PROD_FEATURE_SNMP_AGENTX
+       A future step will add support for these features by adding
+       conditional portions to the files auto-generated by the 
+       configure script.
+
+     * The script's usage message does not say that
+       ip-mib/ipDefaultRouterTable is disabled by default, but it is,
+       and will be excluded if you don't mention it.
+
+     * 16858 is Tall Maple's enterprise number.  In a later step,
+       all of the definitions containing this number will be deleted,
+       and replaced with references to constants from customer.h.
+
+
+3. Save the files generated by the configure script.  Some of them are
+   unimportant (and very long, like config.log), but some of them need to be
+   imported.  This list of files can be found by using:
+
+   diff -r --brief --exclude=\*.mk --exclude=Makefile --exclude config\*
+
+   to compare the pre- and post-configured NET-SNMP tree.  The set of
+   relevant files in this case were:
+
+     agent/mibgroup/agent_module_dot_conf.h
+     agent/mibgroup/agent_module_includes.h
+     agent/mibgroup/agent_module_inits.h
+     agent/mibgroup/agent_module_shutdown.h
+     agent/mibgroup/mib_module_dot_conf.h
+     include/net-snmp/agent/agent_module_config.h
+     include/net-snmp/library/snmpv3-security-includes.h
+     snmplib/snmpsm_init.h
+     agent/mibgroup/mib_module_includes.h
+     agent/mibgroup/mib_module_inits.h
+     agent/mibgroup/mib_module_shutdown.h
+     include/net-snmp/agent/mib_module_config.h
+     include/net-snmp/net-snmp-config.h
+
+
+4. Do a full build of NET-SNMP using their build system, and capture
+   the output, e.g.:
+
+   make |& tee ~/net-snmp-build-output.txt
+
+   This will be used below to help us update the Makefiles for the new
+   version.
+
+
+5. Start again from the virgin copy of the SRPM, from before the
+   configure script was run.  Trim out files we don't want to import:
+
+     find . -name \*.c.\* | xargs rm -f
+     find . -name \*.h.\* | xargs rm -f
+     find . -name Makefile\* | xargs rm -f
+
+     rm -rf win32 man testing doc dist perl python local configure.d m4 ov \
+            config* sedscript.in stamp-h stamp-h.in \
+            README.aix README.hpux11 README.irix README.krb5 README.osX \
+            README.Panasonic_AM3X.txt README.win32 README.sql README.tru64 \
+            acconfig.h aclocal.m4 install-sh ltmain.sh maketarget \
+            CodingStyle net-snmp-config.in net-snmp-create-v3-user.in* \
+            mkinstalldirs TODO INSTALL
+
+
+6. Import the sources:
+
+   (a) Change your current working directory to the root of the directory
+       where the trimmed (but otherwise unpolluted) NET-SNMP sources are.
+       Make sure this is NOT anywhere underneath $PROD_TREE_ROOT.
+
+   (b) Import with CVS:
+
+       cvs import -m 'Update NET-SNMP to version 5.5-27.el6_0.1' \
+           src/bin/snmp/net-snmp NET_SNMP \
+           NET_SNMP_5_5_27_EL6_0_1 > ~/net-snmp-import-output.txt
+
+   This will trigger a commit to CVS.
+
+
+7. Get CVS to do the merge.  Make sure you don't have any outstanding 
+   changes in your tree against src/bin/snmp/net-snmp, then:
+
+   cd $PROD_TREE_ROOT
+   cvs checkout -jNET_SNMP_5_3_1_19_EL5_1_2 -jNET_SNMP_5_5_27_EL6_0_1 \
+       src/bin/snmp/net-snmp
+
+   This will apply the changes to your local checkout, but will not
+   commit anything to CVS.  It is now up to you to review these
+   changes, and commit them when you are happy with them.
+
+
+8. Review the changes.  There should be three kinds:
+
+   (a) Lines beginning with "C ": merge conflicts.  Review the conflicts
+       and fix them.
+
+   (b) Lines beginning with "M ": file was modified from previous version.
+       You can ignore these for now, as they will be dealt with in step 9.
+
+   (c) Lines beginning with "R ": file removals.  You can ignore
+       these; they were simply not present in the new NET-SNMP, and
+       will be removed when you do the commit at the end of this step.
+
+   Note that there will be no file additions (e.g. lines beginning
+   with "N ") here.  They were added to the tree in step 6, and
+   nothing further needs to be done with them right now.
+
+   When all conflicts are resolved, check this in.
+
+
+9. Review the diffs now in your local checkout vs. the virgin NET-SNMP
+   5.5 sources.  This should only be in files which were part of steps
+   8a or 8b.  Make sure the reason for each change is understood.  It
+   would be helpful at this point to make a list of these changes, and
+   add it to the README.tms file.
+
+   After having reviewed all changes, the summary of reasons for these
+   changes is listed in the section below, "Local Changes to NET-SNMP".
+   Note that some of the fixes which we had made to earlier revisions
+   of NET-SNMP were fixed upstream; and if we adopted those upstream
+   fixes, they no longer appear in this list.
+
+
+10. Update the config files.  For now, since Solaris and FreeBSD are
+    not supported, their config files were not updated, and a #error
+    directive was put at the top of each.  For Linux. the config files
+    fell into three categories:
+
+    OK  = no change needed
+    CNC = change needed, but no customization (take NET-SNMP's output).
+    RE  = redo adaptation.  Extensive changes between NET-SNMP versions, so
+          look at changes we made vs. 5.3.1, and try to apply same changes 
+          to the 5.5-generated one.
+
+    OK   agent/mibgroup/agent_module_dot_conf.h
+    OK   agent/mibgroup/agent_module_includes.h
+    OK   agent/mibgroup/agent_module_inits.h
+    OK   agent/mibgroup/agent_module_shutdown.h
+    OK   agent/mibgroup/mib_module_dot_conf.h
+    OK   include/net-snmp/agent/agent_module_config.h
+    OK   include/net-snmp/library/snmpv3-security-includes.h
+    OK   snmplib/snmpsm_init.h
+    CNC  agent/mibgroup/mib_module_includes.h
+    CNC  agent/mibgroup/mib_module_inits.h
+    CNC  agent/mibgroup/mib_module_shutdown.h
+    CNC  include/net-snmp/agent/mib_module_config.h
+    RE   include/net-snmp/net-snmp-config.h
+
+
+11. Update the Makefiles.  For each of our targets (mainly libnetsnmp
+    and libnetsnmpaux), start by looking at the files built for the 
+    corresponding library in NET-SNMP.  That is:
+
+    - libnetsnmp: same as original libnetsnmp
+
+    - libnetsnmpaux: combination of original libnetsnmp{agent,helpers,mibs}
+
+    You can get the list of files, normalize/sort it in a form that
+    can be compared to the current Makefile, and determine which files
+    need to be added or removed (keeping in mind that some of the
+    files were removed on purpose before, like hw_swinst.c).
+
+    (NOTE for next time: I later noticed the presence of some .mk
+    files which have lists of files in easier-to-read forms.  These
+    might be a good alternative to looking at build output.  e.g.
+    mk/mib_module_list_lo.mk from the top-level of the NET-SNMP tree.
+
+    It's OK if you don't get all the needed new files, since those
+    will generally cause build errors which you can track down in the
+    next step.
+
+
+12. Build from src/bin/snmp.  This caused a lot of warnings and
+    errors, mainly from two sources:
+
+    - NET-SNMP code which doesn't stand up to the gcc warnings we have
+      enabled (or at least have not disabled).  Use of 'const', casts
+      between pointers/integers and/or different data type sizes,
+      calls of functions without prototypes, etc.  These can be fixed
+      in the code, but to minimize diffs and to get NET-SNMP running
+      more quickly, I mainly just disabled warnings at this point.
+
+    - Files which need to be added to the build which were not caught
+      in step 11.
+
+    Now install the build results and verify that it works minimally.
+    However, now is not the time for serious testing, as we have one
+    more step to do first.
+
+
+13. Add conditionals to configuration files.  As mentioned in step 2,
+    the configuration options we used for NET-SNMP had three of our
+    PROD_FEATUREs disabled.  Now the configuration script must be run
+    again, once for each PROD_FEATURE, to see what changes it makes to
+    the config files.  (Or it could be run once with all of the
+    changes made together, assuming that the source of each diff will
+    be clearly due to one particular change.)  Then appropriate
+    conditionalizations must be added to our copies of the config
+    files.
+
+    The features, with their necessary changes to the configure
+    parameters, are as follows:
+
+      * PROD_FEATURE_IPV6
+          Add --enable-ipv6
+          Add 'ip-mib/ipv6InterfaceTable' to --with-mib-modules
+      * PROD_FEATURE_UCD_SNMP_MIB
+          Remove 'ucd_snmp' from --with-out-mib-modules
+      * PROD_FEATURE_SNMP_AGENTX
+          Remove 'agentx' from --with-out-mib-modules
+
+    So the invocation with all of these features enabled is:
+
+       ./configure                                                      \
+       --with-out-mib-modules="agent_mibs disman/event disman/schedule" \
+       --with-mib-modules="ip-mib/ipv4InterfaceTable ip-mib/ipv6InterfaceTable ip-mib/ipDefaultRouterTable" \
+       --with-transports="UDPIPv6 TCPIPv6"                              \
+       --with-enterprise-oid=16858                                      \
+       --with-enterprise-sysoid="1.3.6.1.4.1.16858.3.2.1"               \
+       --with-enterprise-notification-oid="1.3.6.1.4.1.16858.4"         \
+       --enable-ipv6 --with-pic --disable-embedded-perl
+
+
+    After doing these conditionalizations, try the build both ways, with
+    the following in your include.mk:
+
+    Test 1:
+
+      PROD_FEATURE_IPV6=0
+      PROD_FEATURE_UCD_SNMP_MIB=0
+      PROD_FEATURE_SNMP_AGENTX=0
+
+    Test 2:
+
+      PROD_FEATURE_IPV6=1
+      PROD_FEATURE_UCD_SNMP_MIB=1
+      PROD_FEATURE_SNMP_AGENTX=1
+
+
+Local Changes to NET-SNMP (at completion of 5.5-27 merge)
+=========================================================
+
+This section contains a summarized list of changes made to the
+NET-SNMP sources locally in the Samara CVS tree.  This reflects only
+changes which were still outstanding as of the completion of the
+NET-SNMP 5.5 import in March 2011.  Therefore this does not
+necessarily include all changes made against previous versions, as
+some of those were applying upstream patches which are now part of the
+base NET-SNMP sources.
+
+The changes are:
+
+  * Ensure that the sysObjectID included in traps we send honors the
+    setting from snmpd.conf.  Previously it was hardwired, even though
+    the sysObjectID served as part of the System MIB was taken from
+    snmpd.conf.  (Bug 12650)
+
+  * Fix handling of zero request ID, do not treat as error.  (Bug 13382)
+
+  * Fix certain problems which crop up when interfaces are added,
+    removed, or change ifindex at runtime.  In general, NET-SNMP seems
+    to assume the set of interfaces is fixed, but this is not always
+    true, e.g. with vlans or virtualization.  The fixes were:
+
+      - Fix errors logged when an interface changes ifindex.  This can
+        happen under normal circumstances, so we just log at NOTICE,
+        and try to fix up NET-SNMP's data structures to reflect it.
+        (Bug 11862)
+
+      - Prevent interface from showing up multiple times in ifTable
+        when it changes ifindex.  (Bug 11913)
+
+      - Fix error messages when an interface goes missing.  (Bug 11798)
+        This can happen under normal circumstances.  It is still logged,
+        but at INFO instead of ERR.
+
+  * Make snmpd handle a timezone change in its SIGHUP handler, so
+    we don't have to bounce it.  (Bug 831)
+
+  * Stifle error message when two entries in ipCidrRouteTable have
+    the same set of indices.  (Bug 11701)
+
+  * Stifle error message when we cannot fetch the netmask of an 
+    interface alias.  (Also bug 11701)
+
+  * Stifle a log complaint when SNMP is configured to not permit
+    requests, e.g. with no community string.  (Bug 12468)
+
+  * When trap sinks are removed from configuration, make sure they
+    are removed from the table in the target MIB.  (Bug 711)
+
+  * Block SIGHUP during snmpd initialization, lest it kill snmpd before
+    it has had a chance to install its own signal handlers.  (Bug 2195)
+
+  * Instead of sending an enterprise-specific trap when snmpd is
+    reconfigured, send a coldstart trap.  (Bug 10513)
+
+  * Allow customers to suppress any of NET-SNMP's built-in MIBs
+    by adding code to their customer.h.  (Part of bug 13412)
+
+  * Fix a potential SEGV in the snmpusm application.
+
+  * Change the data type of the 'magic' field sent back to a
+    NET-SNMP handler from u_char to long, so we can fit a 'void *'
+    pointer into it.
+
+  * Set umask to PERSISTENT_MASK while creating index files in
+    /var/net-snmp; otherwise they may get 0666.
+
+  * Enhance SNMP's built-in syslog wrappers to log the severity
+    level along with each message, as our lc_log wrappers do.
+
+  * Enhance a few error log messages, to help track down problems 
+    which were seen very rarely, and which were not reproducible.
+
+  * Fix an incorrect usage message for the '-x' command-line
+    parameter (set privacy protocol), which claimed it wanted
+    "AES", while the code was looking for "AES128".
+
+  * Don't try to set SO_BSDCOMPAT on inet sockets.  It actually
+    done anything on Linux in a long time, and now generates a
+    kernel warning message.
+
+  * Remove some 'Log' rcstags.
+
+  * Some fixups to work properly under 64-bit.  (NET-SNMP has fixed
+    several things in this area since 5.3.1, so we have fewer diffs
+    outstanding now.  The few that remain may not be real issues for
+    non-obvious reasons, but we keep them anyway to reduce risk.)
+
+  * Miscellaneous minor fixes, e.g. initializing variables, to
+    appease (a) Coverity, (b) g++, (c) gcc with certain compiler
+    warnings enabled, or (d) other non-Linux platforms like
+    Solaris or FreeBSD, which were partially supported in the past.
+
+
+Dependencies on base NET-SNMP behavior
+======================================
+
+* md_snmp_get_engine_id() in md_snmp.c depends on setup_engineID()
+  in NET-SNMP's snmpv3.c.
+
+(XXX/EMT: there may be others)
+
+
+Build products
+==============
+
+This section describes how our build products were derived from the
+original NET-SNMP's.  The main point here is that three separate
+libraries of theirs (libnetsnmpagent, libnetsnmphelpers, and
+libnetsnmpmibs) were combined into a single one (libnetsnmpaux)
+because they all tended to be needed together.
+
+- Our libnetsnmp: same as original libnetsnmp
+
+- Our libnetsnmpaux: combination of original libnetsnmp{agent,helpers,mibs}
+
+- Our snmpd: original snmpd, plus Tall Maple SNMP infrastructue
+
+- Our other SNMP tools (snmpbulkget, snmpbulkwalk, snmpdelta, snmpget, 
+  snmpgetnext, snmpstatus, snmptable, snmptranslate, snmptrap, 
+  snmptrapd, and snmpwalk): same as original
+
+
+Notes from earlier NET-SNMP 5.3.1 import (December 2007)
+========================================================
+
+The NET-SNMP source distribution was imported into the 
+src/bin/snmp/src/net-snmp directory.
+
+The outline of the import process is as follows:
+
+1. Install the SRPM, and apply the patches:
+
+   sudo rpm -U net-snmp-5.3.1-19.el5_1.2.src.rpm
+   sudo rpmbuild -bp /usr/src/redhat/SPECS/net-snmp.spec
+
+2. Take a snapshot of the sources now in
+   /usr/src/redhat/BUILD/net-snmp-5.3.1 so we can revert to 
+   a "virgin copy" as necessary during the import process:
+
+   cd /usr/src/redhat/BUILD
+   tar cf ~/net-snmp-5.3.1-19.el5_1.2.centos.tar net-snmp-5.3.1
+
+3. Run the configure script as follows:
+
+   (Note: because of the long second line, you may not be able to paste 
+   this in directly, in a single chunk, unless your window is bigger than
+   80 columns.  The second line cannot be broken up with a backslash, as 
+   this confuses the configure script.)
+
+       ./configure                                                     \
+       --with-out-mib-modules="ucd_snmp agent_mibs agentx disman/event disman/event-mib disman/schedule" \
+       --with-mib-modules="host"                                       \
+       --with-enterprise-oid=16858                                     \
+       --with-enterprise-sysoid="1.3.6.1.4.1.16858.3.2.1"              \
+       --with-enterprise-notification-oid="1.3.6.1.4.1.16858.4"        \
+       --with-pic
+
+     (Note: 16858 is Tall Maple's enterprise number.  In a later step,
+     all of the definitions containing this number will be deleted,
+     as they are taken from customer.h)
+
+     Accept the defaults for all of the questions it asks you,
+     except answer "2" for the default SNMP version, and "unknown"
+     for the default contact.
+
+4. Save a snapshot of the files from this point, then build it with
+   their stock build system to make sure it builds.  Save the files
+   generated by the configure script aside, for later use.
+
+5. Now get a virgin tree again (without the results of 'configure'),
+   and clean it up for the import:
+
+rm -rf aclocal.m4* acconfig.h CodingStyle config* testing mkinstalldirs man ltmain.sh dist INSTALL install-sh libtool local net-snmp-* ov perl maketarget sedscript.in win32 `find . -name Makefile\*`
+
+6. Import it, as described in doc/dev/import.txt.  Do the 
+   'cvs checkout' command (not quite as they describe; see TBD
+   docs for how to do this) to automatically merge in differences.
+   There may be some conflicts; resolve these.
+
+7. Recover the results of the configure script from step 4, and apply
+   our changes to them.  These changes can be determined by running
+   configure from the last NET-SNMP version, and diffing the results
+   to what is in the tree.  This time, those diffs were found to be:
+
+      * agent/mibgroup/mib_module_dot_conf.h: no changes
+      * agent/mibgroup/mib_module_includes.h: no significant changes
+      * agent/mibgroup/mib_module_inits.h:
+      * agent/mibgroup/mib_module_shutdown.h:
+      * include/net-snmp/net-snmp-config.h:
+         - Add to the top:
+           #include "customer.h"
+           #include "tpaths.h"
+
+         - Include CUSTOMER_MIB_NAME in DEFAULT_MIBS at end if defined.
+           You can do this:
+
+#ifdef CUSTOMER_MIB_NAME
+#define CUSTOMER_MIB_NAME_APPEND ":" CUSTOMER_MIB_NAME
+#else
+#define CUSTOMER_MIB_NAME_APPEND ""
+#endif
+
+           and then just add CUSTOMER_MIB_NAME_APPEND to the end.
+
+         - Remove HOST-RESOURCES-TYPES from DEFAULT_MIBS
+
+         - Put PROD_ROOT_PREFIX before any absolute filesystem paths
+
+         - For DEFAULT_MIBDIRS, change /usr/local/share/snmp/mibs to
+           /usr/share/snmp/mibs.
+
+         - Change SNMPCONFPATH to "/usr/share/snmp/conf" (mainly for
+           other SNMP apps, like snmpwalk)
+
+         - Remove the things mentioned in this comment, and add this comment:
+           /*
+            * The following constants have been moved to customer.h:
+            * ENTERPRISE_OID, ENTERPRISE_MIB, ENTERPRISE_DOT_MIB,
+            * ENTERPRISE_DOT_MIB_LENGTH, SYSTEM_MIB, SYSTEM_DOT_MIB,
+            * SYSTEM_DOT_MIB_LENGTH, NOTIFICATION_MIB, NOTIFICATION_DOT_MIB,
+            * NOTIFICATION_DOT_MIB_LENGTH.
+            */
+
+         - Change:
+           < #if HAVE_DMALLOC_H
+           ---
+           > #if defined(HAVE_DMALLOC_H)
+
+      * include/net-snmp/agent/mib_module_config.h: 
+         - remove USING_UCD_SNMP_LOADAVE_MODULE
+      * include/net-snmp/library/snmpv3-security-includes.h: no changes
+      * snmplib/snmpsm_init.h: no changes
+
+   Note that this time around, there were also a few new config files
+   generated, though none required custom editing:
+
+     - agent/mibgroup/agent_module_dot_conf.h
+     - agent/mibgroup/agent_module_includes.h
+     - agent/mibgroup/agent_module_inits.h
+     - agent/mibgroup/agent_module_shutdown.h
+     - include/net-snmp/agent/agent_module_config.h
+
+   Now check in these edited config files.  Note that they need
+   ".linux" appended to their names before checking in.  We'll
+   circle back and do the Solaris and FreeBSD versions of these
+   later.
+
+8. Update the Makefiles in our snmp tree to reflect the new list of 
+   files now being built.  This information can generally be extracted
+   from their Makefiles.  As with the original NET-SNMP 5.0.8 import,
+   their code was divided into four libraries:
+
+       - libnetsnmp (from snmplib)
+       - libnetsnmpagent (from files in the agent directory, except snmpd.c)
+       - libnetsnmphelpers (from agent/helpers)
+       - libnetsnmpmibs (from agent/mibgroup)
+
+   We take the first library as is, and combine the remaining three
+   into libnetsnmpaux.
+
+9. Try a build, and fix any errors that come up.  Modifications to
+   several files, and the gcc flags, were required to make it compile.
+
+10. Test it by snmpwalking over 'tms' and 'mib-2', and fix any obvious
+    bugs.  At this point, it was discovered that the CentOS patches
+    essentially broke NET-SNMP in the case where IPv6 was not
+    enabled.  We considered three choices:
+
+      (a) Take NET-SNMP as is, and require customers to build IPv6 support
+          into the kernel.  (Concern: some customers will not want to
+          enable IPv6 in the kernel)
+
+      (b) Take NET-SNMP without CentOS' IPv6 patch, and see if that
+          solves the problem.  (Concern: some of these patches may have
+          been important, or some of their later patches may depend on
+          something changed in this one)
+
+      (c) Take NET-SNMP as is, compiled without IPv6 support, and try to fix
+          the bugs that you find, using Valgrind, etc.  (Concern: I may not
+          find all of the bugs, and this scenario does not seem to have been
+          tested much or at all by CentOS or NET-SNMP)
+
+    We chose option (c).  NET-SNMP was patched here at Tall Maple to
+    run smoothly, and without any Valgrind warnings (except memory leaks).
+   
+11. To compare results of import to stock, to see what diffs we have:
+
+diff --ignore-matching-lines='\$Id' --exclude=CVS --exclude=\*.solaris --exclude \*.linux -r . $PTR/src/bin/snmp/net-snmp/ | grep -v "Only in"
+
+12. Do a full snmpwalk on an old system running NET-SNMP 5.1.2, and
+    on a new system running NET-SNMP 5.3.1, and compare them.
+
+    Results: everything that should match matched.  Of course there
+    was a lot of inherent variance, such as in the hrSWRunTable.
+
+    One thing that caught my attention: 
+    .iso.org.dod.internet.mgmt.mib-2.system.sysORTable no longer
+    reports .iso.org.dod.internet.mgmt.mib-2.ifMIB, even though
+    it is supported.  But I can see that the code intentionally 
+    only calls REGISTER_SYSOR_ENTRY() on ifMIB if 
+    USING_IF_MIB_IFTABLE_MODULE is not defined, and that IS defined
+    in mib_module_config.h, so it's probably intentional on their
+    part.
+
+13. To generate the config files for other operating systems (e.g.
+    Solaris and FreeBSD):
+
+    (a) Generate stock config files for Linux
+    (b) Make patches expressing the changes we have to these
+    (c) Generate stock config files for the new OS
+    (d) Apply the patches from step (b).
+
+14. FreeBSD notes:
+
+    - Pass to configure script:
+      --with-cflags=-DNETSNMP_NO_INLINE
+
+
+Notes from earlier NET-SNMP 5.0.8 import (August 2003)
+======================================================
+
+  1. On the main build machine (hexagon was used, which at the time
+     was running RedHat 9), unpack NET-SNMP into a directory on a
+     local filesystem.  A later step relies on the access times of
+     files being correct, and the access time semantics on NFS can be
+     unreliable.
+
+  2. Configure the NET-SNMP build using the 'configure' script.
+     We ultimately discard the Makefiles it generates, but this serves
+     two purposes:
+
+       - Generate .h files appropriate for building on our systems.
+
+       - Generate Makefiles that build the correct set of source files,
+         which we will use to determine which files to import.
+
+     The parameters used were as follows:
+
+       ./configure                                                          \
+       --with-out-mib-modules="ucd_snmp agent_mibs agentx"                  \
+       --with-mib-modules="host"                                            \
+       --with-enterprise-oid=16858                                          \
+       --with-enterprise-sysoid="1.3.6.1.4.1.16858.3.2.1"                   \
+       --with-enterprise-notification-oid="1.3.6.1.4.1.16858.4"
+
+     (Note: 16858 is Tall Maple's enterprise number)
+
+  3. Wait a few minutes.  This is so the file access times can be 
+     checked to determine whether or not a given file was used during
+     the build.
+
+  4. Build NET-SNMP.  Record how long this takes.  Be ready to execute 
+     the next step shortly after this completes.
+
+  5. Determine which files were not used in this build using
+     'find . -type f -amin +n' (where n is the time it took to do
+     the build plus a number comfortably between 0 and the amount
+     of time you waited before beginning the build)
+
+  6. Move the following files out of the main NET-SNMP tree into
+     another tree, keeping the same subdirectory names.  Add ".linux"
+     to their names.  These are the files generated by the configure
+     script; their contents could be different on different build
+     environments.
+
+        agent/mibgroup/mib_module_dot_conf.h
+        agent/mibgroup/mib_module_includes.h
+        agent/mibgroup/mib_module_inits.h
+        agent/mibgroup/mib_module_shutdown.h
+        include/net-snmp/net-snmp-config.h
+        include/net-snmp/agent/mib_module_config.h
+        include/net-snmp/library/snmpv3-security-includes.h
+        snmplib/snmpsm_init.h
+
+  7. Repeats steps 1-6 on a Solaris system.
+
+  8. Take the intersection of the two lists of unused files, to get a
+     list of files not used on either system.  Back on the main build
+     system, delete these files from the distribution to be imported.
+
+     Note: later, some MIB files will need to be imported when we
+     add the SNMP tools.
+
+  9. Remove a few other unneeded files and directories.  These include:
+       - All of the files in the top-level directory
+       - Directories: win32, testing, perl, ov, dist, man
+
+ 10. Import what remains.
+
+ 11. Create versions of each of the 8 files mentioned in step #6 above
+     with their original names, which include the correct OS-specific
+     version based on an PROD_TARGET_OS_... preprocessor constant.  e.g.:
+
+        #if defined(PROD_TARGET_OS_LINUX)
+                #include "mib_module_includes.h.linux"
+        #elif defined(PROD_TARGET_OS_SUNOS)
+                #include "mib_module_includes.h.solaris"
+        #endif
+
+ 12. Check in the 24 files from steps #6 and #11 as overlays on top of
+     the import.
+
+ 13. Create Makefiles to build everything.
+     NET-SNMP originally built four libraries:
+
+       - libnetsnmp (from snmplib)
+       - libnetsnmpagent (from files in the agent directory, except snmpd.c)
+       - libnetsnmphelpers (from agent/helpers)
+       - libnetsnmpmibs (from agent/mibgroup)
+
+     The tools (applications) used only libnetsnmp.  The agent (snmpd)
+     and the trap receiver daemon (snmptrapd) used libnetsnmp, as well
+     as the other three.  Since the other three were always used together
+     as a unit, they were combined into a single library, libnetsnmpaux,
+     in the Tall Maple SNMP build.
+
+
+Layers of files
+===============
+
+1. Files from the original NET-SNMP distribution:
+   imported into src/bin/snmp/src/net-snmp
+
+2. Files generated by the 'configure' script from NET-SNMP, and the
+   files which choose which one to use based on OS type:
+   overlaid onto src/bin/snmp/src/net-snmp
+
+3. Makefiles to build libraries, tools, and the agent:
+   added to src/bin/snmp/lib and src/bin/snmp/bin.
+
+4. Tall Maple SNMP infrastructure:
+   added to src/bin/snmp/tms

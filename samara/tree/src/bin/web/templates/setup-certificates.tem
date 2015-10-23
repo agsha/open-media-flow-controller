@@ -1,0 +1,755 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cfg-form">
+
+<TMS-PAGE "Certificates">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "certificates"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Certificates">
+
+<?
+  global certs_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $certs_acl {query}]}>
+
+  <TAG TR-EVEN-ODD>
+  <? global cur_line ?>
+          <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+              tms::puts "listing_even"
+          } else {
+              tms::puts "listing_odd"
+          }?>">
+  </TAG>
+
+  <TAG INDENTED>
+    <? tms::puts "&nbsp;&nbsp;&nbsp;&nbsp;" ?>
+  </TAG>
+
+  <?
+    set cur_line 0
+    set certs_cfg_prefix "/certs/config/certs"
+    set certs_cfg_token [tms::get-binding-children $certs_cfg_prefix "false" "true"]
+    set cert_cfg_id_nodes [tms::get-binding-children-names $certs_cfg_token "$certs_cfg_prefix/*"]
+    set default_cert_name [tms::get-config "/certs/config/global/default/cert/cert_name"]
+    set certs_state_prefix "/certs/state/certs"
+    set certs_state_token [tms::get-binding-children $certs_state_prefix "false" "true"]
+    set cert_state_id_nodes [tms::get-binding-children-names $certs_cfg_token "$certs_state_prefix/*"]
+  ?>
+
+  <h2>Installed Certificates</h2>
+
+  <CFG-FORM -action "config-form-certs" -div_id "certs_1">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+    <tr>
+      <td>
+      <table width="100%" border="0" cellspacing="0" cellpadding="2" 
+       class="listing">
+        <tr class="listing_head"> 
+          <td>
+          <td colspan=99>
+            Certificate
+        </tr>
+
+        <FOREACH cert_cfg_id_node $cert_cfg_id_nodes>
+        <?
+          set cert_id [tms::get-child-value-by-name $certs_cfg_token "$cert_cfg_id_node"]
+          set cert_name [tms::get-child-value-by-name $certs_cfg_token "$cert_cfg_id_node/cert_name"]
+          set is_default_cert 0
+          if {[string equal $cert_name $default_cert_name] } {
+            set is_default_cert 1
+          }
+          lappend cert_name_list "$cert_name $cert_name"
+          set cert_comment [tms::get-child-value-by-name $certs_cfg_token "$cert_cfg_id_node/comment"]
+
+          set cert_state_id_node "$certs_state_prefix/$cert_id"
+          set serial_number [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/serial_number"]
+          set fingerprint [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/fingerprint/sha1"]
+          set private_key_present [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/priv_key_present" "yes"]
+          set serial_number [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/serial_number"]
+          set signature_alg [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/signature_algo"]
+          set invalid_before [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/validity_period/not_before"]
+          set invalid_after [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/validity_period/not_after"]
+          set subject_pubkey_len [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/subject_public_key_length_bits"]
+          set subject_pubkey_alg [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/subject_public_key_algo"]
+          set subject_country [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/subject/simple/country_name"]
+          set subject_state_or_province [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/subject/simple/state_or_province_name"]
+          set subject_org [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/subject/simple/organization_name"]
+          set subject_org_unit [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/subject/simple/organizational_unit_name"]
+          set subject_cn [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/subject/simple/common_name"]
+          set subject_locality [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/subject/simple/locality_name"]
+          set subject_email [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/subject/simple/email_address"]
+          set issuer_country [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/issuer/simple/country_name"]
+          set issuer_state_or_province [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/issuer/simple/state_or_province_name"]
+          set issuer_org [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/issuer/simple/organization_name"]
+          set issuer_org_unit [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/issuer/simple/organizational_unit_name"]
+          set issuer_cn [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/issuer/simple/common_name"]
+          set issuer_locality [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/issuer/simple/locality_name"]
+          set issuer_email [tms::get-child-value-by-name $certs_state_token "$cert_state_id_node/issuer/simple/email_address"]
+        ?>
+
+        <TR-EVEN-ODD>
+          <td>
+            <CFG-CHECKBOX -id "row_$cert_id" -caps "set_privileged"
+                          -acl $certs_acl -acl_oper {set}
+                          -value "$cert_cfg_id_node" -span_id "certs_cbox_1">
+          <td colspan=99>
+            <b><?^=$cert_name?></b>
+            <IF {$is_default_cert}>
+                &nbsp;(default-cert)
+            </IF>
+        <TR-EVEN-ODD>
+          <td colspan=99>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            Comment
+          <td>
+            <?^=$cert_comment?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            Private Key Present
+          <td>
+            <?^=$private_key_present?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            Serial Number
+          <td>
+            <?^=$serial_number?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            Signature Algorithm
+          <td>
+            <?^=$signature_alg?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            SHA1 Fingerprint ID
+          <td>
+            <?^=$fingerprint?>
+
+        <TR-EVEN-ODD>
+          <td colspan=99>
+        <TR-EVEN-ODD>
+          <td>
+          <td colspan=99>
+            <b>Validity:</b>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Starts
+          <td>
+            <?^=$invalid_before?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Expires
+          <td>
+            <?^=$invalid_after?>
+
+        <TR-EVEN-ODD>
+          <td colspan=99>
+        <TR-EVEN-ODD>
+          <td>
+          <td colspan=99>
+            <b>Subject:</b>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Common Name
+          <td>
+            <?^=$subject_cn?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Country
+          <td>
+            <?^=$subject_country?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>State or Province
+          <td>
+            <?^=$subject_state_or_province?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Locality
+          <td>
+            <?^=$subject_locality?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Organization
+          <td>
+            <?^=$subject_org?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Organizational Unit
+          <td>
+            <?^=$subject_org_unit?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>E-mail Address
+          <td>
+            <?^=$subject_email?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Public Key Algorithm
+          <td>
+            <?^=$subject_pubkey_alg?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Public Key Length
+          <td>
+            <?^=$subject_pubkey_len?>
+
+        <TR-EVEN-ODD>
+          <td colspan=99>
+        <TR-EVEN-ODD>
+          <td>
+          <td colspan=99>
+            <b>Issued By:</b>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Common Name
+          <td>
+            <?^=$issuer_cn?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Country
+          <td>
+            <?^=$issuer_country?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>State or Province
+          <td>
+            <?^=$issuer_state_or_province?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Locality
+          <td>
+            <?^=$issuer_locality?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Organization
+          <td>
+            <?^=$issuer_org?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>Organizational Unit
+          <td>
+            <?^=$issuer_org_unit?>
+
+        <TR-EVEN-ODD>
+          <td width=15>
+          <td>
+            <INDENTED>E-mail Address
+          <td>
+            <?^=$issuer_email?>
+
+        <TR-EVEN-ODD>
+          <td colspan=99>
+            <INDENTED>
+          </td>
+
+        <?
+          incr cur_line
+        ?>
+        </FOREACH>
+
+        <IF {$cur_line == 0}>
+          <tr>
+            <td colspan="5">
+              No certificates installed.
+          <SET certs_disabled "true">
+        <ELSE>
+          <SET certs_disabled "false">
+        </IF>
+      </table>
+    </td>
+
+    <TMS-TABLE-SPACE>
+  </table>
+
+  <TMS-TABLE -div_id "certs_table_1">
+    <tr>
+      <td>
+        <CFG-BUTTON -type "remove" -text "Remove Selected" -caps "set_privileged"
+                    -acl $certs_acl -acl_oper {set}
+                    -disabled $certs_disabled
+                    -span_id "certs_remove_1">
+      </td>
+      <td>
+        <CFG-BUTTON -type "regenerate" -text "Regenerate Selected as Self-Signed" -caps "set_privileged"
+                    -acl $certs_acl -acl_oper {set}
+                    -disabled $certs_disabled
+                    -span_id "certs_regenerate_1">
+      </td>
+    </tr>
+  </TMS-TABLE>
+  </CFG-FORM>
+
+  <h2>Certificate Usage And Global Defaults</h2>
+
+  <CFG-FORM -div_id "certs_2">
+    <?
+      set default_cert_name [tms::get-config "/certs/config/global/default/cert/cert_name"]
+    ?>
+    <TMS-TABLE -div_id "certs_table_2">
+      <TMS-TABLE-SPACE>
+      <TMS-TABLE-ENTRY "Default Certificate">
+        <CFG-DROPDOWN -id "default_cert_name" -caps "set_restricted"
+                      -acl $certs_acl -acl_oper {set}
+                      -name "/certs/config/global/default/cert/cert_name"
+                      -type "string" -options $cert_name_list 
+                      -span_id "certs_default_cert_name">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-SPACE>
+    </TMS-TABLE>
+
+    <table border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td>
+              <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+                          -acl $certs_acl -acl_oper {set}
+                          -span_id "certs_apply_2">
+        </td>
+        <td>
+              <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+                          -acl $certs_acl -acl_oper {set}
+                          -span_id "certs_cancel_2">
+        </td>
+      </tr>
+      <TMS-TABLE-SPACE>
+    </table>
+  </CFG-FORM>
+
+
+  <h2>Default Supplemental CA Certificates List</h2>
+
+  <CFG-FORM -action "config-form-array" -div_id "certs_3">
+
+  <?
+    set cur_line 0
+    set ca_certs_prefix "/certs/config/global/default/ca_certs"
+    set ca_cert_ids [tms::iterate-config $ca_certs_prefix]
+    set cert_ca_name_list {}
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+    <td><table width="30%" border="0" cellspacing="0" cellpadding="5">
+ 
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        CA Certificate Name</td>
+    </tr>
+
+    <FOREACH ca_cert_id $ca_cert_ids>
+      <?
+      set prefix_len [string length "$ca_certs_prefix/"]
+      set row_id [string range $ca_cert_id $prefix_len end]
+      set ca_cert_name [tms::get-config "$ca_cert_id/cert_name"]
+      lappend cert_ca_name_list "$ca_cert_name $ca_cert_name"
+      ?>
+
+      <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+          tms::puts "listing_even"
+      } else {
+          tms::puts "listing_odd"
+      }?>">
+        <td width="1%" nowrap align="left" valign="middle">
+          <CFG-CHECKBOX -id "row_$row_id" -caps "set_privileged"
+                        -acl $certs_acl -acl_oper {set}
+                           -value "/certs/config/global/default/ca_certs/$row_id"
+                           -span_id "ca_certs_cbox_1">
+        </td>
+        <td>
+          <?^=$ca_cert_name?>
+        </td>
+      </tr>
+
+      <?
+        incr cur_line
+      ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Default CA Certificates.
+        </td>
+      </tr>
+      <SET rem_disab "true">
+    <ELSE>
+      <SET rem_disab "false">
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <input type="hidden" name="f_array_root" value="/certs/config/global/default/ca_certs">
+  <input type="hidden" name="f_array_shift" value="true">
+  <input type="hidden" name="f_array_custom_buttons" value="remove">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -disabled $rem_disab
+              -span_id "certs_default_ca_remove_1">
+  <TMS-TABLE-SPACE>
+
+  </td></tr></table>
+  </CFG-FORM>
+
+  <?
+     # ==================================================
+     # Add new CA Certificates to the default-ca-list
+     # ==================================================
+
+    proc listremaining {all_options selected_options} {
+        set remaining_options {}
+        foreach option $all_options {
+            if {[lsearch -exact $selected_options $option] == -1} {
+                lappend remaining_options $option
+            }
+        }
+      return $remaining_options
+    }
+    set cert_names_remaining [listremaining $cert_name_list $cert_ca_name_list]
+    if {[llength $cert_names_remaining] == 0} {
+        set no_options_remaining "true";
+    } else {
+        set no_options_remaining "false";
+    }
+  ?>
+  <CFG-FORM -action "config-form-array" -div_id "certs_3">
+    <TMS-TABLE -div_id "ca_certs_default_table_2">
+      <TMS-TABLE-ENTRY "CA Certificate Name">
+        <CFG-DROPDOWN -id "cert_name" -errname "Default CA cert name" -caps "set_restricted"
+                      -acl $certs_acl -acl_oper {set}
+                      -type "string" -options $cert_names_remaining 
+                      -disabled $no_options_remaining
+                     -span_id "certs_default_ca_cert_name">
+      </TMS-TABLE-ENTRY>
+  
+      <TMS-TABLE-SPACE>
+    </TMS-TABLE>
+    <input type="hidden" name="f_array_root" value="/certs/config/global/default/ca_certs">
+    <input type="hidden" name="f_array_children" value="cert_name">
+    <CFG-BUTTON -type "add" -text "Add CA Certificate" -caps "set_privileged"
+                -acl $auth_acl -acl_oper {set}
+                -disabled $no_options_remaining
+                -span_id "certs_add_default_ca_name">
+  </CFG-FORM>
+
+  <?
+     # ==================================================
+     # Configure certificate generation defaults
+     # ==================================================
+  ?>
+  
+  <h2>Configure Certificate Generation Defaults</h2>
+
+  <CFG-FORM -div_id "certs_5">
+  <TMS-TABLE -div_id "certs_cert_gen_defaults_table">
+    <TMS-TABLE-ENTRY "Days Valid:">
+        <CFG-TEXTBOX -id "def_validity_days" -errname "validity_days"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/validity_days" -type "uint16"
+                     -cols "40" -span_id "cert_validity_days_textbox">
+    <TMS-TABLE-ENTRY "Key Length (bits):">
+        <CFG-TEXTBOX -id "def_key_size_bits" -errname "key_size_bits"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/key_size_bits" -type "uint16"
+                     -cols "40" -span_id "cert_key_size_bits_textbox">
+    <TMS-TABLE-ENTRY "Country:">
+        <CFG-TEXTBOX -id "def_country_name" -errname "country_name"
+                     -caps "set_restricted"
+                     -name "/certs/config/global/default/cert_gen/country_name" -type "string"
+                     -acl $certs_acl -acl_oper {set}
+                     -cols "40" -span_id "cert_country_name_textbox">
+    <TMS-TABLE-ENTRY "State or Province:">
+        <CFG-TEXTBOX -id "def_state_or_province_name" -errname "state_or_province_name" -type "string"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/state_or_province_name" -type "string"
+                     -cols "40" -span_id "cert_state_or_province_name_textbox">
+    <TMS-TABLE-ENTRY "Locality or City:">
+        <CFG-TEXTBOX -id "def_locality_name" -errname "locality_name"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/locality_name" -type "string"
+                     -cols "40" -span_id "cert_locality_name_textbox">
+    <TMS-TABLE-ENTRY "Organization:">
+        <CFG-TEXTBOX -id "def_organization_name" -errname "organization_name"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/organization_name" -type "string"
+                     -cols "40" -span_id "cert_organization_name_textbox">
+    <TMS-TABLE-ENTRY "Organizational Unit:">
+        <CFG-TEXTBOX -id "def_organizational_unit_name" -errname "organizational_unit_name"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/organizational_unit_name" -type "string"
+                     -cols "40" -span_id "cert_organizational_unit_name_textbox">
+    <TMS-TABLE-ENTRY "E-mail Address:">
+        <CFG-TEXTBOX -id "def_email_address" -errname "email_address"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/email_address" -type "string"
+                     -cols "40" -span_id "cert_email_address_textbox">
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_privileged"
+              -acl $certs_acl -acl_oper {set}
+              -span_id "certs_cert_gen_defaults_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $certs_acl -acl_oper {set}
+              -span_id certs_cert_gen_defaults_cancel_1">
+
+  </CFG-FORM>
+  
+  <?
+     # ==================================================
+     # Generate / regenerate certificates into database
+     # ==================================================
+  ?>
+
+  <h2>Generate a Self-Signed Certificate</h2>
+
+  <CFG-FORM -action "config-form-certs" -div_id "certs_6">
+  <TMS-TABLE -div_id "certs_generate_self_signed_table">
+    <TMS-TABLE-ENTRY "">
+    <TMS-TABLE-ENTRY "Certificate Name (must be unique):">
+        <CFG-TEXTBOX -id "gen_cert_name" -errname "gen_cert_name"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -cols "40" -span_id "gen_cert_name_textbox">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Comment (optional):">
+        <CFG-TEXTBOX -id "gen_cert_comment" -errname "gen_cert_comment"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -cols "40" -span_id "gen_cert_comment_textbox">
+    <?
+        # Generation default config nodes are used here to supply form default
+        # values, but these nodes will no be touched by the form handler.
+    ?>
+    <tr class="listing_even">
+      <td colspan="99" align="center">
+        <hr>
+        Certificate Content and Properties
+        <hr>
+      </td>
+    </tr>
+    <TMS-TABLE-ENTRY "Days Valid:">
+        <CFG-TEXTBOX -id "gen_validity_days" -errname "gen_validity_days"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/validity_days"
+                     -cols "40" -span_id "gen_cert_validity_days_textbox">
+    <TMS-TABLE-ENTRY "Key Length (bits):">
+        <CFG-TEXTBOX -id "gen_key_size_bits" -errname "gen_key_size_bits"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/key_size_bits"
+                     -cols "40" -span_id "gen_cert_key_size_bits_textbox">
+    <TMS-TABLE-ENTRY "Serial Number:">
+        <CFG-TEXTBOX -id "gen_serial_number" -errname "gen_serial_number"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -cols "40" -span_id "gen_cert_serial_number_textbox">
+    <tr class="listing_even">
+      <td></td>
+      <td colspan="99">
+        <sub>Lower case hex format starting with 0x{0..7}<br>Auto-generated if empty</sub>
+      </td>
+    <tr>
+    <tr class="listing_even">
+      <td colspan="99" align="center">
+        <hr>
+        Subject/Issuer
+        <hr>
+      </td>
+    </tr>
+    <TMS-TABLE-ENTRY "Common Name:">
+        <CFG-TEXTBOX -id "gen_common_name" -errname "gen_common_name"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/system/hostname"
+                     -cols "40" -span_id "gen_cert_common_name_textbox">
+    <TMS-TABLE-ENTRY "Country:">
+        <CFG-TEXTBOX -id "gen_country_name" -errname "gen_country_name"
+                     -caps "set_restricted"
+                     -name "/certs/config/global/default/cert_gen/country_name"
+                     -acl $certs_acl -acl_oper {set}
+                     -cols "40" -span_id "gen_cert_country_name_textbox">
+    <TMS-TABLE-ENTRY "State or Province:">
+        <CFG-TEXTBOX -id "gen_state_or_province_name" -errname "gen_state_or_province_name"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/state_or_province_name"
+                     -cols "40" -span_id "gen_cert_state_or_province_name_textbox">
+    <TMS-TABLE-ENTRY "Locality or City:">
+        <CFG-TEXTBOX -id "gen_locality_name" -errname "gen_locality_name"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/locality_name"
+                     -cols "40" -span_id "gen_cert_locality_name_textbox">
+    <TMS-TABLE-ENTRY "Organization:">
+        <CFG-TEXTBOX -id "gen_organization_name" -errname "gen_organization_name"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/organization_name"
+                     -cols "40" -span_id "gen_cert_organization_name_textbox">
+    <TMS-TABLE-ENTRY "Organizational Unit:">
+        <CFG-TEXTBOX -id "gen_organizational_unit_name" -errname "gen_organizational_unit_name"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/organizational_unit_name"
+                     -cols "40" -span_id "gen_cert_organizational_unit_name_textbox">
+    <TMS-TABLE-ENTRY "E-mail Address:">
+        <CFG-TEXTBOX -id "gen_email_address" -errname "gen_email_address"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -name "/certs/config/global/default/cert_gen/email_address"
+                     -cols "40" -span_id "gen_cert_email_address_textbox">
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <sub>
+    This form was populated with configured system default values when this page was loaded, but these are subject to change.<br>
+    Submitting an empty value for any field will cause it to assume the currently configured system default value.<br><br>
+  </sub>
+
+  <CFG-BUTTON -type "generate" -text "Generate Certificate" -caps "set_privileged"
+              -acl $certs_acl -acl_oper {set}
+              -span_id "certs_generate_1">
+
+  </CFG-FORM>
+
+
+  <?
+     # ==================================================
+     # Add certificates to the database
+     # ==================================================
+     # XXX/SML:  For some reason any form following this one get's left
+     # justified on the page rather than following the indentation level to the
+     # right of the menu.  It's not yet clear to me what's causing this.  This
+     # form structure was originally templated from the license web page.
+  ?>
+  
+  <h2>Add New Certificate</h2>
+
+  <CFG-FORM -action "config-form-certs" -div_id "certs_4">
+  <table border="0" cellpadding="0" cellspacing="0">
+    <TMS-TABLE-SPACE>
+    <tr>
+      <td width="10">
+      <td>
+        Certificate Name (must be unique):
+        <CFG-TEXTBOX -id "cert_name" -errname "cert_name"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -cols "40" -span_id "cert_name_textbox">
+    <TMS-TABLE-SPACE>
+    <tr>
+      <td width="10">
+      <td>
+        Comment (optional):
+        <CFG-TEXTBOX -id "cert_comment" -errname "cert_comment"
+                     -caps "set_restricted"
+                     -acl $certs_acl -acl_oper {set}
+                     -cols "60" -span_id "cert_comment_textbox">
+    <TMS-TABLE-SPACE>
+    <tr>
+      <td width="10">
+      <td>
+        Enter a certificate string in PEM format.<br>
+        (Comentary outside the BEGIN / END CERTIFICATE lines is OK.)
+    <tr>
+      <td>
+      <td>
+        <CFG-TEXTAREA -id "cert_public_pem" -errname "cert_public_pem"
+                      -caps "set_restricted"
+                      -acl $certs_acl -acl_oper {set}
+                      -cols "80" -rows "30" -span_id "cert_public_pem_textarea">
+    <TMS-TABLE-SPACE>
+    <tr>
+      <td width="10">
+      <td>
+        Optionally enter a certificate private key string in PEM format.<br>
+        (The key must be an unlocked copy, not a passphrase protected one.)
+    <tr>
+      <td>
+      <td>
+        <CFG-TEXTAREA -id "cert_private_key_pem" -errname "cert_private_key_pem"
+                      -caps "set_restricted"
+                      -acl $certs_acl -acl_oper {set}
+                      -cols "80" -rows "16" -span_id "cert_private_key_pem_textarea">
+    <TMS-TABLE-SPACE>
+  </table>
+
+  <CFG-BUTTON -type "add" -text "Add Certificate" -caps "set_privileged"
+              -acl $certs_acl -acl_oper {set}
+              -span_id "certs_public_add_1">
+
+  </CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view certificate configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

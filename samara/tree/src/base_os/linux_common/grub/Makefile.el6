@@ -1,0 +1,88 @@
+#  Makefile
+#
+
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+# NOTE: Grub is only supported on x86 (i386 or x86_64)
+
+ifeq (${PROD_TARGET_ARCH_FAMILY}-${PROD_TARGET_PLATFORM_FULL},X86-LINUX_EL_EL6)
+
+# This makefile converts rpm's to tar's on 'all' and dumps the tar's into
+# the image install tree on 'install'
+
+DIST_EL_EL6?=${PROD_DIST_ROOT}/centos/6
+DIST_EL_EL6_I386?=${DIST_EL_EL6}/os/i386/Packages
+DIST_EL_EL6_X86_64?=${DIST_EL_EL6}/os/x86_64/Packages
+DIST_EL_EL6_SRPMS?=${DIST_EL_EL6}/os/Source/SPackages
+DIST_EL_EL6_UPDATES?=${DIST_EL_EL6}/updates
+DIST_EL_EL6_UPDATES_I386?=${DIST_EL_EL6_UPDATES}/i386/RPMS
+DIST_EL_EL6_UPDATES_X86_64?=${DIST_EL_EL6_UPDATES}/x86_64/RPMS
+DIST_EL_EL6_UPDATES_SRPMS?=${DIST_EL_EL6_UPDATES}/Source/SPackages
+
+# We'll install in both the rootflop and image trees
+INSTALL_TREE=rootflop
+INSTALL_TREE_EXTRA=image
+
+# XXX-64 Note that the GRUB is always 32 bit (even on stock EL5/EL6),
+# regardless of the target wordsize!
+
+CHECK_SOURCE_RPM_FILE=./pkg_src_check.txt
+
+PACKAGES_SOURCE_RPM=${PROD_LINUX_SRPMS_DIR}/grub-0.97-93.SCLC6_6.R1.0.1.src.rpm
+PACKAGES_SOURCE_RPM_DIR=grub
+PACKAGES_SOURCE_RPM_SPEC_FILE=grub.spec
+
+THIS_DIR=${PROD_TREE_ROOT}/src/base_os/linux_common/grub
+# Done before the rpmbuild prep sources, and here is a SPEC file patch,
+# that references our real patch.  preprep.sh copies our real patch
+# into place.
+PACKAGES_SOURCE_RPM_PRE_PREP_PATCHES=${THIS_DIR}/grub-0.97-el6-tms-preprep1.patch
+PACKAGES_SOURCE_RPM_PRE_PREP_PATCHES_ARGS=-p1 -b -z .tmspreprep1
+PACKAGES_SOURCE_RPM_PRE_PREP_PATCHES_APPLY_SUBDIR=
+PACKAGES_SOURCE_RPM_PRE_PREP_OVERLAYS= \
+    ${THIS_DIR}/grub-0.97-el6-tms-ui.patch \
+
+PACKAGES_SOURCE_RPM_RPMBUILD=1
+
+# We may need to produce a 32-bit image on a 64-bit system
+need32args=0
+rpm_arch=${PROD_TARGET_ARCH_LC}
+ifeq (${PROD_HOST_ARCH},X86_64)
+    ifeq (${PROD_TARGET_ARCH},I386)
+	need32args=1
+	rpm_arch=i386
+    endif
+    ifeq (${PROD_TARGET_ARCH},X86_64)
+        ifeq (${PROD_TARGET_CPU_WORDSIZE},32)
+		need32args=1
+		rpm_arch=i386
+	endif
+    endif
+endif
+ifeq (${PROD_TARGET_ARCH_FAMILY}-${PROD_TARGET_PLATFORM_FULL},X86-LINUX_EL_EL6)
+    ifeq (${rpm_arch},i386)
+	rpm_arch=i686
+    endif
+endif
+
+
+ifeq (${need32args},1)
+    PACKAGES_SOURCE_RPM_RPMBUILD_PRECMDS=CC='${CC} -m32' CXX='${CXX} -m32' linux32
+    PACKAGES_SOURCE_RPM_BUILD_ARGS=--target i686
+    PACKAGES_SOURCE_RPM_RPMBUILD_ARGS=--target=i686
+endif
+
+PACKAGES_SOURCE_RPM_RPMBUILD_RPM=${rpm_arch}/grub-0.97-93.el6.mfc.${rpm_arch}.rpm
+PACKAGES_SOURCE_RPM_RPMBUILD_PKG_CONFIG_FILES=${THIS_DIR}/pkg_config.pl
+
+FULL_BUILD_DIR=${PROD_BUILD_OUTPUT_DIR}/${INSTALL_TREE}/srpmpackages/grub
+FULL_INSTALL_DIR=${PROD_INSTALL_OUTPUT_DIR}/${INSTALL_TREE}
+FULL_INSTALL_DIR_EXTRA=${PROD_INSTALL_OUTPUT_DIR}/${INSTALL_TREE_EXTRA}
+
+# Graft point to pick up patches
+-include ${PROD_CUSTOMER_ROOT}/${PROD_PRODUCT_LC}/src/base_os/linux_common/grub/Makefile.inc
+
+
+endif # X86 EL6
+
+include ${PROD_TREE_ROOT}/src/mk/packages.mk

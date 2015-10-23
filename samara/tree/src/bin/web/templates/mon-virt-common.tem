@@ -1,0 +1,214 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-cfg-form">
+
+<?
+  global green
+  set green "<img src=\"/images/status_green.png\" alt=\"Green\">"
+
+  global yellow
+  set yellow "<img src=\"/images/status_yellow.png\" alt=\"Yellow\">"
+
+  global red
+  set red "<img src=\"/images/status_red.png\" alt=\"Red\">"
+?>
+
+<TAG MON-VIRT-CHECK-USABLE>
+<?
+    global virt_licensed
+    global virt_lic_ok
+    global virt_enabled
+
+    # Conditional on PROD_FEATURE_VIRT_LICENSED
+    set virt_licensed [tms::have-prod-feature virt_licensed]
+
+    set virt_lic_active [tms::get-config "/virt/internal_state/license/enable"]
+
+    if {([string compare $virt_licensed "false"] == 0) ||
+        ([string compare $virt_lic_active "true"] == 0)} {
+        set virt_lic_ok "true"
+    } else {
+        set virt_lic_ok "false"
+    }
+
+    set virt_enabled [tms::get-config "/virt/config/enable"]
+?>
+</TAG>
+
+<TAG MON-VIRT-BODY>
+    <MON-VIRT-CHECK-USABLE>
+<?
+    global virt_licensed
+    global virt_lic_ok
+    global virt_enabled
+    if {([string compare $virt_lic_ok "true"] == 0)} {
+      if {([string compare $virt_enabled "false"] == 0)} {
+?>
+
+  <p>
+  Virtualzation is <em>disabled</em>.
+
+<?
+      } else {
+?>
+
+<!-- ********************************************************************** -->
+
+<h2>Virtual Machines</h2>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr height="12">
+   <td>
+  <tr>
+   <td>
+
+   <table width="100%" border="0" cellspacing="0" cellpadding="5" 
+    class="listing">
+
+    <tr class="listing_head">  
+      <td>
+        <p>Virtual Machine</p>
+      <td>
+        <p>Comment</p>
+      <td>
+        <p>VCPU time used</p>
+      <td>
+        <p>Status</p>
+      <td>
+    </tr>
+
+<?
+    set vm_prefix "/virt/state/vm"
+    set token [tms::get-binding-children $vm_prefix "false" "true"]
+    tms::sort-bindings $token
+
+    # This info technically exists already in the token, but it's easier
+    # to get at this way.
+    set vm_ids [tms::iterate-config $vm_prefix]
+
+    set cur_line 0
+
+  global green
+  global yellow
+  global red
+?>
+
+    <FOREACH vm_id $vm_ids>
+    <?
+      set prefix_len [string length "$vm_prefix/"]
+      set vm_name [string range $vm_id $prefix_len end]
+      set vm_comment [tms::get-config "/virt/config/vm/$vm_name/comment"]
+      set vm_status [tms::get-child-value-by-name $token "$vm_id/state_friendly"]
+      set vm_install [tms::get-child-value-by-name $token "/virt/state/vm/$vm_name/install/active"]
+      if {[string compare $vm_status ""] == 0} {
+        # Virtualization is probably disabled.  
+        set vm_status "shut off"
+      } elseif {[string compare $vm_install "true"] == 0} {
+        set vm_status "INSTALLING"
+      }
+      set vcpu_util [tms::get-child-value-by-name $token "$vm_id/vcpus/cpu_used"]
+      if {[string length $vcpu_util] == 0 ||
+          [string compare $vcpu_util "0"] == 0} {
+          set vcpu_util_str "N/A"
+      } else {
+          set vcpu_util_str [tms::time-to-counter-ex $vcpu_util]
+      }
+
+      switch -- $vm_status {
+        "running" -
+        "blocked" -
+        "shutting down" {
+          set vm_status_img $green
+        }
+        "unknown" -
+        "INSTALLING" -
+        "suspended" {
+          set vm_status_img $yellow
+        }
+        default {
+          set vm_status_img $red
+        }
+      }
+      # XXX/SML:  vm_status_img already contains html tag text that is set
+      # (above) to a static value, so it is not html-escaped below.
+    ?>
+    
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <p><?^=$vm_name?></a></p>
+      </td>
+      <td>
+        <p><?^=$vm_comment?></p>
+      </td>
+      <td>
+        <p><?^=$vcpu_util_str?></p>
+      <td>
+        <p>
+          <?=$vm_status_img?>
+          <?^=$vm_status?>
+        </p>
+      </td>
+      <td>
+          <a href="/admin/launch?script=rh&amp;template=mon-virt-detail&amp;vm=<?=[tms::uri-component-escape $vm_name]?>">Detail</a>
+      </td>
+
+    </tr>
+    <?
+      incr cur_line
+    ?>
+    </FOREACH>
+    <tr>
+      <td height="6">
+  </table>
+  </table>
+
+<!-- ********************************************************************** -->
+
+  <p>
+
+    <SET now [tms::get-config "/time/now/datetime"]>
+
+  Last updated: <?^=$now?>
+
+<?
+   }
+
+     if {([string compare $virt_licensed "true"] == 0)} {
+        tms::puts "<p>Virtualization license: ok";
+     }
+?>
+
+<p>
+
+<a href="/admin/launch?script=rh&amp;template=setup-virt">Manage</a>
+virtual machines.
+
+<?
+   } else {
+?>
+
+<p>
+
+Virtualization license: NONE
+<p>
+You need a license to use virtualization.  Either you have no license
+installed, or your license is invalid or inactive.
+<p>
+Please 
+<a href="/admin/launch?script=rh&amp;template=setup-license">install a new
+license</a> to use virtualization.
+
+<?
+  }
+?>
+
+</TAG>

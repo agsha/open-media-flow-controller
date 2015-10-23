@@ -1,0 +1,225 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Appliance">
+<TMS-MENU "cmc_setup">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set appl [tms::get-param query "appl"]
+?>
+
+<?
+# XXX/EMT: this leaves the 'appl=applname' parameter in the URLs
+# for all of the other sidebar menu items too.  It doesn't do any
+# real harm, but it is undesirable.
+?>
+<TMS-SIDEBAR><TMS-CMC-SETUP-MENU "edit-appl" "appl" $appl></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "Edit CMC Appliance">
+  <TMS-CMC-MSG>
+
+<!-- ==================================================
+     = Edit Appliance
+     ================================================== -->
+
+<h2>Edit CMC appliance <?^=$appl?></h2>
+
+<CFG-FORM>
+  <TMS-TABLE -div_id "cmc_appl_table_2">
+    <TMS-TABLE-ENTRY "Appliance ID">
+      <?^=$appl?>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Appliance Address">
+      <CFG-TEXTBOX -id "address" -errname "Hostname" -caps "set_privileged"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "hostname" -cols "30" -span_id "cmc_appl_addr"
+                   -name "/cmc/config/appliance/$appl/address">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Comment">
+      <CFG-TEXTBOX -id "comment" -errname "Comment" -caps "set_privileged"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "string" -cols "30" -required "false"
+                   -span_id "cmc_appl_comment"
+                   -name "/cmc/config/appliance/$appl/comment">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps "set_privileged" 
+                    -acl $cmc_acl -acl_oper {set}
+                    -type "bool"
+                    -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "cmc_appl_enabled"
+                    -name "/cmc/config/appliance/$appl/enable">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Authentication Type">
+      <CFG-DROPDOWN -id "authtype" -errname "Authentication Type"
+                    -caps "set_privileged"
+                    -acl $cmc_acl -acl_oper {set}
+                    -type "string"
+                    -options {{"password" "password"} {"ssh-dsa2" "ssh-dsa2"}
+                              {"ssh-rsa2" "ssh-rsa2"}}
+                    -span_id "cmc_appl_atype"
+                    -name "/cmc/config/appliance/$appl/authtype">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      # ==================================================
+      # Password authentication settings
+    ?>
+
+    <TMS-TABLE-ENTRY "Username for password auth">
+      <CFG-TEXTBOX -id "auth/password/username"
+                   -errname "Password auth username" -caps "set_privileged"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "string" -cols "30" -required "false"
+                   -span_id "cmc_appl_password_username"
+                   -name "/cmc/config/appliance/$appl/auth/password/username">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Password for password auth">
+      <CFG-TEXTBOX -id "auth/password/password"
+                   -errname "Password auth password" -caps "set_privileged"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "string" -cols "30" -required "false"
+                   -span_id "cmc_appl_password_username"
+                   -name "/cmc/config/appliance/$appl/auth/password/password">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      # ==================================================
+      # DSA2 authentication settings
+    ?>
+
+    <TMS-TABLE-ENTRY "Username for ssh-dsa2 auth">
+      <CFG-TEXTBOX -id "auth/ssh-dsa2/username"
+                   -errname "Ssh-dsa2 auth username" -caps "set_privileged"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "string" -cols "30" -required "false"
+                   -span_id "cmc_appl_ssh_dsa2_username"
+                   -name "/cmc/config/appliance/$appl/auth/ssh-dsa2/username">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      set dsa2_prefix "/cmc/common/config/auth/ssh-dsa2/identity"
+      set dsa2_bns [tms::iterate-config $dsa2_prefix]
+      set dsa2_prefix_len [string length "$dsa2_prefix/"]
+      set dsa2_ids {""}
+      foreach dsa2_bn $dsa2_bns {
+        set dsa2_id [string range $dsa2_bn $dsa2_prefix_len end]
+        lappend dsa2_ids "$dsa2_id $dsa2_id"
+      }
+    ?>
+
+    <TMS-TABLE-ENTRY "Identity for ssh-dsa2 auth">
+        <CFG-DROPDOWN -id "auth/ssh-dsa2/identity" -caps "set_privileged"
+                      -acl $cmc_acl -acl_oper {set}
+                      -type "string" -options $dsa2_ids -required "false"
+                    -name "/cmc/config/appliance/$appl/auth/ssh-dsa2/identity">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      # ==================================================
+      # RSA2 authentication settings
+    ?>
+
+    <TMS-TABLE-ENTRY "Username for ssh-rsa2 auth">
+      <CFG-TEXTBOX -id "auth/ssh-rsa2/username"
+                   -errname "Ssh-rsa2 auth username" -caps "set_privileged"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "string" -cols "30" -required "false"
+                   -span_id "cmc_appl_ssh_rsa2_username"
+                   -name "/cmc/config/appliance/$appl/auth/ssh-rsa2/username">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      set rsa2_prefix "/cmc/common/config/auth/ssh-rsa2/identity"
+      set rsa2_bns [tms::iterate-config $rsa2_prefix]
+      set rsa2_prefix_len [string length "$rsa2_prefix/"]
+      set rsa2_ids {""}
+      foreach rsa2_bn $rsa2_bns {
+        set rsa2_id [string range $rsa2_bn $rsa2_prefix_len end]
+        lappend rsa2_ids "$rsa2_id $rsa2_id"
+      }
+    ?>
+
+    <TMS-TABLE-ENTRY "Identity for ssh-rsa2 auth">
+        <CFG-DROPDOWN -id "auth/ssh-rsa2/identity" -caps "set_privileged"
+                      -acl $cmc_acl -acl_oper {set}
+                      -type "string" -options $rsa2_ids -required "false"
+                    -name "/cmc/config/appliance/$appl/auth/ssh-rsa2/identity">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      # ==================================================
+      # Web UI access settings
+    ?>
+
+    <TMS-TABLE-ENTRY "Web UI protocol">
+      <CFG-DROPDOWN -id "web_proto" -caps "set_privileged"
+                    -acl $cmc_acl -acl_oper {set}
+                    -type "string"
+                    -options {{"http" "http"} {"https" "https"}}
+                    -name "/cmc/config/appliance/$appl/web/proto"
+                    -span_id "cmc_web_proto">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "HTTP port">
+      <CFG-TEXTBOX -id "http_port"
+                   -errname "HTTP port" -caps "set_privileged"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "uint16" -cols "30" -required "true"
+                    -name "/cmc/config/appliance/$appl/web/port_http"
+                   -span_id "cmc_appl_http_port">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "HTTPS port">
+      <CFG-TEXTBOX -id "https_port"
+                    -errname "HTTPS port" -caps "set_privileged"
+                    -acl $cmc_acl -acl_oper {set}
+                    -type "uint16" -cols "30" -required "true"
+                    -name "/cmc/config/appliance/$appl/web/port_https"
+                   -span_id "cmc_appl_https_port">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+    <?
+      # ==================================================
+      # Hidden fields & buttons
+    ?>
+
+  <input type="hidden" name="f_list_root" value="/cmc/config/appliance">
+  <input type="hidden" name="f_list_index" value="ident">
+  <input type="hidden" name="f_list_children" value="address,enable,authtype,comment,auth/password/username,auth/password/password,auth/ssh-dsa2/username,auth/ssh-dsa2/identity,auth/ssh-rsa2/username,auth/ssh-rsa2/identity,web/proto,web/port_http,web/port_https">
+
+  <CFG-BUTTON -type "ok" -text "OK" -caps "set_privileged"
+              -acl $cmc_acl -acl_oper {set}
+              -span_id "cmc_appl_add_2"
+              -destination "/admin/launch?script=rh&amp;template=setup-cmc-appliances">
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_privileged"
+              -acl $cmc_acl -acl_oper {set}
+              -span_id "cmc_appl_add_2">
+
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_privileged"
+              -acl $cmc_acl -acl_oper {set}
+              -span_id "cmc_appl_add_2">
+</CFG-FORM>
+
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

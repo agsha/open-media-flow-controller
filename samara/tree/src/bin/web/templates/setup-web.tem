@@ -1,0 +1,263 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<?
+    set auto_logout [tms::get-config "/wsm/inactivity_timeout"]
+    set sess_timeout [tms::get-config "/wsm/session_timeout"]
+    set renewal_thresh [tms::get-config "/wsm/session_renewal_threshold"]
+?>
+
+<TMS-PAGE "Web">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "web"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Web Settings">
+
+<?
+   global web_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $web_acl {query}]}>
+
+<?
+   # Conditional on PROD_FEATURE_IPV6
+   set have_ipv6 [tms::have-prod-feature ipv6]
+   set ip_field_width 16
+   if {[string compare $have_ipv6 "true"] == 0} {
+       set ip_field_width 46
+   }
+?>
+
+  <h2>Web UI Configuration</h2>
+
+  <CFG-FORM -div_id "web_1" -action "web-https-cert-regen">
+
+  <?
+      set certs_cfg_prefix "/certs/config/certs"
+      set certs_cfg_token [tms::get-binding-children $certs_cfg_prefix "false" "true"]
+      set cert_cfg_id_nodes [tms::get-binding-children-names $certs_cfg_token "$certs_cfg_prefix/*"]
+      set cert_names_list {}
+      lappend cert_name_list "default-cert default-cert"
+  ?>
+  <FOREACH cert_cfg_id_node $cert_cfg_id_nodes>
+    <?
+      set cert_name [tms::get-child-value-by-name $certs_cfg_token "$cert_cfg_id_node/cert_name"]
+      lappend cert_name_list "$cert_name $cert_name"
+    ?>
+  </FOREACH>
+
+  <TMS-TABLE -div_id "web_table_1">
+    <TMS-TABLE-ENTRY "Enable Web User Interface">
+        <CFG-CHECKBOX -id "enable_web" -caps "set_restricted"
+                      -acl $web_acl -acl_oper {set}
+                      -name "/web/enable" -type "bool"
+                      -span_id "web_pm_enable">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Auto Logout Timeout">
+      <CFG-TEXTBOX -id "timeout" -errname "Timeout" -caps "set_restricted"
+                   -acl $web_acl -acl_oper {set}
+                   -name "/wsm/inactivity_timeout" -type "duration_sec"
+                   -cols "8" -span_id "web_timeout" -multiplier 60.0
+                   -precision "1" > minutes
+      <IF {($auto_logout == 0)}>
+          (disabled)
+      </IF>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enable HTTP">
+        <CFG-CHECKBOX -id "http" -caps "set_restricted"
+                      -acl $web_acl -acl_oper {set}
+                      -name "/web/httpd/http/enable" -type "bool"
+                      -span_id "web_http_enable">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "HTTP Port">
+      <CFG-TEXTBOX -id "http_port" -errname "HTTP Port" -caps "set_restricted"
+                   -acl $web_acl -acl_oper {set}
+                   -name "/web/httpd/http/port" -type "uint16" -cols "8"
+                   -span_id "web_http_port">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Redirect HTTP to HTTPS">
+        <CFG-CHECKBOX -id "http_sredir" -caps "set_restricted"
+                      -acl $web_acl -acl_oper {set}
+                      -name "/web/httpd/http/sredirect" -type "bool"
+                      -span_id "web_http_sredir">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enable HTTPS">
+        <CFG-CHECKBOX -id "https" -caps "set_restricted"
+                      -acl $web_acl -acl_oper {set}
+                      -name "/web/httpd/https/enable" -type "bool"
+                      -span_id "web_https_enable">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "HTTPS Port">
+      <CFG-TEXTBOX -id "https_port" -errname "HTTPS Port" 
+                   -caps "set_restricted"
+                   -acl $web_acl -acl_oper {set}
+                   -name "/web/httpd/https/port" -type "uint16"
+                   -cols "8" -span_id "web_https_port">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "HTTPS certificate name">
+      <CFG-DROPDOWN -id "httpd_cert_name" -caps "set_restricted"
+                    -acl $web_acl -acl_oper {set}
+                    -name "/web/httpd/https/cert_name"
+                    -type "string" -options $cert_name_list 
+                    -span_id "web_httpd_cert_name">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Web Session Renewal">
+      <CFG-TEXTBOX -id "sess_renewal" -errname "Renewal Threshold"
+                   -caps "set_restricted"
+                   -acl $web_acl -acl_oper {set}
+                   -name "/wsm/session_renewal_threshold" -type "duration_sec"
+                   -cols "8" -span_id "web_srenewal" -multiplier 60.0
+                   -precision "1"> minutes
+        <IF {($renewal_thresh == 0)}>
+            (disabled)
+        </IF>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Web Session Timeout">
+      <CFG-TEXTBOX -id "sess_timeout" -errname "Session Timeout"
+                   -caps "set_restricted"
+                   -acl $web_acl -acl_oper {set}
+                   -name "/wsm/session_timeout" -type "duration_sec"
+                   -cols "8" -span_id "web_stimeout" -multiplier 60.0
+                   -precision "1"> minutes
+        <IF {($sess_timeout == 0)}>
+            (disabled)
+        </IF>
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td>
+          <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+                      -acl $web_acl -acl_oper {set}
+                      -span_id "web_apply_1">
+        </td>
+        <td>
+          <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+                      -acl $web_acl -acl_oper {set}
+                      -span_id "web_cancel_1">
+    </td>
+    <td>
+      <CFG-BUTTON -type "regen_https_cert"
+                  -text "Generate New HTTPS Certificate"
+                  -caps "action_privileged" 
+                  -acl $web_acl -acl_oper {action}
+                  -span_id "web_regen_https_cert_1">
+    </td>
+  </tr>
+</table>
+
+</CFG-FORM>
+
+<h2>Web File Transfer Proxy Configuration</h2>
+
+<CFG-FORM -div_id "web_2">
+
+  <TMS-TABLE -div_id "web_table_2">
+    <TMS-TABLE-ENTRY "Web Proxy address">
+      <CFG-TEXTBOX -id "proxy_addr" -errname "Web Proxy address"
+                   -acl $web_acl -acl_oper {set}
+                   -caps "set_restricted" -name "/web/proxy/hostname" 
+                   -type "hostname" -cols "$ip_field_width"
+                   -span_id "web_proxy_addr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Web Proxy port">
+      <CFG-TEXTBOX -id "proxy_port" -errname "Web Proxy port"
+                   -acl $web_acl -acl_oper {set}
+                   -caps "set_restricted" -name "/web/proxy/port"
+                   -type "uint16" -cols "16" -span_id "web_proxy_port">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Authentication type">
+      <CFG-DROPDOWN -id "proxy_authtype" -caps "set_restricted"
+                    -acl $web_acl -acl_oper {set}
+                    -name "/web/proxy/auth/authtype"
+                    -type "string" -options {{"None" "none"}
+                                             {"Basic" "basic"}}
+                    -span_id "web_proxy_authtype">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Basic auth username">
+      <CFG-TEXTBOX -id "auth_basic_username" -errname "Basic auth username"
+                   -caps "set_restricted"
+                   -acl $web_acl -acl_oper {set}
+                   -name "/web/proxy/auth/basic/username" -type "string"
+                   -cols "16" -span_id "web_auth_basic_username">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Basic auth password">
+      <CFG-TEXTBOX -id "auth_basic_password" -errname "Basic auth password"
+                   -caps "set_restricted"
+                   -acl $web_acl -acl_oper {set}
+                   -name "/web/proxy/auth/basic/password" -type "string"
+                   -cols "16" -span_id "web_auth_basic_password">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $web_acl -acl_oper {set}
+              -span_id "web_apply_2">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $web_acl -acl_oper {set}
+              -span_id "web_cancel_2">
+
+</CFG-FORM>
+
+<h2>Web File Transfer Certificate Authority Configuration</h2>
+
+<CFG-FORM -div_id "web_3">
+  <TMS-TABLE -div_id "web_table_3">
+
+    <TMS-TABLE-ENTRY "Verify server certificate">
+        <CFG-CHECKBOX -id "client_verify_server_cert" -caps "set_restricted"
+                      -acl $web_acl -acl_oper {set}
+                      -name "/web/client/https/cert_verify" -type "bool"
+                      -span_id "web_client_verify_server_cert">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "HTTPS supplemental CA cert list">
+      <CFG-DROPDOWN -id "client_certs_ca_list" -caps "set_restricted"
+                    -acl $web_acl -acl_oper {set}
+                    -name "/web/client/https/ca_certs/list_name"
+                    -type "string" -options {{"none (use only built-in CA list)" "none"}
+                                             {"Default CA cert list" "default-ca-list"}}
+                    -span_id "web_client_certs_ca_list">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $web_acl -acl_oper {set}
+              -span_id "web_apply_3">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $web_acl -acl_oper {set}
+              -span_id "web_cancel_3">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view Web configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

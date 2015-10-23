@@ -1,0 +1,1 @@
+setenv LESS "-M -i"

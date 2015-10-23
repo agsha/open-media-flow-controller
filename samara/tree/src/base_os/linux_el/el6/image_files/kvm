@@ -1,0 +1,80 @@
+#! /bin/bash
+#
+# kvm     Load kernel modules needed for kvm
+#
+# chkconfig: 3 25 75
+# description: load kvm kernel modules
+
+# Source function library.
+. /etc/init.d/functions
+
+RETVAL=0
+
+start() {
+    if [ $(grep -c vmx /proc/cpuinfo) -ne 0 ]; then 
+        echo $"Loading kvm kernel modules"
+
+	modprobe kvm-intel >/dev/null 2>&1
+	RETVAL=$?
+	if [ $RETVAL = 1 ]; then
+	    echo "Failed to load kvm-intel module."
+	    return $RETVAL
+	fi
+    fi
+
+    if [ $(grep -c svm /proc/cpuinfo) -ne 0 ]; then 
+        echo $"Loading kvm kernel modules"
+
+	modprobe kvm-amd >/dev/null 2>&1
+	RETVAL=$?
+	if [ $RETVAL = 1 ]; then
+	    echo "Failed to load kvm-amd module."
+	    return $RETVAL
+	fi
+    fi
+
+    return $RETVAL
+}
+
+stop() {
+        rmmod kvm-intel > /dev/null 2>&1
+        rmmod kvm-amd > /dev/null 2>&1
+        rmmod kvm > /dev/null 2>&1
+
+	# Not as helpful as it could be, since we only got the last retval.
+	RETVAL=$?
+	return $RETVAL
+}	
+
+restart() {
+  	stop
+	start
+}	
+
+reload() {
+	start
+}	
+
+case "$1" in
+  start)
+  	start
+	;;
+  stop)
+  	stop
+	;;
+  restart)
+	stop
+	start
+	;;
+  reload)
+  	reload
+	;;
+  status)
+        lsmod
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|status|reload|restart}"
+	exit 1
+esac
+
+exit $?

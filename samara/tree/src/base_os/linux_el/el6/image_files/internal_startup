@@ -1,0 +1,23 @@
+#! /bin/bash
+#
+# internal_startup
+#
+# chkconfig: 3 24 76
+# description: Internal startup script that is run between mdinit and pm.
+
+# See how we were called.
+case "$1" in
+  start)
+        ;;
+  stop)
+        ;;
+  restart|reload)
+        $0 stop
+        $0 start
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart|reload}"
+        exit 1
+esac
+
+exit 0

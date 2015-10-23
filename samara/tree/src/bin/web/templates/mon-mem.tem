@@ -1,0 +1,136 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+
+<TMS-PAGE "Memory">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "mem"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Memory Utilization (Last Day)">
+
+<?
+  global ref_ui_graph_ver
+  global graph_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $graph_acl {action}]}>
+
+<SET clear_data_url "/admin/launch?script=rh&template=mon-mem&action=clear_stats_data&stats_obj_type=chd&stats_obj_name=memory_day">
+
+<TMS-AJAX-GRAPH memutil mem 60 auto $ref_ui_graph_ver "$clear_data_url">
+
+<?
+  set pt [tms::get-config "/system/memory/physical/total"]
+  set pu [tms::get-config "/system/memory/physical/used"]
+  set puplusbc  [tms::get-config "/system/memory/physical/used_plus_buffers_cached"]
+  set pfminusbc [tms::get-config "/system/memory/physical/free"]
+  set pbuffers  [tms::get-config "/system/memory/physical/buffers"]
+  set pcached   [tms::get-config "/system/memory/physical/cached"]
+  set st [tms::get-config "/system/memory/swap/total"]
+  set su [tms::get-config "/system/memory/swap/used"]
+  set sf [tms::get-config "/system/memory/swap/free"]
+
+  # We have to round for swap (but not for physical), rather than let it
+  # truncate, to be consistent with the numbers the CLI prints.  It just
+  # uses printf to chop off the precision, and that does rounding.
+  set pt [expr {$pt / 1024}]
+  set pu [expr {$pu / 1024}]
+  set pf [expr {$pt - $pu}]
+  set puplusbc  [expr {$puplusbc / 1024}]
+  set pfminusbc [expr {$pfminusbc / 1024}]
+  set pbuffers  [expr {$pbuffers / 1024}]
+  set pcached   [expr {$pcached / 1024}]
+  set ptotalbc  [expr {$pbuffers + $pcached}]
+  set st [expr {round(double($st) / 1024.0)}]
+  set su [expr {round(double($su) / 1024.0)}]
+  set sf [expr {$st - $su}]
+?>
+
+<h2>Current Memory Statistics</h2>
+
+<table>
+<tr>
+<td>
+
+<table cellspacing=15 class="tms_mon">
+  <tr>
+    <td>
+    <td>Total
+    <td>Used
+    <td>Free
+    <td>Used+B/C
+    <td>Free-B/C
+  <tr>
+    <td>Physical
+    <td><?^= $pt ?> MB
+    <td><?^= $pu ?> MB
+    <td><?^= $pf ?> MB
+    <td><?^= $puplusbc ?> MB
+    <td><?^= $pfminusbc ?> MB
+  <tr>
+    <td>Swap
+    <td><?^= $st ?> MB
+    <td><?^= $su ?> MB
+    <td><?^= $sf ?> MB
+  <tr>
+</table>
+
+<br>
+Physical Memory Borrowed for Buffers and Cache:
+<table cellspacing=15 class="tms_mon">
+  <tr>
+  <tr>
+    <td>Buffers
+    <td><?^= $pbuffers ?> MB
+  <tr>
+    <td>Cache
+    <td><?^= $pcached ?> MB
+  <tr>
+    <td>Total Buffers/Cache
+    <td><?^= $ptotalbc ?> MB
+</table>
+
+<td width="25">
+<td align="center" valign="center">
+
+<?
+  global ref_ui_graph_ver
+  if {$ref_ui_graph_ver == 2} {
+    global graph_ext
+    set graph_name "memory_pie"
+    set imgFilename graph-$graph_name.ns.$graph_ext
+    set graph_action_path "/tms/graphs/memory_pie"
+    set pie_image_width 220
+    set pie_image_height 320
+
+    if {[catch {tms::call-action "$graph_action_path" \
+        [list "bgcolor"  "string" $color_page_background] \
+        [list "filename" "string" $imgFilename] \
+        [list "graphver" "uint32" $ref_ui_graph_ver] \
+        [list "image_width" "uint32" $pie_image_width] \
+        [list "image_height" "uint32" $pie_image_height]}]} {
+      tms::puts "No data available<br>for graph at present.";
+    } else {
+      tms::puts "<img border=0 src=\"/graphs/[tms::html-escape ${imgFilename}]\">";
+    }
+  }
+?>
+
+</table>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view memory statistics.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

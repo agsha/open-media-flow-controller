@@ -1,0 +1,141 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: Logging">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"]
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "logging" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "Logging CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_logging "logging **"
+    set cmd_start_index 2000
+    set cmd_end_index 2199
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "Logging" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_logging]>
+
+  <?
+    # ==================================================
+    # General logging settings
+    # ==================================================
+  ?>
+
+  <h2>Logging settings for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE>
+      <TMS-TABLE-ENTRY "Local logging level">
+        <CFG-DROPDOWN -id "lseverity" -caps $prof_priv
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "string" -value "notice" -options {
+          {"None" "none"}
+          {"Emergency" "emerg"}
+          {"Alert" "alert"}
+          {"Critical" "crit"}
+          {"Error" "err"} 
+          {"Warning" "warning"}
+          {"Notice" "notice"} 
+          {"Info" "info"}
+          {"Debug" "debug"}}>
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"             "lsev"
+      "cmd_lsev_fields"      "lseverity"
+      "cmd_lsev_pat_1"       "logging local *"
+      "cmd_lsev_fields_1"    "lseverity">
+
+  <CFG-BUTTON -type "add" -text "Add Command" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+  <?
+    # ==================================================
+    # Add new log sink
+    # ==================================================
+  ?>
+
+  <h2>Add new log sink for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE>
+      <TMS-TABLE-ENTRY "IP address">
+        <CFG-TEXTBOX -id "address" -errname "IP address" -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "ipv4addr" -cols "20">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Log level">
+        <CFG-DROPDOWN -id "rseverity" -caps $prof_priv
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "string" -value "notice" -options {
+          {"None" "none"}
+          {"Emergency" "emerg"}
+          {"Alert" "alert"}
+          {"Critical" "crit"}
+          {"Error" "err"} 
+          {"Warning" "warning"}
+          {"Notice" "notice"} 
+          {"Info" "info"}
+          {"Debug" "debug"}}>
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"             "rhost"
+      "cmd_rhost_fields"     "address,rseverity"
+      "cmd_rhost_pat_1"      "logging * trap *"
+      "cmd_rhost_fields_1"   "address,rseverity">
+
+  <CFG-BUTTON -type "add" -text "Add Host" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

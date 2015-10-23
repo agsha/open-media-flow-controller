@@ -1,0 +1,325 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "AAA">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "aaa"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<?
+  global auth_acl
+  global auth_acl_lo
+  global auth_acl_hi
+
+  # Conditional on PROD_FEATURE_ACCOUNTING
+  set have_accounting [tms::have-prod-feature accounting]
+?>
+<IF {[string equal $have_accounting "true"]}>
+  <TMS-PAGE-CONTENT "Authentication, Authorization and Accounting">
+<ELSE>
+  <TMS-PAGE-CONTENT "Authentication and Authorization">
+</IF>
+
+<?
+# -----------------------------------------------------------------------------
+# Authentication
+# -----------------------------------------------------------------------------
+?>
+
+<IF {[tms::check-authorization "query_basic" $auth_acl {query}]}>
+
+  <h2>Authentication Method List</h2>
+
+<CFG-FORM -div_id "aaa_1">
+
+  <?
+    global auth_acl
+    set auth_method_choices {{"Local" "local"}
+        {"RADIUS" "radius"}
+        {"TACACS+" "tacacs+"}
+        {"LDAP" "ldap"}}
+  ?>
+
+  <TMS-TABLE -div_id "aaa_table_1">
+    <TMS-TABLE-ENTRY "First Method">
+      <CFG-DROPDOWN -id "method1" -errname "First Method"
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/aaa/auth_method/1/name"
+                    -type "string" -options $auth_method_choices
+                    -span_id "aaa_method_1">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Second Method">
+      <CFG-DROPDOWN -id "method2" -errname "Second Method" 
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/aaa/auth_method/2/name"
+                    -type "string" -options $auth_method_choices
+                    -span_id "aaa_method_2">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Third Method">
+      <CFG-DROPDOWN -id "method3" -errname "Third Method" 
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/aaa/auth_method/3/name"
+                    -type "string" -options $auth_method_choices
+                    -span_id "aaa_method_3">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Fourth Method">
+      <CFG-DROPDOWN -id "method4" -errname "Fourth Method" 
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/aaa/auth_method/4/name"
+                    -type "string" -options $auth_method_choices
+                    -span_id "aaa_method_4">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "aaa_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "aaa_cancel_1">
+</CFG-FORM>
+
+<?
+# -----------------------------------------------------------------------------
+# Authorization
+# -----------------------------------------------------------------------------
+?>
+
+  <h2>Authorization</h2>
+
+<CFG-FORM -div_id "aaa_2">
+
+  <TMS-TABLE -div_id "aaa_table_2">
+    <TMS-TABLE-ENTRY "Map Order">
+      <CFG-DROPDOWN -id "map-order" -errname "map order" -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/aaa/author/map-order"
+                    -type "string" -options {{"remote-first" "remote-first"}
+                                             {"local-only" "local-only"}
+                                             {"remote-only" "remote-only"}}
+                    -span_id "aaa_map">
+    </TMS-TABLE-ENTRY>
+
+  <?
+    set user_bns [tms::iterate-config "/auth/passwd/user"]
+    foreach user_bn $user_bns {
+      set user_bn_len [string length "/auth/passwd/user/"]
+      set user [string range $user_bn $user_bn_len end]
+      if {[tms-utils::is-invis-user $user]} {
+        continue
+      }
+      set enabled [tms::get-config "/auth/passwd/user/$user/enable"]
+      if {[string equal $enabled "false"]} {
+        continue
+      }
+      set user_option [list $user $user]
+      lappend user_options $user_option
+    }
+  ?>
+
+    <TMS-TABLE-ENTRY "Map Default User">
+      <CFG-DROPDOWN -id "default-user" -errname "default user"
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/aaa/author/default-user"
+                    -type "string" -options $user_options
+                    -span_id "aaa_user">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "aaa_apply_2">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "aaa_cancel_2">
+</CFG-FORM>
+
+<?
+# -----------------------------------------------------------------------------
+# Accounting
+# -----------------------------------------------------------------------------
+?>
+
+<IF {[string equal $have_accounting "true"]}>
+  <h2>Accounting</h2>
+  <?
+    global auth_acl
+#    XXX/SML:  Needs a generalized approach in the future
+#    set acct_method_choices {{"TACACS+" "tacacs+"}, ...}
+#    set acct_method_nodes [tms::iterate-config $acct_method_root]
+# etc...
+    set acct_method_root "/aaa/accounting/changes/acct_method"
+    set acct_method1_name_node "$acct_method_root/1/name"
+    set acct_method1 [tms::get-config $acct_method1_name_node]
+    if {[string length $acct_method1] != 0} {
+        set acct_method1_state "enabled"
+    } else {
+        set acct_method1_state "disabled"
+    }
+  ?>
+
+  <CFG-FORM -action "config-form-array" -div_id "aaa_3">
+  <TMS-TABLE -div_id "aaa_table_3">
+    <TMS-TABLE-ENTRY "Method TACACS+">
+      <p><?^=$acct_method1_state?></p>
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-SET -id "row_1" -value "$acct_method_root/1">
+  <CFG-SET -id "name" -type "string" -value "tacacs+">
+  <CFG-SET -id "array_root" -value "$acct_method_root">
+  <CFG-SET -id "array_shift" -value "true">
+  <CFG-SET -id "array_children" -value "name">
+
+  <CFG-BUTTON -type "add" -text "Enable" -caps "set_privileged"
+              -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "aaa_3_add_1">
+  <CFG-BUTTON -type "remove" -text "Disable" -caps "set_privileged"
+              -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set_delete}
+              -span_id "aaa_3_remove_1">
+
+  </CFG-FORM>
+</IF>
+
+<?
+# -----------------------------------------------------------------------------
+# Authentication Failure Tracking
+# -----------------------------------------------------------------------------
+?>
+
+<?
+  # The checkboxes for 'admin' and unknown users are actually representing
+  # a three-state enum node.  But the CLI only offers two of the states for
+  # each, and so do we.
+
+  set admin_override [tms::get-config "/aaa/tally/config/user_class/admin/override"]
+  if {[string length $admin_override] == 0} {
+    set exempt_admin "false"
+  } else {
+    set exempt_admin "true"
+  }
+
+  set unknown_override [tms::get-config "/aaa/tally/config/user_class/unknown/override"]
+  if {[string length $unknown_override] == 0} {
+    set exempt_unknown "false"
+  } else {
+    set exempt_unknown "true"
+  }
+
+  set unknown_mapping [tms::get-config "/aaa/tally/config/user_class/unknown/mapping"]
+  if {[string equal $unknown_mapping "1"]} {
+    set hash_unknown "true"
+  } else {
+    set hash_unknown "false"
+  }
+?>
+
+  <h2>Authentication Failure Tracking: Configuration</h2>
+
+<CFG-FORM -div_id "aaa_4" -action "aaa-tracking-edit">
+  <TMS-TABLE -div_id "aaa_table_4">
+    <TMS-TABLE-ENTRY "Enable authentication failure tracking">
+      <CFG-CHECKBOX -id "aft_track_enable" -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/aaa/tally/config/enable" -type "bool"
+                    -span_id "aft_track_enable_1">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Enable lockouts based on authentication failures">
+      <CFG-CHECKBOX -id "aft_lockout_enable" -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/aaa/tally/config/lockout/enable" -type "bool"
+                    -span_id "aft_lockout_enable_1">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Exempt 'admin' account from lockouts">
+      <CFG-CHECKBOX -id "aft_lockout_admin_exempt" -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -value $exempt_admin
+                    -span_id "aft_lockout_admin_exempt_1">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Exempt unknown accounts from tracking">
+      <CFG-CHECKBOX -id "aft_track_unknown_exempt" -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -value $exempt_unknown
+                    -span_id "aft_track_unknown_exempt_1">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Hash unknown usernames (if tracked)">
+      <CFG-CHECKBOX -id "aft_hash_unknown" -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -value $hash_unknown
+                    -span_id "aft_hash_unknown_1">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Convert usernames to lowercase for tracking">
+      <CFG-CHECKBOX -id "aft_track_downcase" -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/aaa/tally/config/downcase" -type "bool"
+                    -span_id "aft_track_downcase_1">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Lock account after consecutive auth failures">
+      <CFG-TEXTBOX -id "aft_lockout_maxfail"
+                   -errname "Maximum number of failures" 
+                   -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/aaa/tally/config/lockout/max_failures"
+                   -type "uint32" -cols "8"
+                   -span_id "aft_lockout_maxfail_1">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Allow retry on locked accounts (unlock time) after">
+      <CFG-TEXTBOX -id "aft_lockout_unlock_time" -errname "unlock time" 
+                   -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/aaa/tally/config/lockout/unlock_time"
+                   -type "duration_sec" -cols "8"
+                   -span_id "aft_lockout_unlock_time_1">
+      seconds
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Temporary lock after each auth failure (lock time) for">
+      <CFG-TEXTBOX -id "aft_lockout_lock_time" -errname "lock time" 
+                   -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/aaa/tally/config/lockout/lock_time"
+                   -type "duration_sec" -cols "8"
+                   -span_id "aft_lockout_lock_time_1">
+      seconds
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "aft_apply_1">
+
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "aft_cancel_1">
+</CFG-FORM>
+
+<p>
+
+View <a href="/admin/launch?script=rh&amp;template=mon-aaa-logins">status</a>
+of authentication failure tracking.
+
+<ELSE>
+
+<br>
+Insufficient authorization to view AAA configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

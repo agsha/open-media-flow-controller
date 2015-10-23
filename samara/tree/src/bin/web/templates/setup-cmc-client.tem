@@ -1,0 +1,224 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "CMC Client">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "cmc-client"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "CMC Clients">
+
+<?
+  global cmc_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $cmc_acl {query}]}>
+
+<IF {$display_config_confirm != 0}>
+
+  <IF {$has_set_capab == 0}>
+    <h2>Enable Configuration Changes</h2>
+  <ELSE>
+    <h2>Disable Configuration Changes</h2>
+  </IF>
+
+  This system is under management of a CMC server, and the 
+  "Confirm Config Changes" setting below is enabled.
+  Usually, you should use the CMC server to change this system's
+  configuration, instead of changing it directly.
+
+  To enable direct changes to this system's configuration, you must
+  confirm here.  This confirmation will remain in force as long as
+  you are logged in.
+
+  <p>
+
+  <CFG-FORM -action "cmc-client-confirm-config">
+
+  <?
+    # Note that we have $all_acl on the buttons below because we're
+    # only even showing them if the user has set capability, which
+    # is the standard we want to apply.
+  ?>
+
+  <IF {$has_set_capab == 0}>
+
+    Configuration changes have not yet been enabled for this session.
+    Click this button to enable changes:
+    <p>
+    <CFG-BUTTON -type "confirm_enable" -text "Enable" 
+                -acl $all_acl -acl_oper {query}
+                -caps "action_basic">
+
+  <ELSE>
+
+    Configuration changes have been enabled for this session.
+    Click this button to disable changes:
+    <p>
+    <CFG-BUTTON -type "confirm_disable" -text "Disable"
+                -acl $all_acl -acl_oper {query}
+                -caps "action_basic">
+
+  </IF>
+
+  </CFG-FORM>
+
+</IF>
+
+<h2>CMC Client Setup</h2>
+
+<CFG-FORM>
+
+  <TMS-TABLE>
+    <TMS-TABLE-ENTRY "Enable CMC client">
+        <CFG-CHECKBOX -id "client" -caps "set_basic"
+                      -acl $cmc_acl -acl_oper {set}
+                      -name "/cmc/client/config/enable"
+                      -type "bool">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Automatic Rendezvous">
+        <CFG-CHECKBOX -id "auto_rendv" -caps "set_basic"
+                      -acl $cmc_acl -acl_oper {set}
+                      -name "/cmc/client/config/rendezvous/auto/enable"
+                      -type "bool">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Confirm config changes">
+        <CFG-CHECKBOX -id "confirm_config" -caps "set_basic"
+                      -acl $cmc_acl -acl_oper {set}
+                      -name "/cmc/client/config/confirm_config"
+                      -type "bool">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "CMC Server Address">
+      <CFG-TEXTBOX -id "servaddr" -errname "Server Address"
+                   -caps "set_basic"
+                   -acl $cmc_acl -acl_oper {set}
+                   -name "/cmc/client/config/rendezvous/server_addr"
+                   -type "hostname" -cols "20">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "CMC Service Name">
+      <CFG-TEXTBOX -id "servname" -errname "Service Name"
+                   -caps "set_basic"
+                   -acl $cmc_acl -acl_oper {set}
+                   -name "/cmc/common/config/service_name" -type "hostname"
+                   -cols "20">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -acl $cmc_acl -acl_oper {set}>
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $cmc_acl -acl_oper {set}>
+
+</CFG-FORM>
+
+<h2>CMC Status</h2>
+
+<CFG-FORM -action "cmc-rendezvous-force">
+  <table cellpadding="8" cellspacing="0">
+<?
+    set client_enabled [tms::get-config "/cmc/client/config/enable"]
+
+# XXX/EMT/11206: Reenable this when bug 11206 is fixed.
+#    set managed [tms::get-config "/cmc/client/state/server/connected"]
+    set rgp_peer [tms::get-config "/rgp/state/peer_name"]
+    set rgp_mode [tms::get-config "/rgp/state/mode"]
+    if {[string equal -length 5 $rgp_peer "rbmd-"] ||
+        ([string equal $rgp_peer "rgp"] &&
+        [string equal $rgp_mode "active_client"])} {
+      set managed "true"
+    } else {
+      set managed "false"
+    }
+
+    set rendv_pending [tms::get-config "/cmc/client/state/rendezvous/last_attempt/pending"]
+    set rendv_state [tms::get-config "/cmc/client/state/rendezvous/state"]
+    set last_rendv [tms::get-config "/cmc/client/state/rendezvous/last_attempt/time"]
+    set failure_reason [tms::get-config "/cmc/client/state/rendezvous/failure_reason"]
+    set rendv_descr "UNKNOWN"
+
+    switch -exact $rendv_state {
+      manual {
+        set rendv_descr "Have not yet attempted rendezvous"
+      }
+      initial_wait {
+        set rendv_descr "Waiting before initial automatic rendezvous"
+      }
+      rendv_sent {
+        set rendv_descr "Rendezvous announcement currently being sent"
+      }
+      rendv_succeeded {
+        set rendv_descr "Rendezvous announcement succeeded; waiting for server acceptance"
+      }
+      rendv_failed {
+        set rendv_descr "Rendezvous announcement failed: $failure_reason"
+      }
+    }
+
+    set rendv_disabled "true"
+
+?>
+
+    <IF {[string compare $managed "true"] == 0}>
+      <TMS-TABLE-ENTRY "Under CMC management:">
+        Yes
+      </TMS-TABLE-ENTRY>
+      <?
+        set server_hostname [tms::get-config "/rgp/state/remote/hostname"]
+        set server_address [tms::get-config "/rgp/state/remote/inetz_address"]
+      ?>
+      <TMS-TABLE-ENTRY "CMC server hostname:">
+        <?^=$server_hostname?>
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "CMC server address:">
+        <?^=$server_address?>
+      </TMS-TABLE-ENTRY>
+    <ELSE>
+      <TMS-TABLE-ENTRY "Under CMC management:">
+        No
+      </TMS-TABLE-ENTRY>
+
+      <IF {[string compare $client_enabled "true"] == 0}>
+        <? set rendv_disabled "false" ?>
+        <TMS-TABLE-ENTRY "Rendezvous status:">
+          <?^=$rendv_descr?>
+        </TMS-TABLE-ENTRY>
+
+        <IF {[string compare $rendv_pending "true"] == 0}>
+          <TMS-TABLE-ENTRY "Last attempt:">
+            <?^=$last_rendv?>
+          </TMS-TABLE-ENTRY>
+        </IF>
+      </IF>
+    </IF>
+
+    <TMS-TABLE-SPACE>
+</table>
+
+  <CFG-BUTTON -type "refresh" -text "Refresh Status" -caps "query_basic"
+              -acl $cmc_acl -acl_oper {query}>
+
+  <CFG-BUTTON -type "force" -text "Rendezvous Now" -caps "action_privileged"
+              -acl $cmc_acl -acl_oper {action} -disabled $rendv_disabled>
+
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view CMC configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

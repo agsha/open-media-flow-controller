@@ -1,0 +1,73 @@
+#! /bin/bash
+#
+# shutdown_check          Test for unexpected system shutdown
+#
+# chkconfig: 3 18 82
+# description: test for unexpected system shutdown
+
+# Source function library.
+. /etc/init.d/functions
+
+UNEXPECTED_SHUTDOWN_FILE=/var/opt/tms/.unexpected_shutdown
+DETECTED_UNEXPECTED_SHUTDOWN_FILE=/var/opt/tms/.detected_unexpected_shutdown
+
+RETVAL=0
+
+start() {
+        echo $"Checking for unexpected shutdown"
+        logger -p user.notice -t shutdown_check "Checking for unexpected shutdown"
+
+        if [ -f ${UNEXPECTED_SHUTDOWN_FILE} ]; then
+            echo -n $"Detected unexpected shutdown!"
+            logger -p user.warn -t shutdown_check  "Detected unexpected shutdown!"
+            touch ${DETECTED_UNEXPECTED_SHUTDOWN_FILE}
+        fi
+
+        touch ${UNEXPECTED_SHUTDOWN_FILE}
+        sync
+
+        echo
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/shutdown_check
+        return $RETVAL
+}
+
+stop() {
+        rm -f ${UNEXPECTED_SHUTDOWN_FILE}
+        sync
+
+        rm -f /var/lock/subsys/shutdown_check
+        RETVAL=$?
+        return $RETVAL
+}
+
+restart() {
+        stop
+        start
+}
+
+reload() {
+        start
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        stop
+        start
+        ;;
+  reload)
+        reload
+        ;;
+  status)
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|reload|restart}"
+        exit 1
+esac
+
+exit $?

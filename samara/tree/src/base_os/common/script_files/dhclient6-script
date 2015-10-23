@@ -1,0 +1,488 @@
+#!/bin/bash
+
+#
+# (C) Copyright 2013-2015 Juniper Networks, Inc. All Rights reserved.
+# (C) Copyright 2002-2012 Tall Maple Systems, Inc.
+# All rights reserved.
+# The contents of this file are subject to the terms of the MIT License.
+# You may not use this file except in compliance with the License.
+# See the file License.txt at the top of this source tree.
+# You can obtain a copy of the license at https://opensource.org/licenses/MIT
+#
+
+# -----------------------------------------------------------------------------
+# DHCP client script for IPv6.
+#
+# Note: we do not support getting routes through DHCPv6.  It does not
+# appear that the stock Linux DHCP package does either: see bug 14455.
+#
+# XXXX/EMT: should check return code from mdreq (passing it '-e' so it can
+# reflect action failure, not just gross failures like not connecting to
+# mgmtd), and log something (at least at INFO) if we get an error.
+# Note that we are stifling output from dhclient, and some of the actions
+# we invoke are marked maaf_suppress_logging_if_non_interactive, so
+# errors could otherwise go unnoticed (pending bug 14473).
+#
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export PATH
+
+umask 0022
+
+MDREQ=/opt/tms/bin/mdreq
+
+# From mdmod_common:
+# static const char md_net_overlay_tag_dhcpv6[] = "DHCPv6";
+MD_NET_OVERLAY_TAG_DHCPV6=DHCPv6
+
+IPV6_DAD_TIMEOUT_SEC=5
+
+
+# .............................................................................
+# logit(): log a string nicely (using facility 'local6').
+#
+# Usage: logit <level> <message>
+#
+# XXX/EMT: It would be nice if this could be done with lc_log_internal(),
+# e.g. to get subsecond precision.
+#
+LOGIDENT_LONG=dhclient6-script
+LOGIDENT_SHORT=dhcpv6
+logit() {
+    level=$1
+    msg=$2
+    LOGGER=/usr/bin/logger
+    ${LOGGER} -t "${LOGIDENT_LONG}[$$]" -p local6.${level} "[${LOGIDENT_SHORT}.${level}]: ${msg}"
+    return 0
+}
+
+
+# -----------------------------------------------------------------------------
+# Log startup diagnostic info.
+#
+#
+
+logit INFO "reason = '${reason}'  interface = '${interface}'  old_ip6_address = '${old_ip6_address}'  new_ip6_address = '${new_ip6_address}'  old_ip6_prefixlen = '${old_ip6_prefixlen}'  new_ip6_prefixlen = '${new_ip6_prefixlen}'  new_dhcp6_name_servers = '${new_dhcp6_name_servers}'  new_dhcp6_domain_search = '${new_dhcp6_domain_search}'"
+
+#
+# DEBUG: dump all of our variables, to see what we got.
+#
+# env > /var/tmp/dhclient6-script-env.$$
+
+#
+# Do this first so everyone knows which reason we're in, even if we take
+# some time to deal with it.  We don't pass the client_id along until
+# our set_overlay_valid action, since otherwise it might not be accepted.
+#
+${MDREQ} -qq action \
+    /net/general/actions/ipv6/update_dhcp_status \
+    ifname string "$interface" \
+    dhclient_script_reason string "$reason"
+
+
+# -----------------------------------------------------------------------------
+# exit_with_hooks(): function to call on exit.  Invokes the local DHCPv6
+# client exit hooks, if any.
+#
+function exit_with_hooks()
+{
+    exit_status=$1
+    if [ -f /etc/dhclient6-exit-hooks ]; then
+        . /etc/dhclient6-exit-hooks
+    fi
+
+    # probably should do something with exit status of the local script
+
+    if [ $exit_status -ne 0 ]; then
+        logit NOTICE "exiting with code $exit_status"
+    else
+        logit INFO "exiting with code $exit_status"
+    fi
+    exit $exit_status
+}
+
+
+# -----------------------------------------------------------------------------
+# check_interface(): make sure $interface is defined, and exit if not.
+# We do this right before the variable is accessed, rather than
+# unconditionally at the beginning, to be sure we don't break any cases
+# where it might not have been either passed or needed.
+#
+function check_interface()
+{
+    if [ -z "$interface" ]; then
+        logit WARNING "dhclient6-script was not passed an interface name"
+        exit_with_hooks 1
+    fi
+}
+
+
+# -----------------------------------------------------------------------------
+# clear_dhcp_results(): clear any previous addresses we have added to this
+# interface, and any dynamic resolver config we have added from this
+# interface.  But do not bring the interface down, as it is not our job to
+# manage that; and it must be up anyway to allow for later DHCP retries
+# (see bug 13008).
+#
+function clear_dhcp_results()
+{
+    #
+    # Declare the interface as no longer having valid DHCP override config.
+    # Do this before removing the non-interface (resolver only, since we
+    # don't do routes with DHCPv6) overrides, so we can switch over to
+    # those of another eligible interface, if there are any.
+    #
+    ${MDREQ} -qq action \
+        /net/general/actions/ipv6/set_overlay_valid \
+        ifname string "$interface" \
+        valid bool false \
+        reason string "DHCPv6 $reason"
+
+    ${MDREQ} -qq action \
+        /resolver/actions/overlay/clear \
+        tag string "$MD_NET_OVERLAY_TAG_DHCPV6" \
+        ifname string "$interface"
+
+    ${MDREQ} -qq action \
+        /net/interface/actions/alias/delete \
+        ifname string "$interface" \
+        tag string "$MD_NET_OVERLAY_TAG_DHCPV6" \
+        inet_address inetaddr "$old_ip6_address" \
+        mask_len uint8 "$old_ip6_prefixlen"
+}
+
+
+# -----------------------------------------------------------------------------
+# apply_resolver_overlay(): take resolver config from $new_dhcp6_domain_search
+# and $new_dhcp6_name_servers, and make an action request to apply it as
+# an overlay from this interface.
+#
+function apply_resolver_overlay()
+{
+    if [ -n "$new_dhcp6_domain_search" ] || [ -n "$new_dhcp6_name_servers" ]; then
+        if [ -n "$new_dhcp6_domain_search" ]; then
+            check_interface
+            for ndn in $new_dhcp6_domain_search; do
+                #
+                # The domain names we get seem to have an extra "."
+                # appended to them.  We do not want these!  They are
+                # functionally OK, and essentially equivalent to the
+                # variant without a trailing ".".  But we want all of
+                # our domain names to look the same, and we want to
+                # be able to eliminate duplicates.  So we must trim off
+                # any trailing "." characters.
+                #
+                ndn_trimmed=`echo "$ndn" | sed 's/\.$//'`
+
+                ${MDREQ} -qq action \
+                    /resolver/actions/overlay/add/domain_search \
+                    tag string "$MD_NET_OVERLAY_TAG_DHCPV6" \
+                    ifname string "$interface" \
+                    domainname hostname "$ndn_trimmed"
+                EXIT_CODE=$?
+                if [ $EXIT_CODE -ne 0 ]; then
+                    exit_with_hooks $EXIT_CODE
+                fi
+            done
+        fi
+        if [ -n "$new_dhcp6_name_servers" ]; then
+            check_interface
+            for nameserver in $new_dhcp6_name_servers; do
+                ${MDREQ} -qq action \
+                    /resolver/actions/overlay/add/nameserver \
+                    tag string "$MD_NET_OVERLAY_TAG_DHCPV6" \
+                    ifname string "$interface" \
+                    inetz_address inetaddrz "$nameserver"
+                EXIT_CODE=$?
+                if [ $EXIT_CODE -ne 0 ]; then
+                    exit_with_hooks $EXIT_CODE
+                fi
+            done
+        fi
+    fi
+}
+
+
+# -----------------------------------------------------------------------------
+# Invoke the local DHCPv6 client enter hooks, if they exist.
+#
+if [ -f /etc/dhclient6-enter-hooks ]; then
+    exit_status=0
+    . /etc/dhclient6-enter-hooks
+    # allow the local script to abort processing of this state
+    # local script must set exit_status variable to nonzero.
+    if [ $exit_status -ne 0 ]; then
+        exit $exit_status
+    fi
+fi
+
+
+# -----------------------------------------------------------------------------
+# Reason 'PREINIT6': configure interface as necessary to send a DHCP request.
+#
+# We don't need to actually DO anything here, because if the interface is
+# enabled, and has IPv6 enabled, it should already be "on its way up", and
+# soon able to send packets.  However, we cannot rely on it being up right
+# away, because there is some time lag after the interface module enables it.
+# Empirically, when enabling an interface in the same commit as we enabled
+# DHCPv6, we saw dhclient fail a few times with "send_packet6: Cannot assign
+# requested address" first.  It keeps retrying, and eventually the interface
+# comes up.  At this point, it usually succeeds -- BUT, we have seen problems
+# like bug 14478, where it either never succeeds, or takes much longer to
+# succeed (like 60 seconds) than it takes for the link to come up.
+#
+# So what we do here is poll the interface state, looking for a link-local
+# address (in fe80::/64) marked "preferred".  Once we see one, and the link
+# is up, we're good to go.  If this doesn't happen after a few seconds, log
+# something about it (as something may be wrong), and exit anyway, since we
+# don't want to hold things up forever.
+#
+if [ x$reason = xPREINIT6 ]; then
+    check_interface
+
+    # XXX/EMT: from CentOS 6 stock dhclient-script -- do we need something
+    # analogous?
+    #
+    # remove any stale addresses from aborted clients
+    # ip -f inet6 addr flush dev ${interface} scope global permanent
+
+    #
+    # Empirically, on tb1, it took about 5 seconds between enabling IPv6 on
+    # an interface, and its link-local address becoming preferred.  We wait
+    # somewhat longer than that, just in case: 15 seconds.  (Note that the
+    # check count is 16 because our first check happens immediately.)
+    #
+    check_interval_us=1000000
+    check_count=16
+    i=$check_count
+    waited=0
+    while [ $i -gt 0 ]; do
+        ready=`${MDREQ} -v query get - "/net/interface/state/${interface}/ipv6/ready"`
+        linkup=`${MDREQ} -v query get - "/net/interface/state/${interface}/flags/link_up"`
+        if [ "$ready$linkup" = "truetrue" ]; then
+            break;
+        fi
+        i=$((i - 1))
+        if [ $i -gt 0 ]; then
+            logit INFO "preinit6: interface ${interface} has no link and/or no preferred link-local address yet, ${i} tries left..."
+            usleep $check_interval_us
+            waited=$((waited + 1))
+        fi
+    done
+
+    seconds=$((check_interval_us * waited / 1000000))
+    if [ "$ready$linkup" = "truetrue" ]; then
+        logit INFO "preinit6: interface ${interface} has link and preferred link-local address after ${seconds} second(s), good"
+    else
+        logit NOTICE "preinit6: no link and/or no preferred link-local address on interface ${interface} after ${seconds} second(s)... something wrong?"
+    fi
+
+    exit_with_hooks 0
+fi
+
+
+# -----------------------------------------------------------------------------
+# Reasons 'ARPCHECK' and 'ARPSEND': not described by the man page, and ignored
+# by the stock Linux dhclient-script.
+#
+if [ x$reason = xARPCHECK ] || [ x$reason = xARPSEND ]; then
+    exit_with_hooks 0
+fi
+
+
+# -----------------------------------------------------------------------------
+# Reason 'DEPREF6': an address we previously bound to is no longer "preferred",
+# and we should "encourage" clients to stop using it.  The stock Linux script
+# uses the following invocation:
+#
+#   ip -f inet6 addr change ${new_ip6_address}/${new_ip6_prefixlen} \
+#       dev ${interface} scope global preferred_lft 0
+#
+# For now, we ignore it.
+#
+if [ x$reason = xDEPREF6 ]; then
+    exit_with_hooks 0
+fi
+
+
+# -----------------------------------------------------------------------------
+# Reasons 'BOUND6', 'RENEW6', and 'REBIND6': we have gotten a new address
+# (and possibly resolver state), or renewed our old state.  Clear out any
+# old state, and apply the new state.
+#
+# Reason 'TIMEOUT': we have timed out on the DHCP server, but we have an
+# old unexpired lease that we're going to try to use.  XXX/EMT: for now
+# we handle that the same as the rest of these.  In our DHCPv4 script, we
+# tried to ping one of the default gateways given to us; but since we don't
+# support routes in DHCPv6, there is nothing comparable for us to do.
+#
+# Variables expected:
+#   - $old_ip6_address
+#   - $old_ip6_prefixlen
+#   - $new_ip6_address
+#   - $new_ip6_prefixlen
+#
+# Note: we do not support getting a hostname from DHCPv6 (see bug 10714).
+#
+if [ x$reason = xBOUND6 ] ||  [ x$reason = xRENEW6 ] || \
+   [ x$reason = xREBIND6 ] || [ x$reason = xTIMEOUT ]; then
+
+    # .........................................................................
+    # Remove the old address, if any.
+    #
+    if [ x$old_ip6_address != x ] && [ x$old_ip6_address != x$new_ip6_address ]; then
+        check_interface
+
+        ${MDREQ} -qq action \
+            /net/interface/actions/alias/delete \
+            ifname string "$interface" \
+            tag string "$MD_NET_OVERLAY_TAG_DHCPV6" \
+            inet_address inetaddr "$old_ip6_address" \
+            mask_len uint8 "$old_ip6_prefixlen"
+
+        EXIT_CODE=$?
+        if [ $EXIT_CODE -ne 0 ]; then
+            logit NOTICE "Unable to remove old address '${old_ip6_address}/${old_ip6_prefixlen}'"
+        fi
+    fi
+
+    # .........................................................................
+    # Add the new address.
+    #
+    if [ x$new_ip6_address != x ]; then
+        ${MDREQ} -qq action \
+            /net/interface/actions/alias/add \
+            ifname string "$interface" \
+            tag string "$MD_NET_OVERLAY_TAG_DHCPV6" \
+            inet_address inetaddr "$new_ip6_address" \
+            mask_len uint8 "$new_ip6_prefixlen"
+
+        EXIT_CODE=$?
+        if [ $EXIT_CODE -ne 0 ]; then
+            exit_with_hooks $EXIT_CODE
+        fi
+
+        #
+        # The action to add an interface alias has succeeded, but is the
+        # address OK?  RFC 3315 section 18.1.8 says:
+        #
+        #   "The client SHOULD perform duplicate address detection [17] on
+        #    each of the addresses in any IAs it receives in the Reply
+        #    message before using that address for traffic.  If any of the
+        #    addresses are found to be in use on the link, the client sends
+        #    a Decline message to the server as described in section 18.1.7."
+        #
+        # Here we use some logic from the stock dhclient script to determine
+        # if DAD has succeeded.  If it doesn't succeed after some time, we
+        # assume the address is a duplicate, remove it, and report failure.
+        # 
+        for i in $(seq ${IPV6_DAD_TIMEOUT_SEC}); do
+            logit INFO "Waiting for IPv6 DAD to approve new address ${new_ip6_address}/${new_ip6_prefixlen} (iteration ${i})"
+            sleep 1 # give the DAD some time
+
+            # tentative flag = DAD is still not complete or failed
+            duplicate=$(ip -6 addr show dev ${interface} tentative \
+                          | grep ${new_ip6_address}/${new_ip6_prefixlen})
+
+            # if there's no tentative flag, address passed DAD
+            if [ -z "${duplicate}" ]; then
+                logit INFO "IPv6 DAD succeeded, keeping address"
+                break
+            fi
+        done
+
+        # if there's still tentative flag = address didn't pass DAD = 
+        # = it's duplicate = remove it
+        if [ -n "${duplicate}" ]; then
+            logit NOTICE "IPv6 address ${new_ip6_address}/${new_ip6_prefixlen} offered by DHCPv6 server, but then failed Duplicate Address Detection (DAD); removing it"
+            ${MDREQ} -qq action \
+                /net/interface/actions/alias/delete \
+                ifname string "$interface" \
+                tag string "$MD_NET_OVERLAY_TAG_DHCPV6" \
+                inet_address inetaddr "$new_ip6_address" \
+                mask_len uint8 "$new_ip6_prefixlen"
+            exit_with_hooks 3
+        fi
+    fi
+
+    # .........................................................................
+    # Add resolver config.
+    #
+    if [ "${PEERDNS}" != "no" ]; then
+        apply_resolver_overlay
+    fi
+
+    # .........................................................................
+    # Now that we've applied all of our non-interface config (resolver
+    # overlays), we can make this interface eligible to be acting DHCPv6
+    # primary interface.  Whether or not it actually gets adopted, of course,
+    # depends on what other interfaces there are, what state they're in,
+    # and which is the configured primary.
+    #
+    if [ -n "$new_dhcp6_client_id" ]; then
+        ${MDREQ} -qq action \
+            /net/general/actions/ipv6/set_overlay_valid \
+            ifname string "$interface" \
+            valid bool true \
+            client_id string "$new_dhcp6_client_id" \
+            reason string "DHCPv6 $reason"
+    else
+        ${MDREQ} -qq action \
+            /net/general/actions/ipv6/set_overlay_valid \
+            ifname string "$interface" \
+            valid bool true \
+            reason string "DHCPv6 $reason"
+    fi
+  EXIT_CODE=$?
+  exit_with_hooks $EXIT_CODE
+fi
+
+
+# -----------------------------------------------------------------------------
+# Reasons 'EXPIRE6' and 'STOP6': relinquish our lease.
+#
+# NOTE: we don't expect to be called with STOP6, because that only happens
+# when the dhclient is shut down "gracefully" by invoking it again with
+# '-x' when we want it to go away.  (Sending a SIGTERM, which is our current
+# approach, is not considered "graceful".)
+#
+# Variables expected:
+#   - $old_ip6_address
+#   - $old_ip6_prefixlen
+#
+if [ x$reason = xEXPIRE6 ] || [ x$reason = xSTOP6 ]; then
+    check_interface
+    clear_dhcp_results
+    exit_with_hooks 0
+fi
+
+
+# -----------------------------------------------------------------------------
+# Reason 'RELEASE6': ignore!
+#
+# We are called here when md_if_config invokes dhclient with the '-r' option,
+# which releases a lease.  The proper thing to do here would be to call
+# clear_dhcp_results, just like we do for EXPIRE6 and STOP6.  However, we
+# have a flow-of-control problem with DHCPv6 renew.  md_if_config forks
+# dhclient to release the lease, and blocks on its exit (until it times out).
+# dhclient forks us (dhclient6-script), and we fork mdreq, which blocks on
+# mgmtd.  If we block on mdreq, that's deadlock until mgmtd times out on
+# dhclient, and kills it, at a point where it unfortunately hasn't even
+# sent the RELEASE message to the server!  If we don't block on mdreq
+# (background it with '&'), we have no deadlock, but we also potentially
+# have mdreq running AFTER we thought we were all done with the old lease,
+# and have moved on with our lives.  It would *probably* run before we
+# actually got a new lease back, but we don't want to rely on that.
+#
+# Luckily, md_if_config takes care of ripping out all the old DHCP state
+# by itself anyway, so we don't actually have to do anything here.  The
+# release was more of a courtesy to the server, than something we needed
+# to keep our own state straight.
+#
+# So we'd better not do anything here, lest we muck something up.
+#
+if [ x$reason = xRELEASE6 ]; then
+    exit_with_hooks 0
+fi
+
+exit_with_hooks 0

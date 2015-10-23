@@ -1,0 +1,605 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Upgrade">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "upgrade"></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Upgrades and Imaging">
+
+<?
+  global upgr_acl
+  global upgr_acl_lo
+
+  # Conditional on PROD_FEATURE_IMAGE_SECURITY
+  set have_image_security [tms::have-prod-feature image_security]
+?>
+
+<!-- ======================================================================
+     == Upgrade in Progress
+     ====================================================================== -->
+
+<SET active_opers 0>
+<CHECK-UPGRADE-STATUS "true">
+<SET ignore_upgrade [tms::get-param query "ignore_upgrade"]>
+<IF {($active_opers != 0 || [string compare $inst_any "true"] == 0) && [string compare $ignore_upgrade "true"] != 0}>
+
+<h2>Upgrade in Progress</h2>
+An image upgrade is currently in progress.  Only one upgrade operation
+can be performed at a time.  You may:
+<ul>
+<li><a href="/admin/launch?script=rh&amp;template=setup-upgrade-status">
+View the Upgrade Status page</a>
+<li><a href="/admin/launch?script=rh&amp;template=setup-upgrade&amp;ignore_upgrade=true">Proceed to the Upgrade page anyway</a>
+</ul>
+
+<ELSE>
+
+  <IF {[string compare $inst_any "true"] == 0}>
+      <SET image_start_time [tms::get-config "/image/state/last_install/start_time"]>
+
+      <p>Image install in progress, started at <?^=$image_start_time?>.</p>
+  </IF>
+  <?
+  set boot_part [tms::get-config "/image/boot_location/booted/location_id"]
+  set next_part [tms::get-config "/image/boot_location/nextboot/location_id"]
+  if {[string length $next_part] == 0} {
+      set next_part $boot_part
+  }
+
+  if {$boot_part == 1} {
+      set nonboot_part 2
+  } else {
+      set nonboot_part 1
+  }
+
+  set version_1 [tms::get-config "/image/info/installed_image/curr_device/location_id/1/build_prod_version"]
+  set version_2 [tms::get-config "/image/info/installed_image/curr_device/location_id/2/build_prod_version"]
+
+  if {[string length $version_1] == 0} {
+    set version_1 "(Could not determine image version -- install in progress?)"
+  }
+  if {[string length $version_2] == 0} {
+    set version_2 "(Could not determine image version -- install in progress?)"
+  }
+
+  set last_dobincp_1 [tms::get-config "/image/info/installed_image/curr_device/location_id/1/last_dobincp"]
+  set last_dobincp_2 [tms::get-config "/image/info/installed_image/curr_device/location_id/2/last_dobincp"]
+  ?>
+
+<!-- ======================================================================
+     == Installed Images Listing
+     ====================================================================== -->
+  <h2>Installed Images</h2>
+
+<CFG-FORM -action "image" -div_id "upgrade_1">
+
+  <table border="0" cellpadding="3" cellspacing="0">
+    <tr>
+      <td width="15"></td>
+      <td>
+        <b>
+          Partition 1
+        <IF {$boot_part == 1}>
+          (currently booted)
+        </IF>
+        <IF {$next_part == 1}>
+          (to boot next)
+        </IF>
+      </b>
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>
+        <?^=$version_1?>
+      </td>
+    </tr>
+    <IF {[string length $last_dobincp_1] \> 0}>
+      <tr>
+        <td></td>
+        <td>
+          <em>Last dobincp: <?^=$last_dobincp_1?></em>
+        </td>
+      </tr>
+    </IF>
+    <tr>
+      <td height="12">
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>
+        
+        <b>
+          Partition 2
+        <IF {$boot_part == 2}>
+          (currently booted)
+        </IF>
+        <IF {$next_part == 2}>
+          (to boot next)
+        </IF>
+      </b>
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>
+        <?^=$version_2?>
+      </td>
+    </tr>
+    <IF {[string length $last_dobincp_2] \> 0}>
+      <tr>
+        <td></td>
+        <td>
+          <em>Last dobincp: <?^=$last_dobincp_2?></em>
+        </td>
+      </tr>
+    </IF>
+    <tr>
+      <td height="10"></td>
+    </tr>
+  </table>
+
+  <IF {$boot_part == $next_part}>
+  <CFG-BUTTON -type "switch" -text "Switch Boot Partition"
+              -caps "action_privileged"
+              -acl $upgr_acl -acl_oper {action}
+              -span_id "upgrade_switch">
+  <ELSE>
+  <CFG-BUTTON -type "cancel" -text "Switch Boot Partition"
+              -caps "action_privileged"
+              -acl $upgr_acl -acl_oper {action}
+              -span_id "upgrade_switch">
+  </IF>
+
+</CFG-FORM>
+ 
+<!-- ======================================================================
+     == Install New Image
+     ====================================================================== -->
+
+<h2>Install New Image to Partition <?^=$nonboot_part?></h2>
+
+<CFG-FORM -action "image" -enctype "multipart/form-data" -div_id "upgrade_2">
+
+  <CFG-BUTTON-HIDDEN-DEFAULT -type "upload" -text "Install Image" 
+                             -caps "action_privileged"
+                             -acl $upgr_acl -acl_oper {action}>
+
+  <SET url_upgrade_checked "true">
+
+  <table border="0" cellpadding="3" cellspacing="0">
+
+<!-- ......................................................................
+     .. Choose from a list of available upgrades
+     .. (if an upgrade check server is configured)
+     ...................................................................... -->
+  <?
+  set update_server [tms::get-config "/image/config/update_server"]
+  if {[string length $update_server] > 0} {
+    set updates_current [tms::get-config "/image/state/updates/last_query/populated"]
+    if {$updates_current == "true"} {
+      set updates [tms::iterate-config "/image/state/updates/last_query/image"]
+      set update_options {}
+      foreach update $updates {
+        set url [tms::get-config "$update/url"]
+        set last_slash [string last "/" $url]
+        set fname_start [expr {$last_slash + 1}]
+        set fname [string range $url $fname_start end]
+        set release [tms::get-config "$update/build_prod_release"]
+        set disp_str "Version $release: $fname"
+        lappend update_options [list "$disp_str" "$url"]
+      }
+    }
+  ?>
+
+    <tr>
+      <td>
+      <td>
+        <CFG-RADIO -id "from" -value "update" -caps "action_privileged" 
+                   -acl $upgr_acl -acl_oper {action}
+                   -checked "true" -span_id "upgrade_radio_1">
+
+        <SET url_upgrade_checked "false">
+
+        Install from update server: 
+
+        <IF {$updates_current == "true"}>
+          <IF {[llength $update_options] == 0}>
+            <em>(no updates available; system is up to date)</em>
+          <ELSE>
+            <CFG-DROPDOWN -id "upgrade_url" -errname "Upgrade Name"
+                          -caps "action_privileged" 
+                          -acl $upgr_acl_lo -acl_oper {action}
+                          -type "string" -options $update_options
+                          -span_id "upgrade_choose">
+          </IF>
+        <ELSE>
+          <em>(press button to check for updates)</em>
+        </IF>
+
+        <CFG-BUTTON -type "check" -text "Refresh List"
+                    -caps "action_privileged"
+                    -acl $upgr_acl_lo -acl_oper {action}
+                    -span_id "refresh_upgr_list">
+
+  <?
+  # Close curly braces from 'if {[string length $update_server] > 0}' above
+  }
+  ?>
+
+<!-- ......................................................................
+     .. Enter a URL
+     ...................................................................... -->
+
+    <tr>
+      <td width="15"></td>
+      <td>
+        <CFG-RADIO -id "from" -value "url" -caps "action_privileged"
+          -acl $upgr_acl -acl_oper {action}
+          -checked "$url_upgrade_checked" -span_id "upgrade_radio_1">
+          Install from URL:&nbsp;
+          <CFG-TEXTBOX -id "url" -caps "action_privileged"
+            -acl $upgr_acl -acl_oper {action}
+            -type "string" -cols 40 -span_id "upgrade_url">
+      </td>
+    </tr>
+
+<!-- ......................................................................
+     .. Enter an ssh-based scp or sftp pseudo-URL
+     ...................................................................... -->
+
+    <tr>
+      <td width="15">
+      <td>
+     <CFG-RADIO -id "from" -value "ssh_url" -caps "action_privileged" 
+                -acl $upgr_acl -acl_oper {action}
+                -checked "false" -span_id "upgrade_radio_1">
+     Install via scp or sftp (pseudo-URL format: 
+     {scp or sftp}://username@hostname[:port]/path/image.img):
+     <br>
+       <table>
+         <tr>
+           <td width="45">
+           <td>
+              URL:
+           <td>
+           <CFG-TEXTBOX -id "ssh_url" -caps "action_privileged" 
+                        -acl $upgr_acl -acl_oper {action}
+                        -type "string" -cols 40 -span_id "upgrade_ssh_url">
+         <tr>
+           <td>
+           <td>
+             Password:
+           <td>
+           <CFG-PASSWORDBOX -id "ssh_password" -caps "action_privileged"
+                            -acl $upgr_acl -acl_oper {action}
+                            -cols "40" -span_id "users_pass">
+       </table>       
+      </td>
+    </tr>
+
+<!-- ......................................................................
+     .. Upload a file from the client
+     ...................................................................... -->
+
+    <tr>
+      <td></td>
+      <td>
+        <CFG-RADIO -id "from" -value "file" -caps "action_privileged" 
+                   -acl $upgr_acl -acl_oper {action}
+                   -checked "false" -span_id "upgrade_radio_1">
+          Install from local file:&nbsp;
+          <input name="f_file" type="file" <?
+          if {[tms::check-authorization "action_privileged" $upgr_acl {action}] == 0} {
+            tms::puts "disabled"
+          }
+          ?>>
+        <br>
+        <table>
+          <tr>
+            <td width="45">
+            <td>
+            (Progress tracking begins after file is uploaded)
+        </table>
+      </td>
+    </tr>
+
+<!-- ......................................................................
+     .. Images offered by the CMC server, if any
+     ...................................................................... -->
+  <?
+    # Conditional on PROD_FEATURE_CMC_CLIENT
+    set have_cmc_client [tms::have-prod-feature cmc_client]
+    if {[string compare $have_cmc_client "true"] == 0} {
+
+      # XXX/EMT/11206: Reenable this when bug 11206 is fixed.
+      # set managed [tms::get-config "/cmc/client/state/server/connected"]
+      set rgp_peer [tms::get-config "/rgp/state/peer_name"]
+      set rgp_mode [tms::get-config "/rgp/state/mode"]
+      if {[string equal -length 5 $rgp_peer "rbmd-"] ||
+          ([string equal $rgp_peer "rgp"] &&
+          [string equal $rgp_mode "active_client"])} {
+        set managed "true"
+      } else {
+        set managed "false"
+      }
+      if {[string compare "$managed" "true"] == 0} {
+    ?>
+
+      <tr>
+        <td>
+        <td>
+          <CFG-RADIO -id "from" -value "cmc"
+                     -caps "action_privileged" 
+                     -acl $upgr_acl -acl_oper {action}
+                     -checked "false" -span_id "upgrade_radio_1">
+
+          Install from CMC server:
+          <br>
+          <table>
+            <tr>
+              <td width="45">
+              <td>
+                 Image file:
+              <td>
+
+      <?
+        #
+        # If image serving is enabled AND client-to-server proxying is enabled,
+        # get and show a list of available images.  Otherwise, just give them
+        # text box to type into.
+        #
+        set image_serving [tms::get-config "/cmc/client/state/remote/proxy/server/image/state/serve/all"]
+        if {[string compare "$image_serving" "true"] == 0} {
+          set image_files [tms::iterate-config "/cmc/client/state/remote/proxy/server/image/info/image_file"]
+          set image_options {}
+          foreach image_bname $image_files {
+            set image_name [tms::binding-name-last-part $image_bname]
+            lappend image_options [list "$image_name" "$image_name"]
+          }
+      ?>
+
+              <CFG-DROPDOWN -id "cmc_image_file" -type "string"
+                            -caps "action_privileged"
+                            -acl $upgr_acl -acl_oper {action}
+                            -options $image_options>
+
+      <?
+          } else {
+      ?>
+
+              <CFG-TEXTBOX -id "cmc_image_file"
+                           -caps "action_privileged" 
+                           -acl $upgr_acl -acl_oper {action}
+                           -type "string" -cols 40 -span_id "cmc_image_file">
+
+      <?
+          }
+      ?>
+
+            <tr>
+              <td width="45">
+              <td>
+                 Protocol:
+              <td>
+                 <CFG-DROPDOWN -id "cmc_image_protocol"
+                               -caps "set_privileged"
+                               -acl $upgr_acl -acl_oper {action}
+                               -options {{"http" "http"}
+                                         {"https" "https"}}>
+
+            <tr>
+              <td width="45">
+              <td>
+                 Port override:
+              <td>
+              <CFG-TEXTBOX -id "cmc_image_port"
+                           -caps "action_privileged" 
+                           -acl $upgr_acl -acl_oper {action}
+                           -cols 10>
+
+          </table>       
+  <?
+      }
+    }
+  ?>
+
+    <tr>
+      <td height=8>
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+      </td>
+      <td>
+        Installation options:
+      </td>
+
+    <tr>
+      <td>
+      </td>
+      <td>
+        <table>
+        <tr>
+          <td width="15">
+          </td>
+          <td>
+            <CFG-CHECKBOX -id "watch_progress" -caps "action_privileged"
+                          -acl $upgr_acl -acl_oper {action}
+                          -value "true">
+            View image upgrade progress
+          </td>
+        </tr>
+
+        <?
+         if {[string compare $have_image_security "true"] == 0} {
+             set require_sig [tms::get-config "/image/config/require_signature"]
+             # will be one of "require" "check" "ignore"
+             set require_sig_min [tms::get-config "/image/state/require_signature_min"]
+             set image_verify_list [list [list "Require signature and validate" "require"]]
+             set image_verify_default "require"
+             if {[string equal "$require_sig_min" "ignore"] == 1} {
+                 lappend image_verify_list [list "Validate if signature present" "check"]
+                 lappend image_verify_list [list "Ignore signature" "ignore"]
+                 if {[string equal "$require_sig" "true"] == 0} {
+                     set image_verify_default "check"
+                 }
+             } elseif {[string equal "$require_sig_min" "check"] == 1} {
+                 lappend image_verify_list [list "Validate if signature present" "check"]
+                 if {[string equal "$require_sig" "true"] == 0} {
+                     set image_verify_default "check"
+                 }
+             }
+         } else {
+             set image_verify_list {}
+         }
+        ?>
+
+        <tr>
+          <td width="15">
+          </td>
+          <td>
+        <IF {[llength $image_verify_list] \> 1}>
+            Image validation:
+
+    <CFG-DROPDOWN -id "require_sig" -type "string"
+                  -value $image_verify_default
+                  -caps "action_privileged"
+                  -acl $upgr_acl -acl_oper {action}
+                  -options $image_verify_list>
+        <ELSE>
+            <IF {[llength $image_verify_list] == 1}>
+            Image signature is required, and will be validated.
+            </IF>
+        </IF>
+          </td>
+        </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <td height="10"></td>
+    </tr>
+  </table>
+
+  <CFG-BUTTON -type "upload" -text "Install Image" -caps "action_privileged"
+              -acl $upgr_acl -acl_oper {action}
+              -span_id "upgrade_upload">
+  </CFG-FORM>
+
+<font size="-3"><br></font>
+
+To activate a newly-installed software image, please 
+<?
+# reboot_url cannot be safely escaped, since it already contains "&amp"
+?>
+<a href="<?=$reboot_url?>">reboot</a>
+the system.
+
+<!-- ======================================================================
+     == Image Options
+     ====================================================================== -->
+  <h2>Image Options</h2>
+
+  <CFG-FORM>
+
+<?
+  # XXX/EMT: not using TMS-TABLE-ENTRY et al. below for consistency
+  # with the rest of the page.
+?>
+
+  <TMS-TABLE>
+
+<?
+# XXX/EMT: too confusing, given that it's often ignored...
+#    <tr>
+#      <td width=15>
+#      <td>
+#          <CFG-CHECKBOX -id "require_sign" -caps "set_privileged"
+#                        -acl $upgr_acl -acl_oper {set}
+#                        -name "/image/config/require_signature" -type "bool">
+#      <td>
+#          Require images to be signed by a trusted signature
+#    </tr>
+?>
+
+    <tr>
+      <td width=15>
+      <td>
+          <CFG-CHECKBOX -id "allow_download" -caps "set_privileged"
+                        -acl $upgr_acl -acl_oper {set}
+                        -name "/image/config/serve/all" -type "bool">
+      <td>
+          Offer images for HTTP/HTTPS download
+    </tr>
+
+    <tr>
+      <td>
+         
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td>
+      <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+                  -acl $web_acl -acl_oper {set}
+                  -span_id "web_apply_1">
+    </td>
+    <td>
+      <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+                  -acl $web_acl -acl_oper {set}
+                  -span_id "web_cancel_1">
+    </td>
+  </tr>
+</table>
+
+</CFG-FORM>
+
+<SET images_avail [tms::get-config "/image/state/serve/all"]>
+
+<IF {[string compare $images_avail "true"] == 0}>
+
+<br>
+
+<table border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td colspan=99>
+          Image files available:
+    </tr>
+
+    <SET image_files [tms::iterate-config "/image/info/image_file"]>
+    <FOREACH image_file_bname $image_files>
+      <SET image_file [tms::binding-name-last-part $image_file_bname]>
+      <SET image_ver [tms::get-config "$image_file_bname/build_prod_version"]>
+      <TMS-TABLE-SPACE>
+      <tr>
+        <td width=30>
+        <td>
+<?
+  # XXX/EMT: system_images mirrors WEB_SYSTEM_IMAGES_DIR in tpaths.h
+?>
+          <a href="/system_images/<?^=$image_file?>"><?^=$image_file?></a>
+          <br>
+          <?^=$image_ver?>
+
+    </FOREACH>
+</table>
+
+</IF>
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

@@ -1,0 +1,944 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "SNMP">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "snmp"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "SNMP">
+
+  <? #  ==================================================
+     #  General SNMP configuration
+     #  ==================================================
+     global snmp_acl
+     global auth_acl_hi
+  ?>
+
+<IF {[tms::check-authorization "query_basic" $snmp_acl {query}]}>
+
+  <?
+     set snmp_user_caps "set_privileged"
+     # Conditional on PROD_FEATURE_IPV6
+     set have_ipv6 [tms::have-prod-feature ipv6]
+     set ip_field_width 16
+     if {[string compare $have_ipv6 "true"] == 0} {
+         set ip_field_width 46
+     }
+     set multcom [tms::get-config "/snmp/access/mult_communities"]
+
+     # Conditional on PROD_FEATURE_SNMP_SETS
+     set have_sets [tms::have-prod-feature snmp_sets]
+
+     # Conditional on PROD_FEATURE_CAPABS
+     set have_capabs [tms::have-prod-feature capabs]
+  ?>
+
+  <h2>SNMP Configuration</h2>
+<CFG-FORM -div_id "snmp_1">
+  <TMS-TABLE -div_id "snmp_table_1">
+    <TMS-TABLE-ENTRY "Enable SNMP">
+      <CFG-CHECKBOX -id "snmp_enable" -caps "set_basic"
+                    -acl $snmp_acl -acl_oper {set}
+                    -name "/snmp/enable" -type "bool"
+                    -span_id "snmp_pm_enable">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enable SNMP communities">
+        <CFG-CHECKBOX -id "snmp_communities" -caps "set_basic"
+                      -acl $auth_acl_hi -acl_oper {set}
+                      -name "/snmp/enable/communities" -type "bool"
+                      -span_id "snmp_communities">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enable Multiple SNMP Communities">
+        <CFG-CHECKBOX -id "snmp_mult_communities" -caps "set_basic"
+                      -acl $auth_acl_hi -acl_oper {set}
+                      -name "/snmp/access/mult_communities" -type "bool"
+                      -span_id "snmp_mult_communities">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enable SNMP Notifications (Traps and Informs)">
+        <CFG-CHECKBOX -id "snmp_traps" -caps "set_basic"
+                      -acl $snmp_acl -acl_oper {set}
+                      -name "/snmp/traps/enable" -type "bool"
+                      -span_id "snmp_traps">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "SNMP Agent Port">
+      <CFG-TEXTBOX -id "port" -errname "port number" 
+                   -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -name "/snmp/port/agent" -type "uint16" -cols 8
+                   -span_id "snmp_port">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Sys Contact">
+      <CFG-TEXTBOX -id "contact" -errname "system contact" 
+                   -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -name "/snmp/syscontact" -type "string" -cols 30
+                   -span_id "snmp_contact">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Sys Location">
+      <CFG-TEXTBOX -id "location" -errname "system location" 
+                   -acl $snmp_acl -acl_oper {set}
+                   -caps "set_basic" -name "/snmp/syslocation"
+                   -type "string" -cols 30 -span_id "snmp_loc">
+    </TMS-TABLE-ENTRY>
+
+    <IF {[string compare $multcom "true"] != 0}>
+      <TMS-TABLE-ENTRY "Read-Only Community">
+        <CFG-TEXTBOX -id "rocommunity" -errname "read-only community name" 
+                     -acl $auth_acl_hi -acl_oper {set}
+                     -caps "set_basic" -name "/snmp/access/rocommunity"
+                     -type "string" -cols 30 -span_id "snmp_rocomm">
+      </TMS-TABLE-ENTRY>
+      <IF {[string compare $have_sets "true"] == 0}>
+        <TMS-TABLE-ENTRY "Read-Write Community">
+          <CFG-TEXTBOX -id "rwcommunity" -errname "read-write community name" 
+                       -acl $auth_acl_hi -acl_oper {set}
+                       -caps "set_basic" -name "/snmp/access/rwcommunity"
+                       -type "string" -cols 30 -span_id "snmp_rwcomm">
+        </TMS-TABLE-ENTRY>
+      </IF>
+    </IF>
+
+    <TMS-TABLE-ENTRY "Default Notification Community">
+      <CFG-TEXTBOX -id "trapcommunity" -errname "notification community name"
+                   -acl $snmp_acl -acl_oper {set}
+                   -caps "set_basic" -name "/snmp/traps/trap_community"
+                   -type "string" -cols 30 -span_id "snmp_trapcomm">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Default Notification Port">
+      <CFG-TEXTBOX -id "trapport" -errname "notification port number"
+                   -acl $snmp_acl -acl_oper {set}
+                   -caps "set_basic" -name "/snmp/port/traps"
+                   -type "uint16" -cols 8 -span_id "snmp_trapport">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -acl $snmp_acl -acl_oper {set}
+              -span_id "snmp_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $snmp_acl -acl_oper {set}
+              -span_id "snmp_cancel_1">
+</CFG-FORM>
+
+  <IF {[string compare $multcom "true"] == 0}>
+
+    <? # ==================================================
+       # SNMP communities (when multiple communities enabled)
+       # ==================================================
+
+       set entries [tms::iterate-config-last "/snmp/access/communities"]
+       set cur_line 0
+    ?>
+
+    <h2>SNMP Communities</h2>
+
+    <IF {[tms::check-authorization "query_basic" $auth_acl_hi {query}]}>
+
+      <CFG-FORM -action "config-form-list" -div_id "snmp_4">
+        <table border="0" cellpadding="3" cellspacing="0" class="listing">
+          <tr class="listing_head">
+            <td>
+            <td width="8">
+            <td>
+              Community
+            <td width="8">
+            <td>
+              Access Type
+            <td width="20">
+          </tr>
+
+          <FOREACH entry $entries>
+          <SET access_type [tms::get-config "/snmp/access/communities/$entry/access_type"]>
+          <IF {[string compare $have_sets "true"] == 0 || [string compare $access_type "ro"] == 0}>
+            <IF {[string compare $access_type "rw"] == 0}>
+              <SET access_type "read-write">
+            <ELSE>
+              <SET access_type "read-only">
+            </IF>
+            <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+                tms::puts "listing_even"
+            } else {
+                tms::puts "listing_odd"
+            }?>">
+              <td>
+                <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                              -acl $auth_acl_hi -acl_oper {set}
+                              -value "/snmp/access/communities/$entry"
+                              -span_id "snmp_cbox_2">
+              <td>
+              <td>
+                <?^=$entry?>
+              <td>
+              <td>
+                <?^=$access_type?>
+              <td>
+            </tr>
+
+            <?
+            incr cur_line
+            ?>
+          </IF>
+          </FOREACH>
+
+          <IF {$cur_line == 0}>
+            <tr>
+              <td colspan="5">
+                <p class="nodata">
+                  No entries.
+                </p>
+              </td>
+            </tr>
+          </IF>
+          <TMS-TABLE-SPACE>
+        </table>
+
+      <CFG-BUTTON -type "remove" -text "Remove Selected"
+                  -caps "set_basic" 
+                  -acl $auth_acl_hi -acl_oper {set}
+                  -span_id "snmp_remove_2">
+
+      </CFG-FORM>
+
+      <? # ==================================================
+         # Add a new community
+         # ==================================================
+      ?>
+
+      <CFG-FORM -action "config-form-list" -div_id "snmp_6">
+        <IF {[string compare $have_sets "true"] == 0}>
+          <h2>Add New Community</h2>
+        <ELSE>
+          <h2>Add New Read-Only Community</h2>
+        </IF>
+        <TMS-TABLE -div_id "snmp_table_3">
+          <TMS-TABLE-ENTRY "Community">
+            <CFG-TEXTBOX -id "comm" -errname "Community" -caps "set_basic"
+                         -acl $auth_acl_hi -acl_oper {set}
+                         -type "string" -cols "46"
+                         -span_id "snmp_comm">
+          </TMS-TABLE-ENTRY>
+          <IF {[string compare $have_sets "true"] == 0}>
+            <TMS-TABLE-ENTRY "Access Type">
+              <CFG-DROPDOWN -id "access_type" -errname "Access Type" 
+                            -caps "set_basic"
+                            -acl $auth_acl_hi -acl_oper {set}
+                            -type "string" -options {{"Read-Only" "ro"}
+                                                     {"Read-Write" "rw"}}
+                            -span_id "snmp_access">
+            </TMS-TABLE-ENTRY>
+          </IF>
+          <TMS-TABLE-SPACE>
+        </TMS-TABLE>
+
+        <input type="hidden" name="f_list_root" value="/snmp/access/communities">
+        <input type="hidden" name="f_list_index" value="comm">
+        <IF {[string compare $have_sets "true"] == 0}>
+          <input type="hidden" name="f_list_children" value="access_type">
+        <ELSE>
+          <input type="hidden" name="f_list_children" value="">
+        </IF>
+         <CFG-BUTTON -type "add" -text "Add New Community"
+                     -caps "set_basic"
+                     -acl $auth_acl_hi -acl_oper {set}
+                     -span_id "snmp_add_1">
+         </td>
+      </CFG-FORM>
+
+    <ELSE>
+
+    
+      Insufficient authorization to view SNMP communities.
+
+    </IF>
+
+  </IF>
+
+<?
+  # ==================================================
+  # SNMP v3 users
+  # ==================================================
+
+  set cur_line 0
+  set user_prefix "/snmp/v3/users"
+  set user_ids [tms::iterate-config $user_prefix]
+?>
+
+<h2>SNMP v3 Users</h2>
+
+<CFG-FORM -action "config-form-list" -div_id "snmp_v3_users_form">
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="5" 
+         class="listing">
+  <tr>
+    <td>
+      <table width="100%" border="0" cellspacing="0" cellpadding="3">
+ 
+        <tr class="listing_head">
+          <td width="1%"></td>
+          <td width="10"></td>
+
+          <td>User</td>
+          <td width="10"></td>
+
+          <td>Enabled</td>
+          <td width="10"></td>
+
+          <IF {[string compare $have_sets "true"] == 0}>
+            <td>SETs enabled</td>
+            <td width="10"></td>
+            <IF {[string compare $have_capabs "true"] == 0}>
+              <td>SET capability</td>
+              <td width="10"></td>
+            </IF>
+          </IF>
+
+          <td>Auth Type</td>
+          <td width="10"></td>
+
+          <td>Privacy Type</td>
+          <td width="10"></td>
+
+          <td>Auth Password</td>
+          <td width="10"></td>
+
+          <td>Privacy Password</td>
+          <td width="10"></td>
+
+          <td>Require Privacy</td>
+          <td width="10"></td>
+
+          <td></td>
+          <td></td>
+        </tr>
+
+        <FOREACH user_id $user_ids>
+        <?
+          set prefix_len [string length "$user_prefix/"]
+          set user_name [string range $user_id $prefix_len end]
+          set auth_type [tms::get-config "$user_id/hash_type"]
+          set auth_key [tms::get-config "$user_id/auth_key"]
+          set priv_type [tms::get-config "$user_id/privacy_type"]
+          set priv_key [tms::get-config "$user_id/privacy_key"]
+          set user_enable [tms::get-config "$user_id/enable" "yes"]
+          set sets_enable [tms::get-config "$user_id/access/sets/enable" "yes"]
+          set require_privacy [tms::get-config "$user_id/require_privacy" "yes"]
+
+          if {[string compare $have_capabs "true"] == 0} {
+            set sets_gid [tms::get-config "$user_id/access/gid"]
+            set sets_capab [tms::gid-to-capab "$sets_gid"]
+          }
+
+          # XXXX/EMT: map auth/priv types to friendly strings.
+          # (the CLI doesn't do this either yet)
+
+          if {[string length $auth_key] > 0} {
+            set auth_pwset "(set)"
+          } else {
+            set auth_pwset "(NOT SET)"
+          }
+
+          if {[string length $priv_key] > 0} {
+            set priv_pwset "(set)"
+          } else {
+            set priv_pwset "(NOT SET)"
+          }
+        ?>
+
+        <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+            tms::puts "listing_even"
+        } else {
+            tms::puts "listing_odd"
+        }?>">
+          <td>
+            <CFG-CHECKBOX -id "row_$user_id" -caps $snmp_user_caps
+                          -acl $auth_acl_hi -acl_oper {set_delete}
+                          -value "$user_id" -span_id "snmp_v3_user_cbox_1">
+          </td>
+          <td></td>
+
+          <td><?^=$user_name?></td>
+          <td></td>
+
+          <td><?^=$user_enable?></td>
+          <td></td>
+
+          <IF {[string compare $have_sets "true"] == 0}>
+            <td><?^=$sets_enable?></td>
+            <td></td>
+
+            <IF {[string compare $have_capabs "true"] == 0}>
+              <td><?^=$sets_capab?></td>
+              <td></td>
+            </IF>
+          </IF>
+
+          <td><?^=$auth_type?></td>
+          <td></td>
+
+          <td><?^=$priv_type?></td>
+          <td></td>
+
+          <td><?^=$auth_pwset?></td>
+          <td></td>
+
+          <td><?^=$priv_pwset?></td>
+          <td></td>
+
+          <td><?^=$require_privacy?></td>
+          <td></td>
+
+          <td>
+            <a href="/admin/launch?script=rh&amp;template=setup-snmp-user-edit&amp;user=<?= [tms::uri-component-escape $user_name] ?>">Edit</a>
+          </td>
+          <td>
+          </td>
+
+          <?
+            incr cur_line
+          ?>
+        </FOREACH>
+
+        </tr>
+
+        <IF {$cur_line == 0}>
+        <tr><td colspan="5"><span class="nodata">No Users.</span></td></tr>
+        </IF>
+
+        <tr>
+          <td height="8"></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <table>
+      <tr>
+        <td>
+        <div>
+          <CFG-BUTTON -type "remove" -text "Delete Selected Users"
+                      -acl $auth_acl_hi -acl_oper {set_delete}
+                      -caps $snmp_user_caps
+                      -span_id "snmp_users_remove_1">
+          <img src="/images/em.gif" width="10" height="1" alt="">
+        </div>
+        </td>
+      </tr>
+      </table>
+    </td>
+  </tr>
+  </table>
+</CFG-FORM>
+
+
+<? # ==================================================
+   # Add New SNMP v3 User
+   # ==================================================
+?>
+
+<h2>Add New SNMP v3 User</h2>
+
+<CFG-FORM -action "config-form-snmp-add-user" -div_id "snmp_1">
+  <TMS-TABLE -div_id "snmp_table_1">
+
+    <TMS-TABLE-ENTRY "Username">
+      <CFG-TEXTBOX -id "username" -errname "Username" -caps $snmp_user_caps
+                   -acl $auth_acl_hi -acl_oper {set}
+                   -type "string" -cols "20"
+                   -span_id "new_snmp_username">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enable user">
+      <CFG-CHECKBOX -id "user_enable"
+                    -caps $snmp_user_caps
+                    -acl $auth_acl_hi -acl_oper {set}
+                    -type "bool" -value "true">
+    </TMS-TABLE-ENTRY>
+
+    <IF {[string compare $have_sets "true"] == 0}>
+      <TMS-TABLE-ENTRY "Enable SETs">
+        <CFG-CHECKBOX -id "sets_enable"
+                      -caps $snmp_user_caps
+                      -acl $auth_acl_hi -acl_oper {set}
+                      -type "bool" -value "true">
+      </TMS-TABLE-ENTRY>
+
+      <IF {[string compare $have_capabs "true"] == 0}>
+        <TMS-TABLE-ENTRY "SET capability">
+          <SET capab_opts [tms::get-capability-list]>
+          <SET capab_default [tms::get-capability-default]>
+          <CFG-DROPDOWN -id "sets_capab" -errname "SET capability"
+                        -caps $snmp_user_caps
+                        -type "string" -options $capab_opts
+                        -value $capab_default
+                        -span_id "users_capab"> 
+        </TMS-TABLE-ENTRY>
+      </IF>
+    </IF>
+
+    <TMS-TABLE-ENTRY "Authentication type">
+      <CFG-DROPDOWN -id "authtype" -caps $snmp_user_caps
+                    -acl $auth_acl_hi -acl_oper {set}
+                    -type "string" -options {{"MD5" "md5"} {"SHA1" "sha"}}>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Privacy type">
+      <CFG-DROPDOWN -id "privtype" -caps $snmp_user_caps
+                    -acl $auth_acl_hi -acl_oper {set}
+                    -type "string"
+                    -options {{"DES" "des"} {"AES-128" "aes-128"}}>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Authentication password">
+      <CFG-PASSWORDBOX -id "auth_pwd" -caps $snmp_user_caps
+                       -acl $auth_acl_hi -acl_oper {set} -cols "20">
+                    
+    <TMS-TABLE-ENTRY "Privacy password">
+      <CFG-PASSWORDBOX -id "priv_pwd" -caps $snmp_user_caps
+                       -acl $auth_acl_hi -acl_oper {set} -cols "20">
+                    
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Require privacy">
+      <CFG-CHECKBOX -id "require_privacy"
+                    -caps $snmp_user_caps
+                    -acl $auth_acl_hi -acl_oper {set}
+                    -type "bool" -value "true">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Add User" -caps $snmp_user_caps
+              -acl $auth_acl_hi -acl_oper {set}
+              -span_id "snmp_apply_2">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps $snmp_user_caps
+              -acl $auth_acl_hi -acl_oper {set}
+              -span_id "snmp_cancel_2">
+
+</CFG-FORM>
+
+
+  <? # ==================================================
+     # List of notification (trap/inform) sinks: v1, v2c
+     # ==================================================
+  ?>
+
+  <?
+    set cur_line 0
+    set sink_prefix "/snmp/trapsink/sink"
+    set trap_type [tms::get-param post "f_type"]
+    if {[string length $trap_type] == 0} {
+        tms::set-param post replace "f_type" "trap-v2c"
+    }
+  ?>
+
+  <h2>Notification Sinks: SNMP v1 and v2c</h2>
+<CFG-FORM -action "config-form-list" -div_id "snmp_2">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing">
+  <tr>
+  <td>
+  <table width="100%" border="0" cellspacing="0" cellpadding="5">
+ 
+    <tr class="listing_head"> 
+      <td></td>
+      <td>
+        Address</td>
+      <td>
+        Port</td>
+      <td>
+        Type</td>
+      <td>
+        Community</td>
+      <td>
+        Enabled</td>
+      <td></td>
+      <td></td>
+    </tr>
+
+   <SET def_comm [tms::get-config "/snmp/traps/trap_community"]>
+   <SET def_port [tms::get-config "/snmp/port/traps"]>
+
+   <FOREACH sink_id [tms::iterate-config $sink_prefix]>
+   <?
+   set prefix_len [string length "$sink_prefix/"]
+   set sink_host [string range $sink_id $prefix_len end]
+   set sink_type [tms::get-config "$sink_prefix/$sink_host/type"]
+   if {[string first "v3" "$sink_type"] != -1} {
+     continue
+   }
+   set sink_comm [tms::get-config "$sink_prefix/$sink_host/community"]
+   set sink_port [tms::get-config "$sink_prefix/$sink_host/port"]
+   set sink_enable [tms::get-config "$sink_prefix/$sink_host/enable" "yes"]
+   if {[string length $sink_comm] == 0} {
+      set sink_comm "$def_comm (default)"
+   }
+   if {[string length $sink_port] == 0 || [string equal $sink_port "0"] == 1} {
+      set sink_port "$def_port (default)"
+   }
+   ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                      -acl $snmp_acl -acl_oper {set}
+                         -value "$sink_id" -span_id "snmp_cbox_1">
+        </td>
+      <td>
+        <?^=$sink_host?></td>
+      <td>
+        <?^=$sink_port?></td>
+      <td>
+        <?^=$sink_type?></td>
+      <td>
+        <?^=$sink_comm?></td>
+      <td>
+        <?^=$sink_enable?></td>
+      <td>
+        <a href="/admin/launch?script=rh&amp;template=setup-snmp-notif-sink-edit&amp;host=<?=[tms::uri-component-escape $sink_host]?>">Edit</a>
+      <td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <SET remove_enabled "true">
+    <IF {$cur_line == 0}>
+      <SET remove_enabled "false">
+      <tr>
+        <td colspan="5">
+          No v1 or v2c notification sinks.
+    </IF>
+
+    <tr>
+      <td height="8">
+
+   </table>
+
+   <CFG-BUTTON -type "remove" -text "Remove Selected" -caps "set_basic"
+               -acl $snmp_acl -acl_oper {set} -enabled $remove_enabled
+               -span_id "snmp_remove_1">
+
+   </table>
+</CFG-FORM>
+
+  <? # ==================================================
+     # List of notification (trap/inform) sinks: v3
+     # ==================================================
+  ?>
+
+  <?
+    set cur_line 0
+  ?>
+
+  <h2>Notification Sinks: SNMP v3</h2>
+<CFG-FORM -action "config-form-list" -div_id "snmp_3">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing">
+  <tr>
+  <td>
+  <table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <?
+      # XXX/EMT: we are not displaying the Engine ID here because it is
+      # pretty long, and the table is already large enough as it is.
+      # Anyone wanting to see the Engine ID can click 'Edit', and it will
+      # be shown on the edit screen.  Hopefully this won't prove too
+      # inconvenient...
+    ?>
+ 
+    <tr class="listing_head"> 
+      <td></td>
+      <td>
+        Address</td>
+      <td>
+        Port</td>
+      <td>
+        Type</td>
+      <td>
+        Username</td>
+      <td>
+        Auth Type</td>
+      <td>
+        Privacy Type</td>
+      <td>
+        Auth Password</td>
+      <td>
+        Privacy Password</td>
+      <td>
+        Enabled</td>
+      <td></td>
+      <td></td>
+    </tr>
+
+   <FOREACH sink_id [tms::iterate-config $sink_prefix]>
+   <?
+   set prefix_len [string length "$sink_prefix/"]
+   set sink_host [string range $sink_id $prefix_len end]
+   set sink_type [tms::get-config "$sink_prefix/$sink_host/type"]
+   if {[string first "v3" "$sink_type"] == -1} {
+     continue
+   }
+   set sink_port [tms::get-config "$sink_prefix/$sink_host/port"]
+   set sink_enable [tms::get-config "$sink_prefix/$sink_host/enable" "yes"]
+   if {[string length $sink_port] == 0 || [string equal $sink_port "0"] == 1} {
+      set sink_port "$def_port (default)"
+   }
+   set sink_username [tms::get-config "$sink_prefix/$sink_host/v3/user"]
+   set sink_authtype [tms::get-config "$sink_prefix/$sink_host/v3/hash_type"]
+   set sink_privtype [tms::get-config "$sink_prefix/$sink_host/v3/privacy_type"]
+   set sink_authkey [tms::get-config "$sink_prefix/$sink_host/v3/auth_key"]
+   set sink_privkey [tms::get-config "$sink_prefix/$sink_host/v3/privacy_key"]
+
+   if {[string length $sink_authkey] > 0} {
+     set sink_auth_pwset "(set)"
+   } else {
+     set sink_auth_pwset "(NOT SET)"
+   }
+
+   if {[string length $sink_privkey] > 0} {
+     set sink_priv_pwset "(set)"
+   } else {
+     set sink_priv_pwset "(NOT SET)"
+   }
+
+   ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                      -acl $snmp_acl -acl_oper {set}
+                      -value "$sink_id" -span_id "snmp_cbox_2">
+        </td>
+      <td>
+        <?^=$sink_host?></td>
+      <td>
+        <?^=$sink_port?></td>
+      <td>
+        <?^=$sink_type?></td>
+      <td>
+        <?^=$sink_username?></td>
+      <td>
+         <?^=$sink_authtype?></td>
+      <td>
+         <?^=$sink_privtype?></td>
+      <td>
+         <?^=$sink_auth_pwset?></td>
+      <td>
+         <?^=$sink_priv_pwset?></td>
+      <td>
+        <?^=$sink_enable?></td>
+      <td>
+        <a href="/admin/launch?script=rh&amp;template=setup-snmp-notif-sink-edit&amp;host=<?=[tms::uri-component-escape $sink_host]?>">Edit</a>
+      <td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <SET remove_enabled "true">
+    <IF {$cur_line == 0}>
+      <SET remove_enabled "false">
+      <tr>
+        <td colspan="5">
+          No v3 notification sinks.
+    </IF>
+
+     <tr>
+       <td height="8">
+
+   </table>
+
+   <CFG-BUTTON -type "remove" -text "Remove Selected" -caps "set_basic"
+               -acl $snmp_acl -acl_oper {set} -enabled $remove_enabled
+               -span_id "snmp_remove_1">
+   </table>
+</CFG-FORM>
+
+  <? # ==================================================
+     # Add a new notification (trap/inform) sink
+     #
+     # XXX/EMT: this is copied and adapted from
+     # setup-snmp-notif-sink-edit.tem.  It would be nice if they could
+     # shared some factored out template code.  Note that the Users page
+     # has a nicer interface where you are taken to a separate page to
+     # add new items.  We could do that here too, though we should keep
+     # this and the mechanism for adding new SNMP v3 users consistent.
+     # ==================================================
+  ?>
+
+<h2>Add New Notification Sink</h2>
+<CFG-FORM -action "config-form-snmp-add-sink">
+  <TMS-TABLE -div_id "sink_edit_table_1">
+    <TMS-TABLE-ENTRY "Address">
+      <CFG-TEXTBOX -id "ns_host" -errname "host" -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -type "string" -cols "$ip_field_width" -span_id "snmp_host">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enable">
+      <CFG-CHECKBOX -id "ns_enable"
+                    -caps "set_basic"
+                    -acl $snmp_acl -acl_oper {set}
+                    -value "true"
+                    -type "bool">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Port Override">
+      <CFG-TEXTBOX -id "ns_port" -errname "port" -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -type "string" -cols 20 -span_id "snmp_port"
+                   -required "false">
+    </TMS-TABLE-ENTRY>
+
+      <?
+        # We like to keep the password boxes greyed out sometimes,
+        # depending on the selection in the Notification Type dropdown.
+        # But we have to support browsers without Javascript.  That's OK,
+        # the boxes will start ungreyed, and if there is no Javascript 
+        # we'll just never change that.
+      ?>
+      <script type="text/javascript">
+        function fixFieldsForVersion() {
+          var sel = document.getElementById('sel_ns_type').value;
+          var pwd1 = document.getElementById('ns_community');
+          var pwd2 = document.getElementById('ns_engine_id');
+          var pwd3 = document.getElementById('ns_username');
+          var pwd4 = document.getElementById('sel_ns_authtype');
+          var pwd5 = document.getElementById('sel_ns_privtype');
+          var pwd6 = document.getElementById('ns_auth_pwd');
+          var pwd7 = document.getElementById('ns_priv_pwd');
+          if (sel == 'trap-v3' || sel == 'inform-v3') {
+            pwd1.disabled=true;
+            if (sel == 'inform-v3') {
+              pwd2.disabled=false;
+            } else {
+              pwd2.disabled=true;
+            }
+            pwd3.disabled=false;
+            pwd4.disabled=false;
+            pwd5.disabled=false;
+            pwd6.disabled=false;
+            pwd7.disabled=false;
+          } else {
+            pwd1.disabled=false;
+            pwd2.disabled=true;
+            pwd3.disabled=true;
+            pwd4.disabled=true;
+            pwd5.disabled=true;
+            pwd6.disabled=true;
+            pwd7.disabled=true;
+            pwd6.value='';
+            pwd7.value='';
+          }
+        }
+      </script>
+
+    <TMS-TABLE-ENTRY "Notification Type">
+      <CFG-DROPDOWN -id "ns_type" -caps "set_basic" -type "string"
+                    -onchange "fixFieldsForVersion()"
+                    -acl $snmp_acl -acl_oper {set}
+                    -options {
+                         {"v1 trap" "trap-v1"}
+                         {"v2c trap" "trap-v2c"}
+                         {"v2c inform" "inform-v2c"}
+                         {"v3 trap" "trap-v3"}
+                         {"v3 inform" "inform-v3"}
+                    }
+                    -value "trap-v2c"
+                    -span_id "snmp_traptype">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v1/v2c Community Override">
+      <CFG-TEXTBOX -id "ns_community" -errname "community" -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -type "string" -cols 20 -span_id "snmp_comm"
+                   -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v3 Username">
+      <CFG-TEXTBOX -id "ns_username" -errname "username" -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -type "string" -cols 20 -span_id "snmp_comm"
+                   -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v3 Authentication Type">
+      <CFG-DROPDOWN -id "ns_authtype" -caps "set_basic"
+                    -acl $auth_acl -acl_oper {set}
+                    -type "string" -options {{"MD5" "md5"} {"SHA1" "sha"}}>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v3 Privacy Type">
+      <CFG-DROPDOWN -id "ns_privtype" -caps "set_basic"
+                    -acl $auth_acl -acl_oper {set}
+                    -type "string"
+                    -options {{"DES" "des"} {"AES-128" "aes-128"}}>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v3 Authentication Password">
+      <CFG-PASSWORDBOX -id "ns_auth_pwd" -caps "set_basic"
+                       -acl $auth_acl -acl_oper {set} -cols "20">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v3 Privacy Password">
+      <CFG-PASSWORDBOX -id "ns_priv_pwd" -caps "set_basic"
+                       -acl $auth_acl -acl_oper {set} -cols "20">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v3 Remote Engine ID">
+      <CFG-TEXTBOX -id "ns_engine_id" -errname "engine_id" -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -type "string" -cols 40 -span_id "snmp_comm"
+                   -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <script type="text/javascript">
+      fixFieldsForVersion();
+    </script>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Add New Sink" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "sink_add_apply">
+
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view SNMP configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

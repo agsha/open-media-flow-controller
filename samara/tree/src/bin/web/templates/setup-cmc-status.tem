@@ -1,0 +1,98 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "CMC Status Configuration">
+<TMS-MENU "cmc_setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-CMC-SETUP-MENU "status"></TMS-SIDEBAR>
+
+<?
+  global cmc_acl
+  set criteria_ids [tms::iterate-config "/cmc/config/status/criteria"]
+?>
+
+<TMS-PAGE-CONTENT "CMC Status">
+
+<IF {[tms::check-authorization "query_basic" $cmc_acl {query}]}>
+
+  <TMS-CMC-MSG>
+
+  <h2>CMC Status Monitoring</h2>
+
+  <CFG-FORM>
+  <TMS-TABLE>
+
+    <tr>
+      <td>
+      <td>
+        <TMS-TABLE-ENTRY "Enable status monitoring">
+        <CFG-CHECKBOX -id "enable_status" -caps "set_restricted"
+                      -acl $cmc_acl -acl_oper {set}
+                      -name "/cmc/config/status/enable" -type "bool">
+
+        <TMS-TABLE-ENTRY "Status check interval">
+        <CFG-TEXTBOX -id "status_interval" -caps "set_restricted"
+                      -acl $cmc_acl -acl_oper {set}
+                      -name "/cmc/config/status/poll_freq"
+                      -type "duration_sec" -cols "5"
+                      -errname "Status check interval"> &nbsp; seconds
+
+        <TMS-TABLE-ENTRY "Status check criteria:">
+
+        <tr>
+          <td colspan="99">
+            <TMS-TABLE>
+              <FOREACH crit_bn $criteria_ids>
+                <?
+                  set prefix_len [string length "/cmc/config/status/criteria/"]
+                  set crit [string range $crit_bn $prefix_len end]
+                ?>
+                <tr class="listing_even">
+                  <td width="40">
+                  <td>
+                    \"<?^=$crit?>\" enabled
+                  <td width="6">
+                  <td>
+                    <CFG-CHECKBOX 
+                    -id "enable_crit_$crit"
+                    -caps "set_restricted"
+                    -acl $cmc_acl -acl_oper {set}
+                    -name "/cmc/config/status/criteria/$crit/enable"
+                    -type "bool">
+
+              </FOREACH>
+            </TMS-TABLE>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}>
+  <img src="/images/em.gif" width="10" height="1" alt="">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}>
+
+  </CFG-FORM>
+
+<br>
+
+<a href="/admin/launch?script=rh&amp;template=mon-cmc">Check status</a>
+of CMC managed appliances.
+
+<ELSE>
+
+<br>
+Insufficient authorization to view CMC status configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

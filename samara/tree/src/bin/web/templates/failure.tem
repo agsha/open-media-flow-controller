@@ -1,0 +1,48 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-defines">
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+
+<TMS-PAGE "Failure">
+
+<p><b>Internal Error</b></p>
+
+<p>An internal error has occurred.</p>
+
+<p>Your options from this point are:
+<ul>
+<li>
+See the
+   <a href="/admin/launch?script=rh&amp;template=logging&amp;log=current">
+        logs</a>
+   for more details.
+<li>
+Return to the <?
+if {[info exists home_template]} {
+?>
+   <a href="/admin/launch?script=rh&amp;template=<?=[tms::html-escape $home_template]?>">
+<?
+   } else {
+?>
+   <a href="/">
+<?
+   }
+?>
+   home page</a>.
+
+<SET badpage_esc [tms::get-param "query" "badpage"]>
+<IF {[string length $badpage_esc] \> 0}>
+  <SET badpage [tms::uri-unescape $badpage_esc]>
+  <li>Retry the <a href="<?=[tms::html-escape $badpage]?>">bad page</a> which gave the error.
+</IF>
+
+</ul>
+</p>
+
+</TMS-PAGE>

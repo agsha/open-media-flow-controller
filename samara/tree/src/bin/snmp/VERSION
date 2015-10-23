@@ -1,0 +1,5 @@
+NET-SNMP 5.5-41.el6_3.1:
+NET-SNMP 5.5 upstream, plus patches from RHEL 6 as of 2012/09/25.
+
+Fetched from:
+http://vault.centos.org/6.3/updates/Source/SPackages/net-snmp-5.5-41.el6_3.1.src.rpm

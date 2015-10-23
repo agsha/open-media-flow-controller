@@ -1,0 +1,571 @@
+#!/bin/sh
+
+#
+# (C) Copyright 2013-2015 Juniper Networks, Inc. All Rights reserved.
+# (C) Copyright 2002-2012 Tall Maple Systems, Inc.
+# All rights reserved.
+# The contents of this file are subject to the terms of the MIT License.
+# You may not use this file except in compliance with the License.
+# See the file License.txt at the top of this source tree.
+# You can obtain a copy of the license at https://opensource.org/licenses/MIT
+#
+
+# This script allows manufacture.sh to be automatically started based on
+# parameters either taken on the command line, read from a specified
+# file, read from the kernel command line parameters, or as a fallback
+# (if no other methods are specified and the kernel command line has no
+# 'xopt_automfg_...') from /etc/automfg.txt .
+#
+# The list of supported 'xopt_automfg_...' settings is:
+#
+#       xopt_automfg_enable : if present, enable this whole process.
+#                             Without this option (or the "-f" command
+#                             line flag), nothing will be done by this
+#                             script.
+#
+#       xopt_automfg_v      : enable verbose messages from this script.
+#
+#       xopt_automfg_D      : reboot on finishing or failing.  The default.
+#       xopt_automfg_d      : halt on finishing or failing.
+#       xopt_automfg_x      : exit on finishing or failing.
+#
+#       xopt_automfg_S      : search for an image file if the xopt_mfg_u or
+#                             xopt_mfg_f settings do not specify one.
+#                             Typically this would be called /image.img
+#                             This will cause an xopt_mfg_f setting to
+#                             be added to the option strings given to
+#                             manufacture.  The default.
+#       xopt_automfg_s      : do not search for an image file even if
+#                             the xopt_mfg_u or xopt_mfg_f settings do not
+#                             specify one.
+#
+# For the list of supported 'xopt_mfg_...' settings, please see
+# manufacture.sh .
+#
+# Note that besides the 'xopt_automfg_...' settings, there is a special
+# 'xopt_automfgconf_file=...' setting.  If present in the parameters and
+# the specified file exists, it forces the specified config file to be
+# inserted at the beginning of the current parameter list.  This
+# 'xopt_automfgconf_file' setting is not be honored in the fallback
+# config file.  If the xopt_automfgconf_file does not exist, it is as if
+# the option was not specified.  The last instance of this option for
+# which the file exists will be used.  Note that relative filenames (for
+# this option only) are relative to /etc/ .  The 'xopt_automfgconf_file'
+# setting is intended to allow multiple different config files to be in
+# the image, and the one to use to be specified on the kernel command
+# line via PXE or the U-boot menu.
+#
+#
+# This script is typically used from a bootable cd or from PXE.
+#
+# Note that this script is used by the imgtoiso.sh script by
+# virtualization to create a bootable cd that boots and automatically
+# manufactures a (virtual) appliance.
+#
+# On a cd, you might put in /etc/automfg.txt :
+#
+#    xopt_automfg_enable
+#    xopt_mfg_t
+#    xopt_mfg_z
+#    xopt_mfg_q
+#    xopt_mfg_m=echo100
+#    xopt_mfg_f=/image.img
+#
+# And put your image file in /image.img .  This would cause the system
+# to be automatically manufactured when the iso was booted, and would
+# then reboot the system.
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export PATH
+
+umask 0022
+
+usage()
+{
+    echo "Usage: $0 [-f] [-v] [-q] [-E ARG_STRING]"
+    echo ""
+    echo "-f: force automfg to be enabled"
+    echo ""
+    echo "-v: verbose"
+    echo ""
+    echo "-q: quiet"
+    echo ""
+    echo "-e arg_file: take xopts options from the given file.  The"
+    echo "    fallback file is never used if this option is specified."
+    echo ""
+    echo "-E ARG_STRING: take xopts options from the given argument"
+    echo "    string.  This is in the same format as for kernel command"
+    echo "    line.  The fallback file is never used if this option is"
+    echo "    specified."
+    echo ""
+    echo "-s: disable missing image search .  Normally if no xopt_mfg_u or"
+    echo "    .._f option is specified, an image file will be searched for."
+    echo ""
+    echo "-S: enable missing image search (default).  If no xopt_mfg_u or"
+    echo "    .._f option is specified, an image file will be searched for."
+    echo ""
+    echo "-D: reboot after manufacturing failure or completion.  The default."
+    echo ""
+    echo "-d: halt after manufacturing failure or completion."
+    echo ""
+    echo "-x: exit after manufacturing failure or completion."
+    echo ""
+    echo "-B: use kernel command line params, but fall back to fallback file
+    echo "   if no xopt_automfg_... options are specified on the kernel cmdline.
+    echo "   The fallback file (/etc/automfg.txt) contains xopt_... settings ."
+    echo "   This is the default. "
+    echo ""
+    echo "-b: force use of the fallback file, never use kernel command line params"
+    echo ""
+    echo "-k: never use fallback file"
+    echo ""
+    exit 1
+}
+
+# returns OK if $1 contains $2
+strstr() {
+    case "${1}" in 
+        *${2}*) return 0;;
+    esac
+    return 1
+}
+
+vecho()
+{
+    level=$1
+    shift
+
+    if [ ${OPT_VERBOSE} -gt ${level} ]; then
+        echo "$*"
+    fi
+}
+
+die_reboot() {
+    vecho -1 "- Automatic manufacture failed and will reboot at:" `date '+%Y-%m-%d %H:%M:%S %Z'`
+    printf "\a"
+    sleep 1
+    /sbin/reboot
+    exit 1
+}
+
+die_halt() {
+    vecho -1 "- Automatic manufacture failed and will halt at:" `date '+%Y-%m-%d %H:%M:%S %Z'`
+    printf "\a"
+    sleep 1
+    /sbin/halt
+    exit 1
+}
+
+die_exit() {
+    vecho -1 "- Automatic manufacture failed and will stop at:" `date '+%Y-%m-%d %H:%M:%S %Z'`
+    printf "\a"
+    sleep 1
+    exit 1
+}
+
+done_reboot() {
+    vecho -1 "- Automatic manufacture done and will reboot at:" `date '+%Y-%m-%d %H:%M:%S %Z'`
+    printf "\a"
+    sleep 1
+    /sbin/reboot
+    exit 0
+}
+
+done_halt() {
+    vecho -1 "- Automatic manufacture done and will halt at:" `date '+%Y-%m-%d %H:%M:%S %Z'`
+    printf "\a"
+    sleep 1
+    /sbin/halt
+    exit 0
+}
+
+done_exit() {
+    vecho -1 "- Automatic manufacture done and will stop at:" `date '+%Y-%m-%d %H:%M:%S %Z'`
+    printf "\a"
+    sleep 1
+    exit 0
+}
+
+die_action() {
+    if [ "${DIE_ACTION}" = "halt" ]; then
+        die_halt
+    elif [ "${DIE_ACTION}" = "exit" ]; then
+        die_exit
+    else
+        die_reboot
+    fi
+}
+
+done_action() {
+    if [ "${DONE_ACTION}" = "halt" ]; then
+        done_halt
+    elif [ "${DONE_ACTION}" = "exit" ]; then
+        done_exit
+    else
+        done_reboot
+    fi
+}
+
+# ==================================================
+# Cleanup when called from 'trap' for ^C or signal
+# ==================================================
+trap_die_action()
+{
+    vecho -1 "*** Automatic manufacture interrupted"
+
+    die_action
+
+    # This is a fallback, execution should not reach here
+    done_reboot
+    exit 1
+}
+
+
+AUTOMFG_FALLBACK_PATH=/etc/automfg.txt
+HAVE_OPT_FORCE_ENABLE=0
+OPT_FORCE_ENABLE=0
+HAVE_OPT_VERBOSE=0
+OPT_VERBOSE=0
+HAVE_OPT_XOPTS_STR=0
+HAVE_OPT_XOPTS_FILE=0
+OPT_XOPTS_STR=
+HAVE_OPT_MISSING_IMAGE_SEARCH=0
+OPT_MISSING_IMAGE_SEARCH_ENABLE=1
+HAVE_OPT_DONE_ACTION=0
+DIE_ACTION=reboot
+DONE_ACTION=reboot
+
+# Fallback is either 0 (disable), 1 (if no xopt_automfg_ in kernel
+# cmdline) or 2 (force fallbackto be used, as if we had "-e
+# /etc/automfg.txt").
+HAVE_OPT_FALLBACK_TYPE=0
+OPT_FALLBACK_TYPE=1
+
+GETOPT_OPTS='fe:E:sSdDxkbBvq'
+PARSE=`/usr/bin/getopt -s sh $GETOPT_OPTS "$@"`
+if [ $? != 0 ] ; then
+    vecho -1 "Error from getopt"
+    usage
+fi
+
+eval set -- "$PARSE"
+
+while true ; do
+    case "$1" in
+        -f) HAVE_OPT_FORCE_ENABLE=1; OPT_FORCE_ENABLE=1; shift ;;
+        -v) HAVE_OPT_VERBOSE=1; OPT_VERBOSE=$((${OPT_VERBOSE}+1));
+            shift ;;
+        -q) HAVE_OPT_VERBOSE=1; OPT_VERBOSE=-1; shift ;;
+        -e) HAVE_OPT_XOPTS_FILE=1; 
+            OPT_XOPTS_FILE=$2; shift 2 ;;
+        -E) HAVE_OPT_XOPTS_STR=1; 
+            OPT_XOPTS_STR=$2; shift 2 ;;
+        -s) HAVE_OPT_MISSING_IMAGE_SEARCH=1; OPT_MISSING_IMAGE_SEARCH_ENABLE=0; shift ;;
+        -S) HAVE_OPT_MISSING_IMAGE_SEARCH=1; OPT_MISSING_IMAGE_SEARCH_ENABLE=1; shift ;;
+        -d) HAVE_OPT_DONE_ACTION=1; DIE_ACTION=halt; DONE_ACTION=halt; shift ;;
+        -D) HAVE_OPT_DONE_ACTION=1; DIE_ACTION=reboot; DONE_ACTION=reboot; shift ;;
+        -x) HAVE_OPT_DONE_ACTION=1; DIE_ACTION=exit; DONE_ACTION=exit; shift ;;
+        -k) HAVE_OPT_FALLBACK_TYPE=1; OPT_FALLBACK_TYPE=0; shift ;;
+        -b) HAVE_OPT_FALLBACK_TYPE=1; OPT_FALLBACK_TYPE=2; shift ;;
+        -B) HAVE_OPT_FALLBACK_TYPE=1; OPT_FALLBACK_TYPE=1; shift ;;
+        --) shift ; break ;;
+
+        *) echo "$0: parse failure" >&2 ; usage ;;
+    esac
+done
+
+if [ ! -z "$*" ] ; then
+    usage
+fi
+
+if [ ${HAVE_OPT_XOPTS_STR} -eq 1 -a ${HAVE_OPT_XOPTS_FILE} -eq 1 ]; then
+    usage
+fi
+
+# If they use "-e" or "-E" we will not be thinking about fallback
+if [ ${HAVE_OPT_XOPTS_STR} -eq 1 -o ${HAVE_OPT_XOPTS_FILE} -eq 1 ]; then
+    if [ ${OPT_FALLBACK_TYPE} -eq 2 ]; then
+        usage
+    fi
+fi
+
+using_kern_cmdline=0
+using_automfgconf_file=0
+opts_str=
+if [ ${HAVE_OPT_XOPTS_STR} -eq 1 ]; then
+    opts_str="${OPT_XOPTS_STR}"
+elif [ ${HAVE_OPT_XOPTS_FILE} -eq 1 ]; then
+    if [ -e ${OPT_XOPTS_FILE} ]; then
+        opts_str="$(cat ${OPT_XOPTS_FILE} | tr '\n' ' ')"
+    fi
+else
+    # In the shell, developers may set PROC_CMDLINE as a debugging aid
+    if [ -z "${PROC_CMDLINE}" ]; then
+        kern_cmdline="`cat /proc/cmdline`"
+    else
+        kern_cmdline="${PROC_CMDLINE}"
+    fi
+    using_kern_cmdline=1
+    opts_str="${kern_cmdline}"
+fi
+
+if strstr "${opts_str}" xopt_automfgconf_ ; then
+    # Find the xopt_automfgconf_file setting, and read from the file, if any
+    for kcw in ${opts_str}; do
+        echo $kcw | grep -q "^xopt_automfgconf_."
+        if [ $? -eq 1 ]; then
+            continue
+        fi
+
+        opt_name=$(echo -n "$kcw" | sed 's/^xopt_\([^=]*\).*$/\1/')
+        # printf %b is broken on our version of busybox, so just fixup spaces
+        opt_value=$(echo -n "$kcw" | sed 's/\\0040/ /g' | sed 's/\\040/ /g' | sed 's/^xopt_[^=]*\(.*\)$/\1/' | sed 's/^=\(.*\)$/\1/')
+
+        # Right now the only option at this level is "xopt_automfgconf_file"
+        if [ "${opt_name}" != "automfgconf_file" ]; then
+            continue
+        fi
+
+        # Relative file names are relative to /etc/
+        if [ "${opt_value##/}" = "${opt_value}" ]; then
+            opt_value="/etc/${opt_value}"
+        fi
+
+        # We have our filename, so if it exists, set our option string
+        # to it.  If it does not, our option string will be unchanged.
+
+        if [ -e "${opt_value}" ]; then
+            using_automfgconf_file=1
+            opts_str="$(cat ${opt_value} | tr '\n' ' ') ${opts_str}"
+        fi
+    done
+fi
+
+# Now maybe do fallback if we were using the kernel command line
+if [ "${using_kern_cmdline}" -eq 1 -a "${using_automfgconf_file}" -eq 0 ]; then
+    opts_str=
+    kcmd_has_automfg=0
+    if strstr "${kern_cmdline}" xopt_automfg_ ; then
+        kcmd_has_automfg=1
+    fi
+    if [ ${OPT_FALLBACK_TYPE} -eq 1 -a ${kcmd_has_automfg} -eq 1 ]; then
+        opts_str="${kern_cmdline}"
+    elif [ \( ${OPT_FALLBACK_TYPE} -eq 1 -a ${kcmd_has_automfg} -ne 1 \) -o ${OPT_FALLBACK_TYPE} -eq 2 ]; then
+        if [ ${OPT_FALLBACK_TYPE} -eq 1 ]; then
+            opts_str="${kern_cmdline}"
+        fi
+        if [ -e "${AUTOMFG_FALLBACK_PATH}" ]; then
+            opts_str="$(cat ${AUTOMFG_FALLBACK_PATH} | tr '\n' ' ')"
+        fi
+    fi
+fi
+
+AUTOMFG_ENABLE_STR=xopt_automfg_enable
+IS_AUTOMFG=0
+if strstr "$opts_str" ${AUTOMFG_ENABLE_STR} ; then
+   IS_AUTOMFG=1
+fi
+
+if [ ${IS_AUTOMFG} -ne 1 -a ${OPT_FORCE_ENABLE} -ne 1 ]; then
+    vecho -1 "- Automatic manufacture is not enabled.  Type 'automfg' to start it."
+    exit 0
+fi
+
+vecho -1 "- Automatic manufacture starting at:" `date '+%Y-%m-%d %H:%M:%S %Z'`
+
+#
+# Read in kernel params to see if we should automfg anything.
+# This allows for more automated installs or other operations via PXE labels.
+#
+# In general, the kernel command line params are xopt_automfg_FLAG[=FLAG.VALUE] .
+#
+# Examples:
+#
+# xopt_automfg_enable
+# xopt_automfg_v
+# xopt_automfg_s
+# xopt_automfg_S
+#
+# Note: if you want to put a space in a value, you'll have to use \040 or \0040 .
+#
+
+
+#
+# First, we'll get all the things from the kernel or specified command
+# line into our XOPTS_OPTNUM_###_NAME and XOPTS_OPTNUM_###_VALUE 'arrays'.
+# We'll process them only after we have everything stored away, in case
+# options depend on others, and to make customer processing work like
+# base processing.
+#
+
+xopts_opt_count=0
+
+for kcw in ${opts_str}; do
+    echo $kcw | grep -q "^xopt_."
+    if [ $? -eq 1 ]; then
+        continue
+    fi
+
+    opt_name=$(echo -n "$kcw" | sed 's/^xopt_\([^=]*\).*$/\1/')
+    # printf %b is broken on our version of busybox, so just fixup spaces
+    opt_value=$(echo -n "$kcw" | sed 's/\\0040/ /g' | sed 's/\\040/ /g' | sed 's/^xopt_[^=]*\(.*\)$/\1/' | sed 's/^=\(.*\)$/\1/')
+
+    if [ -z "${opt_name}" ]; then
+        continue
+    fi
+
+    xopts_opt_count=$((${xopts_opt_count} + 1))
+
+    eval 'XOPTS_OPTNUM_'${xopts_opt_count}'_NAME="'${opt_name}'"'
+    eval 'XOPTS_OPTNUM_'${xopts_opt_count}'_VALUE="'${opt_value}'"'
+    eval 'XOPTS_OPTNAME_'${opt_name}'_VALUE="'${opt_value}'"'
+done
+
+XOPTS_OPT_COUNT=${xopts_opt_count}
+
+#
+# Now we will walk through the base xopts option 'array' and handle ones we
+# support.
+#
+
+for eon in `seq 1 ${XOPTS_OPT_COUNT}`; do
+    opt_name=
+    eval 'opt_name="${XOPTS_OPTNUM_'${eon}'_NAME}"'
+    opt_value=
+    eval 'opt_value="${XOPTS_OPTNUM_'${eon}'_VALUE}"'
+
+    case "${opt_name}" in
+        automfg_enable) ;;
+
+        automfg_v) if [ ${HAVE_OPT_VERBOSE:-0} -eq 0 ]; then
+                HAVE_OPT_VERBOSE=1; OPT_VERBOSE=$((${OPT_VERBOSE}+1))
+            fi
+            ;;
+        automfg_d) if [ ${HAVE_OPT_DONE_ACTION:-0} -eq 0 ]; then
+                HAVE_OPT_DONE_ACTION=1
+                DONE_ACTION=halt
+                DIE_ACTION=halt
+            fi
+            ;;
+        automfg_D) if [ ${HAVE_OPT_DONE_ACTION:-0} -eq 0 ]; then
+                HAVE_OPT_DONE_ACTION=0
+                DONE_ACTION=reboot
+                DIE_ACTION=reboot
+            fi
+            ;;
+        automfg_x) if [ ${HAVE_OPT_DONE_ACTION:-0} -eq 0 ]; then
+                HAVE_OPT_DONE_ACTION=0
+                DONE_ACTION=exit
+                DIE_ACTION=exit
+            fi
+            ;;
+        automfg_s) if [ ${HAVE_OPT_MISSING_IMAGE_SEARCH:-0} -eq 0 ]; then
+                HAVE_OPT_MISSING_IMAGE_SEARCH=1; OPT_MISSING_IMAGE_SEARCH_ENABLE=0
+            fi
+            ;;
+        automfg_S) if [ ${HAVE_OPT_MISSING_IMAGE_SEARCH:-0} -eq 0 ]; then
+                HAVE_OPT_MISSING_IMAGE_SEARCH=1; OPT_MISSING_IMAGE_SEARCH_ENABLE=1
+            fi
+            ;;
+
+        *) ;;
+    esac
+        
+done
+
+# The general plan is that manufacture.sh will read only xopt_mfg_* ,
+# and that this script will read xopt_automfg_* , and possibly set some
+# more xopt_mfg_* or change the command line params to manufacture, and
+# then call manufacture.
+#
+# The goal is that manufacture.sh will NEVER have any customer specific
+# knowledge in it, or changes made to it; all customer / environment
+# specific things will be done in settings to this automfg file, or
+# right below here if necessary.  This is important for stability and
+# maintainability.
+#
+# It is also possible that the code below could rewrite various
+# xopt_mfg_* options.  The code below could be changed to call
+# manufacture.sh without any xopts (no -E) if desired.  
+#
+
+has_image=0
+image_file=
+image_url=
+
+if [ ! -z "${XOPTS_OPTNAME_mfg_u_VALUE}" -o ! -z "${XOPTS_OPTNAME_mfg_f_VALUE}" ]; then
+    has_image=1
+
+    if [ ! -z "${XOPTS_OPTNAME_mfg_u_VALUE}" ]; then
+        image_url="${XOPTS_OPTNAME_mfg_u_VALUE}"
+    else
+        image_file="${XOPTS_OPTNAME_mfg_f_VALUE}"
+    fi
+fi
+
+if [ ${has_image} -ne 1 -a ${OPT_MISSING_IMAGE_SEARCH_ENABLE} -eq 1 ]; then
+    # Try to find an 'image*.img' file
+    for cif in /image.img /root/image.img /var/home/root/image.img /mnt/cdrom/image.img ; do
+        if [ -f "${cif}" ]; then
+            image_file=$cif
+            break
+        fi
+    done
+
+    if [ -z "${image_file}" ]; then
+        FFL=$(find / -xdev -type f -name 'image*.img' -print)
+        for ifl in ${FFL} ; do
+            image_file=${ifl}
+            break
+        done
+    fi
+fi
+
+has_mxopts=0
+echo "${opts_str}" | grep -q "xopt_mfg_."
+if [ $? -eq 0 ]; then
+    has_mxopts=1
+fi
+
+# Note the space escaping below if you add things to xopt_mfg_...
+if [ "${has_mxopts}" = "1" -a ${has_image} -eq 0 ]; then
+    if [ ! -z "${image_url}" ]; then
+        image_url_esc=$(echo "${image_url}" | sed 's/ /\\040/g')
+        opts_str="${opts_str} xopt_mfg_u=${image_url_esc}"
+    fi
+    if [ ! -z "${image_file}" ]; then
+        image_file_esc=$(echo "${image_file}" | sed 's/ /\\040/g')
+        opts_str="${opts_str} xopt_mfg_f=${image_file}"
+    fi
+fi
+
+if [ "${opts_str}" = "" ]; then
+    vecho -1 "Error: no options found or specified"
+    die_action
+else
+    echo "${opts_str}" | grep -q "xopt_mfg_."
+    if [ $? -ne 0 ]; then
+        vecho -1 "Error: no xopt options found or specified"
+        die_action
+    fi
+fi
+
+trap "trap_die_action" HUP INT QUIT PIPE TERM
+
+vecho -1 "- Launching appliance manufacture.  Please be patient..."
+
+FAILURE=0
+/sbin/manufacture.sh -a -E "${opts_str}" || FAILURE=1
+
+if [ ${FAILURE} -ne 0 ]; then
+    vecho -1 "*** Manufacture failed."
+    die_action
+else
+    vecho -1 "- Manufacture completed successfully."
+    done_action
+fi
+
+
+# This is a catch-all, execution should not reach here
+done_reboot
+exit 0

@@ -1,0 +1,11 @@
+#
+# 
+#
+#
+
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+PO_OUTPUT_DIR=${PROD_BASE_I18N_ROOT}/src/bin/web/cgi_launcher
+MO_OUTPUT_DIR=${BIN_DIR}/launch/mo
+
+include ${PROD_TREE_ROOT}/src/mk/po.mk

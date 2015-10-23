@@ -1,0 +1,145 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: NTP">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"]
+
+  # Conditional on PROD_FEATURE_IPV6
+  set have_ipv6 [tms::have-prod-feature ipv6]
+  set ip_field_width 16
+  if {[string compare $have_ipv6 "true"] == 0} {
+    set ip_field_width 46
+  }
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "ntp" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "NTP CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_ntpserv "ntp server * version *"
+    set cmd_start_index 2200
+    set cmd_end_index 2399
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "NTP" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_ntpserv "ntp enable" "no ntp enable"
+                                  "ntp disable" "no ntp disable"]>
+
+  <?
+    # ==================================================
+    # Add general NTP settings
+    # ==================================================
+  ?>
+
+  <h2>NTP settings for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_ntp_2">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_ntp_table_1">
+      <TMS-TABLE-ENTRY-TWO>
+        <CFG-CHECKBOX -id "enable" -caps $prof_priv 
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "bool" -span_id "cmc_ntp_enable">
+      </TMS-TABLE-ENTRY-TWO "Enable NTP time synchronization">
+
+      <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"                  "ntpenable"
+      "cmd_ntpenable_fields"      "enable"
+      "cmd_ntpenable_checkcmd"    "ntp enable"
+      "cmd_ntpenable_nocheckcmd"  "no ntp enable">
+
+  <CFG-BUTTON -type "add" -text "Add Command" -caps $prof_priv  
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_ntp_add_1">
+
+  </CFG-FORM>
+
+  <?
+    # ==================================================
+    # Add NTP server
+    # ==================================================
+  ?>
+
+  <h2>New NTP server for profile "<?^=$profile_param?></h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_ntp_3">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_ntp_table_2">
+    <TMS-TABLE-ENTRY "Server IP">
+      <CFG-TEXTBOX -id "address" -errname "IP address" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "hostname" -cols "$ip_field_width"
+                   -span_id "cmc_ntp_addr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Version">
+      <CFG-DROPDOWN -id "version" -errname "version" -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "uint32" -value "4" -options {{3 3} {4 4}}
+                    -span_id "cmc_ntp_vers">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <?
+    # ==================================================
+    # The fields in cmd_ntpserver_fields are transposed to repro bug 11277.
+    # The order shouldn't matter.  Might as well leave them in this order
+    #  so the test case can live on.
+    # ==================================================
+  ?>
+  <CMC-PROFILE-CMDS
+      "commands"                "ntpserver"
+      "cmd_ntpserver_fields"    "version,address"
+      "cmd_ntpserver_pat_1"     "$cmdpat_ntpserv"
+      "cmd_ntpserver_fields_1"  "address,version">
+
+  <CFG-BUTTON -type "add" -text "Add Server" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_ntp_add_2">
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

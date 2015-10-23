@@ -1,0 +1,287 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "DNS">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "dns"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "DNS">
+
+  <?
+    global net_acl
+  ?>
+
+<IF {[tms::check-authorization "query_basic" $net_acl {query}]}>
+
+  <?
+    set domain_ids [tms::iterate-config "/resolver/domain_search"]
+    set ns_prefix "/resolver/state/nameserver"
+    set ds_prefix "/resolver/state/domain_search"
+    set cur_line 0
+    # Conditional on PROD_FEATURE_IPV6
+    set have_ipv6 [tms::have-prod-feature ipv6]
+    set ip_field_width 16
+    if {[string compare $have_ipv6 "true"] == 0} {
+      set ip_field_width 46
+    }
+  ?>
+
+<!-- ==================================================
+     = Name server state
+     ================================================== -->
+
+<h2>Static and Dynamic Name Servers</h2>
+
+<CFG-FORM -action "config-form-list" -div_id "dns_0">
+  <table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+ 
+    <tr class="listing_head">
+      <td>
+        IP Address
+      <td>
+        Active
+      <td>
+        Source
+    </tr>
+
+   <SET nameservers [tms::iterate-config $ns_prefix]>
+   <FOREACH ns_id $nameservers>
+   <?
+   set prefix_len [string length "$ns_prefix/"]
+   set ns_index [string range $ns_id $prefix_len end]
+   set ns_addr [tms::get-config "$ns_prefix/$ns_index/inetz_address"]
+   set ns_source [tms::get-config "$ns_prefix/$ns_index/source"]
+   set ns_source_tag [tms::get-config "$ns_prefix/$ns_index/source_tag"]
+   set ns_source_ifname [tms::get-config "$ns_prefix/$ns_index/source_ifname"]
+   if {[string compare $ns_source_tag "DHCP"] == 0 || [string compare $ns_source_tag "DHCPv6"] == 0} {
+     # XXX/EMT: I18N
+     set ns_source_detail "($ns_source_tag on $ns_source_ifname)"
+   } else {
+     set ns_source_detail ""
+   }
+   set ns_active [tms::get-config "$ns_prefix/$ns_index/active" "yes"]
+   ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <?^=$ns_addr?></td>
+      <td>
+        <?^=$ns_active?></td>
+      <td>
+        <?^=$ns_source?> <?^=$ns_source_detail?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Name servers.
+    </IF>
+
+     <tr>
+       <td height="8">
+
+   </table>
+
+</CFG-FORM>
+
+<!-- ==================================================
+     = Name servers
+     ================================================== -->
+
+      <h2>Add or Modify Name Servers</h2>
+
+      <CFG-FORM -div_id "dns_1">
+      <TMS-TABLE -div_id "dns_table_1">
+        <TMS-TABLE-ENTRY "Primary DNS IP address">
+          <CFG-TEXTBOX -id "ns1" -errname "primary name server"
+                    -caps "set_basic" 
+                    -acl $net_acl -acl_oper {set}
+                    -name "/resolver/nameserver/1/inetz_address" 
+                    -delname "/resolver/nameserver/1"
+                    -type "inetaddrz" -cols "$ip_field_width"
+                    -span_id "dns_ns1">
+        </TMS-TABLE-ENTRY>
+
+        <TMS-TABLE-ENTRY "Secondary DNS IP address">
+          <CFG-TEXTBOX -id "ns2" -errname "secondary name server"
+                    -caps "set_basic" 
+                    -acl $net_acl -acl_oper {set}
+                    -name "/resolver/nameserver/2/inetz_address"
+                    -delname "/resolver/nameserver/2"
+                    -type "inetaddrz" -cols "$ip_field_width"
+                    -span_id "dns_ns2">
+        </TMS-TABLE-ENTRY>
+
+        <TMS-TABLE-ENTRY "Tertiary DNS IP address">
+          <CFG-TEXTBOX -id "ns3" -errname "tertiary name server" 
+                    -caps "set_basic"
+                    -acl $net_acl -acl_oper {set}
+                    -name "/resolver/nameserver/3/inetz_address"
+                    -delname "/resolver/nameserver/3"
+                    -type "inetaddrz" -cols "$ip_field_width"
+                    -span_id "dns_ns3">
+        </TMS-TABLE-ENTRY>
+      <TMS-TABLE-SPACE>
+      </TMS-TABLE>
+      
+      <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+                   -acl $net_acl -acl_oper {set}
+                  -span_id "dns_apply_1">
+      <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+                   -acl $net_acl -acl_oper {set}
+                  -span_id "dns_cancel_1">
+      </CFG-FORM>
+
+<!-- ==================================================
+     = Domain Search
+     ================================================== -->
+
+<h2>Static and Dynamic Domain Names</h2>
+<?
+    # reset cur_line for new table.
+    set cur_line 0
+?>
+<CFG-FORM -action "config-form-list" -div_id "dns_4">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing">
+  <tr>
+  <td>
+  <table width="100%" border="0" cellspacing="0" cellpadding="5">
+ 
+    <tr class="listing_head">
+      <td>
+        Domain
+      <td>
+        Active
+      <td>
+        Source
+    </tr>
+
+   <SET domainsearch [tms::iterate-config $ds_prefix]>
+   <FOREACH ds_id $domainsearch>
+   <?
+   set prefix_len [string length "$ds_prefix/"]
+   set ds_index [string range $ds_id $prefix_len end]
+   set ds_name [tms::get-config "$ds_prefix/$ds_index/domainname"]
+   set ds_source [tms::get-config "$ds_prefix/$ds_index/source"]
+   set ds_source_tag [tms::get-config "$ds_prefix/$ds_index/source_tag"]
+   set ds_source_ifname [tms::get-config "$ds_prefix/$ds_index/source_ifname"]
+   if {[string compare $ds_source_tag "DHCP"] == 0 || [string compare $ds_source_tag "DHCPv6"] == 0} {
+     # XXX/EMT: I18N
+     set ds_source_detail "($ds_source_tag on $ds_source_ifname)"
+   } else {
+     set ds_source_detail ""
+   }
+   set ds_active [tms::get-config "$ds_prefix/$ds_index/active" "yes"]
+   ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <?^=$ds_name?></td>
+      <td>
+        <?^=$ds_active?></td>
+      <td>
+        <?^=$ds_source?> <?^=$ds_source_detail?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No domains.
+    </IF>
+
+     <tr>
+       <td height="8">
+
+   </table>
+   </table>
+</CFG-FORM>
+
+      <h2>Configured Domain Names</h2>
+
+      <CFG-FORM -action "config-form-dns" -div_id "dns_2">
+      <TMS-TABLE -div_id "dns_table_2">
+        <tr>
+          <td width="25">
+          <td>
+            <select name="f_domain" size="5" <?
+              if {[tms::check-authorization "set_basic" $net_acl {set}] == 0} {
+                tms::puts "disabled"
+              }
+            ?>>
+            <?
+              foreach domain_id $domain_ids {
+                set domain [tms::get-config "$domain_id\/domainname"]
+                tms::puts "<option value=\"[tms::html-escape ${domain_id}]\">[tms::html-escape ${domain}]</option>"
+              }
+            ?>
+            <!-- This forces the box to a of a minimum width -->
+            <option value="" disabled>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+           </select>
+        <tr>
+          <td height="10">
+      </TMS-TABLE>
+
+      <CFG-BUTTON -type "remove" -text "Remove Selected" -caps "set_basic"
+                  -acl $net_acl -acl_oper {set}
+                  -span_id "dns_remove_1">
+      </CFG-FORM>
+
+
+<!-- ==================================================
+     = Add New Domain Name
+     ================================================== -->
+
+      <h2>Add New Domain Name</h2>
+
+      <CFG-FORM -action "config-form-dns" -div_id "dns_3">
+
+      <TMS-TABLE -div_id "dns_table_3">
+        <TMS-TABLE-ENTRY "Domain Name">
+          <CFG-TEXTBOX -id "add_domain" -errname "domain name"
+                       -caps "set_basic"
+                       -acl $net_acl -acl_oper {set}
+                       -cols "16" -span_id "dns_domain">
+        </TMS-TABLE-ENTRY>
+        <tr>
+          <td height="10">
+      </TMS-TABLE>
+
+      <CFG-BUTTON -type "add" -text "Add Domain Name" -caps "set_basic"
+                  -acl $net_acl -acl_oper {set}
+                  -span_id "dns_add_1">
+      </CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view DNS configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

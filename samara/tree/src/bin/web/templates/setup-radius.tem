@@ -1,0 +1,384 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "RADIUS">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "radius"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Radius">
+
+<? # ==================================================
+   # Default RADIUS settings
+   # ==================================================
+
+   global auth_acl
+   global auth_acl_hi
+?>
+
+<IF {[tms::check-authorization "query_basic" $auth_acl {query}]}>
+
+  <h2>Default RADIUS Settings</h2>
+
+<CFG-FORM -div_id "rad_1">
+
+  <TMS-TABLE -div_id "rad_table_1">
+    <TMS-TABLE-ENTRY "Key">
+      <CFG-TEXTBOX -id "gkey" -errname "Key" -caps "set_privileged"
+                   -acl $auth_acl_hi -acl_oper {set}
+                   -name "/radius/global/key" -type "string" -cols "20"
+                   -span_id "rad_gkey">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Timeout">
+      <CFG-TEXTBOX -id "gtimeout" -errname "Timeout" -caps "set_restricted"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/radius/global/timeout" -type "duration_sec"
+                   -cols "8" -span_id "rad_gtimeout">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Retransmit">
+      <CFG-TEXTBOX -id "gretransmit" -errname "Retransmit"
+                   -caps "set_restricted"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/radius/global/retransmit" -type "int32" -cols "8"
+                   -span_id "rad_gretrans">
+    </TMS-TABLE-ENTRY>
+
+<?
+  #
+  # We only want to show the login-lat-group text box if something is
+  # already set for it.  Basically, we want to hide the feature.
+  # It will be a bit odd if someone uses this UI to change it from a
+  # nonempty string to an empty string, as that will cause the field
+  # to disappear from the UI.  But this seems the lesser of two evils,
+  # since we also don't want to hide the field if they have something 
+  # set in it.
+  #
+  set global_llg [tms::get-config "/radius/global/login_lat_group"]
+  if {[string length $global_llg] != 0} {
+?>
+
+    <TMS-TABLE-ENTRY "Login-lat-group">
+      <CFG-TEXTBOX -id "llg" -errname "Login-lat-group"
+                   -caps "set_restricted"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/radius/global/login_lat_group" -type "string"
+                   -cols "20" -span_id "rad_gllg">
+    </TMS-TABLE-ENTRY>
+
+<?
+  }
+?>
+
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "rad_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "rad_cancel_1">
+</CFG-FORM>
+
+<? # ==================================================
+   # List of RADIUS servers
+   # ==================================================
+?>
+
+  <h2>RADIUS Servers</h2>
+  <CFG-FORM -action "config-form-array" -div_id "rad_2">
+
+  <?
+    set cur_line 0
+    set server_prefix "/radius/server"
+    set server_ids [tms::iterate-config $server_prefix]
+
+    set glob_timeout [tms::get-config "/radius/global/timeout"]
+    set glob_retransmit [tms::get-config "/radius/global/retransmit"]
+    set glob_key [tms::get-config "/radius/global/key"]
+
+    #
+    # Do a preliminary scan to find out if any servers have login-lat-group
+    # set.  If none of them do, and there is no global one set, then we 
+    # want to skip having a login-lat-group column in the display.  But if
+    # even one server is going to have a non-empty one, we need the column.
+    #
+    # Of course, if there is a global login-lat-group, then we don't need
+    # to scan, since all of them will have either the global one, or 
+    # their own (if any).
+    #
+    set show_llg "false"
+    if {[string length $global_llg] != 0} {
+      set show_llg "true"
+    } else {
+      set global_llg "(none)"
+      foreach server_id $server_ids {
+        set server_llg [tms::get-config "$server_id/login_lat_group"]
+        if {[string length $server_llg] != 0} {
+          set show_llg "true"
+        }
+      }
+    }
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+ 
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        Server</td>
+      <td>
+        Auth-Port</td>
+      <td>
+        Key</td>
+      <td>
+        Timeout</td>
+      <td>
+        Retransmit</td>
+
+      <IF {[string compare $show_llg "true"] == 0}>
+      <td>
+        Login-lat-group</td>
+      </IF>
+
+      <td>
+        Enabled</td>
+    </tr>
+
+    <FOREACH server_id $server_ids>
+    <?
+    set prefix_len [string length "$server_prefix/"]
+    set row_id [string range $server_id $prefix_len end]
+    set server_address [tms::get-config "$server_id/address"]
+    set server_port [tms::get-config "$server_id/auth-port"]
+    set server_key [tms::get-config "$server_id/key"]
+    set server_timeout [tms::get-config "$server_id/timeout"]
+    set server_retransmit [tms::get-config "$server_id/retransmit"]
+    set server_llg [tms::get-config "$server_id/login_lat_group"]
+    set server_enable [tms::get-config "$server_id/enable" "yes"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$row_id" -caps "set_privileged"
+                      -acl $auth_acl -acl_oper {set}
+                         -value "/radius/server/$row_id"
+                         -span_id "rad_cbox_1">
+        </td>
+      <td>
+        <?^=$server_address?></td>
+      <td>
+        <?^=$server_port?></td>
+      <td>
+        <?
+        # This won't actually trigger if PROD_FEATURE_SECURE_NODES is enabled,
+        # since even the empty string shows up as eight asterisks.  So not only
+        # can the user not tell what the key is, but they also can't tell
+        # whether the default key is used.  XXX/EMT: we could figure this out
+        # by doing a 'cleartext' query, but we need a new TCL command that lets
+        # us pass arbitrary query flags.
+        ?>
+        <IF {$server_key == ""}>
+            <?^=$glob_key?> &nbsp;<em>(default)</em>
+        <ELSE>
+            <?^=$server_key?></td>
+        </IF>
+      <td>
+        <IF {$server_timeout == "-1"}>
+            <?^=$glob_timeout?> &nbsp;<em>(default)</em>
+        <ELSE>
+            <?^=$server_timeout?></td>
+        </IF>
+      <td>
+        <IF {$server_retransmit == "-1"}>
+            <?^=$glob_retransmit?> &nbsp;<em>(default)</em>
+        <ELSE>
+            <?^=$server_retransmit?></td>
+        </IF>
+      <IF {[string compare $show_llg "true"] == 0}>
+      <td>
+        <IF {$server_llg == ""}>
+              <?^=$global_llg?> &nbsp;<em>(default)</em>
+          <ELSE>
+            <?^=$server_llg?></td>
+          </IF>
+        </IF>
+      <td>
+        <?^=$server_enable?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No RADIUS servers.
+      <SET disab "true">
+    <ELSE>
+      <SET disab "false">
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <input type="hidden" name="f_array_root" value="/radius/server">
+  <input type="hidden" name="f_array_shift" value="true">
+
+  <input type="hidden" name="f_array_custom_buttons" value="enable,disable,remove">
+  <input type="hidden" name="f_array_button_enable_action" value="set">
+  <input type="hidden" name="f_array_button_enable_child_name" value="enable">
+  <input type="hidden" name="f_array_button_enable_child_value" value="true">
+  <input type="hidden" name="f_array_button_disable_action" value="set">
+  <input type="hidden" name="f_array_button_disable_child_name" value="enable">
+  <input type="hidden" name="f_array_button_disable_child_value" value="false">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected Server"
+              -caps "set_privileged" 
+              -acl $auth_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "rad_remove_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "enable" -text "Enable Server"
+              -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "rad_enable_1"> 
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "disable" -text "Disable Server"
+              -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "rad_disable_1"> 
+
+  </td>
+ </tr></table>
+ </CFG-FORM>
+
+  <?
+    set authport [tms::get-param post "f_auth-port"]
+    if {[string length $authport] == 0} {
+        tms::set-param post replace "f_auth-port" "1812"
+    }
+  ?>
+
+<? # ==================================================
+   # Add new RADIUS server
+   # ==================================================
+?>
+
+<CFG-FORM -action "config-form-array" -div_id "rad_3">
+  <h2>Add New RADIUS Server</h2>
+  <TMS-TABLE -div_id "rad_table_2">
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps "set_privileged" -type "bool"
+                    -acl $auth_acl -acl_oper {set}
+                    -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "rad_enabled">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Server IP">
+      <CFG-TEXTBOX -id "address" -errname "IP address" -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -type "ipv4addr" -cols "20" -span_id "rad_addr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Auth Port">
+      <CFG-TEXTBOX -id "auth-port" -errname "Auth Port" -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -type "uint16" -cols "8" -span_id "rad_aport">
+    </TMS-TABLE-ENTRY>
+
+    <tr class="listing_even">
+      <td height=10 colspan=99>
+
+    <tr class="listing_even">
+      <td colspan=99>Enter overrides, or leave blank to use default setting:
+
+    <IF {[string compare [tms::may-obfuscate] "true"] == 0}>
+      <TMS-TABLE-ENTRY "Key">
+        <CFG-PASSWORDBOX -id "key" -errname "Key" -caps "set_privileged"
+                     -acl $auth_acl -acl_oper {set}
+                     -type "string" -cols "20" -required "false" 
+                     -span_id "rad_key">
+      </TMS-TABLE-ENTRY>
+    <ELSE>
+      <TMS-TABLE-ENTRY "Key">
+        <CFG-TEXTBOX -id "key" -errname "Key" -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -type "string" -cols "20" -required "false" 
+                     -span_id "rad_key">
+      </TMS-TABLE-ENTRY>
+    </IF>
+
+    <TMS-TABLE-ENTRY "Timeout">
+      <CFG-TEXTBOX -id "timeout" -errname "Timeout" -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -type "duration_sec" -cols "8" -required "false"
+                   -span_id "rad_timeout">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Retransmit">
+      <CFG-TEXTBOX -id "retransmit" -errname "Retransmit"
+                   -caps "set_privileged" -required "false"
+                   -acl $auth_acl -acl_oper {set}
+                   -type "int32" -cols "8" -span_id "rad_retrans">
+    </TMS-TABLE-ENTRY>
+
+<?
+  #
+  # We only want to show the login-lat-group text box if something is
+  # is already using it (see above).
+  #
+?>
+    <IF {[string compare $show_llg "true"] == 0}>
+      <TMS-TABLE-ENTRY "Login-lat-group">
+        <CFG-TEXTBOX -id "login_lat_group" -errname "Login-lat-group"
+                     -caps "set_privileged"
+                     -acl $auth_acl -acl_oper {set}
+                     -required "false"
+                     -type "string" -cols "20" -span_id "rad_llg">
+      </TMS-TABLE-ENTRY>
+    </IF>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_array_root" value="/radius/server">
+
+  <IF {[string compare $show_llg "true"] == 0}>
+    <input type="hidden" name="f_array_children"
+        value="address,auth-port,key,timeout,retransmit,login_lat_group,enable">
+  <ELSE>
+    <input type="hidden" name="f_array_children"
+        value="address,auth-port,key,timeout,retransmit,enable">
+  </IF>
+
+  <CFG-BUTTON -type "add" -text "Add RADIUS Server" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "rad_add_1">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view RADIUS configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

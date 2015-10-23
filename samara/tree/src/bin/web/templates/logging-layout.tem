@@ -1,0 +1,57 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+
+<TAG TMS-LOGGING-MENU selected>
+
+<?
+
+  global log_view_acl
+  set log_avail [tms::check-authorization "-" $log_view_acl {query set}]
+
+  set options [list \
+    [list "logging&amp;log=continuous" "Continuous log" "-" $log_avail] \
+    [list "logging&amp;log=current" "Current log" "-" $log_avail] \
+  ]
+
+  set file_prefix "/logging/logfiles/global"
+  set files [tms::iterate-config "$file_prefix"]
+  set log_numbers ""
+
+  foreach file $files {
+    if {[string match "*.gz" $file] == 1} {
+      set prefix_len [string length "$file_prefix/messages."]
+      set file_end [expr {[string last ".gz" $file] - 1}]
+      set file_num [string range $file $prefix_len $file_end]
+      set log_numbers [concat $log_numbers $file_num]
+    }
+  }
+
+  set sorted_list [lsort -dictionary $log_numbers]
+
+  foreach file_num $sorted_list {
+    lappend options [list "logging&amp;log=[tms::uri-component-escape $file_num]" "Archived log $file_num" "-" $log_avail]
+  }
+
+  global customer_logs_sidebar
+  if {[info exists customer_logs_sidebar]} {
+    set options [list $customer_logs_sidebar $options]
+  } else {
+    set options [list $options]
+  }
+  
+?>
+
+<div id="pageSidebar-logging">
+  <div id="tms_logging_menu">
+    <TMS-SIDEBAR-MENU $selected $options ""></TMS-SIDEBAR-MENU>
+  </div>
+</div>
+
+</TAG>

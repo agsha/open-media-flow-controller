@@ -1,0 +1,16 @@
+initscripts-9.03.31-2.el6.centos
+    This was the CentOS 6.3 latest as of 2012/07/30.
+
+    Downloadable from:
+       http://vault.centos.org/6.3/os/Source/SPackages/initscripts-9.03.31-2.el6.centos.src.rpm
+
+    This is the bulk of the files in this directory, although the
+    directory structure has been flattened.
+
+udev-147-2.42.el6
+    This was the CentOS 6.3 latest as of 2012/07/30.
+
+    Downloadable from:
+        http://vault.centos.org/6.3/updates/Source/SPackages/udev-147-2.42.el6.src.rpm
+
+    The only file imported from the RPM is 'start_udev'.

@@ -1,0 +1,233 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: RADIUS">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"] 
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "radius" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "Radius CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_radius "radius-server **"
+    set cmd_start_index 1200
+    set cmd_end_index 1399
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "RADIUS" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_radius]>
+
+  <?
+    # ==================================================
+    # Global RADIUS settings
+    # ==================================================
+  ?>
+
+  <h2>RADIUS settings for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_rad_2">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_rad_table_1">
+    <TMS-TABLE-ENTRY "Key">
+      <CFG-TEXTBOX -id "globkey" -errname "Key" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "20" -required "false" 
+                   -span_id "cmc_rad_gkey">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Timeout">
+      <CFG-TEXTBOX -id "globtimeout" -errname "Timeout" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "duration_sec" -cols "4" -required "false"
+                    -span_id "cmc_rad_gtimeout">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Retransmit">
+      <CFG-TEXTBOX -id "globretransmit" -errname "Retransmit" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "int32" -cols "4" -required "false"
+                   -span_id "cmc_rad_gretrans">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"                   "globkey,globtimeout,globretrans"
+      "cmd_globkey_fields"         "globkey"
+      "cmd_globkey_pat_1"          "radius-server key *"
+      "cmd_globkey_fields_1"       "globkey"
+      "cmd_globtimeout_fields"     "globtimeout"
+      "cmd_globtimeout_pat_1"      "radius-server timeout *"
+      "cmd_globtimeout_fields_1"   "globtimeout"
+      "cmd_globretrans_fields"     "globretransmit"
+      "cmd_globretrans_pat_1"      "radius-server retransmit *"
+      "cmd_globretrans_fields_1"   "globretransmit">
+
+  <CFG-BUTTON -type "add" -text "Add Commands" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_rad_add_1">
+
+  </CFG-FORM>
+
+
+  <?
+    # ==================================================
+    # New RADIUS server
+    # ==================================================
+  ?>
+
+  <h2>New RADIUS server for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_rad_3">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_rad_table_2">
+    <TMS-TABLE-ENTRY "Server IP">
+      <CFG-TEXTBOX -id "address" -errname "IP address" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "ipv4addr" -cols "20" -span_id "cmc_rad_addr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Auth Port">
+      <CFG-TEXTBOX -id "aport" -errname "Auth Port" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "uint16" -cols "6" -required "false"
+                    -span_id "cmc_rad_aport">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Key">
+      <CFG-TEXTBOX -id "key" -errname "Key" -caps $prof_priv 
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "20" -required "false"
+                    -span_id "cmc_rad_key">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Retransmit">
+      <CFG-TEXTBOX -id "retrans" -errname "Retransmit" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "int32" -cols "4" -required "false"
+                    -span_id "cmc_rad_retrans">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Timeout">
+      <CFG-TEXTBOX -id "timeout" -errname "Timeout" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "duration_sec" -cols "4" -required "false"
+                    -span_id "cmc_rad_timeout">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <?
+    # ==================================================
+    # Youch!  There are four optional parameters, leading to 16 
+    # different possible combinations.  We have to list all of them
+    # here to cover our bases.  We cannot require that all fields be
+    # specified, because in some cases the user may not want to override
+    # all of the base settings for the given host.
+    # 
+    # Note that it's OK to have extra whitespace in the middle of the
+    # command patterns, to make them fit in 80 columns.  The extra
+    # space will be eliminated when the command to add to the profile
+    # is rendered.
+    # ==================================================
+  ?>
+  <CMC-PROFILE-CMDS
+      "commands"          "rad"
+      "cmd_rad_numpats"   "16"
+      "cmd_rad_fields"    "address,aport,key,retrans,timeout"
+
+      "cmd_rad_pat_1"     "radius-server host *"
+      "cmd_rad_fields_1"  "address"
+
+      "cmd_rad_pat_2"     "radius-server host * auth-port *"
+      "cmd_rad_fields_2"  "address,aport"
+
+      "cmd_rad_pat_3"     "radius-server host * auth-port * key *"
+      "cmd_rad_fields_3"  "address,aport,key"
+
+      "cmd_rad_pat_4"     "radius-server host * auth-port * key *
+                           retransmit * "
+      "cmd_rad_fields_4"  "address,aport,key,retrans"
+
+      "cmd_rad_pat_5"     "radius-server host * auth-port * key * timeout * "
+      "cmd_rad_fields_5"  "address,aport,key,timeout"
+
+      "cmd_rad_pat_6"     "radius-server host * auth-port * key * retransmit *
+                           timeout * "
+      "cmd_rad_fields_6"  "address,aport,key,retrans,timeout"
+
+      "cmd_rad_pat_7"     "radius-server host * auth-port * retransmit *"
+      "cmd_rad_fields_7"  "address,aport,retrans"
+
+      "cmd_rad_pat_8"     "radius-server host * auth-port * retransmit * 
+                           timeout * "
+      "cmd_rad_fields_8"  "address,aport,retrans,timeout"
+
+      "cmd_rad_pat_9"     "radius-server host * auth-port * timeout *"
+      "cmd_rad_fields_9"  "address,aport,timeout"
+
+      "cmd_rad_pat_10"     "radius-server host * key *"
+      "cmd_rad_fields_10"  "address,key"
+
+      "cmd_rad_pat_11"     "radius-server host * key * timeout * "
+      "cmd_rad_fields_11"  "address,key,timeout"
+
+      "cmd_rad_pat_12"     "radius-server host * key * retransmit * "
+      "cmd_rad_fields_12"  "address,key,retrans"
+
+      "cmd_rad_pat_13"     "radius-server host * key * retransmit * timeout * "
+      "cmd_rad_fields_13"  "address,key,retrans,timeout"
+
+      "cmd_rad_pat_14"     "radius-server host * retransmit *"
+      "cmd_rad_fields_14"  "address,retrans"
+
+      "cmd_rad_pat_15"     "radius-server host * retransmit * timeout * "
+      "cmd_rad_fields_15"  "address,retrans,timeout"
+
+      "cmd_rad_pat_16"     "radius-server host * timeout *"
+      "cmd_rad_fields_16"  "address,timeout">
+
+  <CFG-BUTTON -type "add" -text "Add Server" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_rad_add_2">
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

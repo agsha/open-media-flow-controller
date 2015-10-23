@@ -1,0 +1,174 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Hostname">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "hostname"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Hostname and Banners">
+
+<?
+  global banner_acl
+  global hostname_acl
+  global net_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" [concat $banner_acl $net_acl $hostname_acl] {query}]}>
+
+  <h2>System Hostname</h2>
+
+<CFG-FORM -div_id "hostname_1">
+
+  <TMS-TABLE -div_id "hostname_table_1">
+    <TMS-TABLE-ENTRY "Host Name">
+        <CFG-TEXTBOX -id "hostname" -errname "host name" -caps "set_privileged"
+                     -acl $hostname_acl -acl_oper {set}
+                     -name "/system/hostname" -type "hostname"
+                     -span_id "hostname_host">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_privileged"
+              -acl $hostname_acl -acl_oper {set}
+              -span_id "hostname_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_privileged"
+              -acl $hostname_acl -acl_oper {set}
+              -span_id "hostname_cancel_1">
+</CFG-FORM>
+
+<?
+    # Conditional on PROD_FEATURE_DHCP_CLIENT
+    set have_dhcp [tms::have-prod-feature dhcp_client]
+
+    if {[string compare $have_dhcp "true"] == 0} {
+
+    set dhcp_hostname_default [tms::get-config "/system/hostname"]
+    set dhcp_hostname [tms::get-config "/net/general/config/dhcp/hostname"]
+?>
+
+<h2>DHCP Hostname</h2>
+
+<CFG-FORM -action "config-form-hostname-dhcp" -div_id "hostname_6">
+  <TMS-TABLE -div_id "hostname_table_5">
+    <TMS-TABLE-ENTRY "Send hostname with DHCP client request">
+          <CFG-CHECKBOX -id "send_hostname_enable" -caps "set_restricted"
+                      -acl $net_acl -acl_oper {set}
+                      -name "/net/general/config/dhcp/send_hostname"
+                      -type "bool" -span_id "hostname_dhcp_send_hostname">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <TMS-TABLE -div_id "hostname_table_6">
+    <IF {[string compare "$dhcp_hostname" ""] == 0}>
+        <SET dhcp_hostname_alternate "false">
+    <ELSE>
+        <SET dhcp_hostname_alternate "true">
+    </IF>
+    <tr>
+      <td>
+        <CFG-RADIO-GROUP -id "dhcp_hostname_source"
+                         -type "string">
+
+        <CFG-RADIO -id "dhcp_hostname_source" -caps "set_restricted" -value "use_system_hostname"
+                   -acl $net_acl -acl_oper {set}
+                   -checked "true" -span_id "hostname_dhcp_source_system">
+          Use system hostname (currently <?^= $dhcp_hostname_default ?>)
+
+      </td>
+    <tr>
+      <td>
+        <CFG-RADIO -id "dhcp_hostname_source" -caps "set_restricted" -value "use_dhcp_hostname"
+                   -acl $net_acl -acl_oper {set}
+                   -checked "$dhcp_hostname_alternate" -span_id "hostname_dhcp_source_dhcp">
+          Alternate hostname for DHCP:
+      </td>
+    <tr>
+      <td>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp
+          <CFG-TEXTBOX -id "dhcp_hostname" -caps "set_restricted" -type "hostname"
+                       -acl $net_acl -acl_oper {set}
+                       -name "/net/general/config/dhcp/hostname"
+                       -cols 64 -span_id "hostname_dhcp_hostname">
+      </td>
+    </tr>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $net_acl -acl_oper {set}
+              -span_id "dhcp_hostname_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $net_acl -acl_oper {set}
+              -span_id "dhcp_hostname_cancel_1">
+</CFG-FORM>
+
+<?
+  }
+?>
+
+
+<h2>Banners</h2>
+
+<CFG-FORM -div_id "hostname_2">
+
+  <TMS-TABLE -div_id "hostname_table_2">
+    <TMS-TABLE-ENTRY "Message of the Day (MOTD)">
+        <CFG-TEXTAREA -id "motd" -errname "MOTD" -caps "set_basic"
+                     -acl $banner_acl -acl_oper {set}
+                     -name "/system/motd" -type "string"
+                     -cols "80" -rows "8"
+                     -span_id "hostname_motd">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+
+    <TMS-TABLE-ENTRY "Remote Login">
+        <CFG-TEXTAREA -id "login_remote" -errname "Remote login message"
+                     -caps "set_basic"
+                     -acl $banner_acl -acl_oper {set}
+                     -name "/system/issue_net" -type "string"
+                     -cols "80" -rows "8"
+                     -span_id "hostname_login_remote">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+
+    <TMS-TABLE-ENTRY "Local Login">
+        <CFG-TEXTAREA -id "login_local" -errname "Local login message"
+                     -caps "set_basic"
+                     -acl $banner_acl -acl_oper {set}
+                     -name "/system/issue" -type "string"
+                     -cols "80" -rows "8"
+                     -span_id "hostname_login_local">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -acl $banner_acl -acl_oper {set}
+              -span_id "hostname_apply_4">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $banner_acl -acl_oper {set}
+              -span_id "hostname_cancel_4">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view hostname and banner configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

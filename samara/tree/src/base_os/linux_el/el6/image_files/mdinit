@@ -1,0 +1,375 @@
+#! /bin/bash
+#
+# mdinit          Apply initial configuration to the system
+#
+# chkconfig: 3 21 79
+# description: apply initial configuration to the system
+
+#
+# (C) Copyright 2013-2015 Juniper Networks, Inc. All Rights reserved.
+# (C) Copyright 2002-2012 Tall Maple Systems, Inc.
+# All rights reserved.
+# The contents of this file are subject to the terms of the MIT License.
+# You may not use this file except in compliance with the License.
+# See the file License.txt at the top of this source tree.
+# You can obtain a copy of the license at https://opensource.org/licenses/MIT
+#
+
+# Source function library.
+. /etc/init.d/functions
+
+if [ -r /opt/tms/release/build_version.sh ] ; then
+   . /opt/tms/release/build_version.sh
+fi
+
+# XXX/EMT: should be in tpaths.sh (see bug 12164)
+# XXX/EMT: duplicated in firstboot.sh
+ATTEMPTING_FALLBACK_FILE=/var/opt/tms/.attempting_fallback_reboot
+ATTEMPTING_FIR_FALLBACK_FILE=/var/opt/tms/.attempting_fir_fallback_reboot
+ATTEMPTING_IPV6_FALLBACK_FILE=/var/opt/tms/.attempting_ipv6_fallback_reboot
+SKIP_FALLBACK_FILE=/var/opt/tms/.skip_fallback_reboot
+FORCE_FALLBACK_FILE=/var/opt/tms/.force_fallback_reboot
+UNEXPECTED_SHUTDOWN_FILE=/var/opt/tms/.unexpected_shutdown
+
+##
+## The ATTEMPTING_FALLBACK_FILE is set whenever any release initiates a 
+## fallback reboot because its initial commit failed.  This is used mainly
+## to prevent the other location from itself doing a fallback reboot, and
+## getting into an endless loop.
+##
+## The ATTEMPTING_FIR_FALLBACK_FILE is set (in addition to the above)
+## whenever a Fir-or-later release initiates a fallback reboot because its
+## initial commit failed.  This was added so that when running mdinit in
+## the image to which we have fallen back, we can distinguish whether or
+## not the failed image was pre-Fir.  If it is, then we try our "IPv6
+## fallback reboot" trick, to try to get the other image to work.
+## If it isn't, we don't want to bother trying, since that could not have
+## been the problem.
+##
+## The ATTEMPTING_IPV6_FALLBACK_FILE is set whenever a Fir-or-later release
+## boots and successfully completes its own initial commit, but then notices
+## that a pre-Fir release has done a fallback reboot back to us.  If this 
+## file did not already exist, we create it, and do our IPv6 database 
+## transformation and reboot back to the old image, hoping it will work
+## this time.  If this file did already exist, then we've already tried it,
+## and we should just proceed.  This is used to keep us from getting into
+## an endless reboot loop of the IPv6 fallback reboot does not work.
+## Unfortunately, if we do this trick and it works, the 
+## ATTEMPTING_IPV6_FALLBACK_FILE will remain on the system until it again
+## runs a Fir-or-later release.  Slightly misleading to any who see it
+## perhaps, but not actually harmful since it will be ignored by the code,
+## and deleted by the Fir-or-later code before it can confuse us.
+##
+## How do we recover our own data if the IPv6 fallback fails?  (e.g. the
+## older image fallback-reboots again anyway, or if the user manually 
+## overrides the next boot location, to boot back to us)  The transformation
+## we did can easily be undone, and it is automatically undone whenever 
+## libmdb opens a file (unless otherwise specified).  So we don't have to 
+## do anything explicitly, or check anything before calling 'mgmtd -o'.
+## (This was chosen, rather than requiring an explicit option to request
+## restoration of the converted attributes, because it was considered too
+## messy to know when we needed to do the restoration, particularly in
+## cases of database switch, etc.  Watching for btf_unknown_converted is
+## very cheap, and restoring these attributes is seldom the wrong thing
+## to do.)
+##
+## Once our initial commit has finished, there are eight cases for our 
+## three flags.
+##
+## With each result, we show a numeric code, to represent each possible
+## course of action.  With it is a 'u' (unchanged, this is what we did 
+## before), or 'n' (a new course of action added for Fir).
+##
+## mgmtd -o                 Fir 
+## succeeded?  Fallback?  fallback?   Result
+## ----------------------------------------------------------------------------
+##    no          no         no       (1/u) initiate standard fallback reboot
+##    no          no        yes       (1/u) (*) initiate std fallback reboot
+##    no         yes         no       (2/u) give up, force initial config
+##    no         yes        yes       (2/u) give up, force initial config
+##   yes          no         no       (3/u) proceed (all is good)
+##   yes          no        yes       (3/u) (*) proceed (all is good)
+##   yes         yes         no       (4/n) initiate IPv6 fallback reboot
+##   yes         yes        yes       (3/u) proceed (a Fir-or-later build
+##                                          fell back to us, so we're ok)
+##
+## (*) these two cases where Fallback is false, but Fir Fallback is true,
+## are uncommon, since we only ever set both together.  They most likely
+## mean that a Fir-or-later release did a fallback reboot in the past,
+## and the pre-Fir image that ran subsequently removed the Fallback file,
+## but not the Fir Fallback file.  Therefore if the Fir Fallback file is
+## ever not accompanied by the Fallback file, it is obsolete, and should
+## be ignored.
+##
+## So if 'mgmtd -o' fails, our processing is all the same as before, and
+## we don't even need to check the "Fir fallback" flag.  The only new part
+## is that in (1/u), we set both fallback reboot flags.
+##
+## If 'mgmtd -o' succeed, the only case that actually needs different
+## treatment is when we have a Fallback, but NOT a Fir Fallback.
+## This produces our main new course of action: the IPv6 fallback reboot.
+##
+## One additional boolean flag not listed above: Attempting IPv6 Fallback.
+## We won't try one if the flag is set, and we set the flag as we begin to
+## try one, and we clear the flag any other time.  We just need a way to
+## break out of the cycle if it still doesn't work.
+##
+## The FORCE_FALLBACK_FILE is something we never create ourselves; it is 
+## a hook for customer code to force a fallback.  e.g. they could do this
+## from their /var upgrade, if it failed.
+##
+
+MDDBREQ=/opt/tms/bin/mddbreq
+
+RETVAL=0
+
+start() {
+        echo $"Running system image: ${BUILD_PROD_VERSION}"
+        logger -p user.notice -t mdinit "Running system image: ${BUILD_PROD_VERSION}"
+
+        # We'll need this information at least for our diagnostic message
+        # here, and possibly for some decisions below.
+        eval `/sbin/aiget.sh`
+
+        # Log some relevant information, just in case
+        AF=0
+        AFF=0
+        A6F=0
+        FOF=0
+        SKF=0
+        if [ -f ${ATTEMPTING_FALLBACK_FILE} ]; then
+            AF=1
+        fi
+        if [ -f ${ATTEMPTING_FIR_FALLBACK_FILE} ]; then
+            AFF=1
+        fi
+        if [ -f ${ATTEMPTING_IPV6_FALLBACK_FILE} ]; then
+            A6F=1
+        fi
+        if [ -f ${FORCE_FALLBACK_FILE} ]; then
+            FOF=1
+        fi
+        if [ -f ${SKIP_FALLBACK_FILE} ]; then
+            SKF=1
+        fi
+        logger -p user.info -t mdinit "this boot loc = ${AIG_THIS_BOOT_ID}  /  fallback boot loc = ${AIG_FALLBACK_BOOT_ID}  /  AF = ${AF}  /  AFF = ${AFF}  /  A6F = ${A6F}  /  FOF = ${FOF} / SKF = ${SKF}"
+
+        #
+        # If some code which ran prior to us, presumably during this boot,
+        # wanted to force a fallback reboot, honor that here.  Note that if
+        # it was triggered by /var upgrade (or before), that would have been
+        # honored during firstboot.sh -- this is a catch-all for any other
+        # places which might happen between that and this.
+        #
+        # NOTE: this is mostly copied from our handling of an initial commit
+        # failure, below.
+        # 
+        if [ -f ${FORCE_FALLBACK_FILE} ]; then
+            if [ ! -z "${AIG_THIS_BOOT_ID}" -a ! -z "${AIG_FALLBACK_BOOT_ID}" ]; then
+                if [ ! -f ${ATTEMPTING_FALLBACK_FILE} ]; then
+                    if [ "${AIG_THIS_BOOT_ID}" -ne "${AIG_FALLBACK_BOOT_ID}" ]; then
+                        if [ -f ${SKIP_FALLBACK_FILE} ]; then
+                            echo $"Fallback reboot overridden -- not forcing reboot from fallback image ${AIG_FALLBACK_BOOT_ID}"
+                            logger -p user.warning -t mdinit $"Fallback reboot overridden -- not forcing reboot from fallback image ${AIG_FALLBACK_BOOT_ID}"
+                            # The file will get removed below.
+                        else
+                            echo $"Forcing reboot from fallback image ${AIG_FALLBACK_BOOT_ID} (before initial commit)"
+                            logger -p user.err -t mdinit "Forcing reboot from fallback image ${AIG_FALLBACK_BOOT_ID} (before initial commit)"
+                            /sbin/aiset.sh -i -l ${AIG_FALLBACK_BOOT_ID}
+                            
+                            touch ${ATTEMPTING_FALLBACK_FILE}
+                            touch ${ATTEMPTING_FIR_FALLBACK_FILE}
+                            rm -f ${ATTEMPTING_IPV6_FALLBACK_FILE}
+                            rm -f ${UNEXPECTED_SHUTDOWN_FILE}
+                            rm -f ${FORCE_FALLBACK_FILE}
+                            
+                            umount -a
+                            mount -n -o remount,ro /
+                            /sbin/reboot -f
+                        fi
+                    fi
+                fi
+            fi
+        fi
+
+        echo -n $"Applying initial configuration: "
+        logger -p user.notice -t mdinit "Applying initial configuration"
+        /opt/tms/bin/mgmtd -o
+        RETVAL=$?
+
+        if [ $RETVAL -ne 0 ]; then
+            echo "failed."
+            logger -p user.err -t mdinit "Failed to apply configuration"
+
+            # The initial commit failed, which is bad news.  We'll switch to
+            # reboot from the fallback image, unless we are the fallback
+            # image, or have already tried to do this.
+
+            # XXX/EMT: unnecessary to do again, after above?
+            # Keeping this just in case it might have changed since then...
+            eval `/sbin/aiget.sh`
+
+            if [ ! -z "${AIG_THIS_BOOT_ID}" -a ! -z "${AIG_FALLBACK_BOOT_ID}" ]; then
+                if [ ! -f ${ATTEMPTING_FALLBACK_FILE} ]; then
+                    if [ "${AIG_THIS_BOOT_ID}" -ne "${AIG_FALLBACK_BOOT_ID}" ]; then
+                        if [ -f ${SKIP_FALLBACK_FILE} ]; then
+                            echo $"Fallback reboot overridden -- not forcing reboot from fallback image ${AIG_FALLBACK_BOOT_ID}"
+                            logger -p user.warning -t mdinit $"Fallback reboot overridden -- not forcing reboot from fallback image ${AIG_FALLBACK_BOOT_ID}"
+                            # The file will get removed below.
+                        else
+                            echo $"Forcing reboot from fallback image ${AIG_FALLBACK_BOOT_ID} (after initial commit failure)"
+                            logger -p user.err -t mdinit "Forcing reboot from fallback image ${AIG_FALLBACK_BOOT_ID} (after initial commit failure)"
+                            /sbin/aiset.sh -i -l ${AIG_FALLBACK_BOOT_ID}
+                            
+                            touch ${ATTEMPTING_FALLBACK_FILE}
+                            touch ${ATTEMPTING_FIR_FALLBACK_FILE}
+                            rm -f ${ATTEMPTING_IPV6_FALLBACK_FILE}
+                            rm -f ${UNEXPECTED_SHUTDOWN_FILE}
+                            
+                            umount -a
+                            mount -n -o remount,ro /
+                            /sbin/reboot -f
+                        fi
+                    fi
+                fi
+            fi
+
+            # Fallback reboot suppression only lasts for a single boot
+            rm -f ${SKIP_FALLBACK_FILE}
+
+            # If we are the fallback image, we'll just have to go with an
+            # initial config file.
+
+            echo -n $"Forcing initial configuration: "
+            logger -p user.warn -t mdinit "Forcing initial configuration"
+            /opt/tms/bin/mgmtd -o -f
+            RETVAL=$?
+            if [ $RETVAL -ne 0 ]; then
+                echo "failed."
+                logger -p user.err -t mdinit "Failed to force initial configuration"
+                return $RETVAL
+            fi
+        fi
+
+        # XXX/EMT: unnecessary to do again, after above?
+        # Keeping this just in case it might have changed since then...
+        eval `/sbin/aiget.sh`
+
+        # See if we want to try an IPv6 fallback reboot...
+        if [ ! -z "${AIG_THIS_BOOT_ID}" -a ! -z "${AIG_FALLBACK_BOOT_ID}" ]; then
+            if [ "${AIG_THIS_BOOT_ID}" -ne "${AIG_FALLBACK_BOOT_ID}" ]; then
+                if [ -f ${ATTEMPTING_FALLBACK_FILE} ]; then
+                    if [ ! -f ${ATTEMPTING_FIR_FALLBACK_FILE} ]; then
+                        if [ ! -f ${ATTEMPTING_IPV6_FALLBACK_FILE} ]; then
+                            echo $"Initial commit succeeded, but this is a fallback reboot from a pre-IPv6 release; cleansing database of IPv6 data, and trying older image again..."
+                            logger -p user.err -t mdinit "Initial commit succeeded, but this is a fallback reboot from a pre-IPv6 release; cleansing database of IPv6 data, and trying older image again -- forcing reboot from fallback image ${AIG_FALLBACK_BOOT_ID}"
+
+                            # Save a copy of the database before we transform
+                            # it, just in case.  Should not be needed, since 
+                            # it's supposed to be a reversible transformation.
+                            TIMESTAMP=$(date "+%Y%m%d-%H%M%S")
+                            cp -f /config/db/`cat /config/db/active` /config/db/`cat /config/db/active`-${TIMESTAMP}
+
+                            # Fix up the database: try to make it readable to
+                            # older software versions.  Try this first, since if
+                            # it fails, we want to proceed as normal.
+                            ${MDDBREQ} -o ipv6_attribs_to_binary `cat /config/db/active` resave
+                            RETVAL=$?
+                            if [ $RETVAL -ne 0 ]; then
+                                echo "Fixing database failed!  Skipping IPv6 fallback, proceeding as normal."
+                                logger -p user.err -t mdinit "Fixing database failed!  Skipping IPv6 fallback, proceeding as normal."
+                            else
+                                /sbin/aiset.sh -i -l ${AIG_FALLBACK_BOOT_ID}
+                                
+                                # If these were left, the older image would
+                                # force an initial db if it failed, which 
+                                # we don't want.  We only want it to run if
+                                # it can recover one of its old config files.
+                                rm -f ${ATTEMPTING_FALLBACK_FILE}
+                                rm -f ${ATTEMPTING_FIR_FALLBACK_FILE}
+
+                                # However, we do need this to make sure we 
+                                # don't try the same thing again if it 
+                                # doesn't work.
+                                touch ${ATTEMPTING_IPV6_FALLBACK_FILE}
+
+                                # A few more cleanup tasks, then reboot
+                                rm -f ${SKIP_FALLBACK_FILE}
+                                rm -f ${UNEXPECTED_SHUTDOWN_FILE}
+                                umount -a
+                                mount -n -o remount,ro /
+                                /sbin/reboot -f
+                            fi
+                        fi
+                    fi
+                fi
+            fi
+        fi
+
+        logger -p user.notice -t mdinit "Initial configuration succeeded"
+
+        # Clear state about any forced fallback reboot, as the commit was good
+        rm -f ${ATTEMPTING_FALLBACK_FILE}
+        rm -f ${ATTEMPTING_FIR_FALLBACK_FILE}
+        rm -f ${ATTEMPTING_IPV6_FALLBACK_FILE}
+        rm -f ${SKIP_FALLBACK_FILE}
+        rm -f ${FORCE_FALLBACK_FILE}
+        echo
+
+        # See if we have a db from manufacturing to include
+        if [ -f /config/mfg/mfincdb ]; then
+            echo -n $"Applying manufacturing configuration: "
+            logger -p user.notice -t mdinit "Applying manufacturing configuration"
+            ${MDDBREQ} -d /config/mfg/mfincdb `cat /config/db/active` \
+                set modify -
+            RETVAL=$?
+            if [ $RETVAL -ne 0 ]; then
+                echo "failed."
+                logger -p user.err -t mdinit "Failed to apply manufacturing configuration"
+                return $RETVAL
+            fi
+            mv -f /config/mfg/mfincdb /config/mfg/mfincdb-prev
+        fi
+        echo
+        logger -p user.info -t mdinit "Mdinit finishing"
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/mdinit
+        return $RETVAL
+}
+
+stop() {
+        rm -f /var/lock/subsys/mdinit
+        RETVAL=$?
+        return $RETVAL
+}
+
+restart() {
+        stop
+        start
+}
+
+reload() {
+        start
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        stop
+        start
+        ;;
+  reload)
+        reload
+        ;;
+  status)
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|reload|restart}"
+        exit 1
+esac
+
+exit $?

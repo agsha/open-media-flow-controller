@@ -1,0 +1,126 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Reboot">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "reboot"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "System Reboot or Shutdown">
+
+<?
+  global boot_acl
+?>
+
+<SET active_opers 0>
+<CHECK-UPGRADE-STATUS "true">
+<SET ignore_upgrade [tms::get-param query "ignore_upgrade"]>
+<IF {($active_opers != 0 || [string compare $inst_any "true"] == 0) && [string compare $ignore_upgrade "true"] != 0}>
+
+<h2>Upgrade in Progress</h2>
+An image upgrade is currently in progress.  Rebooting during an upgrade
+could leave the target partition unbootable.  You may:
+<ul>
+<li><a href="/admin/launch?script=rh&amp;template=setup-upgrade-status">
+View the Upgrade Status page</a>
+<li><a href="/admin/launch?script=rh&amp;template=setup-reboot&ignore_upgrade=true">Proceed to the Reboot page anyway</a>
+</ul>
+
+<ELSE>
+
+<?
+ set cluster_wide "false"
+
+ # Conditional on PROD_FEATURE_CLUSTER
+ set have_cluster [tms::have-prod-feature cluster]
+
+ set have_cluster_enable "false"
+ if {[string compare $have_cluster "true"] == 0} {
+     set have_cluster_enable [tms::get-config "/cluster/config/enable"]
+     set cluster_local_role [tms::get-config "/cluster/state/local/role"]
+ }
+ if {[string compare $have_cluster_enable "true"] == 0 && 
+     [string compare $cluster_local_role "master"] == 0} {
+     set cluster_wide "true"
+ }
+?>
+
+<IF {[string compare $cluster_wide "true"] != 0}>
+  <h2>Reboot or Shutdown</h2>
+<ELSE>
+  <h2>Reboot or Shutdown Cluster</h2>
+</IF>
+
+  <IF {[string compare $inst_any "true"] == 0}>
+      <SET image_start_time [tms::get-config "/image/state/last_install/start_time"]>
+
+      <p>Image install in progress, started at <?^=$image_start_time?>.</p>
+  </IF>
+
+  <table border="0" cellspacing="0" cellpadding="10">
+    <tr>
+      <td align="right">
+       <IF {[string compare $cluster_wide "true"] == 0}>
+        <CFG-FORM -action "cluster-reboot-all" -div_id "reboot_1">
+          <CFG-BUTTON -type "ok" -text "Reboot" -caps "action_privileged"
+          -acl $boot_acl -acl_oper {action}
+          -destination "$logout_reboot_url"
+          -span_id "reboot_ok_1">
+        </CFG-FORM>
+        <ELSE>
+        <CFG-FORM -action "reboot" -div_id "reboot_1">
+          <CFG-BUTTON -type "ok" -text "Reboot" -caps "action_privileged"
+          -acl $boot_acl -acl_oper {action}
+          -destination "$logout_reboot_url"
+          -span_id "reboot_ok_1">
+        </CFG-FORM>
+
+        </IF>
+      <td>
+        This operation will reboot the 
+        <IF {[string compare $cluster_wide "true"] == 0}>
+           cluster,
+        <ELSE>
+          system,
+        </IF>
+        and may take several minutes.  Please wait before attempting to 
+        access configuration pages or logging on.
+
+    <tr>
+      <td align="right">
+        <IF {[string compare $cluster_wide "true"] == 0}>
+        <CFG-FORM -action "cluster-shutdown-all" -div_id "reboot_2">
+          <CFG-BUTTON -type "ok" -text "Shutdown" -caps "action_privileged"
+           -acl $boot_acl -acl_oper {action}
+           -destination "$logout_shutdown_url"
+           -span_id "reboot_ok_2">
+        </CFG-FORM>
+        <ELSE>
+        <CFG-FORM -action "shutdown" -div_id "reboot_2">
+          <CFG-BUTTON -type "ok" -text "Shutdown" -caps "action_privileged"
+           -acl $boot_acl -acl_oper {action}
+           -destination "$logout_shutdown_url"
+           -span_id "reboot_ok_2">
+        </CFG-FORM>
+        </IF>
+      <td>
+        This operation will shut the
+        <IF {[string compare $cluster_wide "true"] == 0}>
+          cluster
+        <ELSE>
+          system
+        </IF>
+        down.  It will not
+        reboot until it is power-cycled.
+  </table>
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

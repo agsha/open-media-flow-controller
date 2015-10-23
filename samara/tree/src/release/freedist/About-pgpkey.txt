@@ -1,0 +1,1 @@
+The file e8562897.pgpkey.txt is the CentOS RPM signing key e8562897.

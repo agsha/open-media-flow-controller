@@ -1,0 +1,257 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+
+<TMS-PAGE "Virtualization">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "virt"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Virtualization">
+
+<?
+    global virt_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $virt_acl {query}]}>
+
+<?
+    global green
+    set green "<img src=\"/images/status_green.png\" alt=\"Green\">"
+
+    global yellow
+    set yellow "<img src=\"/images/status_yellow.png\" alt=\"Yellow\">"
+
+    global red
+    set red "<img src=\"/images/status_red.png\" alt=\"Red\">"
+
+    # Conditional on PROD_FEATURE_VIRT_LICENSED
+    set virt_licensed [tms::have-prod-feature virt_licensed]
+
+    set virt_lic_active [tms::get-config "/virt/internal_state/license/enable"]
+
+    if {([string compare $virt_licensed "false"] == 0) ||
+        ([string compare $virt_lic_active "true"] == 0)} {
+        set virt_lic_ok "true"
+    } else {
+        set virt_lic_ok "false"
+    }
+
+    if {([string compare $virt_lic_ok "true"] == 0)} {
+?>
+
+  <h2>Virtualization Configuration</h2>
+
+  <CFG-FORM>
+  <TMS-TABLE>
+    <TMS-TABLE-ENTRY "Enable Virtualization">
+    <CFG-CHECKBOX -id "enable_status" -caps "set_restricted"
+                  -acl $virt_acl -acl_oper {set}
+                  -name "/virt/config/enable" -type "bool">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Gather Virtualization statistics">
+    <CFG-CHECKBOX -id "stats_gather" -caps "set_basic"
+                  -acl $virt_acl -acl_oper {set}
+                  -name "/stats/config/sample/virt_cpu/enable" -type "bool">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $virt_acl -acl_oper {set}>
+  <img src="/images/em.gif" width="10" height="1" alt="">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $virt_acl -acl_oper {set}>
+
+  </CFG-FORM>
+
+  <h2>Virtual Machines</h2>
+
+  <CFG-FORM -action "virt-table">
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr height="12">
+   <td>
+  <tr>
+   <td>
+   <table width="100%" border="0" cellspacing="0" cellpadding="5" 
+    class="listing">
+
+    <tr class="listing_head">  
+      <td>
+      <td>
+        <p>Virtual Machine</p>
+      <td>
+        <p>Comment</p>
+      <td>
+        <p>Status</p>
+    </tr>
+
+<?
+    set vm_prefix "/virt/config/vm"
+    set vm_ids [tms::iterate-config $vm_prefix]
+    set cur_line 0
+    set token [tms::get-binding-children "/virt/state/vm" "false" "true"]
+    tms::sort-bindings $token
+    global green
+    global yellow
+    global red
+
+    set virt_enabled [tms::get-config "/virt/config/enable"]
+    if {[string compare $virt_enabled "true"] == 0} {
+        set virt_disabled "false"
+    } else {
+        set virt_disabled "true"
+    }
+?>
+
+    <FOREACH vm_id $vm_ids>
+    <?
+      set prefix_len [string length "$vm_prefix/"]
+      set vm_name [string range $vm_id $prefix_len end]
+      set vm_comment [tms::get-config "$vm_id/comment"]
+      set vm_status [tms::get-child-value-by-name $token "/virt/state/vm/$vm_name/state_friendly"]
+      set vm_install [tms::get-child-value-by-name $token "/virt/state/vm/$vm_name/install/active"]
+      if {[string compare $vm_status ""] == 0} {
+        # Virtualization is probably disabled.  
+        set vm_status "shut off"
+      } elseif {[string compare $vm_install "true"] == 0} {
+        set vm_status "INSTALLING"
+      }
+
+      switch -- $vm_status {
+        "running" -
+        "blocked" -
+        "shutting down" {
+          set vm_status_img $green
+        }
+        "unknown" -
+        "INSTALLING" -
+        "suspended" {
+          set vm_status_img $yellow
+        }
+        default {
+          set vm_status_img $red
+        }
+      }
+    ?>
+    
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+
+      <td align="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "action_privileged"
+                      -acl $virt_acl  -acl_oper {set} 
+                      -disabled $virt_disabled
+                      -value "$vm_name" -span_id "virt_vm_cbox_1">
+      <td>
+        <p><?^=$vm_name?></a></p>
+      </td>
+      <td>
+        <p><?^=$vm_comment?></p>
+      </td>
+      <td>
+        <p>
+          <?
+          # XXX/SML:  vm_status_img already contains html tag text that is set
+          # (above) to a static value, so it is not html-escaped.
+          ?>
+          <?=$vm_status_img?>
+          <?^=$vm_status?>
+        </p>
+      </td>
+    </tr>
+    <?
+      incr cur_line
+    ?>
+    </FOREACH>
+    <tr>
+      <td height="6">
+  </table>
+  </table>
+
+  <p>
+
+    <SET now [tms::get-config "/time/now/datetime"]>
+
+    <CFG-BUTTON -type "poweron"    -text "Power On"
+                -caps "action_privileged"
+                -acl $virt_acl -acl_oper {action}
+                -disabled $virt_disabled>
+    <CFG-BUTTON -type "poweroff"   -text "Power Off"
+                -caps "action_privileged"
+                -acl $virt_acl  -acl_oper {action}
+                -disabled $virt_disabled>
+    <CFG-BUTTON -type "powercycle" -text "Power Cycle"
+                -caps "action_privileged"
+                -acl $virt_acl  -acl_oper {action}
+                -disabled $virt_disabled>
+
+<?
+# XXX/EMT: suspend and resume buttons hidden, due to bug 13016.
+#    <CFG-BUTTON -type "suspend"    -text "Suspend"
+#                -caps "action_privileged"
+#                -acl $virt_acl  -acl_oper {action}
+#                -disabled $virt_disabled>
+#    <CFG-BUTTON -type "resume"     -text "Resume"
+#                -caps "action_privileged"
+#                -acl $virt_acl  -acl_oper {action}
+#                -disabled $virt_disabled>
+?>
+
+    <CFG-BUTTON -type "refresh"    -text "Refresh Display"
+                -caps "query_basic"
+                -acl $virt_acl -acl_oper {query_get}>
+
+  </CFG-FORM>
+
+  Last updated: <?^=$now?>
+
+<?
+     if {([string compare $virt_licensed "true"] == 0)} {
+        tms::puts "<p>Virtualization license: ok";
+     }
+?>
+
+<p>
+
+<a href="/admin/launch?script=rh&amp;template=mon-virt">Check status</a>
+of virtual machines, networks, and volumes.
+
+<?
+   } else {
+?>
+
+<p>
+
+Virtualization license: NONE
+<p>
+You need a license to use virtualization.  Either you have no license
+installed, or your license is invalid or inactive.
+<p>
+Please 
+<a href="/admin/launch?script=rh&amp;template=setup-license">install a new
+license</a> to use virtualization.
+
+<?
+  }
+?>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view Virtualization configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

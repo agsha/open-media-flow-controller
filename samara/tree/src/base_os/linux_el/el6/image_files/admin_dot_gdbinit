@@ -1,0 +1,1147 @@
+# .gdbinit
+#
+# (C) Copyright 2013-2015 Juniper Networks, Inc. All Rights reserved.
+# (C) Copyright 2002-2012 Tall Maple Systems, Inc.
+# All rights reserved.
+# The contents of this file are subject to the terms of the MIT License.
+# You may not use this file except in compliance with the License.
+# See the file License.txt at the top of this source tree.
+# You can obtain a copy of the license at https://opensource.org/licenses/MIT
+#
+
+# This is a per-user gdbinit file.  See also the system-wide gdbinit
+# file.
+
+# Contains GDB definitions to help display common Tall Maple datatypes,
+# such as bn_binding, bn_binding_array, bn_attrib, tstr_array,
+# bn_inetaddr, lew_context, enum string maps, etc.
+#
+# Please do "help user" from inside GDB to see the list of commands.
+#
+# All of these can be used without a running process.  To those
+# maintaining this file: DO NOT add any function calls, as function
+# calls do not work if all you have is a core file (as opposed to a
+# running process).  It is important that developers be able to use
+# these functions with a just core, as that is often all one gets.
+
+#
+#
+# Global GDB settings
+set history exp on
+set history size 1000
+set history save on
+set history filename ~/.gdb_history
+handle SIGPIPE noprint nostop pass
+
+# --------------------------------------------------
+# Global variables needed below
+
+# XXXX These are Linux specific values for AF_INET and AF_INET6 .  We
+# could use lia_family_inet and lia_family_inet6 instead.
+set $tg_af_unspec = 0
+set $tg_af_inet = 2
+set $tg_af_inet6 = 10
+
+# --------------------------------------------------
+define int_dump_indent
+    set $XdiXindent = (int) $arg0
+    while $XdiXindent > 0
+        printf "    "
+        set $XdiXindent = $XdiXindent - 1
+    end
+end
+
+document int_dump_indent
+    Internal do not call.
+end
+
+# --------------------------------------------------
+# Like lc_enum_to_string_quiet()
+#
+# arg0 == lc_enum_string_map array
+# arg1 == enum value
+define dump_enum_to_string
+    set $XesmXmap = (lc_enum_string_map *) $arg0
+    set $XesmXenum = (uint32) $arg1
+    set $XesmXnum = 0
+    set $XesmXfound = 0
+    while $XesmXmap[$XesmXnum].lesm_string != 0
+        if $XesmXenum == $XesmXmap[$XesmXnum].lesm_enum
+            printf "%s", $XesmXmap[$XesmXnum].lesm_string
+            set $XesmXfound = 1
+            loop_break
+        end
+        set $XesmXnum = $XesmXnum + 1
+    end
+    if $XesmXfound == 0
+        printf "ERROR-NO-MAP[%u]", $XesmXenum
+    end
+
+end
+
+document dump_enum_to_string
+    Display the string corresponding to the given enum from the lc_enum_string_map.
+end
+
+# --------------------------------------------------
+# Like lc_bitfield_to_string()
+#
+# arg0 == lc_enum_string_map array
+# arg1 == bitfield (flags) value
+define dump_bitfield_to_string
+    set $XbsmXmap = (lc_enum_string_map *) $arg0
+    set $XbsmXbitfield = (uint32) $arg1
+    set $XbsmXnum = 0
+    set $XbsmXprinted = 0
+    while $XbsmXmap[$XbsmXnum].lesm_string != 0
+        if ($XbsmXbitfield & $XbsmXmap[$XbsmXnum].lesm_enum) == $XbsmXmap[$XbsmXnum].lesm_enum
+            if $XbsmXprinted != 0
+                printf " "
+            end
+            printf "%s", $XbsmXmap[$XbsmXnum].lesm_string
+            set $XbsmXprinted = $XbsmXprinted | $XbsmXmap[$XbsmXnum].lesm_enum
+        end
+        if $XbsmXprinted == $XbsmXbitfield
+            loop_break
+        end
+        set $XbsmXnum = $XbsmXnum + 1
+    end
+    if $XbsmXprinted != $XbsmXbitfield
+        set $XbsmXleft = $XbsmXprinted ^ $XbsmXbitfield
+        printf " ERROR-NO-MAP[all 0x%x mapped 0x%x left 0x%x]", $XbsmXbitfield, $XbsmXprinted, $XbsmXleft
+    end
+
+end
+
+document dump_bitfield_to_string
+    Display a string corresponding to each of the bitfield flags from the lc_enum_string_map.
+end
+
+# If dump_buffer and dump_tbuf should display the byte offset or full
+# address (0 or 1)
+set $dump_buffer_offset_addr=0
+
+# --------------------------------------------------
+# Hex+ascii dump, similar to tcpdump for a buffer
+# arg0 == unsigned char *buf
+# arg1 == unsigned long length
+define int_dump_buffer_internal
+    set $XbiXbuf = (unsigned char *) $arg0
+    set $XbiXlen = (unsigned long) $arg1
+    set $XbiXnum = 0
+
+    if ($XbiXbuf != 0)
+        while $XbiXnum < $XbiXlen
+            if $XbiXnum + 16 < $XbiXlen
+               set $XbiXcurr = 16
+            else
+               set $XbiXcurr = $XbiXlen - $XbiXnum
+            end
+
+            if $dump_buffer_offset_addr == 1
+                printf "    0x%0lx: ", $XbiXbuf + $XbiXnum
+            else
+                printf "    0x%08x: ", $XbiXnum
+            end
+            if $XbiXcurr == 16
+                printf "%02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x  ", \
+                    $XbiXbuf[$XbiXnum + 0], \
+                    $XbiXbuf[$XbiXnum + 1], \
+                    $XbiXbuf[$XbiXnum + 2], \
+                    $XbiXbuf[$XbiXnum + 3], \
+                    $XbiXbuf[$XbiXnum + 4], \
+                    $XbiXbuf[$XbiXnum + 5], \
+                    $XbiXbuf[$XbiXnum + 6], \
+                    $XbiXbuf[$XbiXnum + 7], \
+                    $XbiXbuf[$XbiXnum + 8], \
+                    $XbiXbuf[$XbiXnum + 9], \
+                    $XbiXbuf[$XbiXnum + 10], \
+                    $XbiXbuf[$XbiXnum + 11], \
+                    $XbiXbuf[$XbiXnum + 12], \
+                    $XbiXbuf[$XbiXnum + 13], \
+                    $XbiXbuf[$XbiXnum + 14], \
+                    $XbiXbuf[$XbiXnum + 15]
+
+                set $XbiXcount = 0
+                while $XbiXcount < 16
+                    if $XbiXbuf[$XbiXnum + $XbiXcount] < 0x20 || $XbiXbuf[$XbiXnum + $XbiXcount] > 0x7e
+                         printf "."
+                    else
+                         printf "%c", $XbiXbuf[$XbiXnum + $XbiXcount]
+                    end
+                    set $XbiXcount = $XbiXcount + 1
+                end
+            else
+                set $XbiXcount = 0
+                while $XbiXcount < 16
+                    if $XbiXcount < $XbiXcurr
+                        printf "%02x", $XbiXbuf[$XbiXnum + $XbiXcount]
+                    else
+                        printf "  "
+                    end
+                    if ($XbiXcount + 1 ) % 2 == 0
+                        printf " "
+                    end
+                    set $XbiXcount = $XbiXcount + 1
+                end
+                printf " "
+                set $XbiXcount = 0
+                while $XbiXcount < $XbiXcurr
+                    if $XbiXbuf[$XbiXnum + $XbiXcount] < 0x20 || $XbiXbuf[$XbiXnum + $XbiXcount] > 0x7e
+                         printf "."
+                    else
+                         printf "%c", $XbiXbuf[$XbiXnum + $XbiXcount]
+                    end
+
+                    set $XbiXcount = $XbiXcount + 1
+                end
+            end
+            printf "\n"
+            set $XbiXnum=$XbiXnum + $XbiXcurr
+        end
+    end
+
+end
+
+document int_dump_buffer_internal
+    Internal do not call.
+end
+
+# --------------------------------------------------
+# Hex+ascii dump, similar to tcpdump for a buffer
+# arg0 == unsigned char *buf
+# arg1 == unsigned long length
+define dump_buffer
+    set $XfbXbuf = (unsigned char *) $arg0
+    set $XfbXlen = (unsigned long) $arg1
+    set $XfbXnum = 0
+
+    if ($XfbXbuf != 0)
+        printf "Dumping %ld bytes from 0x%0lx :\n", $XfbXlen, $XfbXbuf
+        int_dump_buffer_internal $XfbXbuf $XfbXlen
+    else
+        printf "[EMPTY BUFFER]"
+    end
+
+end
+
+document dump_buffer
+    Display a 'void *' and length in combined ASCII/hex
+    Syntax: dump_buffer <ptr> <length>
+end
+
+# --------------------------------------------------
+# Hex+ascii dump, similar to tcpdump for a tbuf
+# arg0 == tbuf *
+define dump_tbuf
+    set $XftbXtbuf = (tbuf *) $arg0
+    set $XftbXoff = (unsigned long) 0
+    if $argc > 1
+        set $XftbXoff = (unsigned long) $arg1
+    end
+    set $XftbXbuf = (uint8 *) 0
+    set $XftbXlen = 0
+    set $XftbXnum = 0
+
+    if ($XftbXtbuf != 0 && $XftbXtbuf->tb_buf != 0)
+        set $XftbXbuf = $XftbXtbuf->tb_buf
+        set $XftbXlen = $XftbXtbuf->tb_length
+        set $XftbXsize = $XftbXtbuf->tb_size
+        set $XftbXdumplen = 0
+        set $XftbXdumpbuf = 0
+        printf "tbuf 0x%0lx has buffer 0x%0lx of %ld bytes (%ld allocated)\n", $XftbXtbuf, $XftbXbuf, $XftbXlen, $XftbXsize
+        if ($XftbXlen >= $XftbXoff)
+            set $XftbXdumplen = $XftbXlen - $XftbXoff
+            set $XftbXdumpbuf = $XftbXtbuf->tb_buf + $XftbXoff
+        else
+            if ($XftbXoff > 0)
+                printf "Offset %ld is out of range for length %ld\n",$XftbXoff,$XftbXlen
+            end
+        end
+        if $XftbXoff == 0
+            printf "Dumping %ld bytes from 0x%0lx:\n", $XftbXdumplen, $XftbXdumpbuf
+        else
+            printf "Dumping %ld bytes from 0x%0lx (offset %ld):\n", $XftbXdumplen, $XftbXdumpbuf, $XftbXoff
+        end
+        int_dump_buffer_internal $XftbXdumpbuf $XftbXdumplen
+    else
+        printf "[EMPTY TBUF]"
+    end
+end
+
+document dump_tbuf
+    Display a 'tbuf *' in combined ASCII/hex, optionally skipping some
+    bytes of the buffer.
+
+    Syntax: dump_tbuf <tbuf*> [<skip_offset>]
+end
+
+# --------------------------------------------------
+# arg0 == struct in_addr *
+define dump_inaddr
+    set $XsiaXvalue = (uint8 *) $arg0
+    printf "%u.%u.%u.%u", \
+        $Xsiavalue[0], $Xsiavalue[1], $Xsiavalue[2], $Xsiavalue[3]
+end
+
+document dump_inaddr
+    Display a 'struct in_addr *' .
+end
+
+# --------------------------------------------------
+# arg0 == bn_ipv4addr *
+define dump_ipv4addr
+    # This is a "struct in_addr"
+    set $Xi4Xvalue = (uint8 *) ( &(((bn_ipv4addr *) $arg0)->bi_addr) )
+    printf "%u.%u.%u.%u", \
+        $Xi4Xvalue[0], $Xi4Xvalue[1], $Xi4Xvalue[2], $Xi4Xvalue[3]
+end
+
+document dump_ipv4addr
+    Display a 'bn_ipv4addr *' .
+end
+
+# --------------------------------------------------
+# arg0 == struct bn_ipv4prefix_old *
+define dump_ipv4prefix_old
+    # This is a "struct in_addr"
+    set $Xi4pXvalue = (uint8 *) ( &(((struct bn_ipv4prefix_old *) $arg0)->bipo_addr) )
+    # This is a "struct in_addr"
+    set $Xi4pXmask = (uint8 *) ( &(((struct bn_ipv4prefix_old *) $arg0)->bipo_mask) )
+    printf "%u.%u.%u.%u/", \
+        $Xi4pXvalue[0], $Xi4pXvalue[1], $Xi4pXvalue[2], $Xi4pXvalue[3]
+
+    # Now convert the mask to a masklen, without calling any functions
+    set $Xi4pXamask = (uint32) ((((uint32) $Xi4pXmask[0]) << 24) + \
+                      (((uint32) $Xi4pXmask[1]) << 16) + \
+                      (((uint32) $Xi4pXmask[2]) << 8) + \
+                      (((uint32) $Xi4pXmask[3])))
+    set $Xi4pXaddin = 0
+    set $Xi4pXcount = 0
+    set $Xi4pXdone = 0
+    while $Xi4pXaddin <= 0xfffffffful
+        if (uint64) $Xi4pXamask + (uint64) $Xi4pXaddin == 0xfffffffful
+            printf "%d", 32 - $Xi4pXcount
+            set $Xi4pXdone = 1
+            loop_break
+        end
+        set $Xi4pXaddin = ((uint32) $Xi4pXaddin << 1) | 0x1
+        set $Xi4pXcount = $Xi4pXcount + 1
+    end
+    if $Xi4pXdone == 0
+        printf "BAD-MASK[%08x]", $Xi4pXamask
+    end
+end
+
+document dump_ipv4prefix_old
+    Display a 'struct bn_ipv4prefix_old *' .  This is
+    the old-style IPv4 prefix found in a ba_value.  See
+    dump_ipv4prefix to display the contents of a 'bn_ipv4prefix' .
+end
+
+# --------------------------------------------------
+# arg0 == bn_ipv4prefix *
+define dump_ipv4prefix
+    # This is a "struct in_addr"
+    set $Xi4pnXvalue = (uint8 *) ( &(((bn_ipv4prefix *) $arg0)->bip_addr) )
+    set $Xi4pnXplen = (uint8) (((bn_ipv4prefix *) $arg0)->bip_prefix_len)
+    printf "%u.%u.%u.%u/%u", \
+        $Xi4pnXvalue[0], $Xi4pnXvalue[1], $Xi4pnXvalue[2], $Xi4pnXvalue[3], $Xi4pnXplen
+
+end
+
+document dump_ipv4prefix
+    Display a 'bn_ipv4prefix *' .
+end
+
+# --------------------------------------------------
+# arg0 == bn_ipv6addr *
+define dump_ipv6addr
+    # This is a "struct in6_addr"
+    set $Xi6Xvalue = (uint8 *) ( &((bn_ipv6addr *) $arg0)->bi6_addr )
+
+    printf "%2x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x", \
+            $Xi6Xvalue[0], $Xi6Xvalue[1], $Xi6Xvalue[2], $Xi6Xvalue[3], \
+            $Xi6Xvalue[4], $Xi6Xvalue[5], $Xi6Xvalue[6], $Xi6Xvalue[7], \
+            $Xi6Xvalue[8], $Xi6Xvalue[9], $Xi6Xvalue[10], $Xi6Xvalue[11], \
+            $Xi6Xvalue[12], $Xi6Xvalue[13], $Xi6Xvalue[14], $Xi6Xvalue[15]
+
+end
+
+document dump_ipv6addr
+    Display a 'bn_ipv6addr *' .
+end
+
+# --------------------------------------------------
+# arg0 == struct in6_addr *
+define dump_in6addr
+    set $Xsi6aXvalue = (uint8 *) ($arg0)
+
+    printf "%2x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x", \
+            $Xsi6aXvalue[0], $Xsi6aXvalue[1], $Xsi6aXvalue[2], $Xsi6aXvalue[3], \
+            $Xsi6aXvalue[4], $Xsi6aXvalue[5], $Xsi6aXvalue[6], $Xsi6aXvalue[7], \
+            $Xsi6aXvalue[8], $Xsi6aXvalue[9], $Xsi6aXvalue[10], $Xsi6aXvalue[11], \
+            $Xsi6aXvalue[12], $Xsi6aXvalue[13], $Xsi6aXvalue[14], $Xsi6aXvalue[15]
+
+end
+
+document dump_in6addr
+    Display a 'struct in6_addr *' .
+end
+
+# --------------------------------------------------
+define dump_macaddr802
+    # This is an array of 6 bytes
+    set $XmacXvalue = (uint8 *) $arg0
+
+    printf "%02X:%02X:%02X:%02X:%02X:%02X", \
+            $XmacXvalue[0], $XmacXvalue[1], $XmacXvalue[2], $XmacXvalue[3], \
+            $XmacXvalue[4], $XmacXvalue[5]
+
+end
+
+document dump_macaddr802
+    Display a IEEE802 MAC address from a 'uint8 [6]' 6 byte array.
+end
+
+# --------------------------------------------------
+# arg0 == bn_ipv6addrz *
+define dump_ipv6addrz
+    # This is a "struct in6_addr"
+    set $Xi6zXvalue = (uint8 *) ( &((bn_ipv6addrz *) $arg0)->bi6z_addr )
+    set $Xi6zXzone = (uint32) ( ((bn_ipv6addrz *) $arg0)->bi6z_zone_id )
+
+    printf "%2x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x", \
+            $Xi6zXvalue[0], $Xi6zXvalue[1], $Xi6zXvalue[2], $Xi6zXvalue[3], \
+            $Xi6zXvalue[4], $Xi6zXvalue[5], $Xi6zXvalue[6], $Xi6zXvalue[7], \
+            $Xi6zXvalue[8], $Xi6zXvalue[9], $Xi6zXvalue[10], $Xi6zXvalue[11], \
+            $Xi6zXvalue[12], $Xi6zXvalue[13], $Xi6zXvalue[14], $Xi6zXvalue[15]
+
+    if $Xi6zXzone != 0
+        printf "%%%u", $Xi6zXzone
+    end
+end
+
+document dump_ipv6addrz
+    Display a 'bn_ipv6addrz *' .
+end
+
+# --------------------------------------------------
+# arg0 == bn_ipv6prefix *
+define dump_ipv6prefix
+    # This is a "struct in6_addr"
+    set $Xi6pXvalue = (uint8 *) ( &(((bn_ipv6prefix *) $arg0)->bi6p_addr) )
+    set $Xi6pXplen = (uint8) (((bn_ipv6prefix *) $arg0)->bi6p_prefix_len)
+    printf "%2x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x/%u", \
+        $Xi6pXvalue[0], $Xi6pXvalue[1], $Xi6pXvalue[2], $Xi6pXvalue[3], \
+        $Xi6pXvalue[4], $Xi6pXvalue[5], $Xi6pXvalue[6], $Xi6pXvalue[7], \
+        $Xi6pXvalue[8], $Xi6pXvalue[9], $Xi6pXvalue[10], $Xi6pXvalue[11], \
+        $Xi6pXvalue[12], $Xi6pXvalue[13], $Xi6pXvalue[14], $Xi6pXvalue[15], \
+        $Xi6pXplen
+
+end
+
+document dump_ipv6prefix
+    Display a 'bn_ipv6prefix *' .
+end
+
+# --------------------------------------------------
+# arg0 == bn_inetaddr *
+define dump_inetaddr
+    set $XiaXfamily = (uint16) ( ((bn_inetaddr *) $arg0)->bin_family )
+    set $XiaXaddr = (uint8 *) (& (((bn_inetaddr *) $arg0)->bin_addr) )
+
+    if $XiaXfamily != $tg_af_unspec && $XiaXfamily != $tg_af_inet && \
+        $XiaXfamily != $tg_af_inet6
+
+        printf "BAD-FAMILY[%u]", $XiaXfamily
+    end
+
+    if $XiaXfamily == $tg_af_unspec
+        printf "[unspec-inet]"
+    end
+    if $XiaXfamily == $tg_af_inet
+        dump_inaddr $XiaXaddr
+    end
+    if $XiaXfamily == $tg_af_inet6
+        dump_in6addr $XiaXaddr
+    end
+
+end
+
+document dump_inetaddr
+    Display a 'bn_inetaddr *' .
+end
+
+# --------------------------------------------------
+define dump_inetaddrz
+    set $XiazXfamily = (uint16) ( ((bn_inetaddrz *) $arg0)->binz_family )
+    set $XiazXaddr = (uint8 *) (& (((bn_inetaddrz *) $arg0)->binz_addr) )
+    set $XiazXzone = (uint32) ( ((bn_inetaddrz *) $arg0)->binz_zone_id )
+
+    if $XiazXfamily != $tg_af_unspec && $XiazXfamily != $tg_af_inet && \
+        $XiazXfamily != $tg_af_inet6
+
+        printf "BAD-FAMILY[%u]", $XiazXfamily
+    end
+
+    if $XiazXfamily == $tg_af_unspec
+        printf "[unspec-inet]"
+    end
+    if $XiazXfamily == $tg_af_inet
+        dump_inaddr $XiazXaddr
+    end
+    if $XiazXfamily == $tg_af_inet6
+        dump_in6addr $XiazXaddr
+    end
+
+    if $XiazXzone != 0
+        printf "%%%u", $XiazXzone
+    end
+
+end
+
+document dump_inetaddrz
+    Display a 'bn_inetaddrz *' .
+end
+
+# --------------------------------------------------
+# arg0 == bn_inetprefix *
+define dump_inetprefix
+    set $XipXfamily = (uint16) ( ((bn_inetprefix *) $arg0)->binp_family )
+    set $XipXaddr = (uint8 *) (& (((bn_inetprefix *) $arg0)->binp_addr) )
+    set $XipXplen = (uint8) (((bn_inetprefix *) $arg0)->binp_prefix_len)
+
+    if $XipXfamily != $tg_af_unspec && $XipXfamily != $tg_af_inet && \
+        $XipXfamily != $tg_af_inet6
+
+        printf "BAD-FAMILY[%u]", $XipXfamily
+    end
+
+    if $XipXfamily == $tg_af_unspec
+        printf "[unspec-inet]"
+    end
+    if $XipXfamily == $tg_af_inet
+        dump_inaddr $XipXaddr
+    end
+    if $XipXfamily == $tg_af_inet6
+        dump_in6addr $XipXaddr
+    end
+
+    printf "/%u", $XipXplen
+
+end
+
+document dump_inetprefix
+    Display a 'bn_inetprefix *' .
+end
+
+# --------------------------------------------------
+# arg0 == bn_value *
+# arg1 == ba_type
+define dump_bn_value
+    set $XvXvalue = (bn_value *) $arg0
+    set $XvtXtype = $arg1
+
+    # The many if()s below are sort of like bn_attrib_get_str()
+    if ($XvtXtype == bt_string || \
+        $XvtXtype == bt_utf8_string || \
+        $XvtXtype == bt_oid || \
+        $XvtXtype == bt_link || \
+        $XvtXtype == bt_name || \
+        $XvtXtype == bt_hostname || \
+        $XvtXtype == bt_uri || \
+        $XvtXtype == bt_charlist || \
+        $XvtXtype == bt_regex || \
+        $XvtXtype == bt_globpattern) \
+        && $XvXvalue->bnvv_TSTRING != 0
+        printf "%s", (char *) $XvXvalue->bnvv_TSTRING->ts_str
+    end
+    if $XvtXtype == bt_uint8
+        printf "%u", $XvXvalue->bnv_uint8
+    end
+    if $XvtXtype == bt_int8
+        printf "%d", $XvXvalue->bnv_int8
+    end
+    if $XvtXtype == bt_uint16
+        printf "%u", $XvXvalue->bnv_uint16
+    end
+    if $XvtXtype == bt_int16
+        printf "%d", $XvXvalue->bnv_int16
+    end
+    if $XvtXtype == bt_uint32
+        printf "%u", $XvXvalue->bnv_uint32
+    end
+    if $XvtXtype == bt_int32
+        printf "%d", $XvXvalue->bnv_int32
+    end
+    if $XvtXtype == bt_uint64
+        printf "%llu", $XvXvalue->bnv_uint64
+    end
+    if $XvtXtype == bt_int64
+        printf "%lld", $XvXvalue->bnv_int64
+    end
+    if $XvtXtype == bt_bool
+        if ($XvXvalue->bnv_tbool)
+            printf "true"
+        else
+            printf "false"
+        end
+    end
+    if $XvtXtype == bt_float32
+        printf "%.9f", $XvXvalue->bnv_float32
+    end
+    if $XvtXtype == bt_float64
+        printf "%.18g", $XvXvalue->bnv_float64
+    end
+    if $XvtXtype == bt_char
+        printf "%c", $XvXvalue->bnv_char
+    end
+    if $XvtXtype == bt_ipv4addr
+        dump_ipv4addr &($XvXvalue->bnv_ipv4addr)
+    end
+    if $XvtXtype == bt_ipv4prefix
+        dump_ipv4prefix_old &($XvXvalue->bnv_ipv4prefix)
+    end
+    if $XvtXtype == bt_macaddr802
+        dump_macaddr802 $XvXvalue->bnv_macaddr802
+    end
+    if $XvtXtype == bt_ipv6addr
+        dump_ipv6addr &($XvXvalue->bnv_ipv6addr)
+    end
+    if $XvtXtype == bt_ipv6addrz
+        dump_ipv6addrz &($XvXvalue->bnv_ipv6addrz)
+    end
+    if $XvtXtype == bt_ipv6prefix
+        dump_ipv6prefix &($XvXvalue->bnv_ipv6prefix)
+    end
+    if $XvtXtype == bt_inetaddr
+        dump_inetaddr &($XvXvalue->bnv_inetaddr)
+    end
+    if $XvtXtype == bt_inetaddrz
+        dump_inetaddrz &($XvXvalue->bnv_inetaddrz)
+    end
+    if $XvtXtype == bt_inetprefix
+        dump_inetprefix &($XvXvalue->bnv_inetprefix)
+    end
+
+    # XXXX These are not really very good for date, time* and datetime*,
+    #      but we may not be able to call any functions
+
+    if $XvtXtype == bt_date
+        printf "%llu", $XvXvalue->bnv_date
+    end
+    if $XvtXtype == bt_time_sec
+        printf "%llu", $XvXvalue->bnv_time_sec
+    end
+    if $XvtXtype == bt_time_ms
+        printf "%llu", $XvXvalue->bnv_time_ms
+    end
+    if $XvtXtype == bt_time_us
+        printf "%llu", $XvXvalue->bnv_time_us
+    end
+    if $XvtXtype == bt_datetime_sec
+        printf "%llu", $XvXvalue->bnv_datetime_sec
+    end
+    if $XvtXtype == bt_datetime_ms
+        printf "%llu", $XvXvalue->bnv_datetime_ms
+    end
+    if $XvtXtype == bt_datetime_us
+        printf "%llu", $XvXvalue->bnv_datetime_us
+    end
+
+    if $XvtXtype == bt_duration_sec
+        printf "%llu", $XvXvalue->bnv_duration_sec
+    end
+    if $XvtXtype == bt_duration_ms
+        printf "%llu", $XvXvalue->bnv_duration_ms
+    end
+    if $XvtXtype == bt_duration_us
+        printf "%llu", $XvXvalue->bnv_duration_us
+    end
+    if $XvtXtype == bt_none
+        printf ""
+    end
+    if $XvtXtype == bt_btype
+        dump_enum_to_string bn_type_map $XvXvalue->bnv_btype
+    end
+    if $XvtXtype == bt_attribute
+        dump_enum_to_string bn_type_map $XvXvalue->bnv_attribute
+    end
+    if $XvtXtype == bt_binary && $XvXvalue->bnvv_TBUF != 0
+        dump_tbuf $XvXvalue->bnvv_TBUF
+    end
+
+end
+
+document dump_bn_value
+    Display a 'bn_value *' .
+end
+
+# --------------------------------------------------
+# arg0 == bn_attrib *
+# arg1 == indent level
+define int_dump_attrib_internal
+    set $XbaXattrib = (bn_attrib *) $arg0
+    set $XbaXattribid = $XbaXattrib->ba_attrib_id
+    set $XbaXtype = $XbaXattrib->ba_type
+    set $XbaXtypeflags = $XbaXattrib->ba_type_flags
+    set $XbaXindent = (int) $arg1
+    int_dump_indent $XbaXindent
+    dump_enum_to_string bn_attribute_id_map $XbaXattrib->ba_attrib_id
+    printf ": "
+    dump_bn_value &($XbaXattrib->ba_v) $XbaXtype
+    printf " ("
+    dump_enum_to_string bn_type_map $XbaXtype
+    if $XbaXtypeflags > 0
+        printf ", flags "
+        dump_bitfield_to_string bn_type_flags_map $XbaXtypeflags
+    end
+    printf ")"
+    printf "\n"
+end
+
+document int_dump_attrib_internal
+    Internal do not call.
+end
+
+###### This is an alternative to "int_dump_attrib_internal" which outputs
+###### in roughly the same format as "mdreq".  To use, remove the
+###### "_mdreq" from the name, and rename the above function as well.
+# arg0 == bn_attrib *
+# arg1 == indent level
+define int_dump_attrib_internal_mdreq
+    set $XbaXattrib = (bn_attrib *) $arg0
+    set $XbaXattribid = $XbaXattrib->ba_attrib_id
+    set $XbaXtype = $XbaXattrib->ba_type
+    set $XbaXindent = (int) $arg1
+    int_dump_indent $XbaXindent
+    printf "Attrib: "
+    dump_enum_to_string bn_attribute_id_map $XbaXattrib->ba_attrib_id
+    printf "\n"
+    int_dump_indent $XbaXindent
+    printf "Type: "
+    dump_enum_to_string bn_type_map $XbaXtype
+    printf "\n"
+    int_dump_indent $XbaXindent
+    printf "Value: "
+    dump_bn_value &($XbaXattrib->ba_v) $XbaXtype
+    printf "\n"
+end
+
+document int_dump_attrib_internal_mdreq
+    Internal do not call.
+end
+
+define dump_attrib
+    int_dump_attrib_internal $arg0 0
+end
+
+document dump_attrib
+    Display a 'bn_attrib *'.
+end
+
+# --------------------------------------------------
+# arg0 == bn_attrib_array *
+# arg1 == indent level
+# arg2 == verbose: 0 has no header
+define int_dump_attrib_array_internal
+    set $XbaaXattribs = (bn_attrib_array *) $arg0
+    set $XbaaXarray = $XbaaXattribs->bn_attrib_arr
+    set $XbaaXnum_attribs = $XbaaXarray->ar_num_elems
+    set $XbaaXindent = (int) $arg1
+    set $XbaaXindentnext = $XbaaXindent + 1
+    set $XbaaXverbose = (int) $arg2
+    set $XbaaXnum = 0
+    if $XbaaXverbose > 0
+        int_dump_indent $XbaaXindent
+        printf "bn_attrib_array %p has %u elements\n", $XbaaXattribs, $XbaaXnum_attribs
+    end
+    while $XbaaXnum != $XbaaXnum_attribs
+        set $XbaaXattrib = (bn_attrib *) $XbaaXarray->ar_elems[$XbaaXnum]
+        if ($XbaaXattrib)
+            if $XbaaXverbose > 0
+                int_dump_indent $XbaaXindent
+                printf "[%u] %p\n", $XbaaXnum, $XbaaXattrib
+            end
+            int_dump_attrib_internal $XbaaXattrib $XbaaXindentnext
+        end
+        set $XbaaXnum = $XbaaXnum + 1
+    end
+end
+
+document int_dump_attrib_array_internal
+    Internal do not call.
+end
+
+define dump_attrib_array
+    int_dump_attrib_array_internal $arg0 0 1
+end
+
+document dump_attrib_array
+    Display a 'bn_attrib_array *' .
+end
+
+# --------------------------------------------------
+# arg0 == bn_binding_array *
+# arg1 == indent level
+# arg2 == verbose: 0 has no header, 1 normal, 2 detail with pointers
+define int_dump_binding_internal
+    set $XbbXbinding = (bn_binding *) $arg0
+    set $XbbXattribs = $XbbXbinding->bn_attribs
+    set $XbbXindent = (int) $arg1
+    set $XbbXindentnext = $XbbXindent + 1
+    set $XbbXverbose = (int) $arg2
+    set $XbbXnum = 0
+    int_dump_indent $XbbXindent
+    printf "Name: "
+    if $XbbXbinding->bn_node_name
+        printf "%s", $XbbXbinding->bn_node_name->ts_str
+        if $XbbXverbose > 1
+            printf "(%p)", $XbbXbinding->bn_node_name
+        end
+    end
+    printf "\n"
+
+    if ($XbbXbinding->bn_node_name_parts)
+        int_dump_indent $XbbXindentnext
+        printf "parts: "
+        if $XbbXbinding->bn_node_name_parts_absolute == 0
+            printf "(rel) "
+        end
+        if $XbbXverbose > 1
+            printf "\n"
+            int_dump_tstr_array_internal $XbbXbinding->bn_node_name_parts $XbbXindentnext $XbbXverbose
+        else
+            dump_tstr_array_compact $XbbXbinding->bn_node_name_parts
+        end
+    end
+    if $XbbXattribs
+        if $XbbXverbose > 1
+            int_dump_attrib_array_internal $XbbXattribs $XbbXindent $XbbXverbose
+        else
+            int_dump_attrib_array_internal $XbbXattribs $XbbXindent 0
+        end
+    end
+end
+
+document int_dump_binding_internal
+    Internal do not call.
+end
+
+define dump_binding
+    int_dump_binding_internal $arg0 0 1
+end
+
+document dump_binding
+    Display a 'bn_binding *' .  This includes the name, name parts and
+    all attributes.
+end
+
+# --------------------------------------------------
+# arg0 == bn_binding_array *
+# arg1 == indent level
+# arg2 == verbose: 0 has no header, 1 normal, 2 detail with pointers
+# Similar to bn_binding_array_dump()
+define int_dump_binding_array_internal
+    set $XbbaXbindings = (bn_binding_array *) $arg0
+    set $XbbaXarray = $XbbaXbindings->bn_binding_arr
+    set $XbbaXnum_bindings = $XbbaXarray->ar_num_elems
+    set $XbbaXindent = (int) $arg1
+    set $XbbaXindentnext = $XbbaXindent + 1
+    set $XbbaXverbose = (int) $arg2
+    set $XbbaXnum = 0
+    if $XbbaXverbose > 0
+        int_dump_indent $XbbaXindent
+        printf "bn_binding_array %p has %u elements\n\n", $XbbaXbindings, $XbbaXnum_bindings
+    end
+    while $XbbaXnum != $XbbaXnum_bindings
+        set $XbbaXbinding = (bn_binding *) $XbbaXarray->ar_elems[$XbbaXnum]
+        int_dump_indent $XbbaXindent
+        if $XbbaXverbose > 0
+            printf "[%u] %p\n", $XbbaXnum, $XbbaXbinding
+            int_dump_binding_internal $XbbaXbinding $XbbaXindentnext $XbbaXverbose
+        else
+            printf "[%u]\n", $XbbaXnum
+            int_dump_binding_internal $XbbaXbinding $XbbaXindentnext 0
+        end
+        set $XbbaXnum = $XbbaXnum + 1
+        printf "\n"
+    end
+end
+
+document int_dump_binding_array_internal
+    Internal do not call.
+end
+
+define dump_binding_array
+    int_dump_binding_array_internal $arg0 0 1
+end
+
+document dump_binding_array
+    Display a 'bn_binding_array *' .
+end
+
+# --------------------------------------------------
+# ##################################################
+# tstr_array
+# ##################################################
+
+# arg0 == tstr_array *
+# arg1 == indent level
+# arg2 == verbose: 0 has no header, 1 normal, 2 detail with pointers
+define int_dump_tstr_array_internal
+    set $XtsaXtstrings = (tstr_array *) $arg0
+    set $XtsaXarray = $XtsaXtstrings->tstr_arr
+    set $XtsaXnum_tstrings = $XtsaXarray->ar_num_elems
+    set $XtsaXindent = (int) $arg1
+    set $XtsaXverbose = (int) $arg2
+    set $XtsaXnum = 0
+    if $XtsaXverbose > 0
+        int_dump_indent $XtsaXindent
+        printf "tstr_array %p has %u elements\n\n", $XtsaXtstrings, $XtsaXnum_tstrings
+    end
+    while $XtsaXnum != $XtsaXnum_tstrings
+        set $XtsaXtstring = (tstring *) $XtsaXarray->ar_elems[$XtsaXnum]
+        int_dump_indent $XtsaXindent
+        if $XtsaXverbose > 0
+            printf "[%u] %p \"%s\"\n", $XtsaXnum, $XtsaXtstring, ($XtsaXtstring ? $XtsaXtstring->ts_str : "")
+        else
+            printf "[%u] \"%s\"\n", $XtsaXnum, ($XtsaXtstring ? $XtsaXtstring->ts_str : "")
+        end
+        set $XtsaXnum = $XtsaXnum + 1
+    end
+end
+
+document int_dump_tstr_array_internal
+    Internal do not call.
+end
+
+define dump_tstr_array
+    int_dump_tstr_array_internal $arg0 0 1
+end
+
+document dump_tstr_array
+    Display a 'tstr_array *' .
+end
+
+define int_dump_tstr_array_compact_internal
+    set $XtsaXtstrings = (tstr_array *) $arg0
+    set $XtsaXarray = $XtsaXtstrings->tstr_arr
+    set $XtsaXnum_tstrings = $XtsaXarray->ar_num_elems
+    set $XtsaXindent = (int) $arg1
+    set $XtsaXnum = 0
+    int_dump_indent $XtsaXindent
+    while $XtsaXnum != $XtsaXnum_tstrings
+        set $XtsaXtstring = (tstring *) $XtsaXarray->ar_elems[$XtsaXnum]
+	if $XtsaXtstring != 0
+	    printf "\"%s\" ", $XtsaXtstring->ts_str
+	else
+	    printf "[*NULL*] "
+	end
+        set $XtsaXnum = $XtsaXnum + 1
+    end
+    printf "\n"
+end
+
+document int_dump_tstr_array_compact_internal
+    Internal do not call.
+end
+
+define dump_tstr_array_compact
+    int_dump_tstr_array_compact_internal $arg0 0
+end
+
+document dump_tstr_array_compact
+    Display a 'tstr_array *' all on one line.
+end
+
+# --------------------------------------------------
+# ##################################################
+# uint32_array
+# ##################################################
+
+# arg0 == uint32_array *
+# arg1 == indent level
+# arg2 == verbose: 0 has no header, 1 normal, 2 detail with pointers
+define int_dump_uint32_array_internal
+    set $XuaXuint32s = (uint32_array *) $arg0
+    set $XuaXarray = $XuaXuint32s->uint32_arr
+    set $XuaXnum_uint32s = $XuaXarray->ar_num_elems
+    set $XuaXindent = (int) $arg1
+    set $XuaXverbose = (int) $arg2
+    set $XuaXnum = 0
+    if $XuaXverbose > 0
+        int_dump_indent $XuaXindent
+        printf "uint32_array %p has %u elements\n\n", $XuaXuint32s, $XuaXnum_uint32s
+    end
+    while $XuaXnum != $XuaXnum_uint32s
+        set $XuaXuint32 = (uint32 *) &($XuaXarray->ar_elems[$XuaXnum])
+        int_dump_indent $XuaXindent
+        if $XuaXverbose > 1
+            printf "[%u] %p %u\n", $XuaXnum, $XuaXuint32, *$XuaXuint32
+        else
+            printf "[%u] %u\n", $XuaXnum, *$XuaXuint32
+        end
+        set $XuaXnum = $XuaXnum + 1
+    end
+end
+
+document int_dump_uint32_array_internal
+    Internal do not call.
+end
+
+define dump_uint32_array
+    int_dump_uint32_array_internal $arg0 0 1
+end
+
+document dump_uint32_array
+    Display a 'uint32_array *' .
+end
+
+define int_dump_uint32_array_compact_internal
+    set $XuaXuint32s = (uint32_array *) $arg0
+    set $XuaXarray = $XuaXuint32s->uint32_arr
+    set $XuaXnum_uint32s = $XuaXarray->ar_num_elems
+    set $XuaXindent = (int) $arg1
+    set $XuaXnum = 0
+    int_dump_indent $XuaXindent
+    while $XuaXnum != $XuaXnum_uint32s
+        set $XuaXuint32v = (uint32) $XuaXarray->ar_elems[$XuaXnum]
+        printf "%u ", $XuaXuint32v
+        set $XuaXnum = $XuaXnum + 1
+    end
+    printf "\n"
+end
+
+document int_dump_uint32_array_compact_internal
+    Internal do not call.
+end
+
+define dump_uint32_array_compact
+    int_dump_uint32_array_compact_internal $arg0 0
+end
+
+document dump_uint32_array_compact
+    Display a 'uint32_array *' all on one line.
+end
+
+# --------------------------------------------------
+# ##################################################
+# Dump all libevent wrapper events.  This includes, timers, fds and
+# signals.
+# ##################################################
+
+# Taken from event.h
+set $DUMP_EV_SIGNAL = 0x08
+set $DUMP_EV_TIMEOUT = 0x01
+set $DUMP_EV_READ = 0x02
+set $DUMP_EV_WRITE = 0x04
+set $DUMP_EV_SIGNAL = 0x08
+set $DUMP_EV_PERSIST = 0x10
+
+set $DUMP_EVLIST_TIMEOUT = 0x01
+set $DUMP_EVLIST_INSERTED = 0x02
+set $DUMP_EVLIST_SIGNAL = 0x04
+set $DUMP_EVLIST_ACTIVE = 0x08
+set $DUMP_EVLIST_INIT = 0x80
+
+# This is similar to lew_dump_all_events()
+
+# $arg0 == lew_context *
+define dump_events
+    set $XleXcontext = (lew_context *) $arg0
+    set $XleXverbose = 1
+
+    if $XleXcontext != 0
+        set $XleXevents = $XleXcontext->lwc_events
+
+        set $XleXnum_events = $XleXevents->ar_num_elems
+
+        printf "Number of events: %u\n", $XleXnum_events
+
+        set $XleXnum = 0
+        while $XleXnum < $XleXnum_events
+            set $XleXev = (lew_event **) $XleXevents->ar_elems[$XleXnum]
+            set $XleXevp = *$XleXev
+            set $XleXevent = (struct event *) &($XleXevp)->lwe_event
+            set $XleXfd = $XleXevent->ev_fd
+            if $XleXverbose > 0
+                printf "[%u] (lew_event **) %p (struct event *) %p\n", $XleXnum, $XleXev, $XleXevent
+            else
+                printf "[%u]\n", $XleXnum
+            end
+
+            printf "    "
+
+            if $XleXevp->lwe_event_name != 0
+                printf " (%s)", $XleXevp->lwe_event_name
+            end
+
+            set $XleXokay = 0
+            set $XleXhas_timer = 0
+            if $XleXevent->ev_flags & $DUMP_EVLIST_SIGNAL
+                dump_enum_to_string lc_signal_names $XleXfd
+                set $XleXokay = 1
+            end
+
+            if ($XleXevent->ev_flags & $DUMP_EVLIST_INSERTED) && \
+                (($XleXevent->ev_events & $DUMP_EV_READ) || \
+                 ($XleXevent->ev_events & $DUMP_EV_WRITE))
+                printf " fd: %d", $XleXfd
+                set $XleXokay = 1
+            end
+
+            if $XleXevent->ev_flags & $DUMP_EVLIST_TIMEOUT
+                printf " timer"
+                set $XleXhas_timer = 1
+                set $XleXokay = 1
+            end
+
+            printf " flags 0x%04x", $XleXevent->ev_flags
+
+            if $XleXokay == 1
+                printf " pending"
+            else
+                printf " NOT PENDING"
+            end
+
+            if $XleXhas_timer == 1
+                set $XleXfrac = (double) $XleXevent->ev_timeout.tv_usec / 1000000
+                printf " timeout at %lu + %.6g", $XleXevent->ev_timeout.tv_sec, $XleXfrac
+            else
+                printf " no timer"
+            end
+
+            if $XleXevp->lwe_event_handler_name
+                printf " call %s", $XleXevp->lwe_event_handler_name
+            else
+                printf " call %p", $XleXevp->lwe_handler
+            end
+
+            if $XleXevp->lwe_auto_free
+                printf " (auto-free)"
+            end
+            printf "\n"
+            set $XleXnum = $XleXnum + 1
+        end
+
+    end
+
+end
+
+document dump_events
+    Display all the timers signals and fds for an 'lew_context *' .
+end
+
+# --------------------------------------------------
+define perrno
+    print *(__errno_location())
+end
+
+# Requires a running process (unlike all other functions in this file).
+document perrno
+    Print errno when bugs make "print errno" fail.
+end
+
+# --------------------------------------------------

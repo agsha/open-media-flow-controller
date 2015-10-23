@@ -1,0 +1,325 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: SNMP">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"]
+
+  # Conditional on PROD_FEATURE_SNMP_SETS
+  set have_sets [tms::have-prod-feature snmp_sets]
+
+  # Conditional on PROD_FEATURE_IPV6
+  set have_ipv6 [tms::have-prod-feature ipv6]
+  set ip_field_width 16
+  if {[string compare $have_ipv6 "true"] == 0} {
+      set ip_field_width 46
+  }
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "snmp" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "SNMP CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_snmp "snmp-server **"
+    set cmdpat_snmp_neg "no snmp-server **"
+    set cmd_start_index 1600
+    set cmd_end_index 1799
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "SNMP" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_snmp $cmdpat_snmp_neg]>
+
+  <?
+    # ==================================================
+    # SNMP switches
+    # ==================================================
+  ?>
+
+  <h2>SNMP switches for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE>
+      <TMS-TABLE-ENTRY "Enable SNMP">
+        <CFG-CHECKBOX -id "enable" -caps $prof_priv
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "bool" -value "true">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Enable SNMP communities">
+        <CFG-CHECKBOX -id "enablecomm" -caps $prof_priv 
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "bool" -value "true">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Enable Multiple SNMP communities">
+        <CFG-CHECKBOX -id "enablemultcomm" -caps $prof_priv 
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "bool" -value "true">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Enable SNMP traps and informs">
+        <CFG-CHECKBOX -id "enabletraps" -caps $prof_priv 
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "bool" -value "true">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Enable SNMP v3 access for admin">
+        <CFG-CHECKBOX -id "v3enable" -caps $prof_priv 
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "bool" -value "true">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"               "enable,ecomm,emcomm,etraps,v3ena"
+      "cmd_enable_fields"      "enable"
+      "cmd_enable_checkcmd"    "snmp-server enable"
+      "cmd_enable_nocheckcmd"  "no snmp-server enable"
+      "cmd_ecomm_fields"       "enablecomm"
+      "cmd_ecomm_checkcmd"     "snmp-server enable communities"
+      "cmd_ecomm_nocheckcmd"   "no snmp-server enable communities"
+      "cmd_emcomm_fields"      "enablemultcomm"
+      "cmd_emcomm_checkcmd"    "snmp-server enable mult-communities"
+      "cmd_emcomm_nocheckcmd"  "no snmp-server enable mult-communities"
+      "cmd_etraps_fields"      "enabletraps"
+      "cmd_etraps_checkcmd"    "snmp-server enable traps"
+      "cmd_etraps_nocheckcmd"  "no snmp-server enable traps"
+      "cmd_v3ena_fields"       "v3enable"
+      "cmd_v3ena_checkcmd"     "snmp-server user admin v3 enable"
+      "cmd_v3ena_nocheckcmd"   "no snmp-server user admin v3 enable">
+
+
+  <CFG-BUTTON -type "add" -text "Add Settings" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+  <?
+    # ==================================================
+    # General SNMP settings
+    # ==================================================
+  ?>
+
+  <h2>SNMP settings for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE>
+      <TMS-TABLE-ENTRY "Read-only Community">
+        <CFG-TEXTBOX -id "rocommunity" -errname "Read-only Community"
+                      -caps $prof_priv 
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "string" -cols "30" -required "false">
+      </TMS-TABLE-ENTRY>
+      <IF {[string compare $have_sets "true"] == 0}>
+        <TMS-TABLE-ENTRY "Read-write Community">
+          <CFG-TEXTBOX -id "rwcommunity" -errname "Read-write Community"
+                        -caps $prof_priv 
+                        -acl $cmc_acl -acl_oper {set_create}
+                        -type "string" -cols "30" -required "false">
+        </TMS-TABLE-ENTRY>
+      </IF>
+      <TMS-TABLE-ENTRY "Sys Contact">
+        <CFG-TEXTBOX -id "contact" -errname "Sys Contact" -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "string" -cols "30"
+                      -required "false">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Sys Location">
+        <CFG-TEXTBOX -id "location" -errname "Sys Location" -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "string" -cols "30"
+                      -required "false">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "SNMP agent port">
+        <CFG-TEXTBOX -id "snport" -errname "Agent port" -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "string" -cols "8"
+                      -required "false">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <IF {[string compare $have_sets "true"] == 0}>
+    <SET cmds "rocomm,rwcomm,scont,sloc,snport">
+  <ELSE>
+    <SET cmds "rocomm,scont,sloc,snport">
+  </IF>
+
+  <CMC-PROFILE-CMDS
+      "commands"               $cmds
+      "cmd_rocomm_fields"      "rocommunity"
+      "cmd_rocomm_pat_1"       "snmp-server community *"
+      "cmd_rocomm_fields_1"    "rocommunity"
+      "cmd_rwcomm_fields"      "rwcommunity"
+      "cmd_rwcomm_pat_1"       "snmp-server community * rw"
+      "cmd_rwcomm_fields_1"    "rwcommunity"
+      "cmd_scont_fields"       "contact"
+      "cmd_scont_pat_1"        "snmp-server contact *"
+      "cmd_scont_fields_1"     "contact"
+      "cmd_sloc_fields"        "location"
+      "cmd_sloc_pat_1"         "snmp-server location *"
+      "cmd_sloc_fields_1"      "location"
+      "cmd_snport_fields"      "snport"
+      "cmd_snport_pat_1"       "snmp-server port *"
+      "cmd_snport_fields_1"    "snport">
+
+  <CFG-BUTTON -type "add" -text "Add Settings" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+  <?
+    # ==================================================
+    # Add new trap sink
+    # ==================================================
+  ?>
+
+  <h2>Add new notification sink for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE>
+      <TMS-TABLE-ENTRY "IP address">
+        <CFG-TEXTBOX -id "address" -errname "IP address" -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "ipv4addr" -cols "$ip_field_width">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Notification Community">
+        <CFG-TEXTBOX -id "tcomm" -errname "Notification community" -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "string" -cols "30">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Notification type">
+        <CFG-DROPDOWN -id "sver" -caps $prof_priv
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "string" -value "trap-v2c" -options {
+          {"v1 traps" "1"}
+          {"v2c traps" "2c"}}>
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"             "tsink"
+      "cmd_tsink_fields"     "address,sver,tcomm"
+      "cmd_tsink_pat_1"      "snmp-server host * traps version * *"
+      "cmd_tsink_fields_1"   "address,sver,tcomm">
+
+  <CFG-BUTTON -type "add" -text "Add Notification Sink" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+  <?
+    # ==================================================
+    # SNMP v3 users
+    # ==================================================
+  ?>
+
+  <h2>SNMP v3 user settings for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+<?
+# XXX/EMT: how to have checkcmd/nocheckcmd with patterns?
+# Our sources have no examples...
+?>
+
+  <TMS-TABLE>
+      <TMS-TABLE-ENTRY "Username">
+        <CFG-TEXTBOX -id "username" -errname "Username"
+                     -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "string" -cols "30" 
+                     -required "true">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Authentication Type">
+        <CFG-DROPDOWN -id "authtype" -caps $prof_priv
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "string" -value "sha" -options {
+          {"SHA1" "sha"}
+          {"MD5" "md5"}}>
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Privacy Type">
+        <CFG-DROPDOWN -id "privtype" -caps $prof_priv
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "string" -value "aes-128" -options {
+          {"AES128" "aes-128"}
+          {"DES" "des"}}>
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Authentication password">
+        <CFG-TEXTBOX -id "authpass" -errname "Authentication password"
+                     -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "string" -cols "30" 
+                     -required "true">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Privacy password">
+        <CFG-TEXTBOX -id "privpass" -caps $prof_priv
+                     -type "string" -cols "30"
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -required "false">
+        <br>
+        (Leave blank to use same password as authentication password)
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"               "v3user"
+      "cmd_v3user_fields"      "username,authtype,privtype,authpass,privpass"
+      "cmd_v3user_numpats"     "2"
+      "cmd_v3user_pat_1"       "snmp-server user * v3 auth * * priv *"
+      "cmd_v3user_fields_1"    "username,authtype,authpass,privtype"
+      "cmd_v3user_pat_2"       "snmp-server user * v3 auth * * priv * *"
+      "cmd_v3user_fields_2"    "username,authtype,authpass,privtype,privpass">
+
+  <CFG-BUTTON -type "add" -text "Add Settings" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

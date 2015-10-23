@@ -1,0 +1,39 @@
+<?
+#
+#
+#
+#
+?>
+
+ <?
+#
+# Target for AJAX status update on logging page
+#
+?>
+
+<INCLUDE "tms-utils">
+
+<html>
+<head>
+  <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+  <meta http-equiv="PRAGMA" content="NO-CACHE">
+</head>
+<body>
+
+<?  
+  # XXX/EMT this should be configurable!
+  set log_lines_per_page 100
+
+  set num_log_lines [tms::get-log-line-count]
+  set line_begin [expr {$num_log_lines - $log_lines_per_page + 1}]
+  set log_lines [tms::get-log-lines $line_begin $log_lines_per_page]
+?>
+<?
+# log_lines is already html-entity escaped from within tms::get-log-lines
+?>
+  <pre>
+  <FOREACH line $log_lines><?= $line ?>
+  </FOREACH></pre>
+
+</body>
+</html>

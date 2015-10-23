@@ -1,0 +1,414 @@
+diff --exclude='*~' -upNr grub-0.97/stage1/stage1.S grub-0.97-tms/stage1/stage1.S
+--- grub-0.97/stage1/stage1.S	2005-02-15 13:54:31.000000000 -0800
++++ grub-0.97-tms/stage1/stage1.S	2008-05-05 09:38:46.000000000 -0700
+@@ -400,7 +400,7 @@ general_error:
+ /* go here when you need to stop the machine hard after an error condition */
+ stop:	jmp	stop
+ 
+-notification_string:	.string "GRUB "
++notification_string:	.string "Boot "
+ geometry_error_string:	.string "Geom"
+ hd_probe_error_string:	.string "Hard Disk"
+ read_error_string:	.string "Read"
+diff --exclude='*~' -upNr grub-0.97/stage2/boot.c grub-0.97-tms/stage2/boot.c
+--- grub-0.97/stage2/boot.c	2008-04-25 17:09:33.000000000 -0700
++++ grub-0.97-tms/stage2/boot.c	2008-04-25 17:23:14.000000000 -0700
+@@ -280,8 +280,9 @@ load_image (char *kernel, char *arg, ker
+ 	errnum = ERR_WONT_FIT;
+       else
+ 	{
+-	  grub_printf ("   [Linux-%s, setup=0x%x, size=0x%x]\n",
+-		       (big_linux ? "bzImage" : "zImage"), data_len, text_len);
++         if (!quiet_boot)
++	   grub_printf ("   [Linux-%s, setup=0x%x, size=0x%x]\n",
++		        (big_linux ? "bzImage" : "zImage"), data_len, text_len);
+ 
+ 	  /* Video mode selection support. What a mess!  */
+ 	  /* NOTE: Even the word "mess" is not still enough to
+@@ -487,7 +488,8 @@ load_image (char *kernel, char *arg, ker
+   mbi.syms.a.addr = 0;
+   mbi.syms.a.pad = 0;
+ 
+-  printf ("   [%s-%s", str2, str);
++  if (!quiet_boot)
++    printf ("   [%s-%s", str2, str);
+ 
+   str = "";
+ 
+@@ -495,8 +497,9 @@ load_image (char *kernel, char *arg, ker
+     {
+       if (flags & MULTIBOOT_AOUT_KLUDGE)
+ 	str = "-and-data";
+-
+-      printf (", loadaddr=0x%x, text%s=0x%x", cur_addr, str, text_len);
++     
++      if (!quiet_boot)
++        printf (", loadaddr=0x%x, text%s=0x%x", cur_addr, str, text_len);
+ 
+       /* read text, then read data */
+       if (grub_read ((char *) RAW_ADDR (cur_addr), text_len) == text_len)
+@@ -733,6 +736,7 @@ load_image (char *kernel, char *arg, ker
+ 
+   if (! errnum)
+     {
++    if (!quiet_boot)
+       grub_printf (", entry=0x%x]\n", (unsigned) entry_addr);
+       
+       /* If the entry address is physically different from that of the ELF
+@@ -840,7 +844,8 @@ load_initrd (char *initrd)
+   moveto -= 0x10000;
+   memmove ((void *) RAW_ADDR (moveto), (void *) cur_addr, len);
+ 
+-  printf ("   [Linux-initrd @ 0x%x, 0x%x bytes]\n", moveto, len);
++  if (!quiet_boot)
++    printf ("   [Linux-initrd @ 0x%x, 0x%x bytes]\n", moveto, len);
+ 
+   /* FIXME: Should check if the kernel supports INITRD.  */
+   lh->ramdisk_image = RAW_ADDR (moveto);
+diff --exclude='*~' -upNr grub-0.97/stage2/builtins.c grub-0.97-tms/stage2/builtins.c
+--- grub-0.97/stage2/builtins.c	2008-04-25 17:09:33.000000000 -0700
++++ grub-0.97-tms/stage2/builtins.c	2008-05-07 11:40:01.313773000 -0700
+@@ -75,6 +75,8 @@ int auth = 0;
+ int grub_timeout = -1;
+ /* Whether to show the menu or not.  */
+ int show_menu = 1;
++/* Whether to quiet boot messages or not. */
++int quiet_boot = 1;
+ /* The BIOS drive map.  */
+ static unsigned short bios_drive_map[DRIVE_MAP_SIZE + 1];
+ 
+@@ -394,7 +396,8 @@ bootp_func (char *arg, int flags)
+     }
+ 
+   /* Notify the configuration.  */
+-  print_network_configuration ();
++  if (!quiet_boot)
++    print_network_configuration ();
+ 
+   /* XXX: this can cause an endless loop, but there is no easy way to
+      detect such a loop unfortunately.  */
+@@ -1795,6 +1798,23 @@ static struct builtin builtin_hiddenmenu
+   "Hide the menu."
+ #endif
+ };
++
++/* quietboot */
++static int
++quietboot_func (char *arg, int flags)
++{
++  quiet_boot = 1;
++  return 0;
++}
++
++static struct builtin builtin_quietboot =
++{
++  "quiet",
++  quietboot_func,
++  BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
++  "quietboot",
++  "Quiet boot messages."
++};
+ 
+ 
+ /* hide */
+@@ -1859,8 +1879,8 @@ ifconfig_func (char *arg, int flags)
+       errnum = ERR_BAD_ARGUMENT;
+       return 1;
+     }
+-  
+-  print_network_configuration ();
++  if (!quiet_boot)
++    print_network_configuration ();
+   return 0;
+ }
+ 
+@@ -3243,7 +3263,8 @@ rarp_func (char *arg, int flags)
+     }
+ 
+   /* Notify the configuration.  */
+-  print_network_configuration ();
++  if (!quiet_boot)
++    print_network_configuration ();
+   return 0;
+ }
+ 
+@@ -3333,7 +3354,8 @@ print_root_device (void)
+   /* Print the filesystem information.  */
+   current_partition = saved_partition;
+   current_drive = saved_drive;
+-  print_fsys_type ();
++  if (!quiet_boot)
++    print_fsys_type ();
+ }
+ 
+ static int
+@@ -3344,10 +3366,13 @@ real_root_func (char *arg, int attempt_m
+   char *next;
+ 
+   /* If ARG is empty, just print the current root device.  */
+-  if (! *arg)
++  if (!quiet_boot)
+     {
+-      print_root_device ();
+-      return 0;
++  	if (! *arg)
++    	  {
++     	    print_root_device ();
++      	    return 0;
++    	  }
+     }
+   
+   /* Call set_device to get the drive and the partition in ARG.  */
+@@ -3389,7 +3414,8 @@ real_root_func (char *arg, int attempt_m
+ 	return 1;
+       
+       /* Print the type of the filesystem.  */
+-      print_fsys_type ();
++      if (!quiet_boot)
++        print_fsys_type ();
+     }
+   
+   return 0;
+@@ -4480,7 +4506,14 @@ terminal_func (char *arg, int flags)
+ 		    if (term_bitmap & (1 << i))
+ 		      {
+ 			current_term = term_table + i;
+-			grub_printf ("\rPress any key to continue.\n");
++                        if (!quiet_boot) 
++                          {
++                            grub_printf ("\rPress any key to continue.\n");
++                          }
++                        else
++                          {
++                            grub_printf (".");
++                          }
+ 		      }
+ 		  
+ 		  /* Restore CURRENT_TERM.  */
+@@ -4495,6 +4528,25 @@ terminal_func (char *arg, int flags)
+     }
+ 
+  end:
++  /* Tell the other terminals they have lost */
++  if (! no_message)
++    {
++      int i;
++
++      /* Need to set CURRENT_TERM to each of selected
++         terminals.  */
++      for (i = 0; term_table[i].name; i++)
++        if ((term_bitmap & (1 << i)) && i != default_term)
++          {
++            current_term = term_table + i;
++            grub_printf ("\r\nThis terminal is not active for input or output while booting.\n");
++          }
++        else
++          {
++            grub_printf ("\r\n");
++          }
++    }
++
+   current_term = term_table + default_term;
+   current_term->flags = term_flags;
+ 
+@@ -4835,8 +4887,8 @@ tftpserver_func (char *arg, int flags)
+       errnum = ERR_BAD_ARGUMENT;
+       return 1;
+     }
+-
+-  print_network_configuration ();
++  if (!quiet_boot)
++    print_network_configuration ();
+   return 0;
+ }
+ 
+@@ -5124,6 +5176,7 @@ struct builtin *builtin_table[] =
+ #ifdef GRUB_UTIL
+   &builtin_quit,
+ #endif /* GRUB_UTIL */
++  &builtin_quietboot,
+ #ifdef SUPPORT_NETBOOT
+   &builtin_rarp,
+ #endif /* SUPPORT_NETBOOT */
+diff --exclude='*~' -upNr grub-0.97/stage2/char_io.c grub-0.97-tms/stage2/char_io.c
+--- grub-0.97/stage2/char_io.c	2008-04-25 17:09:33.000000000 -0700
++++ grub-0.97-tms/stage2/char_io.c	2008-05-07 11:49:22.699236000 -0700
+@@ -264,8 +264,7 @@ init_page (void)
+ {
+   cls ();
+ 
+-  grub_printf ("\n    GNU GRUB  version %s  (%dK lower / %dK upper memory)\n\n",
+-	  version_string, mbi.mem_lower, mbi.mem_upper);
++  grub_printf("\n    Boot Menu\n\n");
+ }
+ 
+ /* The number of the history entries.  */
+diff --exclude='*~' -upNr grub-0.97/stage2/cmdline.c grub-0.97-tms/stage2/cmdline.c
+--- grub-0.97/stage2/cmdline.c	2008-04-25 17:09:33.000000000 -0700
++++ grub-0.97-tms/stage2/cmdline.c	2008-04-25 17:23:14.000000000 -0700
+@@ -234,16 +234,22 @@ run_script (char *script, char *heap)
+ 	}
+ 
+       /* Find a builtin.  */
++      
+       builtin = find_command (heap);
+       if (! builtin)
+ 	{
++	 if(!quiet_boot)
++	 {
+ 	  grub_printf ("%s\n", old_entry);
+ 	  continue;
++	 }
+ 	}
+ 
+       if (! (builtin->flags & BUILTIN_NO_ECHO))
+-	grub_printf ("%s\n", old_entry);
+-
++	{
++	      if (!quiet_boot)
++		  grub_printf ("%s\n", old_entry);
++	}
+       /* If BUILTIN cannot be run in the command-line, skip it.  */
+       if (! (builtin->flags & BUILTIN_CMDLINE))
+ 	{
+diff --exclude='*~' -upNr grub-0.97/stage2/shared.h grub-0.97-tms/stage2/shared.h
+--- grub-0.97/stage2/shared.h	2008-04-25 17:09:33.000000000 -0700
++++ grub-0.97-tms/stage2/shared.h	2008-04-25 17:23:14.000000000 -0700
+@@ -856,6 +856,7 @@ kernel_t;
+ 
+ extern kernel_t kernel_type;
+ extern int show_menu;
++extern int quiet_boot;
+ extern int grub_timeout;
+ 
+ void init_builtins (void);
+diff --exclude='*~' -upNr grub-0.97/stage2/stage1_5.c grub-0.97-tms/stage2/stage1_5.c
+--- grub-0.97/stage2/stage1_5.c	2003-07-09 04:45:53.000000000 -0700
++++ grub-0.97-tms/stage2/stage1_5.c	2008-05-05 09:58:51.000000000 -0700
+@@ -30,7 +30,7 @@ disk_read_savesect_func (int sector, int
+ void
+ cmain (void)
+ {
+-  grub_printf ("\n\nGRUB loading, please wait...\n");
++  grub_printf ("\n\nBooting, please wait...\n");
+ 
+   /*
+    *  Here load the true second-stage boot-loader.
+diff --exclude='*~' -upNr grub-0.97/stage2/stage2.c grub-0.97-tms/stage2/stage2.c
+--- grub-0.97/stage2/stage2.c	2008-04-25 17:09:33.000000000 -0700
++++ grub-0.97-tms/stage2/stage2.c	2008-05-07 11:38:03.160795000 -0700
+@@ -264,7 +264,12 @@ restart:
+       /* Get current time.  */
+       while ((time1 = getrtsecs ()) == 0xFF)
+ 	;
+-      grub_printf("\rPress any key to enter the menu\n\n\n");
++      grub_printf ("\rDefault image: \'%s\'\n",
++                   get_entry(menu_entries, first_entry + entryno, 0),
++                   grub_timeout);
++      grub_printf("\rPress enter to boot this image, or any other key for boot menu\n\n");
++      grub_printf ("\rBooting default image in %d seconds.",
++                   grub_timeout);
+ 
+       while (1)
+ 	{
+@@ -272,9 +277,19 @@ restart:
+ 	  if (checkkey () != -1)
+ 	    {
+ 	      grub_timeout = -1;
+-	      show_menu = 1;
+-	      getkey ();
+-	      break;
++
++              c = ASCII_CHAR (getkey ());
++
++              /* If they hit enter, boot it now */
++	      if ((c == '\n') || (c == '\r') || (c == 6))
++                {
++                  goto boot_entry;
++                }
++              else
++                {
++                  show_menu = 1;
++                  break;
++                }
+ 	    }
+ 
+ 	  /* If GRUB_TIMEOUT is expired, boot the default entry.  */
+@@ -292,9 +307,8 @@ restart:
+ 	      grub_timeout--;
+ 	      
+ 	      /* Print a message.  */
+-	      grub_printf ("\rBooting %s in %d seconds...",
+-			   get_entry(menu_entries, first_entry + entryno, 0),
+-			   grub_timeout);
++              grub_printf ("\rBooting default image in %d seconds.  ",
++                           grub_timeout);
+ 	    }
+ 	}
+     }
+@@ -317,14 +331,14 @@ restart:
+       if (! auth && password)
+ 	{
+ 	  printf ("\
+-      Press enter to boot the selected OS or \'p\' to enter a\n\
++      Press enter to boot the selected image or \'p\' to enter a\n\
+       password to unlock the next set of features.");
+ 	}
+       else
+ 	{
+ 	  if (config_entries)
+ 	    printf ("\
+-      Press enter to boot the selected OS, \'e\' to edit the\n\
++      Press enter to boot the selected image, \'e\' to edit the\n\
+       commands before booting, \'a\' to modify the kernel arguments\n\
+       before booting, or \'c\' for a command-line.");
+ 	  else
+@@ -826,7 +840,7 @@ restart:
+   while (1)
+     {
+       if (config_entries)
+-	printf ("  Booting \'%s\'\n\n",
++	printf ("\nBooting: \'%s\'\n\n",
+ 		get_entry (menu_entries, first_entry + entryno, 0));
+       else
+ 	printf ("  Booting command-list\n\n");
+diff --exclude='*~' -upNr grub-0.97/util/grub-install.in grub-0.97-tms/util/grub-install.in
+--- grub-0.97/util/grub-install.in	2008-04-25 17:09:33.000000000 -0700
++++ grub-0.97-tms/util/grub-install.in	2008-05-30 08:12:02.487420000 -0700
+@@ -286,11 +286,15 @@ find_mapper_device() {
+ 	echo "Could not find device for $1" 1>&2
+ 	exit 1
+     fi
++
++    if [ ! -e /dev/mapper ]; then
++        return 1
++    fi
+ 	
+     majmin=`stat_device $dev`
+     for x in /dev/mapper/* ; do
+ 	devmajmin=`stat_device "$x"`
+-	if [ "$majmin" == "$devmajmin" ]; then
++	if [ "$majmin" = "$devmajmin" ]; then
+ 	    echo "$x"
+ 	    return 0
+ 	fi
+@@ -416,7 +420,7 @@ esac
+ grubdir=${bootdir}/grub
+ device_map=${grubdir}/device.map
+ 
+-if [ "$recheck" == "yes" ]; then
++if [ "$recheck" = "yes" ]; then
+     if grep 'mapper' ${device_map} >/dev/null; then
+ 	echo 'grub-install does not support reprobing of device.map when' 1>&2
+ 	echo 'using a device-mapper based boot device.' 1>&2
+@@ -639,9 +643,7 @@ rm -f $log_file
+ 
+ # Prompt the user to check if the device map is correct.
+ echo "Installation finished. No error reported."
+-echo "This is the contents of the device map $device_map."
+-echo "Check if this is correct or not. If any of the lines is incorrect,"
+-echo "fix it and re-run the script \`grub-install'."
++echo "This is the contents of the device map $device_map :"
+ echo
+ 
+ cat $device_map

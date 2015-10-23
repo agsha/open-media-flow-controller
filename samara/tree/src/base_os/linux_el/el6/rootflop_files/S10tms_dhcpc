@@ -1,0 +1,67 @@
+#!/bin/sh
+
+#
+# (C) Copyright 2013-2015 Juniper Networks, Inc. All Rights reserved.
+# (C) Copyright 2002-2006 Tall Maple Systems, Inc.
+# All rights reserved.
+# The contents of this file are subject to the terms of the MIT License.
+# You may not use this file except in compliance with the License.
+# See the file License.txt at the top of this source tree.
+# You can obtain a copy of the license at https://opensource.org/licenses/MIT
+#
+
+# Run the dhcp client for the interfaces
+
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export PATH
+
+cleanup_exit()
+{
+    killall udhcpc
+    exit 1
+}
+
+JOB_LIST=
+trap "cleanup_exit" HUP INT QUIT PIPE TERM
+
+if [ -x /sbin/udhcpc ]; then
+
+    IF_NAME_LIST=`ifconfig -a | grep 'Ethernet' | awk '{print $1}' | tr '\n' ' '`
+
+    echo "Starting DHCP client on interfaces: ${IF_NAME_LIST}"
+    echo ""
+    for ifn in ${IF_NAME_LIST}; do
+        /sbin/udhcpc -i ${ifn} -n -s /sbin/udhcpc.script &
+    done
+
+    wait
+
+    # Remove all the default routes except the one from the lowest named
+    # interface.  This is similar to DHCP's "primary" interface behavior
+    # in the running system.  We use it here to avoid potential issues
+    # with multiple default routes, as well as under virtualization,
+    # where (at least in our setups) the later interfaces may be
+    # host-only.
+    #
+    # XXX should sort by ifindex to avoid trouble with > 10 interfaces.
+
+    default_gw_prune=1
+    if [ ${default_gw_prune} -eq 1 ]; then
+        default_gw_ifs=$(netstat -rn | grep '^0.0.0.0 .* 0.0.0.0' | awk '{print $8}' | sort)
+        skip=1
+        for interface in $default_gw_ifs ; do
+            if [ ${skip} -eq 1 ]; then
+                skip=0
+                continue
+            fi
+            
+            while route del default gw 0.0.0.0 dev $interface > /dev/null 2>&1 ; do
+                :
+            done
+        done
+    fi
+
+fi
+
+exit 0

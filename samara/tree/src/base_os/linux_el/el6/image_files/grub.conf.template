@@ -1,0 +1,15 @@
+serial --unit=0 --speed=9600 --word=8 --parity=no --stop=1
+terminal --timeout=3 --dumb serial console
+default=@GRUB_IMAGE_ID_ACTIVE@
+timeout=5
+fallback=@GRUB_IMAGE_ID_FALLBACK@
+hiddenmenu
+
+title @IMAGE_NAME_1@
+      root @GRUB_BOOT_1@
+      kernel @DIR_BOOT_1@vmlinuz ro root=@PART_ROOT_1@ console=tty0 console=ttyS0,9600n8
+
+title @IMAGE_NAME_2@
+      root @GRUB_BOOT_2@
+      kernel @DIR_BOOT_2@vmlinuz ro root=@PART_ROOT_2@ console=tty0 console=ttyS0,9600n8
+

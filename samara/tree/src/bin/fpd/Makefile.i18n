@@ -1,0 +1,11 @@
+#
+# 
+#
+#
+
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+PO_OUTPUT_DIR=${PROD_BASE_I18N_ROOT}/src/bin/fpd
+MO_OUTPUT_DIR=${BIN_DIR}/fpd/mo
+
+include ${PROD_TREE_ROOT}/src/mk/po.mk

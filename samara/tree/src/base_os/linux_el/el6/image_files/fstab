@@ -1,0 +1,12 @@
+LABEL=ROOT_1          /                   ext3      defaults,noatime     1 1
+LABEL=BOOT_1          /boot               ext3      defaults,noatime     1 2
+LABEL=BOOTMGR         /bootmgr            ext3      defaults,noatime     1 2
+LABEL=CONFIG          /config             ext3      defaults,noatime     1 2
+LABEL=VAR             /var                ext3      defaults,noatime     1 2
+LABEL=SWAP_1          swap                swap      defaults,noatime     0 0
+tmpfs                 /dev/shm            tmpfs     defaults             0 0
+devpts                /dev/pts            devpts    gid=5,mode=620       0 0
+sysfs                 /sys                sysfs     defaults             0 0
+proc                  /proc               proc      defaults             0 0
+/dev/cdrom            /mnt/cdrom          iso9660   noauto,ro            0 0
+/dev/fd0              /mnt/floppy         auto      noauto               0 0

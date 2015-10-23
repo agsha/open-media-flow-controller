@@ -1,0 +1,417 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Configurations">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "configs"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Configurations">
+
+<?
+  # For most operations which affect running config or config files
+  global cfg_acl_hi
+
+  # For some lower-privilege operations:
+  #   - Save [as]
+  #   - Executing CLI commands (run as authenticated user)
+  #     (XXX/EMT: could be even more broadly available?)
+  global cfg_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $cfg_acl {query}]}>
+
+<?
+  set cur_line 0
+  set db_prefix "/mgmtd/db/info/saved"
+  set db_ids [tms::iterate-config $db_prefix]
+  set db_active [tms::get-config "/mgmtd/db/info/running/db_name"]
+  set db_dirty [tms::get-config "/mgmtd/db/info/running/unsaved_changes"]
+
+  set shared [tms::get-param post "f_shared"]
+  if {[string length $shared] == 0} {
+      tms::set-param post replace "f_shared" "true"
+  }
+
+  set transfer_protocol [tms::get-param post "f_transfer_protocol"]
+  if {[string length $transfer_protocol] == 0} {
+      tms::set-param post replace "f_transfer_protocol" "scp"
+  }
+?>
+
+  <? #  ==================================================
+     #  = List of configuration files
+     #  ==================================================
+  ?>
+
+  <h2>Configuration Files</h2>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+  <CFG-FORM -action "config-form-config" -div_id "configs_1">
+  <td>
+
+  <table width="100%" border="0" cellspacing="0" cellpadding="3" class="listing">
+  <tr>
+    <td height="5">
+
+  <tr class="listing_head">   
+    <td width="1%">
+    <td>
+      Filename
+    <td width="1%">
+      Active
+
+    <FOREACH db_id $db_ids>
+    <?
+        set prefix_len [string length "$db_prefix/"]
+        set db_name [string range $db_id $prefix_len end]
+        if {[string compare $db_name "active"] == 0} {
+            continue
+        }
+        set active 0
+        if {[string compare $db_name $db_active] == 0} {
+            set active 1
+        }
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+
+      <td>
+        <CFG-CHECKBOX -id "del_$cur_line" -caps "action_privileged"
+                      -acl $cfg_acl_hi -acl_oper {action}
+                      -value "$db_name" -span_id "configs_cbox_1">
+      <td>
+
+          <IF {$active == 1}>
+            <a href="/admin/launch?script=rh&amp;template=setup-configs-view&amp;db=<?=[tms::uri-component-escape $db_name]?>" target="_blank">
+              <b><?^=$db_name?></b>
+            </a>
+            <IF {[string compare $db_dirty "true"] == 0}>
+              (not saved: <a href="/admin/launch?script=rh&amp;template=setup-configs-view" target="_blank">view running config</a>)
+            </IF>
+          <ELSE>
+            <a href="/admin/launch?script=rh&amp;template=setup-configs-view&amp;db=<?=[tms::uri-component-escape $db_name]?>" target="_blank">
+              <?^=$db_name?>
+            </a>
+          </IF>
+
+      <td>
+        <IF {$active == 1}>
+          <b>yes</b>
+        </IF>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+            No saved configurations.
+    </IF>
+
+  </table>
+
+  <? #  ==================================================
+     #  Buttons to perform actions on config files
+     #  ==================================================
+  ?>
+
+  <table border="0" cellpadding="0" cellspacing="10">
+  <tr>
+    <td>
+      <CFG-BUTTON -type "delete" -text "Delete" -caps "action_privileged"
+                  -acl $cfg_acl_hi -acl_oper {action}
+                  -span_id "configs_delete_1">
+    <td>
+      Delete the selected configuration(s).
+  <tr>
+    <td>
+      <CFG-BUTTON -type "activate" -text "Switch To" -caps "action_privileged"
+                  -acl $cfg_acl_hi -acl_oper {action}
+                  -span_id "configs_activate_1">
+    <td>
+      Make the selected configuration active and apply it to the system.
+      (Select only one)
+
+  <tr>
+    <td>
+      <CFG-BUTTON -type "download" -text "Download" -caps "query_privileged"
+                  -acl $cfg_acl_hi -acl_oper {action}
+                  -span_id "configs_download_1">
+    <td>
+      Download the selected configuration as a binary file.
+      (Select only one)
+
+  <? # XXX/EMT: should add buttons for:
+     #   - copy file
+     #   - rename file
+     #   - create new file
+  ?>  
+
+  </table>
+
+  </CFG-FORM>
+  </table>
+
+  <? #  ==================================================
+     #  Active Configuration
+     #  ==================================================
+  ?>
+
+  <h2>Active Configuration</h2>
+
+
+<CFG-FORM -action "config-form-config" -div_id "configs_2">
+  <table border="0" cellpadding="0" cellspacing="10">
+  <tr>
+    <td>
+      <CFG-BUTTON -type "save" -text "Save" -caps "action_privileged"
+                  -acl $cfg_acl_save -acl_oper {action}
+                  -enabled $db_dirty
+                  -span_id "configs_save_1">
+
+    <td>
+      Save the running configuration to the active configuration file.
+
+  <tr>
+    <td>
+      <CFG-BUTTON -type "revert" -text "Revert" -caps "action_privileged"
+                  -acl $cfg_acl_hi -acl_oper {action}
+                  -enabled $db_dirty
+                  -span_id "configs_revert_1">
+    <td>
+      Discard the running configuration and apply the contents of the
+      active configuration file.
+
+  <tr>
+    <td>
+      <CFG-BUTTON -type "reset" -text "Reset" -caps "action_privileged"
+                  -acl $cfg_acl_hi -acl_oper {action}
+                  -span_id "configs_reset_1">
+
+    <td>
+      Reset both the running and active saved configuration to factory
+      defaults, preserving active licenses, host keys, and configuration
+      necessary for network connectivity (interfaces, routes, and ARP).
+
+  <tr>
+    <td>
+      <CFG-BUTTON -type "saveas" -text "Save As" -caps "action_privileged"
+                  -acl $cfg_acl -acl_oper {action}
+                  -span_id "configs_saveas_1">
+
+    <td>
+      Save the running configuration to a new file and make it active.
+
+  <tr>
+    <td>
+    <td>
+      New filename:
+      <CFG-TEXTBOX -id "name" -errname "configuration name" 
+                   -caps "action_privileged" 
+                   -acl $cfg_acl -acl_oper {action}
+                   -type "string" -cols "20" -span_id "configs_name">
+
+  </table>
+</CFG-FORM>
+
+
+  <? #  ==================================================
+     #  Upload Configuration
+     #    - Upload binary file from local filesystem
+     #    - Upload text file (CLI commands) from local filesystem
+     #    - Paste in text (CLI commands)
+     #  ==================================================
+  ?>
+
+  <h2>Upload Configuration</h2>
+
+<CFG-FORM -action "upload_config" -enctype "multipart/form-data"
+          -div_id "upload_config">
+
+    <TMS-TABLE -div_id "configs_table_2" -cellpadding "6">
+    <tr>
+      <td width="15"></td>
+      <td valign="top">
+        <CFG-RADIO -id "ul_config" -caps "action_privileged" -value "ul_bin"
+                   -acl $cfg_acl_hi -acl_oper {action}
+                   -checked "true" -span_id "upload_radio_1">
+      <td>
+          Upload local binary file:
+          <input name="f_file1" type="file" <?
+          if {[tms::check-authorization "set_privileged" $cfg_acl_hi {set}] == 0} {
+          tms::puts "disabled"
+          }
+          ?>>
+          <br>
+          (To be saved as separate file with its original name)
+      </td>
+    </tr>
+    <tr>
+      <td width="15"></td>
+      <td valign="top">
+        <CFG-RADIO -id "ul_config" -caps "set_privileged" -value "ul_text"
+                   -acl $cfg_acl_hi -acl_oper {set}
+                   -span_id "upload_radio_2">
+      <td>
+          Upload local text file (CLI commands):
+          <input name="f_file2" type="file" <?
+          if {[tms::check-authorization "set_privileged" $cfg_acl {set}] == 0} {
+          tms::puts "disabled"
+          }
+          ?>>
+          <br>
+          (To be executed immediately in the running configuration)
+      </td>
+    </tr>
+
+    <tr>
+      <td height="10">
+    </tr>
+    </TMS-TABLE>
+
+    <CFG-BUTTON -type "upload" -text "Upload Configuration"
+                -caps "action_privileged"
+                -acl $cfg_acl_hi -acl_oper {action}
+                -span_id "configs_upload_1">
+
+</CFG-FORM>
+
+  <table>
+    <tr>
+      <td height="15">
+  </table>
+
+  <h2>Execute CLI commands</h2>
+
+<CFG-FORM -action "enter_cli_cmds" -div_id "upload_config2">
+
+    <TMS-TABLE -div_id "configs_table_3">
+
+    <tr>
+      <td width="15"></td>
+      <td>
+          Enter CLI commands to be executed:
+          <br>
+          (To be executed immediately in the running configuration)
+    <tr>
+      <td>
+      <td>
+        <CFG-TEXTAREA -id "text_config" -caps "set_restricted"
+                      -acl $cfg_acl -acl_oper {set}
+                      -cols "80" -rows "15" -span_id "config_textarea">
+      </td>
+    </tr>
+    <tr>
+      <td height="10">
+    </tr>
+    </TMS-TABLE>
+
+    <CFG-BUTTON -type "ok" -text "Execute CLI commands"
+                -caps "set_restricted"
+                -acl $cfg_acl -acl_oper {set}
+                -span_id "exec_cli_commands">
+
+</CFG-FORM>
+
+
+  <? #  ==================================================
+     #  Importing a configuration from a remote host
+     #  ==================================================
+  ?>
+
+<CFG-FORM -action "config-form-config" -div_id "configs_3">
+  <h2>Import Configuration</h2>
+
+    <TMS-TABLE -div_id "configs_table_1">
+      <TMS-TABLE-ENTRY "Hostname or IP addr">
+        <CFG-TEXTBOX -id "host" -errname "IP/Hostname" 
+                     -caps "action_privileged"
+                     -acl $cfg_acl_hi -acl_oper {action}
+                     -type "string" -cols "16" -span_id "configs_host">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-ENTRY "Remote Username">
+        <CFG-TEXTBOX -id "username" -errname "remote username"
+                     -caps "action_privileged" 
+                     -acl $cfg_acl_hi -acl_oper {action}
+                     -type "string" -cols "16"
+                     -value "admin" -span_id "configs_username">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-ENTRY "Remote Password">
+        <CFG-PASSWORDBOX -id "password" -errname "remote password"
+                         -caps "action_privileged"
+                         -acl $cfg_acl_hi -acl_oper {action}
+                         -type "string" -cols "16" -span_id "configs_pass">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-ENTRY "Remote Config Name">
+        <CFG-TEXTBOX -id "remote_name" -errname "remote configuration name"
+                     -caps "action_privileged" 
+                     -acl $cfg_acl_hi -acl_oper {action}
+                     -type "string" -cols "16" -span_id "configs_remote">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-ENTRY "New Config Name">
+        <CFG-TEXTBOX -id "import_name" -errname "configuration name"
+                     -caps "action_privileged" 
+                     -acl $cfg_acl_hi -acl_oper {action}
+                     -type "string" -cols "16" -span_id "configs_import">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-ENTRY "Import shared data only">
+        <CFG-CHECKBOX -id "shared" -caps "action_privileged"
+                      -acl $cfg_acl_hi -acl_oper {action}
+                      -type "bool" -span_id "configs_shared">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-ENTRY "File Transfer Protocol">
+        <CFG-DROPDOWN -id "transfer_protocol" -caps "action_privileged"
+                      -acl $cfg_acl_hi -acl_oper {action}
+                      -value $transfer_protocol -type "string"
+                      -options {{"SCP (Secure Copy Protocol via SSH)" "scp"}
+                                {"SFTP (SSH File Transfer Protocol)" "sftp"}}
+                      -span_id "configs_transfer_protocol">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-ENTRY "Service Port">
+        <CFG-TEXTBOX -id "service_port" -errname "service port"
+                     -caps "action_privileged" 
+                     -acl $cfg_acl_hi -acl_oper {action}
+                     -type "uint16" -cols "5"
+                     -value "22" -span_id "service_port">
+      </TMS-TABLE-ENTRY>
+
+      <TMS-TABLE-SPACE>
+    </TMS-TABLE>
+
+    <CFG-BUTTON -type "import" -text "Import Configuration"
+                -caps "action_privileged" 
+                -acl $cfg_acl_hi -acl_oper {action}
+                -span_id "configs_import_1">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view configuration files.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

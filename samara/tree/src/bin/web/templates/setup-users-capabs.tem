@@ -1,0 +1,77 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+
+<?
+  global access_label
+  set access_label "Capability"
+?>
+
+
+<TAG SETUP-USERS-GET-ACCESS-INFO user_name>
+<?
+    global access_info
+    set user_gid [tms::get-config "/auth/passwd/user/$user_name/gid"]
+    set access_info [tms::gid-to-capab "$user_gid"]
+?>
+</TAG>
+
+<TAG SETUP-USERS-GET-ACCESS-INFO-DYNAMIC sess_id>
+<?
+    global access_info
+    set access_info ""
+?>
+</TAG>
+
+<TAG SETUP-USERS-SET-NEW-PRIVS-1>
+  <?
+    global user_caps
+  ?>
+  <TMS-TABLE-ENTRY "Capability">
+    <SET capab_opts [tms::get-capability-list]>
+    <SET capab_default [tms::get-capability-default]>
+    <CFG-DROPDOWN -id "capab" -errname "Capability" -caps $user_caps
+                  -type "string" -options $capab_opts
+                  -value $capab_default
+                  -span_id "users_capab"> 
+  </TMS-TABLE-ENTRY>
+</TAG>
+
+<TAG SETUP-USERS-SET-NEW-PRIVS-2>
+</TAG>
+
+<TAG SETUP-USERS-EDIT-PRIVS-1 user_name enabled>
+<?
+    global access_info
+    global user_caps
+?>
+  <SETUP-USERS-GET-ACCESS-INFO $user_name>
+  <TMS-TABLE-ENTRY "Capability">
+    <?
+      # The "cmcrendv" user is special.  It has the "cmcrendv" capability,
+      # and is not allowed to be changed.  We also don't expose this capability
+      # for other users.  So if we just give our normal dropdown, it will
+      # cause bug 14780.  Instead, just show it as static text.
+      #
+      # (XXX/EMT: abstraction)
+    ?>
+    <IF {[string equal $user_name "cmcrendv"]}>
+      cmcrendv
+    <ELSE>
+      <SET capab_opts [tms::get-capability-list]>
+      <CFG-DROPDOWN -id "capab" -errname "Capability" -caps $user_caps
+                    -value "$access_info" -enabled "$enabled"
+                    -type "string" -options $capab_opts
+                    -span_id "users_capab"> 
+    </IF>
+  </TMS-TABLE-ENTRY>
+</TAG>
+
+<TAG SETUP-USERS-EDIT-PRIVS-2 user_name enabled>
+</TAG>

@@ -1,0 +1,70 @@
+Notes on sSMTP import
+=====================
+
+Version 2.60-4 imported October 2003.
+
+Local changes:
+
+  * Add support for backup mailhub, with separate authentication info.
+
+  * Add support for specifying an alternate config file.
+
+  * Fix bug 1124: Any invalid email address can cause failure email
+    to not be sent.  Change sSMTP to not give up if it gets an error
+    back for one of the RCPT commands.  Instead it just logs a warning
+    and continues.  If none of the recipients are valid, we just
+    bail out later, with a "503 5.0.0 need recipient" error.
+
+  * Fix bug 12020: dead.letter file grows without bound:
+    
+      - Save each dead.letter with a unique filename, so they can be
+        selectively deleted.  Keep them in ~/dead.letters, so they don't
+        pollute the home dir so much.
+    
+      - Clean up dead.letter files that are older than an age threshold.
+    
+      - Let the user configure the age threshold, and whether or not we
+        save dead.letter files at all.
+
+  * Fix sSMTP portion of bug 11968: problems with long hostnames.
+    sSMTP choked when the hostname was exactly 64 characters, because
+    its buffer for hostnames was only MAXHOSTNAMELEN bytes, not leaving
+    room for the NUL delimiter on a hostname of that length.
+
+  * Decrease connect timeout.
+
+  * Take some sSMTP patches from later versions.  Some fix security
+    issues, and some facilitate the SMTP auth implementation.  The
+    entries from sSMTP's changelog:
+    
+      - Fixed two format string vulnerabilities (die() and log_event())
+        (Closes: #243945) discovered by Max Vozeler <max@hinterhof.net>
+        (CAN-2004-0156) (from version 2.60.7)
+    
+      - Add AuthUser, AuthPass, AuthMethod to configuration file (Closes:
+        #249905) Patch by Jim Paris <jim@jtan.com> (from version 2.60.10)
+    
+      - Added support for the new style of AUTH LOGIN usage, closes: #284410.
+        Patch by Jan L Peterson <jlp@softhome.net>.  (from version 2.61-3)
+    
+      - Fix Information leak in ssmtp that leads to password exposure.
+        Closes: #369542 (from version 2.61-10.1)
+    
+      - Fix possible information disclosure in corner cases (no gecos)
+        by adding a missing else branch (02-CVE-2008-3962; Closes: #498366).
+        (from version 2.62-1.1)
+
+  * Fixes to work with a numeric IPv6 mailhub.
+
+  * Fix bug 14350: email containing very long line starting with '.' could
+    fail to be sent (CVE-2008-7258).
+
+  * Add support for STARTTLS:
+
+      - Apply a patch from SSMTP upstream, which was added between its
+        version 2.60.7 and 2.60.8, for basic STARTTLS support.
+
+      - Add STARTTLSFallback and TLSCiphers directives.
+
+      - Add TLSCertVerify and other directives to support server cert
+        verification.

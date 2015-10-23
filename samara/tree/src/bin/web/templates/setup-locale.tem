@@ -1,0 +1,112 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Locale">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "locale"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Locale">
+
+<?
+  global locale_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $locale_acl {query}]}>
+
+<?
+  set cur_line 0
+  set entries ""
+  set locale_bindings [tms::iterate-config "/system/locale/avail"]
+  set locale_node "/system/locale/global"
+  set prefix_len [string length "/system/locale/avail/"]
+  foreach locale_binding $locale_bindings {
+      set locale_id [string range $locale_binding $prefix_len end]
+      set entries "$entries $locale_id"
+  }
+?>
+
+  <h2>Locale</h2>
+
+  <CFG-FORM -div_id "locale">
+
+  <table width="60%" border="0" cellpadding="0" cellspacing="5" class="listing">
+  <tr>
+    <td>
+      <table width="100%" border="0" cellspacing="0" cellpadding="3">
+ 
+    <tr class="listing_head"> 
+      <td width="1%">
+      <td>
+        Locale
+      <td width="10">
+      <td>
+        Description
+      <td width="30">
+
+    <CFG-RADIO-GROUP -id "locale" -setname "$locale_node" 
+                     -type "string">
+
+    <FOREACH locale_id $entries>
+    <?
+    set locale_str [string range $locale_id 0 4]
+    # set descr [tms::get-config "/system/locale/avail/$locale_id/descr"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <CFG-RADIO -id "locale" -caps "set_privileged" 
+                   -acl $locale_acl -acl_oper {set}
+                   -name "$locale_node" 
+                   -value "$locale_id" -span_id "locale">
+        
+      <td>
+        <?^=$locale_str?>
+      <td>
+      <td>
+        <!-- Print $descr here when we have a reasonable description (html-escape it)-->
+      <td>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+    <tr><td colspan="5"><p class="nodata">No locales!</p></td></tr>
+    </IF>
+
+    <tr>
+      <td height="8">
+
+  </table>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_privileged"
+              -acl $locale_acl -acl_oper {set}
+              -span_id "locale_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_privileged"
+              -acl $locale_acl -acl_oper {set}
+              -span_id "locale_cancel_1">
+
+  </CFG-FORM>
+  </table>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view locale configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

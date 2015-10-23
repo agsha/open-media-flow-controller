@@ -1,0 +1,7 @@
+PAM LDAP, version nss_ldap-253-42.el5_7.4 .
+License: LGPLv2
+Downloaded from: (CentOS 5.7 SRPM)
+           http://vault.centos.org/5.7/updates/SRPMS/nss_ldap-253-42.el5_7.4.src.rpm
+
+This is the RHEL/CentOS version based on upstream (PADL) pam_ldap-183 .
+

@@ -1,0 +1,12 @@
+===== For EL6:
+grub-0.97-77.el6
+License: GPL
+Downloaded from:
+           http://vault.centos.org/6.3/os/Source/SPackages/grub-0.97-77.el6.src.rpm
+
+===== For grub-0.97-93.SCLC6_6.R1.0.1.src.rpm
+Downloaded from SCL repo.
+
+This directory needs to be moved to somewhere under customer dist/centos/6/scl6.6/
+The previous version of the patches and Makefile for grub-0.97-77.el6
+need to be moved to a similar spot under customer dist/centos/6/el6.4/

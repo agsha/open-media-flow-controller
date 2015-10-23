@@ -1,0 +1,254 @@
+<?
+#
+#
+#
+#
+?>
+
+<SET color_page_header          #e6efe2>
+<SET color_page_background      #ffffff>
+<SET color_main_pane            #dae6c6>
+<SET color_tab_unselected       $color_page_background>
+<SET color_tab_selected         $color_main_pane>
+<SET color_main_pane_dark1      #cacce6>
+<SET color_main_pane_dark2      #bdbdc6>
+<SET color_brown_text           #944507>
+<SET color_red_text             #ff5555>
+<SET color_sidebar_bg           #b2b2b2>
+<SET color_sidebar_text_sel     #ffffff>
+<SET color_sidebar_text_unsel   #000000>
+<SET color_sidebar_text         #5555ee>
+<SET color_error_text           #ee5555>
+<SET color_success_text         #000000>
+<SET node_unsaved_changes       "/mgmtd/db/info/running/unsaved_changes">
+<SET width_form_indent          20>
+<SET graph_height               300>
+
+<?
+# HTML Attribute Encoded URLs
+#
+# The URLs below are used in HTML attribute context.  Unless otherwise noted,
+# are expected to be both URI component encoded and HTML attribute encoded so
+# that they may be safely emitted in HTML attribute contexts such as
+# <href="$url"> $url_descripton>.
+#
+# See 'Escaping' in doc/design/web-tcl-funcs.txt for related information.
+#
+# URI component encoding of name/value pairs or other subcomponent data is not
+# often needed since most URLs contain only characters that do not require
+# encoding.  This includes alphanumeric characters as well as '-', '.', '_',
+# and '~'.  (see RFC 3986 section 2.2).  If you override these variables
+# dynamically and need to form URL encoded strings, see
+# tms::uri-component-escape or tms::url-builder.
+# 
+# HTML attribute encoding is normally applied after URLcomponent encoding.
+# Only the following characters need to be attribute encoded as illustrated:
+#
+#  '<'  --> &lt;
+#  '>'  --> &gt;
+#  '&'  --> &amp;
+#  '"'  --> &quot;
+#  '\'' --> &#x27;
+#
+# If you are overriding the url value dynamically, you should call
+# tms::html-escape (with default options) after the URL has been fully
+# constructed and URI component escaped as needed.
+?>
+
+<SET autologout_url             "/admin/launch?script=rh&amp;template=logout&amp;action=logout&amp;auto=t">
+<SET upgrade_status_url         "/admin/launch?script=rh&amp;template=setup-upgrade-status">
+<SET logout_url                 "/admin/launch?script=rh&amp;template=logout&amp;action=logout">
+<SET logout_reboot_url          "/admin/launch?script=rh&amp;template=logout-reboot&amp;action=logout">
+<SET logout_shutdown_url        "/admin/launch?script=rh&amp;template=logout-reboot&amp;action=logout&amp;shutdown=t">
+<SET login_url                  "/admin/launch?script=rh&amp;template=login">
+<?
+# The URLs below are used in web redirect context.  Web redirect URLs should be
+# URI component encoded as needed (see above), but should *NOT* be html-escaped.
+# In contrast to the URLs above, the '&' characters here must not be encoded.
+?>
+<SET home_template              "mon-summary">
+<SET cluster_redirect_template  "mon-summary">
+<SET ajax_status_url            "/admin/launch?script=rh&template=get-cluster-status&tms_noninteractive">
+<SET ajax_mon_summary_url       "/admin/launch?script=rh&template=get-mon-summary&tms_noninteractive">
+<SET ajax_mon_virt_url          "/admin/launch?script=rh&template=get-mon-virt&tms_noninteractive">
+<SET ajax_logging_url           "/admin/launch?script=rh&template=get-log-lines&tms_noninteractive">
+<SET ajax_upgrade_status_url    "/admin/launch?script=rh&template=get-setup-upgrade-status">
+<SET reboot_url                 "/admin/launch?script=rh&amp;template=setup-reboot">
+<SET ajax_upgrade_complete_url "/admin/launch?script=rh&template=get-setup-upgrade-complete">
+<SET ajax_autologout_url       "/admin/launch?script=rh&template=logout&action=logout&auto=t">
+
+<SET company_name               "Tall Maple Systems">
+<SET company_legal              "Tall Maple Systems, Inc.">
+<SET console_banner             "Samara Management Console">
+<?
+# If you have intentionally embedded HTML in your company_name, company_legal,
+# or console_banner strings, you may set this flag to "true".  Otherwise their
+# values will be HTML escaped by the TMS-PAGE tag for correctness and safety.
+# Also, the company_url is automatically HTML escaped for attribute context
+# (see "HTML Attribute Encoded URLs" above).  It cannot be automatically URI
+# component-escaped, so you must ensure URI encoding if needed (see above).
+#
+# If you set these values dynamically, and need to handle your own escaping,
+# you may set company_esc_disable (below) to "true".
+?>
+<SET company_esc_disable        "false">
+<SET copyright_range            "2002-2013">
+<SET company_url                "http://www.tallmaple.com">
+<SET banner_logo_src            "/images/tms-logo-leaf-66.png">
+<SET banner_logo_width          66>
+<SET banner_logo_height         66>
+
+<SET setup_main_tab             "setup-interface">
+<SET mon_main_tab               "mon-summary">
+
+<SET customer_setup_sidebar     {}>
+<SET customer_mon_sidebar       {}>
+<SET customer_cmc_sidebar       {}>
+
+<?
+# This controls the graph version used for the graphs in the stock/reference
+# Web UI.  It does not affect graphs drawn by customer modules.  2 means
+# the new-style graphs.  Override to 1 to use old-style graphs.  This 
+# should be overridden from customer-defines.tem, rather than changed here.
+?>
+<SET ref_ui_graph_ver 2>
+
+<?
+# This controls the default kind of CPU graph to be shown, when the user
+# visits the CPU Load page on the Monitoring tab.  Options are
+# "aggregated", "percpu", and "percpustacked".
+?>
+<SET cpu_graph_type_default "aggregated">
+
+<?
+# This controls the default kind of interface graph to be shown, when the user
+# visits the Network page on the Monitoring tab.  See graph_types array in
+# mon-network.tem for supported types.
+?>
+<SET network_graph_type_default "all">
+
+<?
+  #
+  # ACLs used by pages in the standard Web UI.
+  #
+  # These are centralized because tms-layout.tem also uses them to decide
+  # who should be offered links to these pages at all.  So in general,
+  # these are the minimum ACLs needed for any item on the page.  If certain
+  # items need more restrictive ACLs, those are defined separately, with
+  # a special designator in the name like "_hi".
+  #
+  # XXX/EMT: since most of these refer to single ACLs defined centrally in
+  # libtacl, maybe we shouldn't define them at all, and just let the templates
+  # name the central ones directly?  In a compiled language, defines instead
+  # of strings prevents typos, etc., but not in an interpreted one like TCL;
+  # and in fact, the variables are even more error-prone because of the
+  # variable scoping rules.  But leaving them for now, because it's a lot of
+  # work to replace all of them.  (And maybe we'd get some tool later which
+  # lets you verify variable references at build time?)
+  #
+  set all_acl        {all_any}
+  set auth_acl       {sbm_aaa}
+  set auth_acl_hi    {sbm_aaa_hi}
+  set auth_acl_lo    {sbm_aaa_lo}
+  set auth_myacct_acl {sbm_aaa_myacct}
+  set banner_acl     {sbm_sys}
+  set boot_acl       {sbm_sys}
+  set certs_acl      {sbm_certs}
+  set cfg_acl_save   {sbm_config_save}
+  set cfg_acl        {sbm_config_lo}
+  set cfg_acl_hi     {sbm_config}
+  set clust_acl      {sbm_clust}
+  set cmc_acl        {sbm_cmc}
+  set cmc_acl_accept {sbm_cmc_sa}
+  set fau_acl        {sbm_email}
+  set graph_acl      {sbm_graphs}
+  set graph_net_acl  {sbm_graphs_net}
+  set graph_virt_acl {sbm_graphs_virt}
+  set hostname_acl   {sbm_sys}
+  set ipsec_acl      {sbm_crypto}
+  set lcd_acl        {sbm_sys}
+  set lcd_acl_hi     {sbm_sys_xhi}
+  set lic_acl        {sbm_license}
+  set locale_acl     {sbm_sys}
+  set log_cfg_acl    {sbm_logcfg}
+  set log_view_acl   {sbm_logs}
+  set net_acl        {sbm_net}
+  set ntp_acl        {sbm_time}
+  set snmp_acl       {sbm_snmp}
+  set ssh_acl        {sbm_ssh}
+  set ssh_acl_gen    {sbm_ssh_hi_sa}
+  set stats_acl      {sbm_stats}
+  set time_acl       {sbm_time}
+  set upgr_acl       {sbm_sys_hi}
+
+# This should be just {sbm_sys}, but was changed to this as a workaround
+# to bug 12429 (see comment #3).
+  set upgr_acl_lo    {sbm_sys_hi}
+
+  set virt_acl       {sbm_virt}
+  set web_acl        {sbm_web}
+?>
+
+<?
+# The tms_tag_arg_escaping_disable flag may be set in your customer-defines.tem
+# file if you need to globally disable HTML escaping of certain values passed
+# into TMS tag functions that are responsible for emitting those values into
+# HTML context.  With this value set to true, TMS tag functions that emit
+# certain argument data into HTML context will assume that data passed to them
+# has already been escaped appropriately if needed, or is otherwise safe for
+# HTML context.  This may be necessary if you are passing pre-formed HTML into
+# the tag variables.
+#
+# Affected tags will have a parameter named arg_esc_disable, which
+# can instead be used to disable escaping on a per tag basis if you do not
+# disable it globally here.
+#
+# Use of this flag is discouraged.  Customers are encouraged to avoid passing
+# embedded HTML to tag functions in general.  Where this is necessary, the
+# caller is responsibile for escaping untrusted variable data used to construct
+# the HTML value.  See doc/design/web-tcl-funcs.txt for more information on
+# escaping functions.
+#
+# Also note that this does not disable the escaping all of arguments passed
+# into affected tags, since some arguement values (such as numeric HTML
+# attributes like colspan) should never contain embedded HTML, and are
+# unconditionally escaped for protection.
+
+  set tms_tag_arg_escaping_disable "false"
+?>
+
+<?
+# This defines the default X-FRAME-OPTIONS header setting for TMS templates
+# that include tms-layout.tem.  Do not change the default here.  You may
+# override it in customer-defines.tem if needed.
+#
+# This protects against a vulnerability commonly referred to as "clickjacking".
+# This is where a malicious web site tries to place the appliance's pages
+# within a subframe of a page from the attacker's site so that the end user
+# unwarily sends queries through the attacker's web server.
+#
+# It is thought that most modern browsers either already do or soon will
+# support the X-FRAME-OPTIONS feature.  The "DENY" setting tells the client
+# browser to prevents any web pages from framing the appliance's web pages.
+#
+# If you have a legitimate need for framing within your application
+# environment you may override this value in your customer-defines.tem file.
+# The next best setting is "SAMEORIGIN", meaning the framing page must at least
+# originate from the same source.  Setting this to "ALLOW" will disable framing
+# protection.
+set tms_templates_x_frame_option "DENY"
+?>
+
+<?
+#
+# Customer overrides of things in this file ('tms-defines') should be
+# in 'customer-defines'.
+#
+?>
+<INCLUDE "customer-defines">
+
+<IF {$ref_ui_graph_ver == 2}>
+    <SET graph_ext "png">
+<ELSE>
+    <SET graph_ext "gif">
+</IF>

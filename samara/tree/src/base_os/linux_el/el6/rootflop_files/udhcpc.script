@@ -1,0 +1,56 @@
+#!/bin/sh
+
+[ -z "$1" ] && echo "Error: should be called from udhcpc" && exit 1
+
+# Should we try to set the time via NTP, if DHCP tells us an NTP server?
+NTP_ENABLE=1
+RESOLV_CONF="/etc/resolv.conf"
+[ -n "$broadcast" ] && BROADCAST="broadcast $broadcast"
+[ -n "$subnet" ] && NETMASK="netmask $subnet"
+
+case "$1" in
+	deconfig)
+		/sbin/ifconfig $interface 0.0.0.0
+		;;
+
+	renew|bound)
+                echo "dhcp ${interface}: obtained lease"
+
+		/sbin/ifconfig $interface $ip $BROADCAST $NETMASK
+                echo "dhcp ${interface}: adding address: $ip / $mask"
+
+		if [ -n "$router" ] ; then
+			while route del default gw 0.0.0.0 dev $interface > /dev/null 2>&1 ; do
+				:
+			done
+
+			for i in $router ; do
+                                echo "dhcp ${interface}: adding default gw: $i"
+				route add default gw $i dev $interface
+			done
+		fi
+
+		echo -n > $RESOLV_CONF
+		[ -n "$domain" ] && echo search $domain >> $RESOLV_CONF
+                echo "dhcp ${interface}: adding domain: ${domain}"
+		for i in $dns ; do
+			echo "dhcp ${interface}: adding dns: $i"
+			echo nameserver $i >> $RESOLV_CONF
+		done
+
+                if [ ${NTP_ENABLE} -eq 1 -a -n "$ntpsrv" ] ; then
+                        # Note that we only try the first NTP server
+                        for nn in $ntpsrv ; do
+                                echo "dhcp ${interface}: will attempt to set time via NTP from $nn"
+                                ntpd -n -q -p "$ntpsrv"
+                                break
+                        done
+                fi
+
+		;;
+
+        leasefail)
+                echo "dhcp ${interface}: failed to get lease"
+esac
+
+exit 0

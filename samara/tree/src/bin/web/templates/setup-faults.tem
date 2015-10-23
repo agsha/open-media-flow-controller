@@ -1,0 +1,307 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Email Reporting of System Faults">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "faults"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Faults">
+
+<CFG-FORM -div_id "faults_1">
+<?
+  global fau_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $fau_acl {query}]}>
+
+<?
+  set waddresses [tms::get-param post "f_waddresses"]
+  if {[string length $waddresses] == 0} {
+    set wrecipients_prefix "/email/notify/recipients"
+    set wrecipient_ids [tms::iterate-config $wrecipients_prefix]
+    foreach wrecipient_id $wrecipient_ids {
+      set wprefix_len [expr {[string length $wrecipients_prefix] + 1}]
+      set wrecipient [string range $wrecipient_id $wprefix_len end]
+      if {[string length $waddresses] == 0} {
+        set waddresses "$wrecipient"
+      } else {
+        set waddresses "$waddresses\n$wrecipient"
+      }
+    }
+  }
+  tms::set-param post replace "f_waddresses" "$waddresses"
+?>
+
+<?
+  # ...........................................................................
+  # General email config
+?>
+
+  <h2>Email Fault Reporting</h2>
+
+<?
+  set auth_enabled [tms::get-config "/email/client/auth/enable"]
+  set cur_rewrite_domain [tms::get-config "/email/state/rewrite_domain"]
+  set cur_return_addr [tms::get-config "/email/client/return_addr"]
+  set disp_return_addr "$cur_return_addr@$cur_rewrite_domain"
+
+  if {[string first "@" $cur_return_addr] != -1 } {
+    set disp_return_addr $cur_return_addr
+  }
+?>
+
+  <TMS-TABLE -div_id "faults_table_1">
+    <TMS-TABLE-ENTRY "Mail hub">
+        <CFG-TEXTBOX -id "smtp" -errname "Mail hub"
+                     -caps "set_restricted"
+                     -acl $fau_acl -acl_oper {set}
+                     -name "/email/client/mailhub" -type "hostname" -cols "40"
+                     -span_id "faults_smtp"></p>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Mail hub port">
+        <CFG-TEXTBOX -id "smtp_port" -errname "Mail hub port"
+                     -caps "set_restricted"
+                     -acl $fau_acl -acl_oper {set}
+                     -name "/email/client/mailhub_port" -type "uint16"
+                     -cols "16"
+                     -span_id "faults_smtp_port"></p>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Domain name override">
+        <CFG-TEXTBOX -id "domain" -errname "Domain name" -caps "set_restricted"
+                     -acl $fau_acl -acl_oper {set}
+                     -name "/email/client/rewrite_domain" -type "hostname"
+                     -cols "40" -span_id "faults_domain"></p>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Return address">
+        <CFG-TEXTBOX -id "ret_addr" -errname "Return address" -caps "set_restricted"
+                     -acl $fau_acl -acl_oper {set}
+                     -name "/email/client/return_addr" -type "string"
+                     -cols "40" -span_id "faults_retaddr"></p>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Include hostname in return addr">
+        <CFG-CHECKBOX -id "addr_host" -caps "set_restricted"
+                      -acl $fau_acl -acl_oper {set}
+                      -name "/email/client/return_host" -type "bool"
+                      -span_id "faults_cbox_2">
+    </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "Current Return Address">
+          <?^= $disp_return_addr ?>
+      </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Enable autosupport notifications">
+        <CFG-CHECKBOX -id "enable_autosupport" -caps "set_restricted"
+                      -acl $fau_acl -acl_oper {set}
+                      -name "/email/autosupport/enable" -type "bool"
+                      -span_id "faults_cbox_1">
+    </TMS-TABLE-ENTRY>
+
+    <!-- Conditional on PROD_FEATURE_AUTH_SMTP... -->
+    <IF {[string compare [tms::have-prod-feature auth_smtp] "true"] == 0}>
+
+      <TMS-TABLE-ENTRY "Enable SMTP authentication">
+          <CFG-CHECKBOX -id "enable_auth" -caps "set_restricted"
+                        -acl $fau_acl -acl_oper {set}
+                        -name "/email/client/auth/enable" -type "bool"
+                        -span_id "faults_cbox_4"></p>
+      </TMS-TABLE-ENTRY>
+
+      <IF {[string compare $auth_enabled "true"] == 0}>
+        <TMS-TABLE-ENTRY "Username">
+            <CFG-TEXTBOX -id "auth_username" -errname "Authentication username"
+                         -caps "set_restricted"
+                         -acl $fau_acl -acl_oper {set}
+                         -name "/email/client/auth/username"
+                         -type "string" -cols "40"></p>
+        </TMS-TABLE-ENTRY>
+        <TMS-TABLE-ENTRY "Password">
+            <CFG-TEXTBOX -id "auth_password" -errname "Authentication password"
+                         -caps "set_privileged"
+                         -acl $fau_acl -acl_oper {set}
+                         -name "/email/client/auth/password"
+                         -type "string" -cols "40"></p>
+        </TMS-TABLE-ENTRY>
+      </IF>
+    </IF>
+
+    <TMS-TABLE-ENTRY "Security mode">
+      <CFG-DROPDOWN -id "security_mode" -errname "Security mode"
+                    -caps "set_restricted"
+                    -acl $fau_acl -acl_oper {set}
+                    -name "/email/client/ssl/mode"
+                    -type "string" -options {{"TLS only" "tls"}
+                                             {"TLS or none" "tls-none"}
+                                             {"none" "none"}}
+                    -span_id "faults_security_mode">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Verify server certificate">
+        <CFG-CHECKBOX -id "server_cert_verify" -caps "set_restricted"
+                      -acl $fau_acl -acl_oper {set}
+                      -name "/email/client/ssl/cert_verify" -type "bool"
+                      -span_id "faults_cbox_5"></p>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Supplemental CA cert list">
+      <CFG-DROPDOWN -id "suppl_cert_list" -errname "Supplemental CA cert list"
+                    -caps "set_restricted"
+                    -acl $fau_acl -acl_oper {set}
+                    -name "/email/client/ssl/ca_certs/list_name"
+                    -type "string" -options {{"None" "none"}
+                                             {"Default CA cert list" "default-ca-list"}}
+                    -span_id "faults_ca_cert_list">
+    </TMS-TABLE-ENTRY>
+
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $fau_acl -acl_oper {set}
+              -span_id "faults_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $fau_acl -acl_oper {set}
+              -span_id "faults_cancel_1">
+
+</CFG-FORM>
+
+<?
+  # ...........................................................................
+  # Notification recipients
+?>
+
+  <CFG-FORM -action "config-form-list" -div_id "faults_2">
+  <h2>Notify Recipients</h2>
+  <?
+    set cur_line 0
+    set recipient_prefix "/email/notify/recipients"
+    set recipient_ids [tms::iterate-config $recipient_prefix]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+
+    <tr class="listing_head">   
+      <td></td>
+      <td>
+        Email</td>
+      <td>
+        Detail</td>
+      <td>
+        Infos</td>
+      <td>
+        Failures</td>
+    </tr>
+
+    <FOREACH recipient_id $recipient_ids>
+    <?
+    set prefix_len [string length "$recipient_prefix/"]
+    set recipient_name [tms::get-config "$recipient_id"]
+    set recipient_detail [tms::get-config "$recipient_id/get_detail" "yes"]
+    set recipient_infos [tms::get-config "$recipient_id/get_infos" "yes"]
+    set recipient_failures [tms::get-config "$recipient_id/get_failures" "yes"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_restricted"
+                      -acl $fau_acl -acl_oper {set}
+                         -value "$recipient_id" -span_id "faults_cbox_3"></td>
+      <td>
+        <?^=$recipient_name?></td>
+      <td>
+        <?^=$recipient_detail?></td>
+      <td>
+        <?^=$recipient_infos?></td>
+      <td>
+        <?^=$recipient_failures?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Recipients.
+      <SET disab "true">
+    <ELSE>
+      <SET disab "false">
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove Recipients" 
+              -caps "set_restricted"
+              -acl $fau_acl -acl_oper {set_delete}
+              -disabled $disab
+              -span_id "faults_remove_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+  </p></td></CFG-FORM></tr></table>
+
+<?
+  # ...........................................................................
+  # Add new recipients
+?>
+
+<CFG-FORM -action "config-form-list" -div_id "faults_4">
+  <h2>Add New Notify Recipients</h2>
+  <p>Email addresses for event notification:<br>
+  <TMS-TABLE -div_id "faults_table_3">
+    <TMS-TABLE-ENTRY "Email Address">
+      <CFG-TEXTBOX -id "recipients" -errname "Event recipients"
+                   -caps "set_restricted"
+                   -acl $fau_acl -acl_oper {set}
+                   -span_id "faults_recipient" -type "string" -cols "20">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Get Detail">
+        <CFG-CHECKBOX -id "get_detail" -caps "set_restricted"
+                      -acl $fau_acl -acl_oper {set}
+                      -type "bool" -span_id "faults_detail" -value "true">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Get Infos">
+        <CFG-CHECKBOX -id "get_infos" -caps "set_restricted"
+                      -acl $fau_acl -acl_oper {set}
+                      -type "bool" -span_id "faults_infos" -value "true">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Get Failures">
+        <CFG-CHECKBOX -id "get_failures" -caps "set_restricted"
+                      -acl $fau_acl -acl_oper {set}
+                      -type "bool" -span_id "faults_failures" -value "true">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/email/notify/recipients">
+  <input type="hidden" name="f_list_index" value="recipients">
+  <input type="hidden" name="f_list_children" value="get_detail,get_infos,get_failures">
+
+  <CFG-BUTTON -type "add" -text "Add Recipient" -caps "set_restricted"
+              -acl $fau_acl -acl_oper {set}
+              -span_id "faults_add_1">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view fault reporting configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

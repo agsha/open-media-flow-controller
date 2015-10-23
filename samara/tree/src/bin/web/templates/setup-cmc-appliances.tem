@@ -1,0 +1,447 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+<INCLUDE "mon-cmc-common">
+
+<TMS-PAGE "CMC Appliances">
+<TMS-MENU "cmc_setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-CMC-SETUP-MENU "appliances"></TMS-SIDEBAR>
+
+<?
+  global cmc_acl
+
+  # XXX/SML _image variables contain html tag text that is set to a static
+  # statically defined value, so they are not html-escaped.
+?>
+
+<TMS-PAGE-CONTENT "CMC Appliance Setup">
+
+<IF {[tms::check-authorization "query_basic" $cmc_acl {query}]}>
+
+  <TMS-CMC-MSG>
+
+  <h2>CMC Appliances</h2>
+
+<?
+  proc appliance_groups {appliance groups} {
+    set ret_list {}
+    foreach group $groups {
+      if {[string compare $group "all"] != 0} {
+        set app_binding "/cmc/config/group/$group/member/appliance/$appliance"
+        set found_app [tms::get-config $app_binding]
+        if {[string compare $found_app $appliance] == 0} {
+          lappend ret_list $group
+        }
+      }
+    }
+    return $ret_list
+  }
+?>
+
+  <CFG-FORM -action "config-form-cmc-appl" -div_id "cmc_appl_1">
+
+  <?
+    global group_list
+    set cur_line 0
+    set appliance_prefix "/cmc/config/appliance"
+    set appliance_ids [tms::iterate-config $appliance_prefix]
+    set group_prefix "/cmc/config/group"
+    set group_bindings [tms::iterate-config $group_prefix]
+
+    set group_list {}
+    set appliance_list {}
+    set prefix_len [string length "$group_prefix/"]
+    foreach group_bn $group_bindings {
+      set group_name [string range $group_bn $prefix_len end]
+      lappend group_list $group_name
+    }
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+
+    <tr class="listing_head">  
+      <td>
+      <td>
+        <p>Name</p>
+      <td>
+        <p>Address</p>
+      <td>
+        <p>Groups</p>
+      <td>
+        <p>Enabled</p>
+      <td>
+        <p>Status</p>
+      <td>
+        <p>Comment</p>
+      <td>
+    </tr>
+
+    <FOREACH appliance_id $appliance_ids>
+    <?
+      set prefix_len [string length "$appliance_prefix/"]
+      set appliance_name [string range $appliance_id $prefix_len end]
+
+      set appliance_enable [tms::get-config "$appliance_id/enable" "yes"]
+
+      set appliance_address [tms::get-config "$appliance_id/address"]
+      set appliance_comment [tms::get-config "$appliance_id/comment"]
+      set appliance_groups [appliance_groups $appliance_name $group_list]
+      set appliance_web_url [get_appl_url $appliance_id $appliance_address]
+
+      set appliance_connected [tms::get-config "/cmc/state/appliance/$appliance_name/connected"]
+      set appliance_connecting [tms::get-config "/cmc/state/appliance/$appliance_name/connecting"]
+      set appliance_status [tms::get-config "/cmc/state/appliance/$appliance_name/status/ok"]
+      set status_is_current [tms::get-config "/cmc/state/appliance/$appliance_name/status/is_current"]
+
+      set green "<img src=\"/images/status_green.png\" alt=\"Green\">"
+      set yellow "<img src=\"/images/status_yellow.png\" alt=\"Yellow\">"
+      set red "<img src=\"/images/status_red.png\" alt=\"Red\">"
+
+      if {[string equal $appliance_enable no]} {
+        set status_text "N/A"
+        set status_image "$green"
+      } elseif {[string equal $appliance_connected true]} {
+        if {[string equal $status_is_current true]} {
+          if {[string equal $appliance_status true]} {
+            set status_text "ok"
+            set status_image $green
+          } else {
+            set status_text "ERROR"
+            set status_image $red
+          }
+        } else {
+          set status_text "unknown"
+          set status_image $yellow
+        }
+      } elseif {[string equal $appliance_connecting true]} {
+        set status_text "pending"
+        set status_image $yellow
+      } else {
+        set status_text "ERROR"
+        set status_image $red
+      }
+
+      lappend appliance_list $appliance_name
+
+      set num_group [llength $appliance_groups]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_cmc"
+                      -acl $cmc_acl -acl_oper {set}
+                         -value "$appliance_id" -span_id "cmc_appl_cbox_1">
+        </td>
+      <td>
+        <p><a href="<?=[tms::html-escape ${appliance_web_url}]?>" target="_blank">
+          <?^=$appliance_name?></a></p></td>
+      <td>
+        <p>
+           <?^=$appliance_address?></p></td>
+      <td>
+        <p>
+
+     <FOR {set gn 0} {$gn < $num_group} {incr gn 1}>
+       <?
+         set group_name [lindex $appliance_groups $gn]
+       ?>
+       <IF {$gn \> 0}>
+         ,
+       </IF>
+       <?^=$group_name?>
+     </FOR>
+
+      <td>
+        <p><?^=$appliance_enable?></p></td>
+      <td>
+        <p>
+          <?
+          # XXX/SML:  This contains an html <img> directive, so it cannot be escaped
+          ?>
+          <?=$status_image?>
+          <a href="/admin/launch?script=rh&amp;template=mon-cmc-detail&amp;appl=<?=[tms::uri-component-escape ${appliance_name}]?>&amp;return=setup-cmc-appliances">
+          <?^=$status_text?>
+          </a>
+        </p>
+      </td>
+      <td>
+        <p><?^=$appliance_comment?></p></td>
+      <td>
+        <a href="/admin/launch?script=rh&amp;template=setup-cmc-edit-appl&amp;appl=<?=[tms::uri-component-escape ${appliance_name}]?>">Edit</a>
+    </tr>
+
+     <?
+       incr cur_line
+     ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No CMC Appliances.
+      <SET disab_buttons "true">
+    <ELSE>
+      <SET disab_buttons "false">
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <input type="hidden" name="f_list_custom_buttons" value="enable,disable">
+  <input type="hidden" name="f_list_button_enable_action" value="set">
+  <input type="hidden" name="f_list_button_enable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_enable_child_value" value="true">
+  <input type="hidden" name="f_list_button_disable_action" value="set">
+  <input type="hidden" name="f_list_button_disable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_disable_child_value" value="false">
+
+  <table>
+    <tr>
+      <td>
+
+  <CFG-BUTTON -type "remove" -text "Remove" -caps "set_cmc"
+              -acl $cmc_acl -acl_oper {set}
+              -disabled $disab_buttons -span_id "cmc_appl_remove_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+      <td width="10">
+      <td>Delete selected appliance records.
+
+    <tr>
+      <td>
+
+  <CFG-BUTTON -type "disable" -text "Disable" -caps "set_cmc"
+              -acl $cmc_acl -acl_oper {set}
+              -disabled $disab_buttons -span_id "cmc_appl_disable_1"> 
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+      <td>
+      <td>Disable connection to selected appliances.
+
+    <tr>
+      <td>
+
+  <CFG-BUTTON -type "enable" -text "Enable" -caps "set_cmc"
+              -acl $cmc_acl -acl_oper {set}
+              -disabled $disab_buttons -span_id "cmc_appl_enable_1"> 
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+      <td>
+      <td>Enable connection to selected appliances (undo a "Disable").
+
+    <tr>
+      <td>
+  <CFG-BUTTON -type "refresh" -text "Refresh"
+              -acl $cmc_acl -acl_oper {query}>
+  <img src="/images/em.gif" width="10" height="1" alt="">
+    <td>
+    <td>
+      Update this display with the most up-to-date information.
+
+  </table>
+
+  </p></td></tr></table>
+
+<br>
+
+<a href="/admin/launch?script=rh&amp;template=mon-cmc">
+Check status</a> of CMC managed appliances.
+
+</CFG-FORM>
+
+
+  <h2>Add New CMC Appliance</h2>
+
+<CFG-FORM -action "config-form-list" -div_id "cmc_appl_3">
+  <TMS-TABLE -div_id "cmc_appl_table_2">
+    <TMS-TABLE-ENTRY "Appliance ID">
+      <CFG-TEXTBOX -id "ident" -errname "Identity" -caps "set_cmc"
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "30" -span_id "cmc_appl_ident">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Appliance Address">
+      <CFG-TEXTBOX -id "address" -errname "Hostname" -caps "set_cmc"
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "hostname" -cols "30" -span_id "cmc_appl_addr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Comment">
+      <CFG-TEXTBOX -id "comment" -errname "Comment" -caps "set_cmc"
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "30" -required "false"
+                   -span_id "cmc_appl_comment">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps "set_cmc" -type "bool"
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "cmc_appl_enabled">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Authentication Type">
+      <CFG-DROPDOWN -id "authtype" -errname "Authentication Type"
+                    -caps "set_cmc" -type "string"
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -options {{"password" "password"} {"ssh-dsa2" "ssh-dsa2"}
+                              {"ssh-rsa2" "ssh-rsa2"}}
+                    -span_id "cmc_appl_atype">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      # ==================================================
+      # Password authentication settings
+    ?>
+
+    <TMS-TABLE-ENTRY "Username for password auth">
+      <CFG-TEXTBOX -id "auth/password/username"
+                    -errname "Password auth username" -caps "set_cmc"
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "30" -required "false"
+                   -span_id "cmc_appl_password_username" -value "admin">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Password for password auth">
+      <IF {[string compare [tms::may-obfuscate] "true"] == 0}>
+        <CFG-PASSWORDBOX -id "auth/password/password"
+                     -errname "Password auth password" -caps "set_cmc"
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "string" -cols "30" -required "false"
+                     -span_id "cmc_appl_password_username">
+      <ELSE>
+        <CFG-TEXTBOX -id "auth/password/password"
+                     -errname "Password auth password" -caps "set_cmc"
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "string" -cols "30" -required "false"
+                     -span_id "cmc_appl_password_username">
+      </IF>
+    </TMS-TABLE-ENTRY>
+
+    <?
+      # ==================================================
+      # DSA2 authentication settings
+    ?>
+
+    <TMS-TABLE-ENTRY "Username for ssh-dsa2 auth">
+      <CFG-TEXTBOX -id "auth/ssh-dsa2/username"
+                    -errname "Ssh-dsa2 auth username" -caps "set_cmc"
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "30" -required "false"
+                   -span_id "cmc_appl_ssh_dsa2_username" -value "admin">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      set dsa2_prefix "/cmc/common/config/auth/ssh-dsa2/identity"
+      set dsa2_bns [tms::iterate-config $dsa2_prefix]
+      set dsa2_prefix_len [string length "$dsa2_prefix/"]
+      set dsa2_ids {""}
+      foreach dsa2_bn $dsa2_bns {
+        set dsa2_id [string range $dsa2_bn $dsa2_prefix_len end]
+        lappend dsa2_ids "$dsa2_id $dsa2_id"
+      }
+    ?>
+
+    <TMS-TABLE-ENTRY "Identity for ssh-dsa2 auth">
+        <CFG-DROPDOWN -id "auth/ssh-dsa2/identity" -caps "set_cmc"
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "string" -options $dsa2_ids -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      # ==================================================
+      # RSA2 authentication settings
+    ?>
+
+    <TMS-TABLE-ENTRY "Username for ssh-rsa2 auth">
+      <CFG-TEXTBOX -id "auth/ssh-rsa2/username"
+                    -errname "Ssh-rsa2 auth username" -caps "set_cmc"
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "30" -required "false"
+                   -span_id "cmc_appl_ssh_rsa2_username" -value "admin">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      set rsa2_prefix "/cmc/common/config/auth/ssh-rsa2/identity"
+      set rsa2_bns [tms::iterate-config $rsa2_prefix]
+      set rsa2_prefix_len [string length "$rsa2_prefix/"]
+      set rsa2_ids {""}
+      foreach rsa2_bn $rsa2_bns {
+        set rsa2_id [string range $rsa2_bn $rsa2_prefix_len end]
+        lappend rsa2_ids "$rsa2_id $rsa2_id"
+      }
+    ?>
+
+    <TMS-TABLE-ENTRY "Identity for ssh-rsa2 auth">
+        <CFG-DROPDOWN -id "auth/ssh-rsa2/identity" -caps "set_cmc"
+                      -acl $cmc_acl -acl_oper {set_create}
+                      -type "string" -options $rsa2_ids -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      # ==================================================
+      # Web UI access settings
+    ?>
+
+    <TMS-TABLE-ENTRY "Web UI protocol">
+      <CFG-DROPDOWN -id "web/proto" -caps "set_cmc" -type "string"
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -options {{"http" "http"} {"https" "https"}}
+                    -span_id "cmc_web_proto">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "HTTP port">
+      <CFG-TEXTBOX -id "web/port_http"
+                    -errname "HTTP port" -caps "set_cmc"
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "uint16" -cols "30" -required "true"
+                   -span_id "cmc_appl_http_port" -value "80">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "HTTPS port">
+      <CFG-TEXTBOX -id "web/port_https"
+                    -errname "HTTPS port" -caps "set_cmc"
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "uint16" -cols "30" -required "true"
+                   -span_id "cmc_appl_https_port" -value "443">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+    <?
+      # ==================================================
+      # Hidden fields & buttons
+    ?>
+
+  <input type="hidden" name="f_list_root" value="/cmc/config/appliance">
+  <input type="hidden" name="f_list_index" value="ident">
+  <input type="hidden" name="f_list_children" value="address,enable,authtype,comment,auth/password/username,auth/password/password,auth/ssh-dsa2/username,auth/ssh-dsa2/identity,auth/ssh-rsa2/username,auth/ssh-rsa2/identity,web/proto,web/port_http,web/port_https">
+
+  <CFG-BUTTON -type "add" -text "Add CMC Appliance" -caps "set_cmc"
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_appl_add_2">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view CMC appliance configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

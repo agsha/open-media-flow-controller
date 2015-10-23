@@ -1,0 +1,527 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Routing">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "routing"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "IP Routing">
+
+<?
+  global net_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $net_acl {query}]}>
+
+<!-- ==================================================
+     = Route fetching helper
+     ================================================== -->
+
+<?
+
+  # "args" is an optional ip/masklen to filter from the route list.  The
+  # match is exact string match.
+  proc get_routes {route_prefix args} {
+    set routes ""
+    set filter_route_dest ""
+    if {[llength $args] >= 1} {
+        set filter_route_dest [lindex $args 0]
+    }
+    set route_ids [tms::iterate-config $route_prefix]
+    foreach route_id $route_ids {
+      set prefix_len [string length "$route_prefix/"]
+      set route_dest [string range $route_id $prefix_len end]
+      regexp "(.*)\\\\/(.*)" $route_dest rmatch route_dest_ip route_masklen
+      set route_id "$route_prefix/$route_dest_ip/$route_masklen"
+      set route_id_fixed "$route_prefix/$route_dest_ip\\/$route_masklen"
+      set route_gw_ids [tms::iterate-config "$route_id_fixed/nh"]
+      if {![string equal $filter_route_dest ""] && [string equal $filter_route_dest $route_dest_ip/$route_masklen]} {
+        continue
+      }
+
+      foreach route_gw_id $route_gw_ids {
+        set prefix_len [string length "$route_id_fixed/nh/"]
+        set nh_id [string range $route_gw_id $prefix_len end]
+        set route_gw [tms::get-config "$route_id_fixed/nh/$nh_id/gw"]
+        set route_intf [tms::get-config "$route_id_fixed/nh/$nh_id/interface"]
+        if {[string compare $route_intf ""] == 0} {
+          set route_intf "*"
+        }
+        # The hex-encode function is called here to escape things like space
+        # and slash characters.  We hex-decode it again after parsing.
+        set route_source [tms::hex-encode [tms::get-config "$route_id_fixed/nh/$nh_id/source"]]
+        if {[string compare $route_source ""] == 0} {
+          set route_source "*"
+        }
+        set routes "$routes $route_dest_ip/$route_masklen/$route_gw/$route_intf/$route_source"
+        }
+    }
+    return $routes
+  }
+
+?>
+
+<!-- ==================================================
+     = Fetch IPv4 route info
+     ================================================== -->
+
+  <?
+  # Conditional on PROD_FEATURE_IPV6
+  set have_ipv6 [tms::have-prod-feature ipv6]
+  set ip_field_width 16
+  if {[string compare $have_ipv6 "true"] == 0} {
+    set ip_field_width 46
+  }
+  if {([string compare $have_ipv6 "true"] == 0)} {
+    set ipv4_route_word "IPv4"
+  } else {
+    set ipv4_route_word "IP"
+  }
+
+  set cur_line 0
+  set dyn_routes ""
+  set cfg_routes ""
+  set dyn_route_prefix "/net/routes/state/ipv4/prefix"
+  set cfg_route_prefix "/net/routes/config/ipv4/prefix"
+
+  set dyn_routes [get_routes $dyn_route_prefix]
+  set cfg_routes [get_routes $cfg_route_prefix]
+  set routes ""
+
+  foreach dyn_route $dyn_routes {
+      set found 0
+      foreach cfg_route $cfg_routes {
+          if {[string match $cfg_route $dyn_route]} {
+              set found 1
+              break
+          }
+      }
+
+      if {$found == 0} {
+          set routes "$routes $dyn_route/yes/no"
+      } else {
+          set routes "$routes $dyn_route/yes/yes"
+      }
+  }
+
+  foreach cfg_route $cfg_routes {
+      set found 0
+      foreach dyn_route $dyn_routes {
+          if {[string match $cfg_route $dyn_route]} {
+              set found 1
+              break
+          }
+      }
+
+      if {$found == 0} {
+          set routes "$routes $cfg_route/no/yes"
+      }
+  }
+
+  ?>
+
+<!-- ==================================================
+     = Display IPv4 routes
+     ================================================== -->
+
+<h2><?^=$ipv4_route_word?> Routes</h2>
+
+<CFG-FORM -action "config-form-routes" -div_id "routing_ipv4">
+
+  <table border="0" cellpadding="3" cellspacing="0" class="listing">
+    <tr class="listing_head">
+      <td></td>
+      <td width="8"></td>
+      <td>
+        Destination</td>
+      <td width="20"></td>
+      <td>
+        Mask (/Mask length)</td>
+      <td width="20"></td>
+      <td>
+        Gateway</td>
+      <td width="20"></td>
+      <td>
+        Interface</td>
+      <td width="20"></td>
+      <td>
+        Source</td>
+      <td width="20"></td>
+      <td>
+        Active</td>
+      <td width="20"></td>
+      <td>
+        Static</td>
+      <td width="20"></td>
+    </tr>
+
+    <FOREACH route $routes>
+    <?
+    set rdest_display ""
+
+    set result [regexp (.*)/(.*)/(.*)/(.*)/(.*)/(.*)/(.*) $route rmatch rdest rmlen rgw rintf escsource ractive rstatic]
+    if {[string compare $escsource "*"]} {
+        set rsource [tms::hex-decode $escsource]
+    }
+    # else '*', so we didn't hex-encode.
+
+    set rmask [tms::ipv4pfx-to-mask $rdest/$rmlen]
+
+    if {[string compare $rdest "0.0.0.0"] == 0 &&
+        [string compare $rmask "0.0.0.0"] == 0} {
+        set rdest_display "default"
+    } else {
+        set rdest_display $rdest
+    }
+    if {[string compare $rsource "*"] == 0} {
+        set rsource "static"
+    }
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <IF {$rstatic == "yes"}>
+          <CFG-CHECKBOX -id "del_$cur_line" -caps "set_restricted"
+                        -acl $net_acl -acl_oper {set_delete}
+                        -value "$rdest $rmlen $rgw" -span_id "routing_ipv4_cbox_1">
+        </IF>
+      <td></td>
+      <td>
+        <?^=$rdest_display?></td>
+      <td></td>
+      <td>
+        <?^=$rmask?> (/<?^=$rmlen?>)</td>
+      <td></td>
+      <td>
+        <?^=$rgw?></td>
+      <td></td>
+      <td>
+        <?^=$rintf?></td>
+      <td></td>
+      <td>
+        <?^=$rsource?></td>
+      <td></td>
+      <td>
+        <?^=$ractive?></td>
+      <td></td>
+      <td>
+        <?^=$rstatic?></td>
+      <td></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          <p class="nodata">
+            No <?^=$ipv4_route_word?> routes.
+          </p>
+        </td>
+      </tr>
+    </IF>
+  <TMS-TABLE-SPACE>
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected" -caps "set_restricted"
+              -acl $net_acl -acl_oper {set_delete}
+                 -span_id "routing_ipv4_remove_1">
+  
+
+</CFG-FORM>
+
+<?
+  if {([string compare $have_ipv6 "true"] == 0)} {
+?>
+
+<!-- ==================================================
+     = Fetch IPv6 route info
+     =
+     = (Much commonality with fetching IPv4 routes... combine/share?)
+     ================================================== -->
+
+  <?
+  set cur_line 0
+  set dyn_routes ""
+  set cfg_routes ""
+  set dyn_route_prefix "/net/routes/state/ipv6/prefix"
+  set cfg_route_prefix "/net/routes/config/ipv6/prefix"
+
+  set dyn_routes [get_routes $dyn_route_prefix "fe80::/64"]
+  set cfg_routes [get_routes $cfg_route_prefix]
+  set routes ""
+
+  foreach dyn_route $dyn_routes {
+      set found 0
+      foreach cfg_route $cfg_routes {
+          if {[string match $cfg_route $dyn_route]} {
+              set found 1
+              break
+          }
+      }
+
+      if {$found == 0} {
+          set routes "$routes $dyn_route/yes/no"
+      } else {
+          set routes "$routes $dyn_route/yes/yes"
+      }
+  }
+
+  foreach cfg_route $cfg_routes {
+      set found 0
+      foreach dyn_route $dyn_routes {
+          if {[string match $cfg_route $dyn_route]} {
+              set found 1
+              break
+          }
+      }
+
+      if {$found == 0} {
+          set routes "$routes $cfg_route/no/yes"
+      }
+  }
+
+  ?>
+
+<!-- ==================================================
+     = Display IPv6 routes
+     ================================================== -->
+
+<h2>IPv6 Routes</h2>
+
+<CFG-FORM -action "config-form-routes" -div_id "routing_ipv6">
+
+  <table border="0" cellpadding="3" cellspacing="0" class="listing">
+    <tr class="listing_head">
+      <td></td>
+      <td width="8"></td>
+      <td>
+        Destination</td>
+      <td width="20"></td>
+      <td>
+        Mask length</td>
+      <td width="20"></td>
+      <td>
+        Gateway</td>
+      <td width="20"></td>
+      <td>
+        Interface</td>
+      <td width="20"></td>
+      <td>
+        Source</td>
+      <td width="20"></td>
+      <td>
+        Active</td>
+      <td width="20"></td>
+      <td>
+        Static</td>
+      <td width="20"></td>
+    </tr>
+
+    <FOREACH route $routes>
+    <?
+    set rdest_display ""
+    set rsource ""
+  
+    regexp (.*)/(.*)/(.*)/(.*)/(.*)/(.*)/(.*) $route rmatch rdest rmlen rgw rintf escsource ractive rstatic
+    if {[string compare $escsource "*"]} {
+      set rsource [tms::hex-decode $escsource]
+    }
+    # else '*', so we didn't hex-encode.
+
+    set display 1
+    if {[string equal $rdest "fe80::"] == 1 && $rmlen >= 10} {
+        set display 0
+    }
+    set prefix "fe80"
+    if {[string equal -length [string length $prefix] $rdest $prefix] == 1  && $rmlen == 128} {
+        set display 0
+    }
+
+    if {$display == 1} {
+    if {[string compare $rdest "::"] == 0 &&
+        [string compare $rmlen "0"] == 0} {
+        set rdest_display "default"
+    } else {
+        set rdest_display $rdest
+    }
+    if {[string compare $rsource "*"] == 0} {
+        set rsource "static"
+    }
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <IF {$rstatic == "yes"}>
+          <CFG-CHECKBOX -id "delv6_$cur_line" -caps "set_restricted"
+                        -acl $net_acl -acl_oper {set_delete}
+                        -value "$rdest $rmlen $rgw" -span_id "routing_ipv6_cbox_1">
+        </IF>
+      <td></td>
+      <td>
+        <?^=$rdest_display?></td>
+      <td></td>
+      <td>
+        <?^=$rmlen?></td>
+      <td></td>
+      <td>
+        <?^=$rgw?></td>
+      <td></td>
+      <td>
+        <?^=$rintf?></td>
+      <td></td>
+      <td>
+        <?^=$rsource?></td>
+      <td></td>
+      <td>
+        <?^=$ractive?></td>
+      <td></td>
+      <td>
+        <?^=$rstatic?></td>
+      <td></td>
+    </tr>
+
+    <?
+    incr cur_line
+    }
+    ?>
+    
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          <p class="nodata">
+            No IPv6 routes.
+          </p>
+        </td>
+      </tr>
+    </IF>
+  <TMS-TABLE-SPACE>
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected" -caps "set_restricted"
+              -acl $net_acl -acl_oper {set_delete}
+                 -span_id "routing_ipv6_remove_1">
+  
+</CFG-FORM>
+
+<?
+  }
+?>
+
+<!-- ==================================================
+     = Adding a new route
+     ================================================== -->
+
+<h2>Add Static Route</h2>
+
+<CFG-FORM -action "config-form-routes" -div_id "routing_static">
+
+  <TMS-TABLE -div_id "routing_static_table">
+    <TMS-TABLE-ENTRY "Destination">
+      <CFG-TEXTBOX -id "destination" -errname "destination network"
+                   -caps "set_restricted"
+                   -acl $net_acl -acl_oper {set}
+                   -cols "$ip_field_width" -span_id "routing_static_dest">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Mask or mask length">
+      <CFG-TEXTBOX -id "netmask" -errname "net mask"
+                   -caps "set_restricted"
+                   -acl $net_acl -acl_oper {set}
+                   -cols "$ip_field_width" -span_id "routing_static_netmask">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Gateway">
+      <CFG-TEXTBOX -id "gateway" -errname "gateway"
+                   -caps "set_restricted"
+                   -acl $net_acl -acl_oper {set}
+                   -cols "$ip_field_width" -span_id "routing_static_gw">
+    </TMS-TABLE-ENTRY>
+
+    <?
+        set if_bns [tms::iterate-config "/net/interface/config"]
+        set if_names { {"" ""} }
+        foreach if_bn $if_bns {
+            set if_bn_len [string length "/net/interface/config/"]
+            set if [string range $if_bn $if_bn_len end]
+            set if_name [list $if $if]
+            lappend if_names $if_name
+        }
+    ?>
+
+    <TMS-TABLE-ENTRY "Interface">
+      <CFG-DROPDOWN -id "interface" -errname "interface"
+                    -caps "set_privileged"
+                    -acl $net_acl -acl_oper {set}
+                    -type "string" -options $if_names
+                    -span_id "routing_static_interface">
+    </TMS-TABLE-ENTRY>
+
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "add" -text "Add Route" -caps "set_restricted"
+                 -acl $net_acl -acl_oper {set}
+                 -span_id "routing_static_add_1">
+  
+
+</CFG-FORM>
+
+<!-- ==================================================
+     = Configuring the default gateway
+     ================================================== -->
+
+<h2><?^=$ipv4_route_word?> Default Gateway</h2>
+
+<CFG-FORM -div_id "routing_defgw">
+
+  <TMS-TABLE -div_id "routing_defgw_table">
+    <TMS-TABLE-ENTRY "Default gateway">
+      <CFG-IPV4 -id "defaultgw" -errname "default gateway" 
+                -caps "set_restricted"
+                -acl $net_acl -acl_oper {set}
+                -name "/net/routes/config/ipv4/prefix/0.0.0.0\\\\/0/nh/1/gw"
+                -delname "/net/routes/config/ipv4/prefix/0.0.0.0\\\\/0"
+                -type "ipv4addr" -span_id "routing_defgw_defgw">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "add" -text "Set Default Gateway"
+              -caps "set_restricted"
+              -acl $net_acl -acl_oper {set}
+              -span_id "routing_defgw_add_1">
+  
+</CFG-FORM>
+
+<br>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view routing configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

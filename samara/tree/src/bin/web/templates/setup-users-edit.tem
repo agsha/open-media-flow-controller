@@ -1,0 +1,177 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Edit User">
+<TMS-MENU "setup">
+<TMS-BODY>
+<?
+  global auth_acl_lo
+  set user [tms::get-param query "user"]
+  set user_caps "set_privileged"
+?>
+
+<!-- Conditional on PROD_FEATURE_CAPABS -->
+<IF {[string compare [tms::have-prod-feature capabs] "true"] == 0}>
+  <INCLUDE "setup-users-capabs">
+</IF>
+
+<!-- Conditional on PROD_FEATURE_ACLS -->
+<IF {[string compare [tms::have-prod-feature acls] "true"] == 0}>
+  <INCLUDE "setup-users-acls">
+</IF>
+
+<?
+# XXX/EMT: this leaves the 'user=username' parameter in the URLs
+# for all of the other sidebar menu items too.  It doesn't do any
+# real harm, but it is undesirable.
+?>
+<TMS-SIDEBAR><TMS-SETUP-MENU "users-edit" "user" $user></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Edit User">
+
+<IF {[tms::check-authorization "query_basic" $auth_acl_lo {query}]}>
+
+<h2>Edit User: <?^=$user?></h2>
+
+<CFG-FORM -action "config-form-users" -div_id "user_edit_form">
+
+  <CFG-BUTTON-HIDDEN-DEFAULT -type "ok" -text "OK"
+                             -caps $user_caps
+                             -acl $auth_acl_lo -acl_oper {set}>
+
+  <input type="hidden" name="f_user" value="<?^=$user?>">
+  <TMS-TABLE -div_id "user_add_table_1">
+    <TMS-TABLE-ENTRY "Username">
+      <?^=$user?>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Full Name">
+      <CFG-TEXTBOX -id "fullname" -errname "Full Name"
+                   -caps $user_caps
+                   -acl $auth_acl_lo -acl_oper {set}
+                   -name "/auth/passwd/user/$user/gecos"
+                   -type "string" -cols 24 -span_id "users_fullname">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps $user_caps
+                    -acl $auth_acl_lo -acl_oper {set}
+                    -type "bool"
+                    -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "user_enabled"
+                    -name "/auth/passwd/user/$user/enable">
+    </TMS-TABLE-ENTRY>
+
+<?
+    set user_enable [tms::get-config "/auth/passwd/user/$user/enable"]
+    set user_password [tms::get-config "/auth/passwd/user/$user/password"]
+    if {[string compare $user_enable "false"] == 0} {
+      set user_status "-"
+    } elseif {[string compare $user_password "*"] == 0} {
+      set user_status "Local password login disabled"
+    } elseif {[string compare $user_password "!!"] == 0} {
+      set user_status "Locked out"
+    } elseif {[string length $user_password] == 0} {
+      set user_status "No password (unsecured)"
+    } else {
+      set user_status "Password set"
+    }
+?>
+
+    <SETUP-USERS-EDIT-PRIVS-1 "$user" "$user_enable">
+
+    <TMS-TABLE-ENTRY "Account status">
+
+    <?^=$user_status?>
+
+    <TMS-TABLE-ENTRY "New account status">
+
+      <?
+        # (setup-myacct.tem has similar code)
+        #
+        # We like to keep the password boxes greyed out sometimes,
+        # depending on the selection in the New Account Status dropdown.
+        # But we have to support browsers without Javascript.  That's OK,
+        # the boxes will start ungreyed, and if there is no Javascript 
+        # we'll just never change that.
+      ?>
+      <script type="text/javascript">
+        function fixPasswordBoxes() {
+          var sel = document.getElementById('sel_acct_status').value;
+          var pwd1 = document.getElementById('password');
+          var pwd2 = document.getElementById('confirm');
+          if (sel == 'password') {
+            pwd1.disabled=false;
+            pwd2.disabled=false;
+          } else {
+            pwd1.value='';
+            pwd2.value='';
+            pwd1.disabled=true;
+            pwd2.disabled=true;
+          }
+        }
+      </script>
+
+      <CFG-DROPDOWN -id "acct_status" -errname "Account Status"
+                    -enabled $user_enable
+                    -onchange "fixPasswordBoxes()"
+                    -caps $user_caps
+                    -acl $auth_acl_lo -acl_oper {set}
+                    -type "string" -options { {"Leave unchanged" "unchanged"} {"No password (unsecured)" "nopassword"} {"Set new password" "password"} {"Local password login disabled" "password_disabled"} {"Locked out" "locked_out"} }
+                    -span_id "users_acct_status">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "New password">
+      <CFG-PASSWORDBOX -id "password" -caps $user_caps -cols "24"
+                       -enabled $user_enable
+                       -acl $auth_acl_lo -acl_oper {set}
+                       -span_id "users_pass">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Confirm new password">
+      <CFG-PASSWORDBOX -id "confirm" -caps $user_caps -cols "24"
+                       -enabled $user_enable
+                       -acl $auth_acl_lo -acl_oper {set}
+                       -span_id "users_confirm">
+    </TMS-TABLE-ENTRY>
+
+    <script type="text/javascript">
+      fixPasswordBoxes();
+    </script>
+
+    <SETUP-USERS-EDIT-PRIVS-2 "$user" "$user_enable">
+
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "ok" -text "OK"
+              -caps $user_caps
+              -acl $auth_acl_lo -acl_oper {set}
+              -span_id "user_edit_ok">
+
+  <CFG-BUTTON -type "apply" -text "Apply"
+              -caps $user_caps
+              -acl $auth_acl_lo -acl_oper {set}
+              -span_id "user_edit_apply">
+
+  <CFG-BUTTON -type "cancel" -text "Cancel"
+              -acl $all_acl -acl_oper {set}
+              -span_id "user_edit_cancel">
+
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view user configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

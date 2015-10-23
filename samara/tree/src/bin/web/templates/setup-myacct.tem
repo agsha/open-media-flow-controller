@@ -1,0 +1,261 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "My Account">
+<TMS-MENU "setup">
+<TMS-BODY>
+<?
+  global auth_myacct_acl
+  set user_caps "set_privileged"
+
+  set user [tms-utils::get-user]
+  set local_user [tms-utils::get-user-local]
+  if {[string length $local_user] != 0} {
+    set priv_user $local_user
+  } else {
+    set priv_user $user
+  }
+  set full_name [tms::get-config "/auth/passwd/user/$local_user/gecos"]
+  set auth_method [tms::get-config "/mgmtd/session/current/auth_method"]
+?>
+
+<TMS-SIDEBAR><TMS-SETUP-MENU "myacct"></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "My Account">
+
+<?
+  #
+  # Capabilities users aren't going to be able to set anything unless
+  # they're admin, but they can at least see things, as with "show whoami"
+  # in the CLI.
+  #
+  # ACLs users can go here regardless.  Checking $auth_myacct_acl isn't
+  # good enough, since the query ACLs are too stringent.  Most users would
+  # pass by having Set permissions for all_set_1, but one notable exception
+  # is when this is a CMC client under management, so all Set privileges 
+  # are stripped away.
+  #
+?>
+<IF {[tms::check-authorization "query_basic" $all_acl {query set}]}>
+
+<h2>My Account</h2>
+
+<CFG-FORM -action "config-form-myacct" -div_id "my_account_form">
+<TMS-TABLE -div_id "user_add_table_1">
+  <TMS-TABLE-ENTRY "Username">
+    <?^=$user?>
+  </TMS-TABLE-ENTRY>
+
+  <IF {[string compare $user $local_user] != 0}>
+    <TMS-TABLE-ENTRY "Local username">
+      <?^=$local_user?>
+    </TMS-TABLE-ENTRY>
+  </IF>
+
+  <TMS-TABLE-ENTRY "Full name">
+    <?^=$full_name?>
+  </TMS-TABLE-ENTRY>
+
+  <TMS-TABLE-ENTRY "Authentication method">
+    <?^=$auth_method?>
+  </TMS-TABLE-ENTRY>
+
+  <?
+    # Can't use TMS-TABLE-ENTRY because we want valign=top
+  ?>
+  <IF {[string compare [tms::have-prod-feature acls] "true"] == 0}>
+    <?
+      set curr_roles [tms::iterate-config-last "/mgmtd/session/current/roles"]
+      set config_roles [tms::iterate-config-last "/aaa/acl/config/user/$local_user/role"]
+
+      set curr_role_list ""
+      set i 0
+      foreach role $curr_roles {
+        if {$i != 0} {
+          append curr_role_list "<br>"
+        }
+        append curr_role_list " "
+        append curr_role_list [tms::html-escape "${role}"]
+        incr i
+      }
+
+      set config_role_list ""
+      set i 0
+      foreach role $config_roles {
+        if {$i != 0} {
+          append config_role_list "<br>"
+        }
+        append config_role_list " "
+        append config_role_list [tms::html-escape "${role}"]
+        incr i
+      }
+
+      if {[string equal $curr_role_list $config_role_list]} {
+        set roles_equal 1
+        set curr_role_label "Roles"
+      } else {
+        set roles_equal 0
+        set curr_role_label "Current roles"
+      }
+    ?>
+    <tr class="listing_even">
+      <td width=20></td>
+      <td valign="top"><?=$curr_role_label?></td>
+      <td></td>
+      <td>
+        <?
+          # $role_list may contain HTML tags on purpose, and its variable
+          # content is already escaped above.
+        ?>
+        <?=$curr_role_list?>
+      </td>
+    </tr>
+
+    <IF {$roles_equal == 0}>
+      <tr class="listing_even">
+        <td width=20></td>
+        <td valign="top">Configured roles</td>
+        <td></td>
+        <td>
+          <?
+            # $role_list may contain HTML tags on purpose, and its variable
+            # content is already escaped above.
+          ?>
+          <?=$config_role_list?>
+        </td>
+      </tr>
+    </IF>
+
+  <ELSE>
+    <SET user_gid [tms::get-config "/auth/passwd/user/$priv_user/gid"]>
+    <SET capability [tms::gid-to-capab "$user_gid"]>
+    <tr class="listing_even">
+      <td width=20></td>
+      <td valign="top">Capability</td>
+      <td></td>
+      <td>
+        <?^=$capability?>
+      </td>
+    </tr>
+  </IF>
+
+<?
+    set user_enable [tms::get-config "/auth/passwd/user/$user/enable"]
+    set user_password [tms::get-config "/auth/passwd/user/$user/password"]
+    if {[string compare $user_enable "false"] == 0} {
+      set user_status "-"
+    } elseif {[string compare $user_password "*"] == 0} {
+      set user_status "Local password login disabled"
+    } elseif {[string compare $user_password "!!"] == 0} {
+      set user_status "Locked out"
+    } elseif {[string length $user_password] == 0} {
+      set user_status "No password (unsecured)"
+    } else {
+      set user_status "Password set"
+    }
+?>
+
+  <IF {[string compare $user $local_user] == 0}>
+    <TMS-TABLE-ENTRY "Account status">
+      <?^=$user_status?>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "New account status">
+
+      <?
+        # (Copied from setup-users-edit.tem)
+        #
+        # We like to keep the password boxes greyed out sometimes,
+        # depending on the selection in the New Account Status dropdown.
+        # But we have to support browsers without Javascript.  That's OK,
+        # the boxes will start ungreyed, and if there is no Javascript 
+        # we'll just never change that.
+      ?>
+      <script type="text/javascript">
+        function fixPasswordBoxes() {
+          var sel = document.getElementById('sel_acct_status').value;
+          var pwd1 = document.getElementById('password');
+          var pwd2 = document.getElementById('confirm');
+          if (sel == 'password') {
+            pwd1.disabled=false;
+            pwd2.disabled=false;
+          } else {
+            pwd1.value='';
+            pwd2.value='';
+            pwd1.disabled=true;
+            pwd2.disabled=true;
+          }
+        }
+      </script>
+
+      <CFG-DROPDOWN -id "acct_status" -errname "Account Status"
+                    -enabled $user_enable
+                    -onchange "fixPasswordBoxes()"
+                    -caps $user_caps
+                    -acl $auth_myacct_acl -acl_oper {set}
+                    -type "string" -options { {"Leave unchanged" "unchanged"} {"No password (unsecured)" "nopassword"} {"Set new password" "password"} {"Local password login disabled" "password_disabled"} {"Locked out" "locked_out"} }
+                    -span_id "users_acct_status">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Set password">
+      <CFG-PASSWORDBOX -id "password" -cols "24"
+                       -caps $user_caps
+                       -acl $auth_myacct_acl -acl_oper {set}
+                       -span_id "myacct_set_password">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Confirm password">
+      <CFG-PASSWORDBOX -id "confirm" -cols "24"
+                       -caps $user_caps
+                       -acl $auth_myacct_acl -acl_oper {set}
+                       -span_id "myacct_confirm_password">
+    </TMS-TABLE-ENTRY>
+
+    <script type="text/javascript">
+      fixPasswordBoxes();
+    </script>
+
+  <ELSE>
+
+    <TMS-TABLE-ENTRY "Account status">
+      N/A (remotely authenticated)
+    </TMS-TABLE-ENTRY>
+
+  </IF>
+
+  <tr>
+    <td height="8">
+
+</TMS-TABLE>
+
+  <IF {[string compare $user $local_user] == 0}>
+
+    <CFG-BUTTON -type "apply" -text "Apply"
+                -caps $user_caps
+                -acl $auth_myacct_acl -acl_oper {set}
+                -span_id "myacct_apply">
+
+    <CFG-BUTTON -type "cancel" -text "Cancel"
+                -caps $user_caps
+                -acl $all_acl -acl_oper {set}
+                -span_id "myacct_cancel">
+
+  </IF>
+
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view or configure your account.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

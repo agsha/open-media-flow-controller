@@ -1,0 +1,343 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "tms-cfg-form">
+<INCLUDE "tms-defines">
+
+<?
+# =============================================================================
+# === Report on a single step or operation                                  ===
+# =============================================================================
+?>
+<TAG REPORT-PROGRESS descr state pct bar_height bar_color step_num start_time elapsed_time complete_time quant status report_errors code msg>
+<?
+  # Trim off the date at the beginning, and the subsecond precision at the end.
+  if {[string length $start_time] != 0} {
+    set start_time [string range $start_time 11 18]
+  }
+  if {[string length $complete_time] != 0} {
+    set complete_time [string range $complete_time 11 18]
+  }
+
+  # If we don't have a percentage done, it probably means the operation
+  # was complete, so assume 100%.
+  if {[string length $pct] == 0} {
+    set pct "100"
+  }
+
+  if {[string length $step_num] > 0} {
+    set descr "Step $step_num: $descr"
+    tms::puts "<table><tr><td width=20><td>"
+  }
+
+  # --------------------------------------------------------------------------
+  # A running operation (or step)
+  # --------------------------------------------------------------------------
+  if {[string compare $state "running"] == 0} {
+    set bar_width "500"
+    if {[string compare $quant "true"] == 0} {
+      set pct_str [format "%.1f" $pct]
+    }
+?>
+
+<table>
+  <tr>
+    <td colspan="99">
+<b><?^=$descr?></b>
+    </td>
+<IF {[string length $start_time] != 0}>
+  <tr>
+    <td colspan="99">
+      Started at <?^=$start_time?>
+    </td>
+  </tr>
+</IF>
+<IF {[string length $elapsed_time] != 0}>
+  <SET secs [expr {$elapsed_time / 1000}]>
+  <SET mins [expr {$secs / 60}]>
+  <SET secs [expr {$secs % 60}]>
+  <SET secs [format "%02d" $secs]>
+  <SET mins [format "%d" $mins]>
+  <tr>
+    <td colspan="99">
+      Time elapsed: <?^=$mins?>:<?^=$secs?>
+    </td>
+  </tr>
+</IF>
+<IF {[string compare $quant "true"] == 0}>
+  <tr>
+
+<?
+# XXX/EMT: Unfortunately, the width of this table cell varies with
+# the number placed in it, causing the progress bar after it to shift
+# back and forth slightly.  We could make it a fixed pixel width, or 
+# a fixed percentage of the screen, but neither works well in a variety
+# of font and screen sizes.  We really want it to be the width of the
+# largest possible number, but don't know how to compute that.  The other
+# possible solution is to put the number to the right of the progress bar,
+# but that is not as good a location.
+?>
+    <td>
+<?^=$pct_str?>%
+    </td>
+
+    <td width="6">
+    <td>
+
+<?
+   set w1 [expr {int($pct * $bar_width / 100.0)}]
+   set w2 [expr {$bar_width - $w1}]
+   set wt [expr {$bar_width + 8}]
+?>
+
+<table border=0 cellpadding=0 cellspacing=0 width="<?^=$wt?>">
+<tr>
+<td height="2" colspan=4 bgcolor="#000000">
+<tr>
+<td width="2" bgcolor="#000000">
+<td width="<?^=$w1?>" height="<?^=$bar_height?>" bgcolor="<?^=$bar_color?>">
+<td width="<?^=$w2?>" height="<?^=$bar_height?>">
+<td width="2" bgcolor="#000000">
+<tr>
+<td height="2" colspan=4 bgcolor="#000000">
+</table>
+    </td>
+  </tr>
+<ELSE>
+  <tr>
+    <td>
+<?^=$status?>
+    </td>
+  </tr>
+</IF>
+</table>
+
+<?
+  # --------------------------------------------------------------------------
+  # A completed operation (or step)
+  # --------------------------------------------------------------------------
+  } elseif {[string compare $state "completed"] == 0} {
+?>
+
+<table>
+  <tr>
+    <td colspan="99">
+<b><?^=$descr?></b>
+    </td>
+  </tr>
+
+<IF {[string length $start_time] != 0}>
+  <tr>
+    <td colspan="99">
+      Started at <?^=$start_time?>
+    </td>
+  </tr>
+</IF>
+
+<IF {[string compare $report_errors "true"] == 0 || $code == 0}>
+  <tr>
+    <td colspan="99">
+  <IF {[string length $complete_time] == 0}>
+      Finished.
+  <ELSE>
+      Finished at <?^=$complete_time?>
+  </IF>
+    </td>
+  </tr>
+<ELSE>
+  <tr>
+    <td colspan="99">
+      <? global color_error_text ?>
+      <font color="<?^=$color_error_text?>">
+      Error.
+      </font>
+    </td>
+  </tr>
+</IF>
+
+<IF {[string compare $report_errors "true"] == 0}>
+  <IF {$code == 0}>
+    <tr>
+      <td colspan="99">
+        <? global color_success_text ?>
+        <font color="<?^=$color_success_text?>">
+          Success.
+        </font>
+      </td>
+    </tr>
+  <ELSE>
+    <tr>
+      <td colspan="99">
+        <IF {[string length $msg] == 0}>
+          <SET msg "(internal error)">
+        </IF>
+        <? global color_error_text ?>
+        <font color="<?^=$color_error_text?>">
+          Error: <?^=$msg?>
+        </font>
+      </td>
+    </tr>
+  </IF>
+</IF>
+</table>
+
+<?
+  # --------------------------------------------------------------------------
+  # A not-yet-started operation (or step)
+  # --------------------------------------------------------------------------
+  } else {
+?>
+
+<table>
+  <tr>
+    <td colspan="99">
+<b><?^=$descr?></b>
+    </td>
+  <tr>
+    <td colspan="99">
+Not yet started.
+    </td>
+  </tr>
+</table>
+
+<?
+  }
+  if {[string length $step_num] > 0} {
+    tms::puts "</table>"
+  }
+?>
+</TAG>
+
+
+<?
+# =============================================================================
+# === Per-Operation Status                                                  ===
+# =============================================================================
+?>
+<TAG REPORT-OPER oper do_steps>
+
+<SET oper_root "/progress/state/oper/$oper">
+<SET token [tms::get-binding-children "$oper_root" "false" "true"]>
+<SET oper_descr [tms::get-child-value-by-name $token "$oper_root/descr"]>
+<IF {[string length $oper_descr] == 0}>
+  <SET oper_descr [tms::get-child-value-by-name $token "$oper_root/steps/current/descr"]>
+</IF>
+<SET oper_state [tms::get-child-value-by-name $token "$oper_root/state"]>
+<SET oper_start_time [tms::get-child-value-by-name $token "$oper_root/time_begin"]>
+<SET oper_elapsed_time [tms::get-child-value-by-name $token "$oper_root/time_elapsed"]>
+<SET oper_complete_time [tms::get-child-value-by-name $token "$oper_root/time_end"]>
+<SET oper_quant [tms::get-child-value-by-name $token "$oper_root/steps/current/quant"]>
+<SET oper_status [tms::get-child-value-by-name $token "$oper_root/steps/current/status"]>
+<SET oper_code [tms::get-child-value-by-name $token "$oper_root/response_code"]>
+<SET oper_msg [tms::get-child-value-by-name $token "$oper_root/response_msg"]>
+<SET oper_pct [tms::get-child-value-by-name $token "$oper_root/est/percent_done"]>
+
+<REPORT-PROGRESS "$oper_descr" "$oper_state" "$oper_pct" "20" "#009900" "" "$oper_start_time" "$oper_elapsed_time" "$oper_complete_time" "$oper_quant" "$oper_status" "true" "$oper_code" "$oper_msg">
+
+<IF {[string compare $oper_state "completed"] != 0}>
+  <?
+    global num_active
+    incr num_active
+  ?>
+</IF>
+
+<IF {[string compare $do_steps "true"] == 0}>
+  <SET steps [tms::iterate-config "$oper_root/steps/step"]>
+  <FOREACH step $steps>
+    <SET step_descr [tms::get-child-value-by-name $token "$step/descr"]>
+    <SET step_state [tms::get-child-value-by-name $token "$step/state"]>
+    <SET step_success [tms::get-child-value-by-name $token "$step/success"]>
+    <SET step_num [tms::binding-name-last-part "$step"]>
+    <IF {[string compare $step_success "true"] == 0}>
+      <SET step_code "0">
+    <ELSE>
+      <SET step_code "1">
+    </IF>
+    <SET step_pct [tms::get-child-value-by-name $token "$step/est/percent_done"]>
+    <REPORT-PROGRESS "$step_descr" "$step_state" "$step_pct" "12" "#00dd00" "$step_num" "" "" "" "true" "" "false" "$step_code" "">
+  </FOREACH>
+</IF>
+
+</TAG>
+
+
+<?
+# =============================================================================
+# === Main Template                                                         ===
+# =============================================================================
+?>
+<TAG SETUP-UPGRADE-STATUS-BODY>
+
+<?
+  global num_active
+  global all_acl
+  set num_active 0
+  set session_id [tms::get-session-id]
+  set owner "web-$session_id"
+?>
+
+<SET now [tms::get-config "/time/now/time"]>
+<SET inst_any [tms::get-config "/image/state/last_install/running"]>
+<SET dl_opers [tms::get-progress-opers-by-type "$owner" "image_download"]>
+<SET inst_opers [tms::get-progress-opers-by-type "$owner" "image_install"]>
+<SET num_dl_opers [llength $dl_opers]>
+<SET num_inst_opers [llength $inst_opers]>
+<SET num_opers [expr {$num_dl_opers + $num_inst_opers}]>
+
+<table>
+  <tr>
+    <td height=10>
+  <tr>
+  </tr>
+      <FOREACH oper $dl_opers>
+  <tr>
+    <td>
+      <REPORT-OPER $oper "false">
+    </td>
+  </tr>
+</FOREACH>
+<FOREACH oper $inst_opers>
+  <tr>
+    <td>
+      <REPORT-OPER $oper "true">
+    </td>
+  </tr>
+</FOREACH>
+
+<IF {$num_opers == 0}>
+  <tr>
+    <td>
+    <IF {[string compare $inst_any "true"] == 0}>
+      <SET image_start_time [tms::get-config "/image/state/last_install/start_time"]>
+      Image install in progress, started from another session at 
+      <?^=$image_start_time?>.
+    <ELSE>
+      No image install operations are active.
+    </IF>
+    </td>
+  </tr>
+</IF>
+</table>
+
+<p>
+
+<CFG-FORM -action "image-ack">
+  <IF {$num_active == 0 && [string compare $inst_any "true"] != 0}>
+    <SET ok_disabled "false">
+  <ELSE>
+    <SET ok_disabled "true">
+  </IF>
+
+  <CFG-BUTTON -type "ok" -text "OK" -caps "query_basic"
+              -acl $all_acl -acl_oper {query}
+              -disabled $ok_disabled>
+
+</CFG-FORM>
+
+</TAG>

@@ -1,0 +1,20 @@
+#
+# 
+#
+#
+
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+# It is an arbitrary choice to include event_notifs.h here, since 
+# its strings are used by at least mgmtd and the CLI, and perhaps others.
+# But we have to put it somewhere, and do not have a generic/neutral place
+# for such things yet.
+EXTRA_SRCS=\
+	md_commit.h \
+	${PROD_SRC_ROOT}/include/event_notifs.h \
+
+PO_OUTPUT_DIR=${PROD_BASE_I18N_ROOT}/src/bin/mgmtd
+MO_OUTPUT_DIR=${BIN_DIR}/mgmtd/mo
+
+include ${PROD_TREE_ROOT}/src/mk/po.mk
+

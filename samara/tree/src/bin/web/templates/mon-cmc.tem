@@ -1,0 +1,312 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "mon-cmc-common">
+
+<TMS-PAGE "CMC appliance status">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "cmc"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "CMC Appliances">
+
+<?
+  global cmc_acl
+
+  # XXX/SML _image variables contain html tag text that is set to a static
+  # statically defined value, so they are not html-escaped.
+?>
+
+<CMC-COMMON-ONETIME-SETUP>
+
+<IF {[tms::check-authorization "query_basic" $cmc_acl {query}] == 1}>
+
+<SET filter_val [tms::get-param query "filter"]>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+  <td>
+   <table width="100%" border="0" cellspacing="0" cellpadding="5" 
+    class="listing">
+
+  <tr>
+    <td colspan="99" align="right">
+      <CFG-FORM -action "apply-filter">
+        View:&nbsp;
+        <CFG-DROPDOWN -id "filter" -type "string"
+                      -acl "all_any" -acl_oper "query"
+                      -onchange "this.form.submit();"
+                      -value $filter_val
+                      -options {{"All" "all"}
+                               {"Errors only" "errors"}
+                               {"No errors" "no-errors"}}
+                      -span_id "view_filter_1">
+          <noscript>
+            <CFG-BUTTON -type "ok" -text "Apply Filter"
+                        -acl "all_any" -acl_oper "query">
+          </noscript>
+      </CFG-FORM>
+    </td>
+  </tr>
+
+<CFG-FORM -action "cmc-mon-page">
+    <tr class="listing_head">  
+      <td>
+      <td>
+        <p>Appliance</p>
+      <td>
+        <p>Enabled</p>
+      <td>
+        <p>Connected</p>
+      <td>
+        <p>Connection Duration</p>
+      <td>
+        <p>Status</p>
+      <td>
+        <p>Version</p>
+      <td>
+    </tr>
+
+<?
+    set offer_force_check "false"
+    set offer_others "false"
+    set cur_line 0
+    set appliance_prefix "/cmc/config/appliance"
+    set appliance_ids [tms::iterate-config $appliance_prefix]
+
+?>
+
+    <FOREACH server_id $appliance_ids>
+    <?
+      set prefix_len [string length "$appliance_prefix/"]
+      set appliance_name [string range $server_id $prefix_len end]
+      set appliance_address [tms::get-config "$server_id/address"]
+      set appliance_web_url [get_appl_url $server_id $appliance_address]
+
+      if {[string equal $filter_val "errors"]} {
+            set display_this false
+      } else {
+            set display_this true
+      }
+    ?>
+    
+    <CMC-COMMON-PER-APPL $appliance_name>
+
+    <?
+      if {[string equal $filter_val "errors"] && 
+          [string compare $connected_image $green] != 0} {
+            set display_this true
+      }
+
+      if {[string equal $filter_val "no-errors"] && 
+          [string compare $connected_image $green] != 0} {
+            set display_this false
+      }
+
+      if {[string equal $filter_val "errors"] &&
+          [string equal $appl_connected true]} {
+        if {[string compare $status_image $green] != 0} {
+          set display_this true
+        }
+      }
+      
+      if {[string equal $filter_val "errors"] &&
+          [string equal $appl_connected true]} {
+        if {[string compare $version_image $green] != 0} {
+          set display_this true
+        }
+      }
+      
+      if {[string equal $filter_val "no-errors"] &&
+          [string equal $appl_connected true]} {
+        if {[string compare $status_image $green] != 0} {
+          set display_this false
+        }
+      }
+      
+      if {[string equal $filter_val "no-errors"] &&
+          [string equal $appl_connected true]} {
+        if {[string compare $version_image $green] != 0} {
+          set display_this false
+        }
+      }
+      
+    ?>
+
+    <IF {[string equal $display_this true]}>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td align="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "action_basic"
+                      -acl $cmc_acl -acl_oper {action}
+                      -value "$server_id" -span_id "cmc_appl_cbox_1">
+      <td>
+        <p><a href="<?=[tms::html-escape $appliance_web_url]?>" target="_blank">
+           <?^=$appliance_name?></a></p></td>
+      <td>
+        <p><?^=$enabled_text?></p>
+      <td>
+        <p>
+      <?
+      # XXX/SML:  The *_image variables contain html <img> directives, so they cannot be escaped
+      ?>
+          <?=$connected_image?>
+          <?^=$connected_text?>
+        </p>
+      </td>
+      <td>
+        <p>
+          <?^=$cxn_dur?>
+        </p>
+      </td>
+      <td>
+        <p>
+          <?=$status_image?>
+          <?^=$status_text?>
+        </p>
+      </td>
+      <td>
+        <p>
+          <?=$version_image?>
+          <?^=$version_text?>
+        </p>
+      </td>
+      <td>
+        <p>
+          <a href="/admin/launch?script=rh&amp;template=mon-cmc-detail&amp;appl=<?=[tms::uri-component-escape $appliance_name]?>">Detail</a>
+        </p>
+      </td>
+    </tr>
+
+    <?
+      incr cur_line
+      set offer_others "true"
+    ?>
+
+    </IF>
+
+    <?
+      set offer_force_check "true"
+    ?>
+
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          <IF {[string length $filter_val]  != 0 &&
+               [string compare $filter_val all] != 0}>
+            No CMC appliances matched the filter.
+          <ELSE>
+            No CMC appliances.
+          </IF>
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  </p></td>
+  </tr></table>
+
+<?
+# XXXX/EMT: should have Select All and Select None buttons.
+# Bugzilla's "change several bugs at once" page has example implementation.
+# Will this work on all browsers?
+?>
+
+Current time: <?^= [tms::get-config "/time/now/datetime"] ?>
+<br>
+Server version: <?^= [tms::get-config "/cmc/state/version/version_str"] ?>
+
+<br>
+<br>
+
+<?
+      if {[string equal $offer_force_check "true"]} {
+          set fc_disabled "false"
+      } else {
+          set fc_disabled "true"
+      }
+      if {[string equal $offer_others "true"]} {
+          set o_disabled "false"
+      } else {
+          set o_disabled "true"
+      }
+?>
+
+  <table border="0" cellpadding="0" cellspacing="10">
+  <tr>
+    <td>
+      <CFG-BUTTON -type "reconnect" -text "Reconnect" -caps "action_cmc"
+                  -acl $cmc_acl -acl_oper {action} -disabled $o_disabled>
+    <td>
+      For all selected appliances, disconnect if connected, and then
+      attempt to (re-)establish a connection.
+
+  <tr>
+    <td>
+      <CFG-BUTTON -type "interrupt" -text "Interrupt" -caps "action_privileged"
+                  -acl $cmc_acl -acl_oper {action} -disabled $o_disabled
+                  -span_id "cmc_appl_interrupt_1"> 
+    <td>
+      Cancel the profile or block of CLI commands currently being
+      run on selected appliances (if any).
+
+  <tr>
+    <td>
+      <CFG-BUTTON -type "remove-key" -text "Remove Key" 
+                  -caps "action_privileged"
+                  -acl $cmc_acl -acl_oper {action} -disabled $o_disabled
+                  -span_id "cmc_appl_removekey_1"> 
+    <td>
+      Remove the known host keys for selected appliances, so we can reconnect
+      if their host keys have changed since our last connection.
+
+  <tr>
+    <td>
+      <CFG-BUTTON -type "force" -text "Force Check" -caps "action_basic"
+                  -acl $cmc_acl -acl_oper {action} -disabled $fc_disabled>
+    <td>
+      Force an immediate status check of <em>all</em> connected appliances,
+      regardless of which ones are selected, and regardless of which ones
+      are hidden by the selected filter.
+  <tr>
+    <td>
+      <CFG-BUTTON -type "refresh" -text "Refresh"
+                  -acl "all_any" -acl_oper "query">
+    <td>
+      Update this display with the most up-to-date information.
+  </table>
+
+<br>
+
+<a href="/admin/launch?script=rh&amp;template=setup-cmc-appliances">
+Configure</a> CMC appliances.
+
+<br>
+<br>
+
+<a href="/admin/launch?script=rh&amp;template=setup-cmc-status">Configure</a>
+CMC status monitoring settings.
+
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view CMC status information.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

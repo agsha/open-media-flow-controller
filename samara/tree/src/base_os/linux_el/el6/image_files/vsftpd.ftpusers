@@ -1,0 +1,21 @@
+#
+# Users that are not allowed to login via ftp
+#
+# Note: we don't need to list reserved accounts here (like 'apache')
+# because they are already blocked from logging in by mgmtd, which 
+# does not permit them to be assigned passwords or keys.
+#
+# Note: the contents of this file should be kept in sync with
+# vsftpd.user_list.
+#
+# We have 'root' in here, even though for FTP purposes logging in as 'root'
+# is equivalent to logging in as 'admin', because the root account is more
+# powerful overall due to not having the CLI as a shell.  The original
+# reason for disallowing some of these users from FTP (before they were
+# prompted for their password) was to prevent passwords for powerful
+# accounts from being sent in the clear.  We don't prevent 'admin' because
+# that has always been permitted (if the user enabled FTP at all), and may
+# be being used by some customers.  But 'root' was never allowed, and this
+# allows us to preserve one small element of security.
+#
+root

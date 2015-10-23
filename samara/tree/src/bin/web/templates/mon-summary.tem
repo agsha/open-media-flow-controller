@@ -1,0 +1,35 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "mon-summary-common">
+
+<TMS-PAGE "Summary">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "summary"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Summary">
+
+<div id="statusArea"></div>
+
+<noscript>
+<MON-SUMMARY-BODY>
+</noscript>
+
+<script type="text/javascript">
+    function statsWrapper() {
+        getAjaxText ('<?=$ajax_mon_summary_url?>','statusArea')
+        setTimeout(statsWrapper, 10000);
+    }
+    statsWrapper();
+
+</script>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

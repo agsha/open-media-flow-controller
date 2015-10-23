@@ -1,0 +1,224 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "CMC Identities">
+<TMS-MENU "cmc_setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-CMC-SETUP-MENU "identities"></TMS-SIDEBAR>
+
+<?
+  global cmc_acl
+?>
+
+<TMS-PAGE-CONTENT "CMC Identity Setup">
+
+<IF {[tms::check-authorization "query_basic" $cmc_acl {query}]}>
+
+  <TMS-CMC-MSG>
+
+<TAG CMC-IDENTITY-LIST args>
+<?
+  global cmc_acl
+  tms-utils::named-args $args {-keytype "-"}
+?>
+
+  <?
+    # ==================================================
+    # List of identities
+    # ==================================================
+  ?>
+  <h2>CMC <?^=$(-keytype)?> identities</h2>
+
+  <CFG-FORM -action "config-form-list" -div_id "cmc_id_1">
+
+  <?
+    set cur_line 0
+    set identity_prefix "/cmc/common/config/auth/$(-keytype)/identity"
+    set identity_ids [tms::iterate-config $identity_prefix]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+ 
+    <tr class="listing_head">  
+      <td>
+      <td>
+        <p>Name</p>
+    </tr>
+
+    <FOREACH identity_id $identity_ids>
+    <?
+      set prefix_len [string length "$identity_prefix/"]
+      set identity_name [string range $identity_id $prefix_len end]
+      set identity_comment [tms::get-config "$identity_id/comment"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_privileged"
+                      -acl $cmc_acl -acl_oper {set}
+                      -value "$identity_id" -span_id "cmc_id_cbox_1">
+        </td>
+      <td>
+        <p><?^=$identity_name?></p></td>
+    </tr>
+
+    <?
+      incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No CMC <?^=$(-keytype)?> identities.
+      <SET remove_disabled "true">
+    <ELSE>
+      <SET remove_disabled "false">
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected Identities" 
+              -caps "set_privileged"
+              -acl $cmc_acl -acl_oper {set}
+              -disabled $remove_disabled
+              -span_id "cmc_id_remove">
+  </p></td></CFG-FORM></tr></table>
+
+  <?
+    # ==================================================
+    # Generate new identities
+    # ==================================================
+  ?>
+  <h2>Generate new <?^=$(-keytype)?> identity</h2>
+<CFG-FORM -action "cmc-generate-$(-keytype)-identity" -div_id "cmc_id_2">
+  <TMS-TABLE -div_id "cmc_id_table_1">
+    <TMS-TABLE-ENTRY "Identity Name">
+      <CFG-TEXTBOX -id "identity-$(-keytype)" -errname "Identity Name"
+                   -caps "set_privileged"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "string" -cols "20" -span_id "cmc_id_id">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "generate" -text "Generate $(-keytype) Identity" 
+              -caps "set_privileged"
+              -acl $cmc_acl -acl_oper {set}
+              -span_id "cmc_id_gen">
+</CFG-FORM>
+
+  <?
+    # ==================================================
+    # Push identities to appliances
+    # ==================================================
+  ?>
+  <h2>Push <?^=$(-keytype)?> identity to appliance</h2>
+<CFG-FORM -action "cmc-push-$(-keytype)-identity" -div_id "cmc_id_3">
+  <TMS-TABLE -div_id "cmc_id_table_2">
+    <?
+      set key_prefix "/cmc/common/config/auth/$(-keytype)/identity"
+      set key_bns [tms::iterate-config $key_prefix]
+      set key_prefix_len [string length "$key_prefix/"]
+      set key_ids {""}
+      foreach key_bn $key_bns {
+        set key_id [string range $key_bn $key_prefix_len end]
+        lappend key_ids "$key_id $key_id"
+      }
+
+      set appl_prefix "/cmc/config/appliance"
+      set appl_bns [tms::iterate-config $appl_prefix]
+      set appl_prefix_len [string length "$appl_prefix/"]
+      set appl_ids {""}
+      foreach appl_bn $appl_bns {
+        set appl_id [string range $appl_bn $appl_prefix_len end]
+        lappend appl_ids "$appl_id $appl_id"
+      }
+    ?>
+
+    <TMS-TABLE-ENTRY "Identity">
+        <CFG-DROPDOWN -id "identity-$(-keytype)-push" -caps "action_privileged"
+                      -acl $cmc_acl -acl_oper {action}
+                      -type "string" -options $key_ids>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Appliance">
+        <CFG-DROPDOWN -id "appl-$(-keytype)-push" -caps "action_privileged"
+                      -acl $cmc_acl -acl_oper {action}
+                      -type "string" -options $appl_ids>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Username">
+      <CFG-TEXTBOX -id "$(-keytype)-username" -errname "Username"
+                   -caps "action_privileged" 
+                   -acl $cmc_acl -acl_oper {action}
+                   -required "false"
+                   -type "string" -cols "20" -span_id "cmc_id_id">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Password">
+
+      <IF {[string compare [tms::may-obfuscate] "true"] == 0}>
+        <CFG-PASSWORDBOX -id "$(-keytype)-password" -errname "Password"
+                         -caps "action_privileged" 
+                         -acl $cmc_acl -acl_oper {action}
+                         -required "false"
+                         -type "string" -cols "20" -span_id "cmc_id_id">
+      <ELSE>
+        <CFG-TEXTBOX -id "$(-keytype)-password" -errname "Password"
+                     -caps "action_privileged" 
+                     -acl $cmc_acl -acl_oper {action}
+                     -required "false"
+                     -type "string" -cols "20" -span_id "cmc_id_id">
+      </IF>
+
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+    <tr><td><td colspan=99>
+    (Leave username and password blank to use those already configured
+    for selected appliance)
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "push" -text "Push Identity" 
+              -caps "action_privileged"
+              -acl $cmc_acl -acl_oper {action}
+              -span_id "cmc_id_gen">
+</CFG-FORM>
+
+</TAG>
+
+<table width="100%">
+  <tr>
+  <td width="45%" valign="top">
+    <CMC-IDENTITY-LIST -keytype "ssh-dsa2">
+  <td width="10%">
+    &nbsp;
+  <td width="45%" valign="top">
+    <CMC-IDENTITY-LIST -keytype "ssh-rsa2">
+</table>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view CMC identity configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

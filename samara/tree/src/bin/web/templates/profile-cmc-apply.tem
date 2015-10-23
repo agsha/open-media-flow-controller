@@ -1,0 +1,213 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Apply CMC Profile">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set profile_param [tms::get-param query "profile"]
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "apply" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "Apply CMC Profiles">
+
+<IF {[tms::check-authorization "query_basic" $cmc_acl {query}]}>
+
+  <TMS-CMC-MSG>
+
+  <h2>Apply CMC Profile</h2>
+
+<?
+    set appliance_prefix "/cmc/config/appliance"
+    set appliance_bindings [tms::iterate-config $appliance_prefix]
+    set appliance_list {}
+
+    set group_prefix "/cmc/config/group"
+    set group_bindings [tms::iterate-config $group_prefix]
+    set group_list {}
+
+    set cur_line 0
+    set profile_prefix "/cmc/config/profile"
+    set profile_ids [tms::iterate-config $profile_prefix]
+?>
+
+  <FOREACH appliance_bn $appliance_bindings>
+  <?
+    set prefix_len [string length "$appliance_prefix/"]
+    set appliance_name [string range $appliance_bn $prefix_len end]
+    lappend appliance_list "$appliance_name $appliance_name"
+  ?>
+  </FOREACH>
+
+  <FOREACH group_bn $group_bindings>
+  <?
+    set prefix_len [string length "$group_prefix/"]
+    set group_name [string range $group_bn $prefix_len end]
+    lappend group_list "$group_name $group_name"
+    set profile_list {}
+    foreach profile_id $profile_ids {
+      set prefix_len [string length "$profile_prefix/"]
+      set profile_name [string range $profile_id $prefix_len end]
+      lappend profile_list "$profile_name $profile_name"
+    }
+  ?>
+  </FOREACH>
+
+<CFG-FORM -action "config-form-profile" -div_id "cmc_main_2">
+
+  <TMS-TABLE -cellpadding 6 -div_id "cmc_main_table_2">
+    <tr>
+      <td colspan=99>
+Select a profile to apply, or enter commands to execute:
+    <tr>
+      <td width="20">
+      <td>
+         <CFG-RADIO -id "cmd_src" -caps "action_privileged"
+                    -acl $cmc_acl -acl_oper {action}
+                    -value "profile" -checked "true"
+                    -span_id "cmc_main_cmdsrc">
+      <td>
+         Profile
+    <tr>
+      <td>
+      <td>
+      <td>
+        <CFG-DROPDOWN -id "profile_name" -caps "action_privileged"
+                      -acl $cmc_acl -acl_oper {action}
+                      -type "string" -options $profile_list
+                      -span_id "cmc_main_pname" -value $profile_param>
+    <tr>
+      <td>
+      <td>
+         <CFG-RADIO -id "cmd_src" -caps "action_privileged"
+                    -acl $cmc_acl -acl_oper {action}
+                    -value "command"
+                    -span_id "cmc_main_cmdsrc">
+      <td>
+         CLI commands (enter one per line)
+
+    <tr>
+      <td>
+      <td>
+      <td>
+        <CFG-TEXTAREA -id "cmd_exec" -errname "Command"
+                      -caps "action_privileged"
+                      -acl $cmc_acl -acl_oper {action}
+                      -cols "70" -rows "5" -span_id "cmc_cmd_exec">
+
+    <tr>
+      <td>
+      <td>
+         <CFG-RADIO -id "cmd_src" -caps "action_privileged"
+                    -acl $cmc_acl -acl_oper {action}
+                    -value "command_secure"
+                    -span_id "cmc_main_cmdsrc">
+      <td>
+         Single CLI command (secure echo)
+
+    <tr>
+      <td>
+      <td>
+      <td>
+        <CFG-PASSWORDBOX -id "cmd_exec_secure" -errname "Command" 
+                         -caps "action_privileged" 
+                         -acl $cmc_acl -acl_oper {action}
+                         -cols 70 -span_id "cmc_cmd_exec_secure">
+
+  </TMS-TABLE>
+
+<?
+# XXX/EMT: use Javascript to grey out the dropdown that goes
+# with the checkbox that is not selected
+?>
+      <TMS-TABLE -cellpadding 6 -div_id "cmc_main_table_3">
+        <tr>
+          <td colspan=99>
+Select a target appliance or group:
+        <tr>
+        <td width="20">  
+        <td>
+            <CFG-RADIO -id "applytype" -caps "action_privileged"
+                       -acl $cmc_acl -acl_oper {action}
+                       -value "appliance" -checked "true"
+                       -span_id "cmc_main_atype">
+            Appliance
+          <td>
+            <CFG-DROPDOWN -id "appliance" -caps "action_privileged"
+                          -acl $cmc_acl -acl_oper {action}
+                          -type "string" -options $appliance_list
+                          -span_id "cmc_main_appl">
+        <tr>
+          <td>
+          <td>
+            <CFG-RADIO -id "applytype" -caps "action_privileged"
+                       -acl $cmc_acl -acl_oper {action}
+                       -value "group"
+                       -checked "false" -span_id "cmc_main_gtype">
+            Group
+          <td>
+          <CFG-DROPDOWN -id "group" -caps "action_privileged"
+                        -acl $cmc_acl -acl_oper {action}
+                        -type "string" -options $group_list
+                        -span_id "cmc_main_group">
+    <TMS-TABLE-SPACE>
+      </TMS-TABLE>
+
+Select options:
+
+  <TMS-TABLE -cellpadding 6 -div_id "cmc_main_table_2">
+    <tr>
+      <td width="20">
+      <td>
+        <CFG-CHECKBOX -id "reset_config" -caps "action_privileged"
+                      -acl $cmc_acl -acl_oper {action}
+                      -value "false">
+      <td>
+        Reset appliance configuration beforehand
+
+    <tr>
+      <td width="20">
+      <td>
+        <CFG-CHECKBOX -id "failure_cont" -caps "action_privileged"
+                      -acl $cmc_acl -acl_oper {action}
+                      -value "false">
+      <td>
+        Continue on failure
+
+    <tr>
+      <td width="20">
+      <td>
+        <CFG-CHECKBOX -id "save_after" -caps "action_privileged"
+                      -acl $cmc_acl -acl_oper {action}
+                      -value "true">
+      <td>
+        Save appliance configuration to persistent storage afterwards
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply Profile" -caps "action_privileged"
+              -acl $cmc_acl -acl_oper {action}
+              -span_id "cmc_main_apply_1">
+
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view CMC profile configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

@@ -1,0 +1,643 @@
+TMS-MIB DEFINITIONS ::= BEGIN
+
+--
+-- 
+--
+--
+
+IMPORTS
+    OBJECT-TYPE, MODULE-IDENTITY, NOTIFICATION-TYPE, enterprises, 
+        Unsigned32, Counter64
+        FROM SNMPv2-SMI
+    IpAddress
+        FROM RFC1155-SMI
+    InetAddress
+        FROM INET-ADDRESS-MIB
+    InetAddressType
+        FROM INET-ADDRESS-MIB
+    TruthValue
+        FROM SNMPv2-TC;
+
+tms MODULE-IDENTITY
+    LAST-UPDATED        "200902191600Z"
+    ORGANIZATION        "Tall Maple Systems, Inc."
+    CONTACT-INFO
+            "   Greg Snyder
+                gregs@tallmaple.com"
+    DESCRIPTION 
+            "Tall Maple vendor MIB"
+    REVISION      "200902191600Z"
+    DESCRIPTION 
+            "Add fsTable"
+    REVISION      "200907021725Z"
+    DESCRIPTION 
+            "Add cpuTable"
+    REVISION      "200503111730Z"
+    DESCRIPTION 
+            "Minor updates based on running through a MIB validator"
+    REVISION      "200401102231Z"
+    DESCRIPTION 
+            "Initial revision, Samara 1.0"
+
+    ::= { enterprises 16858 }
+
+variables OBJECT IDENTIFIER
+    ::= { tms 1 }
+
+tmsProducts OBJECT IDENTIFIER
+    ::= { tms 2 }
+
+notifications OBJECT IDENTIFIER
+    ::= { tms 3 }
+
+--
+-- VARIABLES
+--
+
+system OBJECT IDENTIFIER
+    ::= { variables 1 }
+
+systemVersion OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "System software version string"
+    ::= { system 1 }
+
+cpu OBJECT IDENTIFIER
+    ::= { system 2 }
+
+cpuLoad1 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "One-minute CPU load in hundreths"
+    ::= { cpu 1 }
+
+cpuLoad5 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Five-minute CPU load in hundreths"
+    ::= { cpu 2 }
+
+cpuLoad15 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Fifteen-minute CPU load in hundreths"
+    ::= { cpu 3 }
+
+cpuUtil1 OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Percentage CPU utilization, aggregated across all CPUs, rolling
+        average over the past minute"
+    ::= { cpu 4 }
+
+cpuTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CpuEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "List of CPUs"
+    ::= { cpu 5 }
+
+cpuEntry OBJECT-TYPE
+    SYNTAX      CpuEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for one CPU"
+    INDEX   { cpuIndex }
+    ::= { cpuTable 1 }
+
+CpuEntry ::=
+    SEQUENCE {
+        cpuIndex             Unsigned32,
+        idleTime             TimeTicks,
+        systemTime           TimeTicks,
+        userTime             TimeTicks,
+        utilPct1Min          Unsigned32
+    }
+
+cpuIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Index of CPU, starting from 0"
+    ::= { cpuEntry 1 }
+
+idleTime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Time in milliseconds CPU has spent idle"
+    ::= { cpuEntry 2 }
+
+systemTime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Time in milliseconds CPU has spent busy with system tasks"
+    ::= { cpuEntry 3 }
+
+userTime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Time in milliseconds CPU has spent busy with user tasks"
+    ::= { cpuEntry 4 }
+
+utilPct1Min OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Percentage CPU utilization over the past minute"
+    ::= { cpuEntry 5 }
+
+procmgr OBJECT IDENTIFIER
+    ::= { system 3 }
+
+procTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ProcEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "List of processes managed or monitored by PM"
+    ::= { procmgr 1 }
+
+procEntry OBJECT-TYPE
+    SYNTAX      ProcEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for one process"
+    INDEX   { procIndex }
+    ::= { procTable 1 }
+
+ProcEntry ::=
+    SEQUENCE {
+        procIndex             Unsigned32,
+        procName              OCTET STRING,
+        procStatus            OCTET STRING,
+        procNumFailures       Unsigned32,
+        procPid               INTEGER
+    }
+
+procIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Synthetic numeric unique ID of process"
+    ::= { procEntry 1 }
+
+procName OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Unique name of process"
+    ::= { procEntry 2 }
+
+procStatus OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Current state of process"
+    ::= { procEntry 3 }
+
+procNumFailures OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Number of times process has crashed or exited unexpectedly"
+    ::= { procEntry 4 }
+
+procPid OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "PID"
+    ::= { procEntry 5 }
+
+filesystems OBJECT IDENTIFIER
+    ::= { system 4 }
+
+fsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF FsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "List of filesystems currently mounted"
+    ::= { filesystems 1 }
+
+fsEntry OBJECT-TYPE
+    SYNTAX      FsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for one mounted filesystem"
+    INDEX   { fsIndex }
+    ::= { fsTable 1 }
+
+FsEntry ::=
+    SEQUENCE {
+        fsIndex               Unsigned32,
+        fsMountPoint          OCTET STRING,
+        fsSpaceTotal          Counter64,
+        fsSpaceUsed           Counter64,
+        fsSpaceFree           Counter64,
+        fsSpaceAvail          Counter64
+    }
+
+fsIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Synthetic numeric index for this filesystem"
+    ::= { fsEntry 1 }
+
+fsMountPoint OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Mount point for this filesystem"
+    ::= { fsEntry 2 }
+
+fsSpaceTotal OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Total number of bytes in this filesystem"
+    ::= { fsEntry 3 }
+
+fsSpaceUsed OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Number of bytes used in this filesystem"
+    ::= { fsEntry 4 }
+
+fsSpaceFree OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Number of bytes free in this filesystem"
+    ::= { fsEntry 5 }
+
+fsSpaceAvail OBJECT-TYPE
+    SYNTAX      Counter64
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Number of bytes available in this filesystem"
+    ::= { fsEntry 6 }
+
+sessions OBJECT IDENTIFIER
+    ::= { system 5 }
+
+sessionTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SessionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "List of active mgmtd sessions"
+    ::= { sessions 1 }
+
+sessionEntry OBJECT-TYPE
+    SYNTAX      SessionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for one active session"
+    INDEX   { sessionId }
+    ::= { sessionTable 1 }
+
+SessionEntry ::=
+    SEQUENCE {
+        sessionId            Unsigned32,
+        username             OCTET STRING,
+        usernameLocal        OCTET STRING,
+        remoteAddr           IpAddress,
+        remoteHostname       OCTET STRING,        
+        clientDescr          OCTET STRING,
+        remoteInetaddrType   InetAddressType,
+        remoteInetaddr       InetAddress,
+        line                 OCTET STRING,
+        authMethod           OCTET STRING,
+        trusted              TruthValue
+    }
+
+sessionId OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Session ID"
+    ::= { sessionEntry 1 }
+
+username OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Username"
+    ::= { sessionEntry 2 }
+
+usernameLocal OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Local username"
+    ::= { sessionEntry 3 }
+
+remoteAddr OBJECT-TYPE
+    SYNTAX      IpAddress
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Remote IP address (deprecated in favor of remoteInetAddrType 
+             and remoteInetAddr)"
+    ::= { sessionEntry 4 }
+
+remoteHostname OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Remote hostname"
+    ::= { sessionEntry 5 }
+
+clientDescr OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Client description"
+    ::= { sessionEntry 6 }
+
+remoteInetaddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Remote address family"
+    ::= { sessionEntry 7 }
+
+remoteInetaddr OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Remote IPv4 or IPv6 address"
+    ::= { sessionEntry 8 }
+
+line OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Line"
+    ::= { sessionEntry 9 }
+
+authMethod OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Authentication method"
+    ::= { sessionEntry 10 }
+
+trusted OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "Is the information for this session trusted?"
+    ::= { sessionEntry 11 }
+
+cmc OBJECT IDENTIFIER
+    ::= { variables 2 }
+
+applTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF ApplEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "List of appliances managed by the CMC"
+    ::= { cmc 1 }
+
+applEntry OBJECT-TYPE
+    SYNTAX      ApplEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Entry for one managed appliance"
+    INDEX   { applIndex }
+    ::= { applTable 1 }
+
+ApplEntry ::=
+    SEQUENCE {
+        applIndex             Unsigned32,
+        applName              OCTET STRING,
+        applConnected         TruthValue,
+        applOK                TruthValue
+    }
+
+applIndex OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Synthetic numeric unique ID of appliance"
+    ::= { applEntry 1 }
+
+applName OBJECT-TYPE
+    SYNTAX      OCTET STRING
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Textual ID/name of appliance"
+    ::= { applEntry 2 }
+
+--
+-- 3 and 4 were applConnected and applOK when they were Unsigned32
+-- (0=false, 1=true).  They were retired when the new TruthValue versions
+-- of each were introduced on 5 and 6.
+--
+
+applConnected OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Is CMC connected to this appliance (1=yes, 2=no)"
+    ::= { applEntry 5 }
+
+applOK OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Did this appliance pass its most recent status check 
+            (1=yes, 2=no)"
+    ::= { applEntry 6 }
+
+
+--
+-- PRODUCTS
+--
+
+-- generic OBJECT IDENTIFIER
+--    ::= { tmsProducts 1 }
+
+-- tmsDemo OBJECT IDENTIFIER
+--    ::= { tmsProducts 2 }
+
+
+--
+-- NOTIFICATIONS
+--
+
+notificationPrefix OBJECT IDENTIFIER
+    ::= { notifications 0 }
+
+procCrash NOTIFICATION-TYPE
+    OBJECTS { procName }
+    STATUS  current
+    DESCRIPTION
+            "A procCrash trap signifies that a process managed by PM
+            has crashed and left a core file.  The variable sent with
+            the notification indicates which process crashed."
+    ::= { notificationPrefix 1 }
+
+procExit NOTIFICATION-TYPE
+    OBJECTS { procName }
+    STATUS  current
+    DESCRIPTION
+            "A procExit trap signifies that a process managed by PM
+            has exited unexpectedly, but not left a core file.
+            The variable sent with the notification indicates 
+            which process exited."
+    ::= { notificationPrefix 2 }
+
+cpuUtilHigh NOTIFICATION-TYPE
+    OBJECTS { cpuIndex }
+    STATUS  current
+    DESCRIPTION
+            "The average CPU utilization in the past minute has gone
+            above the acceptable threshold"
+    ::= { notificationPrefix 3 }
+
+pagingActivityHigh NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+            "The system has been paging excessively (thrashing)"
+    ::= { notificationPrefix 4 }
+
+smartError NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+            "SMART has sent an event about a possible disk error"
+    ::= { notificationPrefix 5 }
+
+unexpectedShutdown NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+            "The system has shut down unexpectedly"
+    ::= { notificationPrefix 6 }
+
+diskSpaceLow NOTIFICATION-TYPE
+    OBJECTS { fsMountPoint }
+    STATUS  current
+    DESCRIPTION
+            "Free space in one of the filesystems is low"
+    ::= { notificationPrefix 7 }
+
+procLivenessFailure NOTIFICATION-TYPE
+    OBJECTS { procName }
+    STATUS  current
+    DESCRIPTION
+            "Process Manager has detected that a process has hung,
+            and will now perform its restart action"
+    ::= { notificationPrefix 8 }
+
+cmcStatusFailure NOTIFICATION-TYPE
+    OBJECTS { applName }
+    STATUS  current
+    DESCRIPTION
+            "One or more status criteria on a CMC-managed appliance 
+            have failed"
+    ::= { notificationPrefix 9 }
+
+memUtilizationHigh NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+            "Memory utilization on the system is high"
+    ::= { notificationPrefix 10 }
+
+netUtilizationHigh NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+            "Network utilization on the system is high"
+    ::= { notificationPrefix 11 }
+
+diskIOHigh NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+            "Disk I/O on the system is high"
+    ::= { notificationPrefix 12 }
+
+cmcVersionMismatch NOTIFICATION-TYPE
+    OBJECTS { applName }
+    STATUS  current
+    DESCRIPTION
+            "The system software version on a CMC managed appliance does
+            not match the server version"
+    ::= { notificationPrefix 13 }
+
+userLogin NOTIFICATION-TYPE
+    OBJECTS { username, usernameLocal, remoteAddr, remoteHostname,
+              clientDescr, line, authMethod, trusted }
+    STATUS  current
+    DESCRIPTION
+            "A user has logged into the system"
+    ::= { notificationPrefix 14 }
+
+userLogout NOTIFICATION-TYPE
+    OBJECTS { username, usernameLocal, remoteAddr, remoteHostname, 
+              clientDescr, line, authMethod, trusted }
+    STATUS  current
+    DESCRIPTION
+            "A user has logged out of the system"
+    ::= { notificationPrefix 15 }
+
+testTrap NOTIFICATION-TYPE
+    STATUS  current
+    DESCRIPTION
+            "A test trap ordered by the system administrator"
+    ::= { notificationPrefix 16 }
+
+END

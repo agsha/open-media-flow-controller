@@ -1,0 +1,164 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: AAA">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"]
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "aaa" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "AAA CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_aaa "aaa **"
+    set cmd_start_index 1000
+    set cmd_end_index 1199
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "AAA" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_aaa]>
+
+  <?
+    # ==================================================
+    # Auth Method List
+    # ==================================================
+  ?>
+
+  <h2>Authentication Method List for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_aaa_2">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <?
+    set auth_method_choices {{"Local" "local"}
+        {"RADIUS" "radius"}
+        {"TACACS+" "tacacs+"}
+        {"LDAP" "ldap"}}
+  ?>
+
+  <TMS-TABLE -div_id "cmc_aaa_table_1">
+    <TMS-TABLE-ENTRY "First Method">
+      <CFG-DROPDOWN -id "method1" -errname "First Method" -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "string" -options $auth_method_choices
+                    -span_id "cmc_aaa_method1">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Second Method">
+      <CFG-DROPDOWN -id "method2" -errname "Second Method" -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "string" -options $auth_method_choices
+                    -span_id "cmc_aaa_method2">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Third Method">
+      <CFG-DROPDOWN -id "method3" -errname "Third Method" -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "string" -options $auth_method_choices
+                    -span_id "cmc_aaa_method3">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Fourth Method">
+      <CFG-DROPDOWN -id "method4" -errname "Fourth Method" -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "string" -options $auth_method_choices
+                    -span_id "cmc_aaa_method4">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"                "aaamethod"
+      "cmd_aaamethod_fields"    "method1,method2,method3,method4"
+      "cmd_aaamethod_pat_1"     "aaa authentication login default * * * *"
+      "cmd_aaamethod_fields_1"  "method1,method2,method3,method4">
+
+  <CFG-BUTTON -type "add" -text "Add Authentication" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_aaa_add_1">
+
+  </CFG-FORM>
+
+
+  <?
+    # ==================================================
+    # Auth Method List
+    # ==================================================
+  ?>
+
+  <h2>Authorization config for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_aaa_2">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_aaa_table_2">
+    <TMS-TABLE-ENTRY "Map Order">
+      <CFG-DROPDOWN -id "map-order" -errname "map order" -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+       -type "string" -options {{"remote-first" "remote-first"}
+                                {"local-only" "local-only"}
+                                {"remote-only" "remote-only"}}
+       -span_id "cmc_aaa_map">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Map Default User">
+      <CFG-TEXTBOX -id "default-user" -errname "default user" 
+                   -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "15"
+                   -required "false"
+                   -span_id "cmc_aaa_user">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"               "maporder,mapuser"
+
+      "cmd_mapuser_fields"     "default-user"
+      "cmd_mapuser_pat_1"      "aaa authorization map default-user *"
+      "cmd_mapuser_fields_1"   "default-user"
+
+      "cmd_maporder_fields"    "map-order"
+      "cmd_maporder_pat_1"     "aaa authorization map order *"
+      "cmd_maporder_fields_1"  "map-order">
+
+  <CFG-BUTTON -type "add" -text "Add Authorization" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_aaa_add_2">
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

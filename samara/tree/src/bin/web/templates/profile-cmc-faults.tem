@@ -1,0 +1,167 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: Faults">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"]
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "faults" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "Faults CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_faults "email **"
+    set cmdpat_faults_neg "no email **"
+    set cmd_start_index 1800
+    set cmd_end_index 1999
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "Fault" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_faults $cmdpat_faults_neg]>
+
+  <?
+    # ==================================================
+    # Fault config
+    # ==================================================
+  ?>
+
+  <h2>Fault configuration for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_faults_2">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_faults_table_1">
+    <TMS-TABLE-ENTRY "Mail hub">
+      <CFG-TEXTBOX -id "smtp" -errname "Mail hub" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "hostname" -cols 40 -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Mail hub port">
+      <CFG-TEXTBOX -id "smtpport" -errname "Mail hub port" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "uint16" -cols 40 -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Mail Domain Name">
+      <CFG-TEXTBOX -id "domain" -errname "SMTP domain" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "hostname" -cols 40 -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Email return address">
+      <CFG-TEXTBOX -id "retaddr" -errname "Email return address"
+                   -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols 40 -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"               "smtp,smtpport,domain,retaddr"
+
+      "cmd_smtp_fields"        "smtp"
+      "cmd_smtp_pat_1"         "email mailhub *"
+      "cmd_smtp_fields_1"      "smtp"
+
+      "cmd_smtpport_fields"    "smtpport"
+      "cmd_smtpport_pat_1"     "email mailhub-port *"
+      "cmd_smtpport_fields_1"  "smtpport"
+
+      "cmd_domain_fields"      "domain"
+      "cmd_domain_pat_1"       "email domain *"
+      "cmd_domain_fields_1"    "domain"
+
+      "cmd_retaddr_fields"      "retaddr"
+      "cmd_retaddr_pat_1"       "email return-addr *"
+      "cmd_retaddr_fields_1"    "retaddr">
+
+  <CFG-BUTTON -type "add" -text "Add Fault Settings" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_faults_add_1">
+
+  </CFG-FORM>
+
+
+  <?
+    # ==================================================
+    # Email recipients
+    # ==================================================
+  ?>
+
+  <h2>Add New Email Recipients for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile-faults">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE>
+    <TMS-TABLE-ENTRY "Email address">
+      <CFG-TEXTBOX -id "emailaddr" -errname "Email address" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols 40>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Get details">
+      <CFG-CHECKBOX -id "details" -caps $prof_priv 
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "bool" -value "true">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Get infos">
+      <CFG-CHECKBOX -id "infos" -caps $prof_priv 
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "bool" -value "true">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Get failures">
+      <CFG-CHECKBOX -id "failures" -caps $prof_priv 
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "bool" -value "true">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "add" -text "Add Recipient" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

@@ -1,0 +1,129 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<?
+  global home_template
+  if {[string length [tms-utils::get-user]] > 0} {
+     if {![info exists home_template]} {
+          set home_template "home"
+     }
+     tms::redirect-url [tms::url-builder-paired -n -a "template" $home_template]
+     return
+  } 
+?>
+
+<TMS-PAGE "Login">
+
+<?
+  # Magic string to help our AJAX code to detect when it has accidentally
+  # loaded this page instead of the one it was trying to load.  This would
+  # happen if the user was logged out, e.g. due to inactivity, wsmd being
+  # restarted,e tc.
+  #
+  # We put this in a DIV tag to keep it from getting up to any mischief,
+  # but really the AJAX is just going to search for it in the RAW text of
+  # the page loaded.  This is a sad hack, and we would have preferred one
+  # of these other better approaches:
+  #   - Using getElementById() to look up a DIV tag by this name
+  #   - Instead of including it on the page, include it in a response
+  #     header using tms::append-header, and then detect it using
+  #     getResponseHeader().
+  # However, we fear that these other approaches may have compatibility
+  # issues with older browsers.  So we take the least-common-denominator
+  # approach, which is expected to at least work everywhere, if not win
+  # any awards for design elegance.
+  #
+  # Checking tms::is-authenticated is mostly a formality, since we
+  # don't expect to end up here in any of the AJAX cases unless we 
+  # have been logged out.  But since when it finds this string, it is
+  # going to represent to the user that they have been logged out, we
+  # make sure that is true first.
+  #
+  # NOTE: this is a magic string, which must be kept in sync with other
+  # usages in tms-utils.js and anywhere else it occurs.  The part of 
+  # the string following WEB_USER_AUTH_REQUIRED is arbitrary junk
+  # generated using 'apg', to hopefully ensure uniqueness.
+?>
+<SET is_auth_str [tms::is-authenticated]>
+<IF {[string equal $is_auth_str "true"] == 0}>
+  <div id="WEB_USER_AUTH_REQUIRED_AfmiothminilNi"></div>
+</IF>
+
+<p>
+Please enter your username and password, then click &quot;Login&quot;.
+</p>
+
+<?
+set idle_time_out [tms::get-param query "idle"]
+if {[string compare $idle_time_out "true"] == 0} {
+   tms::set-custom-var "v_success" "You were logged out due to inactivity."
+}
+?>
+
+<TMS-MSG>
+
+<!-- login form -->
+<?
+set login_url ""
+set dest_url [tms::get-param query dest]
+if {[string length $dest_url] == 0} {
+   set login_url [tms::url-builder -n "template=login" "action=login"]
+} else {
+   set login_url [tms::url-builder-paired -n "template" "login" "action" "login" "dest" $dest_url]
+}
+set userid [tms::get-param post "f_user_id"]
+if {[string length $userid] == 0} {
+  tms::set-param post replace "f_user_id" "admin"
+}
+?>
+<form action="<?= [tms::html-escape $login_url] ?>" method="post">
+<table border="0" cellpadding="5" cellspacing="0">
+<tr>
+  <td valign="middle">
+      Account:
+  <td valign="middle">
+
+<?
+  # The -acl_oper_display parameter is important here, because it allows
+  # us to completely avoid asking wsmd about authorization.  In some 
+  # cases, even asking can cause problems, such as the call chain:
+  # web_fetch_acl_auth() --> web_config_confirmed_get() --> 
+  # web_config_need_confirm() --> web_client_is_managed() -->
+  # query of "/rgp/state/peer_name".  In the unauthenticated case,
+  # wsmd returns an error which causes web_send_mgmt_msg() to set
+  # a redirect.
+?>
+      <CFG-TEXTBOX -id "user_id" -type "string" -cols 10
+                   -acl $all_acl -acl_oper "" -acl_oper_display ""
+                   -span_id "login_id">
+
+<tr>
+  <td valign="middle">
+    Password:
+  <td valign="middle">
+    <input name="f_password" type="password">
+
+<? # Note, "f_service_name" can be set to use a PAM service other than 
+   # wsmd .
+?>
+
+<tr>
+  <td colspan="2">
+    <img src="/images/em.gif" width="1" height="10" alt="">
+
+<tr>
+  <td colspan="2">
+    <input type="submit" name="Login" value="Login">
+</table>
+</form>
+
+<hr>
+<div id="issue"><font size="-2"><?^= [tms::emit-etc-issue] ?></font></div>
+
+</TMS-PAGE>

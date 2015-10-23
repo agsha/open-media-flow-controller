@@ -1,0 +1,184 @@
+<?
+#
+#
+#
+#
+?>
+
+<TAG MON-SUMMARY-BODY>
+
+<IF {[tms::check-authorization "query_basic" {all_query_3} {query}] == 1}>
+
+<?
+  set datetime [tms::get-config "/time/now/datetime"]
+  set hostname [tms-utils::get-hostname]
+  set uptime_ms [tms::get-config "/system/uptime"]
+  set uptime [tms::time-to-counter-ex $uptime_ms medium_words]
+  set serialno [tms::get-config "/system/smbios/system_serial_number"]
+  set uuid [tms::get-config "/system/smbios/system_uuid"]
+
+  set version [tms::get-version]
+
+  set mem_used [tms::get-config "/system/memory/physical/used"]
+  if {[string length $mem_used] == 0} {
+    set mem_used "UNKNOWN"
+  } else {
+    set mem_used [expr {$mem_used / 1024}]
+  }
+
+  set mem_total [tms::get-config "/system/memory/physical/total"]
+  if {[string length $mem_total] == 0} {
+    set mem_total "UNKNOWN"
+  } else {
+    set mem_total [expr {$mem_total / 1024}]
+  }
+
+  # Instead of setting mem_free from "/system/memory/physical/free",
+  # just calculate it from total and used.  If we're just looking at 
+  # those three nodes, they won't add up, due to "buffers" and "cached".
+  # We want to represent those as free memory, for UI simplicity, here.
+  set mem_free [expr {$mem_total - $mem_used}]
+
+  set swap_used [tms::get-config "/system/memory/swap/used"]
+  if {[string length $swap_used] == 0} {
+    set swap_used "UNKNOWN"
+  } else {
+    set swap_used [expr {round(double($swap_used) / 1024.0)}]
+  }
+
+  set swap_total [tms::get-config "/system/memory/swap/total"]
+  if {[string length $swap_total] == 0} {
+    set swap_total "UNKNOWN"
+  } else {
+    set swap_total [expr {round(double($swap_total) / 1024.0)}]
+  }
+
+  set swap_free [expr {$swap_total - $swap_used}]
+
+  set cpu_list [tms::iterate-config "/system/cpu/indiv"]
+  set num_cpus [llength $cpu_list]
+
+  set cpu_util_1 [tms::get-config "/system/load/1"]
+  if {[string length $cpu_util_1] > 0} {
+    set cpu_util_1 [format "%1.2f" [expr {$cpu_util_1 / 100.0}]]
+  }
+  set cpu_util_5 [tms::get-config "/system/load/5"]
+  if {[string length $cpu_util_5] > 0} {
+    set cpu_util_5 [format "%1.2f" [expr {$cpu_util_5 / 100.0}]]
+  }
+  set cpu_util_15 [tms::get-config "/system/load/15"]
+  if {[string length $cpu_util_15] > 0} {
+    set cpu_util_15 [format "%1.2f" [expr {$cpu_util_15 / 100.0}]]
+  }
+?>
+
+<table class="tms_mon">
+  <tr>
+    <td width="20"></td>
+    <td class="label">Date and Time</td>
+    <td width="5"></td>
+    <td><?^=$datetime?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Hostname</td>
+    <td></td>
+    <td><?^=$hostname?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Uptime</td>
+    <td></td>
+    <td><?^=$uptime?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">CPU&nbsp;load&nbsp;averages</td>
+    <td></td>
+    <td><?^= $cpu_util_1 ?> / <?^= $cpu_util_5 ?> / <?^= $cpu_util_15 ?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Number&nbsp;of&nbsp;CPUs</td>
+    <td></td>
+    <td><?^= $num_cpus ?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">System&nbsp;memory</td>
+    <td></td>
+    <td>
+      <?^= $mem_used ?> MB used /
+      <?^= $mem_free ?> MB free / 
+      <?^= $mem_total ?> MB total
+    </td>
+  </tr>
+
+  <IF {[string compare $swap_total "UNKNOWN"] != 0 &&
+       [string compare $swap_total "0"] != 0}>
+  <tr>
+    <td></td>
+    <td class="label">Swap</td>
+    <td></td>
+    <td>
+      <?^= $swap_used ?> MB used /
+      <?^= $swap_free ?> MB free / 
+      <?^= $swap_total ?> MB total
+    </td>
+  </tr>
+  </IF>
+
+  <tr>
+    <td></td>
+    <td class="label">Software Version</td>
+    <td></td>
+    <td><?^= [tms::get-config "/system/version/composite"] ?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Model</td>
+    <td></td>
+    <td><?^= [tms::get-config "/system/model_descr"] ?></td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td class="label">Host ID</td>
+    <td></td>
+    <td><?^= [tms::get-config "/system/hostid"] ?></td>
+  </tr>
+
+  <IF {[string length $serialno] \> 0}>
+  <tr>
+    <td></td>
+    <td class="label">System serial number</td>
+    <td></td>
+    <td><?^=$serialno?></td>
+  </tr>
+  </IF>
+
+  <IF {[string length $uuid] \> 0}>
+  <tr>
+    <td></td>
+    <td class="label">System UUID</td>
+    <td></td>
+    <td><?^=$uuid?></td>
+  </tr>
+  </IF>
+
+</table>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view status summary.
+
+</IF>
+
+</TAG>

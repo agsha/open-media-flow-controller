@@ -1,0 +1,32 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Logged Out">
+
+<?
+set auto [tms::get-param query "auto"]
+set unknown [tms::get-param query "unknown"]
+?>
+
+<IF {[string compare $auto "t"] == 0}>
+    <p>You have been automatically logged out due to inactivity.</p>
+<ELSEIF {[string compare $unknown "t"] == 0}>
+    <p>You have been logged out of the system.</p>
+<ELSE>
+    <p>You have been successfully logged out.</p>
+</IF>
+
+<?
+    # XXX/SML: login_url needs to be ensured html-escaped wherever it is set.  This is
+    # typically in tms-defines.tem, and since it's usually a static "&amp;"
+    # encoded value we don't escape it here.
+?>
+<p><a href="<?=$login_url?>">Click here</a> to return to the login screen.</p>
+
+</TMS-PAGE>

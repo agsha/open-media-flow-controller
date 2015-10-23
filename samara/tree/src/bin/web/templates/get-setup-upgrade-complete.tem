@@ -1,0 +1,25 @@
+<?
+#
+#
+#
+#
+?>
+
+<?
+    set session_id [tms::get-session-id]
+    set owner "web-$session_id"
+    set dl_opers [tms::get-progress-opers-by-type "$owner" "image_download"]
+    set inst_opers [tms::get-progress-opers-by-type "$owner" "image_install"]
+
+    set dl_compl [tms::get-config "/progress/state/oper/$dl_opers/state"]
+    set inst_compl [tms::get-config "/progress/state/oper/$inst_opers/state"]
+
+    set retval "false"
+
+    if {[string length $dl_compl] == 0 || [string length $inst_compl] == 0} {
+        set retval "true"
+    } elseif {[string compare $dl_compl "completed"] == 0 && [string compare $inst_compl "completed"] == 0} {
+        set retval "true"
+    }
+?>
+<?^= $retval ?>

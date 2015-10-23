@@ -1,0 +1,659 @@
+/*
+ *
+ */
+
+body {
+  background-color : #fff;
+  color: #000;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 90%;
+}
+
+#issue {
+    white-space: pre;
+    font-family: "Lucida Console", Monaco, monospace;
+}
+
+#preamble { 
+  float: left;
+  clear: both;
+  width: 100%;
+  padding: 5px 5px 5px 5px;
+  background-color: #cbc6a6;
+  padding: 0px;
+  margin-top: 0px;
+  margin-bottom: 7px;
+  border: 0px;
+  min-height: 70px;
+}
+
+#preamble h1 { 
+  /* suppress this h1 since "TMS" is in the logo image */
+  display: none;
+}
+
+#logo_area { 
+  float: left;
+  clear: right;
+  background-color: #cbc6a6;
+  background-image: url("/images/tms-logo-brown-175.png");
+  background-repeat:  no-repeat;
+  background-position: 5px center;
+  color: #5b2501;
+  padding: 5px;
+  font-weight: bold;
+  vertical-align: middle;
+  text-align: left;
+  height: 70px;
+  width: 200px;
+}
+
+#message_area { 
+  float: left;
+  left: 0px;
+  margin-right: 5px;
+  margin-left: 10px;
+  margin-top: 5px;
+  margin-bottom: 5px; 
+  padding-left: 0;
+  padding-right: 0;
+  text-align: left;
+  width: 30em;
+  min-height: 70px;
+  white-space: normal;
+}
+
+#preambleLast {
+   clear: both;
+   line-height: 0;
+   height: 0;
+}
+
+#banner { 
+  float: left;
+  clear: both;
+  color: #5b2501;
+  font-weight: bold;
+  text-align: left;
+}
+
+#login { 
+  float: right;
+  margin-right: 0.5em;
+  padding-left: 0px;
+  margin-top: 5px;
+  color: #000;
+  text-align: right;
+  min-width: 8em;
+  min-height: 70px;
+  white-space: nowrap;
+}
+
+#tms_menu_top {
+  float: left;
+  height: 3px;
+  margin-bottom: 3px;
+  width: 100%;
+  clear: both;
+  overflow: hidden;
+}
+
+#tms_menu_outer { 
+  float: left;
+  padding-left: 40px;
+  width: 80%;
+}
+
+#tms_menu {
+  float: left;
+  margin-left: 0px;
+  margin-right: 40px;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+#tms_menu ul {
+  float: left;
+  margin: 0px;
+  list-style-type: none;
+  list-style-position: outside;
+  list-style-image: none;
+  border: 0;
+}
+
+#tms_menu li { 
+  vertical-align: bottom;
+  float: left;
+  display: block;
+}
+
+#tms_menu li a { 
+  display: block;
+  vertical-align: bottom;
+  float: left;
+  padding: 0.2em 0.5em;
+  text-decoration: none;
+  text-align: center;
+  color: #000;
+  margin-right: 0.5em;
+  border-right: 1px solid #000;
+  border-left:  1px solid #000;
+  border-top:   1px solid #000;
+  border-bottom-style: none;
+  background-color: #c0d5ae;
+}
+
+#tms_menu li a:hover { 
+  background-color: #e6efe2;
+  color: #000;
+}
+
+#tms_menu a.sel1 { 
+  background-color: #c0d5ae;
+}
+#tms_menu a.sel0 { 
+  background-color: #fff;
+}
+
+#changes_outer {  
+  position: relative;
+  clear: both;
+  width: 100%;
+  height: 7px;
+  background-color: #c0d5ae;
+}
+
+#changes { 
+  position: absolute;
+  float: right;
+  bottom: 0px;
+  right: 0px;
+  padding: 0px;
+  margin: 0px;
+  border: medium solid #c0d5ae;
+  display: inline;
+  background-color: #fff;
+}
+
+#changes p {
+  display: none;
+}
+
+#changes_inner {
+  position: relative;
+  float: left;
+  margin: 0px;
+  padding: 4px;
+  border: 0px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+#changes_inner p {
+  display: inline;
+}
+
+#changes_inner form {
+  display: inline;
+}
+
+#changes_inner form input {
+  vertical-align: middle;
+  display: inline;
+}
+
+#tms_menu_bottom {  
+}
+
+#tms_sidebar_menu { 
+  padding: 4px;
+  margin: 0px;
+  float: left;
+  white-space: nowrap;
+}
+
+ul.sidebar_menu {
+  float: left;
+  padding: 0;
+  margin: 0;
+  list-style-type: none;
+  background-color: #cbc6a6;
+  min-width: 9.5em;
+}
+
+ul.sidebar_menu li { 
+  margin-left: 0.5em;
+  margin-right: 1em;
+  margin-top: 0px;
+  margin-bottom: 1px;
+  padding: 0px;
+  border: 0px;
+}
+
+ul.sidebar_menu li a { 
+  text-decoration: none;
+}
+ul.sidebar_menu li a:hover { 
+  color: #5b2501;
+}
+a.sidebar_sel { 
+  color: #4d8311;
+  font-weight: bold;
+}
+a.sidebar_unsel { 
+  color: #000000;
+}
+ul.sidebar_menu li span.sidebar_unavail { 
+  color: #707070;
+}
+
+ul.sidebar_menu .noref_sel {
+   color: #5B2501;
+}
+
+ul.sidebar_menu .noref_unsel {
+   color: #AC3F3B;
+}
+
+ul.sidebar_menu li.sidebar_sep {
+  margin-left: 5px;
+  margin-right: 10px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  padding: 0px;
+  border: 0px;
+}
+
+ul.sidebar_menu li table.sidebar_sep {
+  width: 8em;
+  background-color: #4d8311;
+  margin-left: 0px;
+  margin-right: 0px;
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  padding: 0px;
+  border: 0px;
+}
+
+.sidebar_sep {
+  width: 8em;
+  margin-left: 5px;
+  margin-right: 10px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.tms_mon { 
+  background: #dae6c6;
+}
+
+#tms_mon_menu { 
+  padding: 0px;
+  margin-left: 0.75em;
+  margin-top: 10px;
+  margin-right: 1em;
+  float: left;
+  clear: both;
+  border: thin solid #aaa;
+  background: #fff;
+}
+
+#tms_setup_menu { 
+  padding: 0px;
+  margin-left: 0.75em;
+  margin-top: 10px;
+  margin-right: 1em;
+  float: left;
+  clear: both;
+  border: thin solid #aaa;
+  background: #fff;
+}
+
+#tms_cmc_setup_menu { 
+  padding: 0px;
+  margin-left: 0.75em;
+  margin-top: 10px;
+  margin-right: 1em;
+  float: left;
+  clear: both;
+  border: thin solid #aaa;
+  background: #fff;
+}
+
+#tms_cmc_profile_menu { 
+  padding: 0px;
+  margin-left: 0.75em;
+  margin-top: 10px;
+  margin-right: 1em;
+  float: left;
+  clear: both;
+  border: thin solid #aaa;
+  background: #fff;
+}
+
+#tms_logging_menu { 
+  padding: 0px;
+  margin-left: 0.75em;
+  margin-top: 10px;
+  margin-right: 0;
+  float: left;
+  clear: both;
+  border: thin solid #aaa;
+  background: #fff;
+}
+
+#tms_page {
+  clear: both;
+  margin: 0;
+}
+
+#pageBody { 
+}
+
+#pageBody:after {
+  content: "."; 
+  display: block; 
+  height: 0; 
+  clear: both; 
+  visibility: hidden;
+}
+
+
+#pageBodyLast {
+}
+
+#pageSidebar {
+  float: left;
+  display: inline;
+  height: 1%;
+  width: 12em;
+}
+
+#pageSidebar-logging {
+  float: left;
+  display: inline;
+  height: 1%;
+  width: 14em;
+}
+
+#pageSidebarLast {
+}
+
+#pageContent { 
+  margin-top: 0px;
+  margin-left: 12.5em;
+  height: 1%;
+  padding-top: 4px;
+  padding-right: 1em;
+  padding-left: 10px;
+  padding-bottom: 4px;
+}
+
+#pageContent-logging { 
+  position: absolute;
+  left: 0em;
+  top: 10em;
+  margin-top: 0px;
+  margin-left: 14.5em;
+  height: 1%;
+  padding-top: 4px;
+  padding-right: 1em;
+  padding-left: 10px;
+  padding-bottom: 4px;
+}
+
+#pageContentLast {
+}
+
+#pageTitle { 
+  font-size: large;
+  font-weight: bold;
+  font-style: italic;
+  padding-top: 4px;
+  margin: 0px;
+}
+
+#tms_msg {
+  padding-left: 10px;
+}
+
+
+h1 { 
+  margin-left: 76px;
+  color: #944507;
+}
+
+h2 { 
+  color: #5b2501;
+  background-color: #ebe7db;
+}
+
+.resource_name { 
+  font-style: italic;
+}
+
+#after {
+  padding-top: 10px;
+  margin: 10px 10px 10px 10px;
+  clear: both;
+  font-style: italic;
+}
+
+#last { 
+  width: 100%;
+  height: 7px;
+  background-color: #c0d5ae;
+  clear: both;
+}
+
+.red { 
+  color: #f55;
+}
+
+.clear {  
+  width: 100%;
+  height: 0px;
+  clear: both;
+  overflow: hidden;
+}
+
+/* these classes are for the various input widgets created by the
+ * tags in tms-cfg-form.tem.  You can use them to apply global styles
+ * to forms.
+ */
+
+.checkbox {  
+  display: inline;
+}
+
+.radio {  
+  display: inline;
+}
+
+.button { 
+  padding-right: 5px;
+}
+
+.textbox {  
+}
+
+.passwordbox {  
+}
+
+.textarea {  
+}
+
+.select {  
+}
+
+.listbox {  
+}
+
+.ipv4 {  
+}
+
+.ipv4entry {  
+}
+
+.ipv6addr {  
+}
+
+.ipv6prefix {  
+}
+
+.inetaddr {  
+}
+
+.form {  
+}
+
+.inline { 
+  display: inline;
+}
+
+/* next four classes are for tooltips */
+a.info { 
+  display:none; /* XXX don't display any tool tips until all templates
+                 * have been created */
+  position:relative;
+  z-index: 24;
+  text-decoration: none;
+}
+a.info:hover { 
+  font-size: 100%;              /* I know this does nothing, but it fools
+                                   * IE into applying the display: 
+                                   * attribute.  I hope. */
+  z-index: 2000;   /* must be more than the a.info zindex, AND more than the  
+                    * slider's z-index range which starts at 1000
+                    */
+}
+
+a.info div.tip { 
+  display:none;
+}
+
+a.info:hover div.tip { 
+  font-size: 100%;              /* I know this does nothing, but it fools
+                                   * IE into applying the display: 
+                                   * attribute.  I hope. */
+  font-family: verdana, arial, sans-serif;
+  display:block;
+  position:absolute;
+  top:1em; 
+  right:1em; 
+  width:20em; 
+  padding-left: 1em;
+  border:1px solid #000;
+  background-color: #dae6c6;
+  color:#000;
+  z-index: 2000;   /* must be more than the a.info zindex, AND more than the  
+                    * slider's z-index range which starts at 1000
+                    */
+}
+/* this hide style is to work around the IE select/z-index bug */
+select.hide { visibility: hidden; }
+
+/* end of tooltip styles */
+
+.keyword { 
+  color: #083087;
+}
+
+/* "listing" Table styles */
+.listing_head { 
+  background-color: #cbc6a6;
+}
+
+.listing_even { 
+  background-color: #dae6c6;
+}
+
+.listing_odd { 
+  background-color: #b6d0a3;
+}
+
+.listing_highlight {
+  background-color: #da9090;
+}
+
+table p {
+  margin: 0;
+}
+
+#if_table_1 {
+}
+
+#graphArea {
+  padding: 10px 10px 10px 10px;
+  margin-left: 0;
+}
+
+/* ajax graph pause and resume "buttons" */
+.ajaxButton { 
+  cursor: pointer;
+  padding: 0.125em 0.5em;
+  background-color: #e5e6e8;
+  border-color: #ddd;
+  border-width: 2px;
+  border-style: outset;
+  margin-left: 0.5em;
+}
+.ajaxButtonDisabled { 
+  cursor: default;
+  padding: 0.125em 0.5em;
+  color: #c3c3c3;
+  background-color: #efefef;
+  border-color: #ddd;
+  border-width: 1px;
+  border-style: outset;
+  margin-left: 0.5em;
+}
+
+.ajaxButton:hover { 
+  background-color: #ccc;
+  border-color: #ddd;
+  border-width: 2px;
+  border-style: inset;
+}
+.ajaxButtonDisabled:hover { 
+}
+
+#ajaxStatus { 
+  float: left;
+  color: #000;
+  text-align: left;
+}
+
+#cluster_message { 
+  float: left;
+  text-align: left;
+  min-height: 1ex;
+}
+
+#cluster_message .warning {
+  color: #db372a;
+}
+
+#cluster_message .notice {
+  font-weight: bold;
+}
+
+#cluster_redirect { 
+  float: left;
+  text-align: left;
+  min-height: 1ex;
+  border-style: dashed;
+  border-width: medium;
+  border-color: #db372a;
+  padding: 0.5em;
+  margin: 0.5em;
+}
+
+#cluster_redirect .warning {
+  font-weight: bold;
+}
+
+.tms_invisible {
+    position: absolute; left: -100%;
+}

@@ -1,0 +1,216 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Edit SNMP Notification Sink">
+<TMS-MENU "setup">
+<TMS-BODY>
+<?
+  global snmp_acl
+  set host [tms::get-param query "host"]
+  set auth_key [tms::get-config "/snmp/trapsink/sink/$host/v3/auth_key"]
+  set priv_key [tms::get-config "/snmp/trapsink/sink/$host/v3/privacy_key"]
+?>
+
+<TMS-SIDEBAR><TMS-SETUP-MENU "snmp-notif-sink-edit" "host" $host></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Edit SNMP Notification Sink">
+
+<IF {[tms::check-authorization "query_basic" $snmp_acl {query}]}>
+
+<h2>Edit SNMP Notification Sink: <?^=$host?></h2>
+
+<CFG-FORM -action "config-form-snmp-edit-sink">
+  <TMS-TABLE -div_id "sink_edit_table_1">
+    <?
+      # XXX/EMT: could make address editable.  The form handler would
+      # just do a reparent first, probably separate from the other changes.
+    ?>
+    <TMS-TABLE-ENTRY "Host address">
+      <?^=$host?>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enable">
+      <CFG-CHECKBOX -id "ns_enable"
+                    -caps "set_basic"
+                    -acl $snmp_acl -acl_oper {set}
+                    -name "/snmp/trapsink/sink/$host/enable"
+                    -type "bool">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      # We want no override to be represented as the empty string, not
+      # as zero.
+      set curr_port [tms::get-config "/snmp/trapsink/sink/$host/port"]
+      if {[string equal $curr_port "0"] == 1} {
+        set curr_port ""
+      }
+    ?>
+
+    <TMS-TABLE-ENTRY "Port Override">
+      <CFG-TEXTBOX -id "ns_port" -errname "port" -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -type "string" -cols 20 -span_id "snmp_port"
+                   -value $curr_port
+                   -required "false">
+    </TMS-TABLE-ENTRY>
+
+      <?
+        # We like to keep the password boxes greyed out sometimes,
+        # depending on the selection in the Notification Type dropdown.
+        # But we have to support browsers without Javascript.  That's OK,
+        # the boxes will start ungreyed, and if there is no Javascript 
+        # we'll just never change that.
+      ?>
+      <script type="text/javascript">
+        function fixFieldsForVersion() {
+          var sel = document.getElementById('sel_ns_type').value;
+          var pwd1 = document.getElementById('ns_community');
+          var pwd2 = document.getElementById('ns_engine_id');
+          var pwd3 = document.getElementById('ns_username');
+          var pwd4 = document.getElementById('sel_ns_authtype');
+          var pwd5 = document.getElementById('sel_ns_privtype');
+          var pwd6 = document.getElementById('ns_auth_pwd');
+          var pwd7 = document.getElementById('ns_priv_pwd');
+          if (sel == 'trap-v3' || sel == 'inform-v3') {
+            pwd1.disabled=true;
+            if (sel == 'inform-v3') {
+              pwd2.disabled=false;
+            } else {
+              pwd2.disabled=true;
+            }
+            pwd3.disabled=false;
+            pwd4.disabled=false;
+            pwd5.disabled=false;
+            pwd6.disabled=false;
+            pwd7.disabled=false;
+          } else {
+            pwd1.disabled=false;
+            pwd2.disabled=true;
+            pwd3.disabled=true;
+            pwd4.disabled=true;
+            pwd5.disabled=true;
+            pwd6.disabled=true;
+            pwd7.disabled=true;
+            pwd6.value='';
+            pwd7.value='';
+          }
+        }
+      </script>
+
+    <TMS-TABLE-ENTRY "Notification Type">
+      <CFG-DROPDOWN -id "ns_type" -caps "set_basic" -type "string"
+                    -onchange "fixFieldsForVersion()"
+                    -acl $snmp_acl -acl_oper {set}
+                    -options {
+                         {"v1 trap" "trap-v1"}
+                         {"v2c trap" "trap-v2c"}
+                         {"v2c inform" "inform-v2c"}
+                         {"v3 trap" "trap-v3"}
+                         {"v3 inform" "inform-v3"}
+                    }
+                    -name "/snmp/trapsink/sink/$host/type"
+                    -span_id "snmp_traptype">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v1/v2c Community Override">
+      <CFG-TEXTBOX -id "ns_community" -errname "community" -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -type "string" -cols 20 -span_id "snmp_comm"
+                    -name "/snmp/trapsink/sink/$host/community"
+                   -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v3 Username">
+      <CFG-TEXTBOX -id "ns_username" -errname "username" -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -type "string" -cols 20 -span_id "snmp_comm"
+                   -name "/snmp/trapsink/sink/$host/v3/user"
+                   -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v3 Authentication Type">
+      <CFG-DROPDOWN -id "ns_authtype" -caps "set_basic"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/snmp/trapsink/sink/$host/v3/hash_type"
+                    -type "string" -options {{"MD5" "md5"} {"SHA1" "sha"}}>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "v3 Privacy Type">
+      <CFG-DROPDOWN -id "ns_privtype" -caps "set_basic"
+                    -acl $auth_acl -acl_oper {set}
+                    -type "string"
+                    -name "/snmp/trapsink/sink/$host/v3/privacy_type"
+                    -options {{"DES" "des"} {"AES-128" "aes-128"}}>
+    </TMS-TABLE-ENTRY>
+
+    <IF {[string length $auth_key] == 0}>
+      <TMS-TABLE-ENTRY "Set v3 Authentication Password">
+        <CFG-PASSWORDBOX -id "ns_auth_pwd" -caps "set_basic"
+                         -acl $auth_acl -acl_oper {set} -cols "20">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "(No password currently set)">
+      </TMS-TABLE-ENTRY>
+    <ELSE>
+      <TMS-TABLE-ENTRY "Change v3 Authentication Password">
+        <CFG-PASSWORDBOX -id "ns_auth_pwd" -caps "set_basic"
+                         -acl $auth_acl -acl_oper {set} -cols "20">
+      </TMS-TABLE-ENTRY>
+    </IF>
+
+    <IF {[string length $priv_key] == 0}>
+      <TMS-TABLE-ENTRY "Set v3 Privacy Password">
+        <CFG-PASSWORDBOX -id "ns_priv_pwd" -caps "set_basic"
+                         -acl $auth_acl -acl_oper {set} -cols "20">
+      </TMS-TABLE-ENTRY>
+      <TMS-TABLE-ENTRY "(No password currently set)">
+      </TMS-TABLE-ENTRY>
+    <ELSE>
+      <TMS-TABLE-ENTRY "Change v3 Privacy Password">
+        <CFG-PASSWORDBOX -id "ns_priv_pwd" -caps "set_basic"
+                         -acl $auth_acl -acl_oper {set} -cols "20">
+      </TMS-TABLE-ENTRY>
+    </IF>
+
+    <TMS-TABLE-ENTRY "v3 Remote Engine ID">
+      <CFG-TEXTBOX -id "ns_engine_id" -errname "engine_id" -caps "set_basic"
+                   -acl $snmp_acl -acl_oper {set}
+                   -type "string" -cols 40 -span_id "snmp_comm"
+                    -name "/snmp/trapsink/sink/$host/v3/inform_engine_id"
+                   -required "false">
+    </TMS-TABLE-ENTRY>
+
+    <script type="text/javascript">
+      fixFieldsForVersion();
+    </script>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "ok" -text "OK" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "user_edit_ok">
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "user_edit_apply">
+
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "query_basic"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "user_edit_cancel">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view SNMP configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

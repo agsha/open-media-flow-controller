@@ -1,0 +1,173 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: DNS">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"]
+
+  # Conditional on PROD_FEATURE_IPV6
+  set have_ipv6 [tms::have-prod-feature ipv6]
+  set ip_field_width 16
+  if {[string compare $have_ipv6 "true"] == 0} {
+    set ip_field_width 46
+  }
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "dns" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "DNS CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_nserv "ip name-server *"
+    set cmdpat_dlist "ip domain-list *"
+    set cmdpat_hmap "ip host * *"
+    set cmd_start_index 200
+    set cmd_end_index 399
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "DNS" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_nserv $cmdpat_dlist $cmdpat_hmap]>
+
+  <?
+    # ==================================================
+    # Add new DNS server
+    # ==================================================
+  ?>
+
+  <h2>New DNS server for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_dns_2">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_dns_table_1">
+    <TMS-TABLE-ENTRY "Server IP Address">
+      <CFG-TEXTBOX -id "address" -errname "IP address" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "hostname" -cols "$ip_field_width"
+                   -span_id "cmc_dns_addr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"                     "dnsserver"
+      "cmd_dnsserver_fields"         "address"
+      "cmd_dnsserver_pat_1"          "$cmdpat_nserv"
+      "cmd_dnsserver_fields_1"       "address">
+
+  <CFG-BUTTON -type "add" -text "Add Server" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_dns_add_1">
+
+  </CFG-FORM>
+
+  <?
+    # ==================================================
+    # Add new domain name
+    # ==================================================
+  ?>
+
+  <h2>New domain name for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_dns_2">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_dns_table_1">
+    <TMS-TABLE-ENTRY "Domain name">
+      <CFG-TEXTBOX -id "domain" -errname "Domain name" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "hostname" -cols "$ip_field_width"
+                   -span_id "cmc_dns_addr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"                 "domainname"
+      "cmd_domainname_fields"    "domain"
+      "cmd_domainname_pat_1"     "$cmdpat_dlist"
+      "cmd_domainname_fields_1"  "domain">
+
+  <CFG-BUTTON -type "add" -text "Add Domain" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_dns_add_1">
+
+  </CFG-FORM>
+
+  <?
+    # ==================================================
+    # Add Static host mapping
+    # ==================================================
+  ?>
+
+  <h2>New static host mapping for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE>
+    <TMS-TABLE-ENTRY "IP address">
+      <CFG-TEXTBOX -id "ipaddr" -errname "IP address" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "ipv4addr" -cols "$ip_field_width">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Hostname">
+      <CFG-TEXTBOX -id "hostname" -errname "Hostname" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "hostname" -cols "$ip_field_width">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"            "hmap"
+      "cmd_hmap_fields"     "hostname,ipaddr"
+      "cmd_hmap_pat_1"      "$cmdpat_hmap"
+      "cmd_hmap_fields_1"   "hostname,ipaddr">
+
+  <CFG-BUTTON -type "add" -text "Add Host" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

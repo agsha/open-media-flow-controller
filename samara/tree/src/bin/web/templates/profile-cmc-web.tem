@@ -1,0 +1,196 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: Web">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"]
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "web" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "Web CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_web "web **"
+    set cmdpat_web_neg "no web **"
+    set cmd_start_index 600
+    set cmd_end_index 799
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "Web" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_web $cmdpat_web_neg]>
+
+  <?
+    # ==================================================
+    # Overall Web UI enable/disable
+    #
+    # XXX/EMT: would be nice to use Javascript to enforce the 
+    # relationship between these checkboxes.  If Javascript is 
+    # disabled, no harm is done.
+    # ==================================================
+  ?>
+
+  <h2>Web setup for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_web_1">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_web_table_1">
+    <TMS-TABLE-ENTRY-TWO>
+      <CFG-CHECKBOX -id "enable" -caps $prof_priv -type "bool"
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -span_id "cmc_web_enable_1">
+    </TMS-TABLE-ENTRY-TWO "Enable Web UI">
+
+    <TMS-TABLE-ENTRY-TWO>
+      <CFG-CHECKBOX -id "http_enable" -caps $prof_priv -type "bool"
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -span_id "cmc_web_http_enable">
+    </TMS-TABLE-ENTRY-TWO "Enable HTTP">
+
+    <TMS-TABLE-ENTRY-TWO>
+      <CFG-CHECKBOX -id "https_enable" -caps $prof_priv -type "bool"
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -span_id "cmc_web_https_enable">
+    </TMS-TABLE-ENTRY-TWO "Enable HTTPS">
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"              "web,http,https"
+
+      "cmd_web_fields"        "enable"
+      "cmd_web_checkcmd"      "web enable"
+      "cmd_web_nocheckcmd"    "no web enable"
+
+      "cmd_http_fields"       "http_enable"
+      "cmd_http_checkcmd"     "web http enable"
+      "cmd_http_nocheckcmd"   "no web http enable"
+
+      "cmd_https_fields"      "https_enable"
+      "cmd_https_checkcmd"    "web https enable"
+      "cmd_https_nocheckcmd"  "no web https enable">
+
+  <CFG-BUTTON -type "add" -text "Add Commands" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_web_add_1">
+
+  </CFG-FORM>
+
+
+  <?
+    # ==================================================
+    # Specific Web UI configuration
+    # ==================================================
+  ?>
+
+  <h2>Web configuration for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_web_2">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_web_table_2">
+    <TMS-TABLE-ENTRY "HTTP Port">
+        <CFG-TEXTBOX -id "http_port" -errname "HTTP Port" -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "uint32" -cols "6" -required "false"
+                     -span_id "cmc_web_http_port">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "HTTPS Port">
+        <CFG-TEXTBOX -id "https_port" -errname "HTTPS Port" -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "uint32" -cols "6" -required "false"
+                     -span_id "cmc_web_https_port">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Auto Logout Timeout">
+        <CFG-TEXTBOX -id "auto_logout" -errname "auto_logout" -caps $prof_priv
+                     -acl $cmc_acl -acl_oper {set_create}
+                     -type "duration" -cols 6 -required "false"
+                     -span_id "cmc_web_alogout"> seconds
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Web Session Renewal">
+      <CFG-TEXTBOX -id "sess_renewal" -errname "Renewal Threshold" 
+                    -caps $prof_priv -type "duration_sec" -cols "6"
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -required "false" -span_id "cmc_web_srenewal"> seconds
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Web Session Timeout">
+      <CFG-TEXTBOX -id "sess_timeout" -errname "Session Timeout" 
+                   -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "duration_sec" -cols "6" -required "false"
+                   -span_id "cmc_web_stimeout"> seconds
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"             "alogout,httpport,httpsport,sessrenew,sesstimeout"
+
+      "cmd_httpport_fields"      "http_port"
+      "cmd_httpport_pat_1"       "web http port *"
+      "cmd_httpport_fields_1"    "http_port"
+
+      "cmd_httpsport_fields"     "https_port"
+      "cmd_httpsport_pat_1"      "web https port *"
+      "cmd_httpsport_fields_1"   "https_port"
+
+      "cmd_alogout_fields"       "auto_logout"
+      "cmd_alogout_pat_1"        "web auto-logout *"
+      "cmd_alogout_fields_1"     "auto_logout"
+
+      "cmd_sessrenew_fields"     "sess_renewal"
+      "cmd_sessrenew_pat_1"      "web session renewal *"
+      "cmd_sessrenew_fields_1"   "sess_renewal"
+
+      "cmd_sesstimeout_fields"   "sess_timeout"
+      "cmd_sesstimeout_pat_1"    "web session timeout *"
+      "cmd_sesstimeout_fields_1" "sess_timeout">
+
+  <CFG-BUTTON -type "add" -text "Add Commands" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_web_add_2">
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

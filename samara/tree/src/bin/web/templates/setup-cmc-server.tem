@@ -1,0 +1,43 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "CMC Server Setup">
+<TMS-MENU "cmc_setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-CMC-SETUP-MENU "server"></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "CMC Server Setup">
+  <TMS-CMC-MSG>
+
+<?
+  global cmc_acl
+?>
+
+  <h2>CMC Server Configuration</h2>
+
+  <CFG-FORM>
+  <TMS-TABLE>
+    <TMS-TABLE-ENTRY "Enable CMC server">
+    <CFG-CHECKBOX -id "enable_status" -caps "set_restricted"
+                  -acl $cmc_acl -acl_oper {set}
+                  -name "/cmc/config/enable" -type "bool">
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}>
+  <img src="/images/em.gif" width="10" height="1" alt="">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}>
+
+  </CFG-FORM>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

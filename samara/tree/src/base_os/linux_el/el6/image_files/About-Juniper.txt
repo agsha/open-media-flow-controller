@@ -1,0 +1,29 @@
+iptables-1.4.12.2.tar  was built this way:
+   # Unzip the source with this command:
+   bunzip2 iptables-1.4.12.2.tar.bz2
+   # Untar the source
+   tar xf iptables-1.4.12.2.tar
+   # Make in the iptables-1.4.12.2 source dir
+   cd iptables-1.4.12.2
+   ./configure --prefix=/ --libdir=/lib64
+   make
+   export DESTDIR=/tmp/outroot$$
+   mkdir ${DESTDIR}
+   sudo DESTDIR=${DESTDIR} make install
+   cd ${DESTDIR}
+   sudo rm -rf share include lib64/pkgconfig
+   tar cf iptables-1.4.12.2.tar bin lib64 sbin
+
+The source tar.bz file was downloaded from
+http://www.netfilter.org/projects/iptables/files/iptables-1.4.12.2.tar.bz2  
+
+This source tar.bz file is archived locally:
+(CentOS 6.4):
+/data/archive/tallmaple/DIST_SRCS/samara-3.3.2/other/el6/iptables-1.4.12.2.tar.bz2
+This is where the source is picked up for creating the 'freedist' archive.
+
+-----
+
+
+The file ip6tables comes from ./etc/rc.d/init.d/ip6tables in the
+CentOS 6.4 binary rpm: iptables-ipv6-1.4.7-9.el6.x86_64.rpm

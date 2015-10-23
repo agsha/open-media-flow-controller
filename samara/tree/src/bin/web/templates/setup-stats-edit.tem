@@ -1,0 +1,154 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Statistics Setup">
+<TMS-MENU "setup">
+<TMS-BODY>
+<?
+  set alarm [tms::get-param query "alarm"]
+?>
+<TMS-SIDEBAR><TMS-SETUP-MENU "stats-edit" "alarm" $alarm></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Statistics Setup">
+
+<h2>Edit Alarm: <?^=$alarm?></h2>
+
+<?
+  global stats_acl
+  set priv "set_privileged"
+  set ris_req [tms::get-config "/stats/alarm/config/$alarm/rising/enable"]
+  set fal_req [tms::get-config "/stats/alarm/config/$alarm/falling/enable"]
+?>
+
+<CFG-FORM>
+  <TMS-TABLE -div_id "alarm_table_2">
+    <TMS-TABLE-ENTRY "Alarm ID">
+      <?^=$alarm?>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Rising Clear Threshold">
+      <CFG-TEXTBOX -id "rising/clear_threshold"
+                   -errname "Rising Clear Threshold" -caps $priv
+                   -acl $stats_acl -acl_oper {set}
+                   -type "uint32" -cols "10" -required $ris_req
+                   -div_id "alarm_ris_clear"
+                   -name "/stats/config/alarm/$alarm/rising/clear_threshold">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Rising Error Threshold">
+      <CFG-TEXTBOX -id "rising/error_threshold"
+                   -errname "Rising Error Threshold" -caps $priv
+                   -acl $stats_acl -acl_oper {set}
+                   -type "uint32" -cols "10" -required $ris_req
+                   -div_id "alarm_ris_error"
+                   -name "/stats/config/alarm/$alarm/rising/error_threshold">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Falling Clear Threshold">
+      <CFG-TEXTBOX -id "falling/clear_threshold"
+                   -errname "Falling Clear Threshold" -caps $priv
+                   -acl $stats_acl -acl_oper {set}
+                   -type "uint32" -cols "10" -required $fal_req
+                   -div_id "alarm_fall_clear"
+                   -name "/stats/config/alarm/$alarm/falling/clear_threshold">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Falling Error Threshold">
+      <CFG-TEXTBOX -id "falling/error_threshold"
+                   -errname "Falling Error Threshold" -caps $priv
+                   -acl $stats_acl -acl_oper {set}
+                   -type "uint32" -cols "10" -required $fal_req
+                   -div_id "alarm_fall_error"
+                   -name "/stats/config/alarm/$alarm/falling/error_threshold">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Short Rate-Limit Count">
+      <CFG-TEXTBOX -id "short/rate_limit_max"
+                   -errname "Short Rate-Limit Count" -caps $priv
+                   -acl $stats_acl -acl_oper {set}
+                   -type "uint32" -cols "10" -required "true"
+                   -div_id "alarm_short_rate"
+                   -name "/stats/config/alarm/$alarm/short/rate_limit_max">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Medium Rate-Limit Count">
+      <CFG-TEXTBOX -id "medium/rate_limit_max"
+                    -errname "Medium Rate-Limit Count" -caps $priv
+                    -acl $stats_acl -acl_oper {set}
+                    -type "uint32" -cols "10" -required "true"
+                   -div_id "alarm_medium_rate"
+                   -name "/stats/config/alarm/$alarm/medium/rate_limit_max">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Long Rate-Limit Count">
+      <CFG-TEXTBOX -id "long/rate_limit_max" -errname "Long Rate-Limit Count"
+                   -caps $priv 
+                   -acl $stats_acl -acl_oper {set}
+                   -type "uint32" -cols "10" -required "true"
+                   -div_id "alarm_long_rate"
+                   -name "/stats/config/alarm/$alarm/long/rate_limit_max">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Short Rate-Limit Window">
+      <CFG-TEXTBOX -id "short/rate_limit_win"
+                   -errname "Short Rate-Limit Window" -caps $priv
+                   -acl $stats_acl -acl_oper {set}
+                   -type "duration_sec" -cols "10" -required "true"
+                   -div_id "alarm_short_win"
+                   -name "/stats/config/alarm/$alarm/short/rate_limit_win">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Medium Rate-Limit Window">
+      <CFG-TEXTBOX -id "medium/rate_limit_win"
+                   -errname "Medium Rate-Limit Window" 
+                   -caps $priv
+                   -acl $stats_acl -acl_oper {set}
+                   -type "duration_sec" -cols "10" -required "true"
+                   -div_id "alarm_medium_win"
+                   -name "/stats/config/alarm/$alarm/medium/rate_limit_win">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Long Rate-Limit Window">
+      <CFG-TEXTBOX -id "long/rate_limit_win" -errname "Long Rate-Limit Window"
+                   -caps $priv 
+                   -acl $stats_acl -acl_oper {set}
+                   -type "duration_sec" -cols "10"
+                   -required "true" -div_id "alarm_long_window"
+                   -name "/stats/config/alarm/$alarm/long/rate_limit_win">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/stats/config/alarm/">
+  <input type="hidden" name="f_list_index" value="ident">
+  <input type="hidden" name="f_list_children" value="rising/clear_threshold,rising/error_threshold,falling/clear_threshold,falling/error_threshold,short/rate_limit_max,medium/rate_limit_max,long/rate_limit_max,short/rate_limit_win,medium/rate_limit_win,long/rate_limit_win">
+
+  <CFG-BUTTON -type "ok" -text "OK" -caps $priv 
+              -acl $stats_acl -acl_oper {set}
+              -div_id "alarm_add_2"
+              -destination "/admin/launch?script=rh&amp;template=setup-stats">
+
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps $priv 
+              -acl $stats_acl -acl_oper {set}
+              -div_id "alarm_add_2">
+
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps $priv
+              -acl $stats_acl -acl_oper {set}
+              -div_id "alarm_add_2">
+
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+</CFG-FORM>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

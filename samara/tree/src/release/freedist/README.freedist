@@ -1,0 +1,19 @@
+
+The binary version of this product contains software components which are
+licensed under the GNU General Public License (the GPL) and other licenses
+requiring the availability or distribution of source code.  The required
+source for each of these components is contained in the directories below.
+Components modified from the original sources are in the 'modified'
+directory.  Source for components that have not been modified are in the
+'unmodified' directory.  
+
+The license for each component is located within the provided source
+distribution for that component.
+
+In addition the GPL and LGPL licenses are provided here.  The text of
+the GPL, version 2 can be found in 'gpl-2.0.txt' . The text of the GPL,
+version 3 can be found in 'gpl-3.0.txt' .  The text of the LGPL, version
+2.1 can be found in 'lgpl-2.1.txt' .  The text of the LGPL, version 3.0
+can be found in 'lgpl-3.0.txt' .
+
+--------------------------------------------------

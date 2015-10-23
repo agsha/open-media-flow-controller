@@ -1,0 +1,32 @@
+Patches for glib2-2.22.5-7.el6.src.rpm
+
+Patch 1: glib2-2.22.5-jnpr-2013-stacksize.patch
+This patch adds two functions g_hash_table_foreach_remove_n()
+and g_thread_pool_set_default_stack_size().  These are used to control
+the default stack size. (To fix the "gthread stack size" problem.)
+
+Patch 2: glib2-2.22.5-jnpr-2015-chainhash.patch
+This patch changes the hash table logic from open addressing to chained addressing. 
+
+Note-- Changes from earlier versions--
+1. glib2-2.22.5-jnpr-2013-mfc.patch was renamed to
+   glib2-2.22.5-jnpr-2013-stacksize.patch to make it descriptive.
+   Only the filename was changed, no change to the patch itself.
+2. glib2-2.22.5-jnpr-2013-chainhash.patch was replaced with a better patch
+   glib2-2.22.5-jnpr-2015-chainhash.patch.  The 2013 one needlessly moved
+   functions around and made other non-functional changes that made it both
+   very hard to see just what the effective changes were and made it impossible
+   to update the patcha to newer version of glib2.
+   
+
+-------------------------------------------------------------------------------
+Patches for glib2-2.28.8-4.SCLC6_6.R1.0.1.src.rpm
+
+Patch 1: glib2-2.28.8-jnpr-2015-stacksize.patch
+This patch adds two functions g_hash_table_foreach_remove_n()
+and g_thread_pool_set_default_stack_size().  These are used to control
+the default stack size. (To fix the "gthread stack size" problem.)
+
+Patch 2: glib2-2.28.8-jnpr-2015-chainhash.patch
+This patch changes the hash table logic from open addressing to chained addressing. 
+

@@ -1,0 +1,166 @@
+diff -uNr glib-2.22.5/glib/ghash.c glib-2.22.5.new/glib/ghash.c
+--- glib-2.22.5/glib/ghash.c	2013-01-10 08:10:14.676205301 +0530
++++ glib-2.22.5.new/glib/ghash.c	2013-01-10 08:20:05.224758573 +0530
+@@ -1123,6 +1123,54 @@
+   return deleted;
+ }
+ 
++/*
++ * g_hash_table_foreach_remove_n
++ * @hash_table: our #GHashTable
++ * @func: the user's callback function
++ * @user_data: data for @func
++ * @notify: %TRUE if the destroy notify handlers are to be called
++ *
++ * Iterates over every node in the table, calling @func with the key
++ * and value of the node (and @user_data).  If @func returns %TRUE the
++ * node is removed from the table. This is done for the n entries in 
++ * the table
++ *
++ * If @notify is true then the destroy notify handlers will be called
++ * for each removed node.
++ */
++guint
++g_hash_table_foreach_remove_n (GHashTable *hash_table,
++                                      GHRFunc	  func,
++                                      gpointer    user_data,
++                                      gint        num_entries)
++{
++  guint deleted = 0;
++  gint i;
++
++  for (i = 0; i < hash_table->size; i++)
++    {
++      if (deleted >= num_entries)
++        break;
++      
++      GHashNode *node = &hash_table->nodes [i];
++
++      if (node->key_hash > 1 && (* func) (node->key, node->value, user_data))
++        {
++          g_hash_table_remove_node (hash_table, node, TRUE);
++          deleted++;
++        }
++    }
++
++  g_hash_table_maybe_resize (hash_table);
++
++#ifndef G_DISABLE_ASSERT
++  if (deleted > 0)
++    hash_table->version++;
++#endif
++
++  return deleted;
++}
++
+ /**
+  * g_hash_table_foreach_remove:
+  * @hash_table: a #GHashTable.
+diff -uNr glib-2.22.5/glib/ghash.h glib-2.22.5.new/glib/ghash.h
+--- glib-2.22.5/glib/ghash.h	2013-01-10 08:10:14.687399891 +0530
++++ glib-2.22.5.new/glib/ghash.h	2013-01-10 08:21:02.756270721 +0530
+@@ -91,6 +91,10 @@
+ guint	    g_hash_table_foreach_remove	   (GHashTable	   *hash_table,
+ 					    GHRFunc	    func,
+ 					    gpointer	    user_data);
++guint	    g_hash_table_foreach_remove_n  (GHashTable	   *hash_table,
++					    GHRFunc	    func,
++					    gpointer	    user_data,
++					    gint	    num_entries);
+ guint	    g_hash_table_foreach_steal	   (GHashTable	   *hash_table,
+ 					    GHRFunc	    func,
+ 					    gpointer	    user_data);
+diff -uNr glib-2.22.5/glib/glib.symbols glib-2.22.5.new/glib/glib.symbols
+--- glib-2.22.5/glib/glib.symbols	2010-03-16 08:08:47.000000000 +0530
++++ glib-2.22.5.new/glib/glib.symbols	2013-01-10 08:35:00.455493842 +0530
+@@ -397,6 +397,7 @@
+ g_hash_table_find
+ g_hash_table_foreach
+ g_hash_table_foreach_remove
++g_hash_table_foreach_remove_n
+ g_hash_table_foreach_steal
+ g_hash_table_get_keys
+ g_hash_table_get_values
+@@ -1314,6 +1315,7 @@
+ 
+ #if IN_HEADER(__G_THREADPOOL_H__)
+ #if IN_FILE(__G_THREADPOOL_C__)
++g_def_stack_sz
+ g_thread_pool_free
+ g_thread_pool_get_max_threads
+ g_thread_pool_get_max_unused_threads
+@@ -1322,6 +1324,7 @@
+ g_thread_pool_get_num_unused_threads
+ g_thread_pool_new
+ g_thread_pool_push
++g_thread_pool_set_default_stack_size
+ g_thread_pool_set_max_threads
+ g_thread_pool_set_max_unused_threads
+ g_thread_pool_set_max_idle_time
+diff -uNr glib-2.22.5/glib/gthread.h glib-2.22.5.new/glib/gthread.h
+--- glib-2.22.5/glib/gthread.h	2013-01-10 08:10:14.695169514 +0530
++++ glib-2.22.5.new/glib/gthread.h	2013-01-10 08:23:24.081046776 +0530
+@@ -213,9 +213,10 @@
+                                                         (GPrivate*) (value)), \
+                                                        (private_key, value))
+ #define g_thread_yield()              G_THREAD_CF (thread_yield, (void)0, ())
++extern gulong g_def_stack_sz;
+ 
+ #define g_thread_create(func, data, joinable, error)			\
+-  (g_thread_create_full (func, data, 0, joinable, FALSE, 		\
++  (g_thread_create_full (func, data, (g_def_stack_sz), joinable, FALSE,	\
+                          G_THREAD_PRIORITY_NORMAL, error))
+ 
+ GThread* g_thread_create_full  (GThreadFunc            func,
+diff -uNr glib-2.22.5/glib/gthreadpool.c glib-2.22.5.new/glib/gthreadpool.c
+--- glib-2.22.5/glib/gthreadpool.c	2013-01-10 08:10:14.687399891 +0530
++++ glib-2.22.5.new/glib/gthreadpool.c	2013-01-10 08:28:52.207397276 +0530
+@@ -47,6 +47,8 @@
+   GCompareDataFunc sort_func;
+   gpointer sort_user_data;
+ };
++/* Default stack size */
++gulong g_def_stack_sz = 0;
+ 
+ /* The following is just an address to mark the wakeup order for a
+  * thread, it could be any address (as long, as it isn't a valid
+@@ -941,5 +943,26 @@
+   return g_atomic_int_get (&max_idle_time);
+ }
+ 
++/**
++ * g_thread_pool_set_default_stack_size:
++ *
++ * This function will set the default stack size for the Thread pool threads
++ * 
++ * Return value: TRUE is set for the first time
++ **/
++gint
++g_thread_pool_set_default_stack_size (gulong size)
++{
++  if (!g_def_stack_sz)
++    {
++      g_def_stack_sz = size;
++      return TRUE;
++    }
++  else
++    {
++      return FALSE;
++    }
++}
++
+ #define __G_THREADPOOL_C__
+ #include "galiasdef.c"
+diff -uNr glib-2.22.5/glib/gthreadpool.h glib-2.22.5.new/glib/gthreadpool.h
+--- glib-2.22.5/glib/gthreadpool.h	2013-01-10 08:10:14.696160234 +0530
++++ glib-2.22.5.new/glib/gthreadpool.h	2013-01-10 08:30:33.299141665 +0530
+@@ -109,6 +109,9 @@
+ void            g_thread_pool_set_max_idle_time      (guint             interval);
+ guint           g_thread_pool_get_max_idle_time      (void);
+ 
++/* Set default stack size for thread pool threads */
++gint g_thread_pool_set_default_stack_size (gulong size);
++
+ G_END_DECLS
+ 
+ #endif /* __G_THREADPOOL_H__ */

@@ -1,0 +1,90 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "setup-upgrade-status-common">
+
+<TMS-PAGE "Upgrade" "" "false">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "upgrade-status"></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Image Upgrade Status">
+
+<?
+set autologout_time [tms::get-config "/wsm/inactivity_timeout"]
+?>
+
+<div id="statusArea"></div>
+<div id="upgrade_done" style="visibility:hidden"></div>
+
+<noscript>
+<SETUP-UPGRADE-STATUS-BODY>
+</noscript>
+
+<script type="text/javascript">
+    var count = 0;
+    var upgrade_done = 'false';
+
+    function statsWrapper() {
+
+        /*
+         * Check whether the operation is complete BEFORE updating our
+         * detailed status.  This ensures that we won't stop refreshing
+         * one refresh too early, if the operation completes between
+         * these two queries.
+         *
+         * But don't actually set the timer until we're done refreshing
+         * the detailed status, in case it takes a while to refresh.
+         */
+        count++;
+        if (count % 5 == 0) {
+            getSjaxText('<?=$ajax_upgrade_complete_url?>', 'upgrade_done');
+            upgrade_done = document.getElementById('upgrade_done').innerHTML;
+        }
+
+        getSjaxText('<?=$ajax_upgrade_status_url?>', 'statusArea');
+
+        if (count % 5 == 0) {
+            /*
+             * We want to call ourselves (to refresh the upgrade
+             * status bars) only while upgrade is in progress.
+             * But initially we may get the upgrade_done value
+             * as true, hence we are using the count to skip
+             * first 10 'true's.
+             */
+            if ((count > 20) && (upgrade_done.match('true'))) {
+                /*
+                 * We are done with upgrade.
+                 *
+                 * Upgrade screen does not autologout, hence
+                 * we set a timer to redirect to logout screen
+                 * after autologout_time seconds.
+                 */
+                setTimeout(logout, <?=$autologout_time?> * 1000);
+            }
+            else {
+                setTimeout(statsWrapper, 2000);
+            }
+        }
+        else {
+            setTimeout(statsWrapper, 2000);
+        }
+    }
+
+    function logout()
+    {
+        /* Redirect to logout screen */
+        location.href = '<?=$ajax_autologout_url?>';
+    }
+
+    statsWrapper();
+</script>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

@@ -1,0 +1,285 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "LDAP">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "ldap"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "LDAP">
+
+<? # ==================================================
+   # Default LDAP settings
+   # ==================================================
+
+   global auth_acl
+   global auth_acl_hi
+
+   # Conditional on PROD_FEATURE_IPV6
+   set have_ipv6 [tms::have-prod-feature ipv6]
+   set ip_field_width 16
+   if {[string compare $have_ipv6 "true"] == 0} {
+       set ip_field_width 46
+   }
+?>
+
+<IF {[tms::check-authorization "query_basic" $auth_acl {query}]}>
+
+  <h2>Global LDAP Settings</h2>
+
+<CFG-FORM -div_id "ldap_1">
+
+  <TMS-TABLE -div_id "ldap_table_1">
+    <TMS-TABLE-ENTRY "User base DN">
+      <CFG-TEXTBOX -id "userbasedn" -errname "User Base DN"
+                   -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/ldap/config/global/user_base_dn" -type "string"
+                   -cols "40" -span_id "ldap_ubdn">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "User search scope">
+      <CFG-DROPDOWN -id "scope" -errname "User Search Scope"
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/ldap/config/global/user_scope"
+                    -type "string" -options {{"Subtree" "subtree"}
+                                             {"One level" "one-level"}
+                                             {"No search" "base"}}
+                    -span_id "ldap_uss">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Login attribute">
+      <CFG-TEXTBOX -id "loginattrib" -errname "Login attribute"
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/ldap/config/global/login_name_attribute"
+                    -type "string" -cols "20"
+                    -span_id "ldap_la">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Bind DN">
+      <CFG-TEXTBOX -id "binddn" -errname "Bind DN"
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/ldap/config/global/bind_dn"
+                    -type "string" -cols "40"
+                    -span_id "ldap_bdn">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Bind password">
+      <CFG-TEXTBOX -id "bindpw" -errname "Bind password"
+                    -caps "set_privileged"
+                    -acl $auth_acl_hi -acl_oper {set}
+                    -name "/ldap/config/global/bind_password"
+                    -type "string" -cols "20"
+                    -span_id "ldap_bpw">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Group base DN">
+      <CFG-TEXTBOX -id "groupbasedn" -errname "Group Base DN"
+                   -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/ldap/config/global/group_base_dn" -type "string"
+                   -cols "40" -span_id "ldap_gbdn">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Group attribute">
+      <CFG-TEXTBOX -id "groupattrib" -errname "Group attribute"
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/ldap/config/global/group_member_attribute"
+                    -type "string" -cols "20"
+                    -span_id "ldap_ga">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "LDAP Version">
+      <CFG-DROPDOWN -id "version" -errname "LDAP version"
+                    -caps "set_restricted"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/ldap/config/global/ldap_version"
+                    -type "uint32" -options {{"2" "2"}
+                                             {"3" "3"}}
+                    -span_id "ldap_version">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Referrals">
+      <CFG-CHECKBOX -id "referrals"
+                    -caps "set_restricted" -type "bool"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/ldap/config/global/referrals"
+                    -span_id "ldap_referrals">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Server port">
+      <CFG-TEXTBOX -id "port" -errname "Server port" -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/ldap/config/global/port" -type "uint16" -cols "8"
+                   -span_id "ldap_gport">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Search timeout">
+      <CFG-TEXTBOX -id "timeout" -errname "Timeout" -caps "set_restricted"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/ldap/config/global/timeout" -type "duration_sec"
+                   -cols "8" -span_id "ldap_gtimeout">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Bind timeout">
+      <CFG-TEXTBOX -id "bind_timeout" -errname "Bind timeout"
+                   -caps "set_restricted"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/ldap/config/global/bind_timeout"
+                   -type "duration_sec"
+                   -cols "8" -span_id "ldap_gbind_timeout">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "SSL mode">
+      <CFG-DROPDOWN -id "ssl_mode" -errname "SSL mode"
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/ldap/config/global/ssl/mode"
+                    -type "string" -options {{"SSL" "ssl"}
+                                             {"TLS" "tls"}
+                                             {"none" "none"}}
+                    -span_id "ldap_gssl_mode">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Server SSL port">
+      <CFG-TEXTBOX -id "ssl_port" -errname "Server SSL port"
+                   -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -name "/ldap/config/global/ssl/ssl_port" -type "uint16"
+                   -cols "8" -span_id "ldap_gssl_port">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "SSL cert verify">
+        <CFG-CHECKBOX -id "ssl_cert_verify" -caps "set_restricted"
+                      -acl $auth_acl -acl_oper {set}
+                      -name "/ldap/config/global/ssl/cert_verify" -type "bool"
+                      -span_id "ldap_gssl_cert_verify">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "SSL supplemental CA cert list">
+      <CFG-DROPDOWN -id "ldap_ssl_ca_cert_list"
+                    -errname "LDAP supplemental CA cert list"
+                    -caps "set_privileged"
+                    -acl $auth_acl -acl_oper {set}
+                    -name "/ldap/config/global/ssl/ca_certs/list_name"
+                    -type "string" -options {{"none (use only built-in CA list)" "none"}
+                                             {"Default CA cert list" "default-ca-list"}}
+                    -span_id "ldap_ssl_ca_cert_list">
+    </TMS-TABLE-ENTRY>
+
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "ldap_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "ldap_cancel_1">
+</CFG-FORM>
+
+<? # ==================================================
+   # List of LDAP servers
+   # ==================================================
+?>
+
+  <h2>LDAP Servers</h2>
+  <CFG-FORM -action "config-form-array" -div_id "ldap_2">
+
+  <?
+    set cur_line 0
+    set server_prefix "/ldap/config/server"
+    set server_ids [tms::iterate-config $server_prefix]
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="30%" border="0" cellspacing="0" cellpadding="5">
+ 
+    <tr class="listing_head">
+      <td></td>
+      <td>
+        Server</td>
+    </tr>
+
+    <FOREACH server_id $server_ids>
+      <?
+      set prefix_len [string length "$server_prefix/"]
+      set row_id [string range $server_id $prefix_len end]
+      set server_address [tms::get-config "$server_id/address"]
+      ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$row_id" -caps "set_privileged"
+                      -acl $auth_acl -acl_oper {set}
+                         -value "/ldap/config/server/$row_id"
+                         -span_id "ldap_cbox_1">
+        </td>
+      <td>
+        <?^=$server_address?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No LDAP servers.
+      <SET rem_disab "true">
+    <ELSE>
+      <SET rem_disab "false">
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <input type="hidden" name="f_array_root" value="/ldap/config/server">
+  <input type="hidden" name="f_array_shift" value="true">
+  <input type="hidden" name="f_array_custom_buttons" value="remove">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected Server"
+              -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -disabled $rem_disab
+              -span_id "ldap_remove_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  </td>
+ </tr></table>
+ </CFG-FORM>
+
+<? # ==================================================
+   # Add new LDAP server
+   # ==================================================
+?>
+
+<CFG-FORM -action "config-form-array" -div_id "ldap_3">
+  <h2>Add New LDAP Server</h2>
+  <TMS-TABLE -div_id "ldap_table_2">
+    <TMS-TABLE-ENTRY "Server IP">
+      <CFG-TEXTBOX -id "address" -errname "IP address" -caps "set_privileged"
+                   -acl $auth_acl -acl_oper {set}
+                   -type "hostname" -cols "$ip_field_width"
+                   -span_id "ldap_addr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+  <input type="hidden" name="f_array_root" value="/ldap/config/server">
+  <input type="hidden" name="f_array_children" value="address">
+  <CFG-BUTTON -type "add" -text "Add LDAP Server" -caps "set_privileged"
+              -acl $auth_acl -acl_oper {set}
+              -span_id "ldap_add_1">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view LDAP configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

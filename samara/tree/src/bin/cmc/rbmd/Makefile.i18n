@@ -1,0 +1,11 @@
+#
+# 
+#
+#
+
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+PO_OUTPUT_DIR=${PROD_BASE_I18N_ROOT}/src/bin/cmc/rbmd
+MO_OUTPUT_DIR=${BIN_DIR}/rbmd/mo
+
+include ${PROD_TREE_ROOT}/src/mk/po.mk

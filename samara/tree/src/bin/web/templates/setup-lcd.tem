@@ -1,0 +1,90 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "LCD">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "lcd"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Front Panel LCD">
+
+<?
+  global lcd_acl
+  global lcd_acl_hi
+?>
+
+<IF {[tms::check-authorization "query_basic" $lcd_acl {query}]}>
+
+  <h2>LCD Configuration</h2>
+
+<CFG-FORM -div_id "lcd_1">
+
+  <TMS-TABLE -cellpadding "4" -div_id "lcd_table_1">
+    <TMS-TABLE-ENTRY "Enable LCD Front Panel">
+        <CFG-CHECKBOX -id "enable_lcd" -caps "set_basic"
+                      -acl $lcd_acl -acl_oper {set}
+                      -name "/fpd/enable" -type "bool"
+                      -span_id "lcd_enable">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Inactivity Timeout">
+      <CFG-TEXTBOX -id "timeout" -errname "Timeout" -caps "set_basic"
+                   -acl $lcd_acl -acl_oper {set}
+                   -name "/fpd/inactivity_timeout" -type "duration_sec"
+                   -cols "4" -span_id "lcd_timeout" -multiplier 60.0
+                   -precision "1"> minutes
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Blank Screen on Timeout">
+        <CFG-CHECKBOX -id "blank_screen" -caps "set_basic"
+                      -acl $lcd_acl -acl_oper {set}
+                      -name "/fpd/blank_screen" -type "bool"
+                      -span_id "lcd_blank">
+    </TMS-TABLE-ENTRY>
+
+    <?
+      # We don't technically have to do this for ACLs, since the form would
+      # withhold the value if the user doesn't have query privileges, but
+      # we do it anyway for simplicity.
+    ?>
+    <SET show_password [tms::check-authorization "query_privileged" $lcd_acl_hi {query}]>
+
+    <IF {$show_password == "1"}>
+      <TMS-TABLE-ENTRY "Password">
+        <CFG-TEXTBOX -id "password" -errname "Password" -caps "set_privileged"
+                     -acl $lcd_acl_hi -acl_oper {set}
+                     -name "/fpd/password" -type "string"
+                     -cols "20" -span_id "lcd_password">
+      </TMS-TABLE-ENTRY>
+    </IF>
+
+<!-- XXX/EMT: add brightness and contrast if supported -->
+
+    <TMS-TABLE-SPACE>
+
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -acl $lcd_acl -acl_oper {set}
+              -span_id "web_apply_2">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $lcd_acl -acl_oper {set}
+              -span_id "web_cancel_2">
+
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view LCD configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

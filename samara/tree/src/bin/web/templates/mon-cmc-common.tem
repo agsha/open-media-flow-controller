@@ -1,0 +1,242 @@
+<?
+#
+#
+#
+#
+?>
+
+<TAG CMC-COMMON-ONETIME-SETUP>
+<?
+  global green
+  set green "<img src=\"/images/status_green.png\" alt=\"Green\">"
+
+  global yellow
+  set yellow "<img src=\"/images/status_yellow.png\" alt=\"Yellow\">"
+
+  global red
+  set red "<img src=\"/images/status_red.png\" alt=\"Red\">"
+?>
+</TAG>
+
+<TAG CMC-COMMON-PER-APPL appl>
+<?
+  global appl_connected
+
+  set appl_enabled [tms::get-config "/cmc/config/appliance/$appl/enable"]
+  set appl_connected [tms::get-config "/cmc/state/appliance/$appl/connected"]
+  set appl_connecting [tms::get-config "/cmc/state/appliance/$appl/connecting"]
+  set server_init [tms::get-config "/cmc/state/appliance/$appl/connection/server_initiated"]
+
+  global green
+  global yellow
+  global red
+
+  global enabled_text
+  global connected_text
+  global connected_text_long
+  global connected_image
+
+  if {[string equal $appl_enabled true]} {
+    set enabled_text yes
+    if {[string equal $appl_connected true]} {
+      set connected_text yes
+      set connected_image $green
+      if {[string equal $server_init "true"]} {
+        set connected_text_long "yes (server-initiated)"
+      } else {
+        set connected_text_long "yes (client-initiated)"
+      }
+    } elseif {[string equal $appl_connecting true]} {
+      set connected_text "in progress"
+      set connected_text_long "in progress"
+      set connected_image $yellow
+    } else {
+      set connected_text no
+      set connected_text_long no
+      set connected_image $red
+    }
+  } else {
+    set enabled_text no
+    if {[string equal $appl_connected true]} {
+      set connected_text yes
+      set connected_text_long yes
+      set connected_image $green
+    } else {
+      set connected_text no
+      set connected_text_long no
+      set connected_image $green
+    }
+  }
+
+  global cxn_dur
+  set cxn_dur [tms::get-config "/cmc/state/appliance/$appl/connection/duration"]
+  if {[string length $cxn_dur] == 0} {
+    set cxn_dur "N/A"
+  } else {
+    set cd_s [expr {$cxn_dur % 60}]
+    set cd_m [expr {($cxn_dur / 60) % 60}]
+    set cd_h [expr {($cxn_dur / 3600) % 24}]
+    set cd_d [expr {($cxn_dur / 86400)}]
+    set cxn_dur "${cd_d}d ${cd_h}h ${cd_m}m ${cd_s}s"
+  }
+
+  set status_passed [tms::get-config "/cmc/state/appliance/$appl/status/ok"]
+  set alive_passed [tms::get-config "/cmc/state/appliance/$appl/status/criteria/alive/passed"]
+  set disk_replied [tms::get-config "/cmc/state/appliance/$appl/status/criteria/disk_space/replied"]
+  set disk_passed [tms::get-config "/cmc/state/appliance/$appl/status/criteria/disk_space/passed"]
+  set disk_enabled [tms::get-config "/cmc/config/status/criteria/disk_space/enable"]
+  set cpu_replied [tms::get-config "/cmc/state/appliance/$appl/status/criteria/cpu_util/replied"]
+  set cpu_passed [tms::get-config "/cmc/state/appliance/$appl/status/criteria/cpu_util/passed"]
+  set cpu_enabled [tms::get-config "/cmc/config/status/criteria/cpu_util/enable"]
+  set status_current [tms::get-config "/cmc/state/appliance/$appl/status/is_current"]
+
+  global last_check
+  global client_version
+  global client_version_match
+  global client_version_compatible
+  global version_image
+  global version_text
+
+  set last_check [tms::get-config "/cmc/state/appliance/$appl/status/last_check"]
+  set client_version [tms::get-config "/cmc/state/appliance/$appl/version/version_str"]
+  set client_version_match [tms::get-config "/cmc/state/appliance/$appl/version/match"]
+  set client_version_compatible [tms::get-config "/cmc/state/appliance/$appl/version/compatible"]
+
+  if {[string equal $client_version_match "true"]} {
+    set client_version_match yes
+  } else {
+    set client_version_match no
+  }
+
+  if {[string equal $client_version_compatible "true"]} {
+    set client_version_compatible yes
+    set version_image $green
+    set version_text "ok"
+  } elseif {[string length $client_version] == 0} {
+    set client_version_compatible "unknown"
+    set version_image $yellow
+    set version_text "unknown"
+    set client_version_match "unknown"
+  } else {
+    set client_version_compatible no
+    set version_image $red
+    set version_text "ERROR"
+  }
+
+  global status_text
+  global status_image
+  global alive_text
+  global alive_image
+  global disk_text
+  global disk_image
+  global cpu_text
+  global cpu_image
+
+  # There are four possible cases for each of the two criteria we're checking:
+  #   - N/A: if we haven't checked the appliance recently (within 2x the
+  #     polling interval), or if this particular criterion is disabled,
+  #     we just print "N/A" with no image.
+  #     We do *not* do this just because status polling is disabled
+  #     altogether, since we may still have the results of a forced poll.
+  #   - OK: if the test succeeded, status is green.
+  #   - Unknown: if we're not connected to the appliance, we don't really
+  #     know whether it's in trouble or not.  Status is yellow.
+  #   - ERROR: if the test failed, status is red.
+
+  if {[string equal $status_current "false"]} {
+    set alive_text "N/A"
+    set alive_image ""
+    set disk_text "N/A"
+    set disk_image ""
+    set cpu_text "N/A"
+    set cpu_image ""
+    set status_text "N/A"
+    set status_image ""
+  } elseif {[string equal $appl_connected "false"]} {
+    set alive_text "unknown"
+    set alive_image $yellow
+    set disk_text "unknown"
+    set disk_image $yellow
+    set cpu_text "unknown"
+    set cpu_image $yellow
+    set status_text "unknown"
+    set status_image $yellow
+  } else {
+    if {[string equal $status_passed "true"]} {
+      set status_text "ok"
+      set status_image $green
+    } else {
+      set status_text "ERROR"
+      set status_image $red
+    }
+    if {[string equal $alive_passed "true"]} {
+      set alive_text "yes"
+      set alive_image $green
+    } else {
+      set alive_text "NO"
+      set alive_image $red
+    }
+    if {[string equal $disk_passed "true"]} {
+      set disk_text "ok"
+      set disk_image $green
+    } elseif {[string equal $disk_enabled "false"]} {
+      set disk_text "N/A"
+      set disk_image ""
+    } elseif {[string equal $disk_replied "false"]} {
+      set disk_text "unknown"
+      set disk_image $yellow
+    } else {
+      set disk_text "LOW"
+      set disk_image $red
+    }
+    if {[string equal $cpu_passed "true"]} {
+      set cpu_text "ok"
+      set cpu_image $green
+    } elseif {[string equal $cpu_enabled "false"]} {
+      set cpu_text "N/A"
+      set cpu_image ""
+    } elseif {[string equal $cpu_replied "false"]} {
+      set cpu_text "unknown"
+      set cpu_image $yellow
+    } else {
+      set cpu_text "HIGH"
+      set cpu_image $red
+    }
+  }
+?>
+</TAG>
+
+<?
+#
+# XXX/EMT: this should really come from mgmtd.  Unfortunately, the
+# infrastructure will not permit an internal monitoring node to be a child
+# of an external wildcard monitoring node.  /cmc/state/appliance/* is 
+# external, and we wanted to add an internal child node to compute the URL
+# for you, as it is solely based on config.  So to really abstract this out
+# (e.g. it might be nice to show this same URL in the CLI), we'd have to do 
+# one of these:
+#   (a) Have a separate internal wildcard which lists the set of known
+#       appliances, where we can hang this node off.
+#   (b) Have rbmd implement the node, which means it keeping track of the
+#       new config nodes.  This would be sad since we don't really need
+#       any info from rbmd to compute this node.
+#
+proc get_appl_url {cfg_root addr} {
+  set web_proto [tms::get-config "$cfg_root/web/proto"]
+  set web_port [tms::get-config "$cfg_root/web/port_$web_proto"]
+  if {[string equal $web_proto "http"]} {
+    set std_port "80"
+  } elseif {[string equal $web_proto "https"]} {
+    set std_port "443"
+  } else {
+    set std_port "80"
+  }
+  if {[string equal $web_port $std_port]} {
+    set web_port_str ""
+  } else {
+    set web_port_str ":$web_port"
+  }
+  set web_url "$web_proto://$addr$web_port_str/"
+  return $web_url
+}
+?>

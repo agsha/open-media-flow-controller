@@ -1,0 +1,1087 @@
+Notes on update to httpd-2.2.15-15.el6.centos.1 et al. (2012/09)
+================================================================
+
+For Ginkgo, all of the Apache RPMs were updated again.  The updates were
+all minor:
+
+
+Component     Old version            
+              New version
+------------------------------------
+httpd         2.2.15-15.el6.centos   
+              2.2.15-15.el6.centos.1
+
+apr           1.3.9-3.el6_1.2
+              1.3.9-5.el6_2
+
+apr-util      1.3.9-3.el6_0.1
+              1.3.9-3.el6_0.1 (no change)
+
+pcre          7.8-3.1.el6
+              7.8-4.el6
+
+
+1. Download and Extract Sources: same as before.
+
+2. Trim for Import: same as before.
+
+3. Import: 
+
+   # Change your current working directory to the root of the directory
+   # where the trimmed (but otherwise unpolluted) httpd sources are.
+   # Make sure this is NOT anywhere underneath $PROD_TREE_ROOT.
+   cvs import -I\! -m 'Import of Apache httpd 2.2.15-15.el6.centos.1' \
+       src/base_os/common/apache/src APACHE APACHE_2_2_15_15_EL6_CENTOS_1 \
+       > ~/apache-httpd-import.txt
+
+   # Now change to the APR root.
+   cvs import -I\! -m 'Import of APR 1.3.9-5.el6_2' \
+              src/base_os/common/apache/src/ext-srclib/apr \
+              APR APR_1_3_9_5_EL6_2 > ~/apache-apr-import.txt
+
+   # No changes to APR-UTIL, so no import necessary.
+
+   # Now change to the PCRE root
+   cvs import -I\! -m 'Import of PCRE 7.8-4.el6' \
+              src/base_os/common/apache/src/ext-srclib/pcre \
+              PCRE PCRE_7_8_4_EL6 > ~/apache-pcre-import.txt
+
+4. Merge:
+
+   cd $PROD_TREE_ROOT
+   cvs checkout -jAPACHE_2_2_15_15_EL6 -jAPACHE_2_2_15_15_EL6_CENTOS_1 \
+                src/base_os/common/apache/src > ~/apache-httpd-merge.txt
+
+   cvs checkout -jAPR_1_3_9_3_EL6_1_2 -jAPR_1_3_9_5_EL6_2 \
+                src/base_os/common/apache/src/ext-srclib/apr > \
+                ~/apache-apr-merge.txt
+
+   cvs checkout -jPCRE_7_8_3_1_EL6 -jPCRE_7_8_4_EL6 \
+                src/base_os/common/apache/src/ext-srclib/pcre > \
+                ~/apache-pcre-merge.txt
+
+5. Update Config files:
+
+  * Untar all RPMs, rename directories to strip version number
+    (i.e. to "httpd", "apr", "apr-util", and "pcre").
+
+  * Blow away httpd/srclib from httpd RPM, and replace those directories
+    with the contents of other three RPMs.  So again, we have:
+
+    httpd          (from httpd-2.2.15-15.el6.centos.1.tar.gz)
+      srclib
+        apr        (from apr-1.3.9-5.el6_2.tar.gz)
+        apr-util   (from apr-util-1.3.9-3.el6_0.1.tar.gz)
+        pcre       (from pcre-7.8-4.el6.tar.gz)
+      ...
+
+  * The procedure described from the 2012/01 import no longer seems to
+    work.  Configuring APR succeeds, but then configuring APR-UTIL fails
+    because it cannot find APR.  Obvious things like "--with-apr ../apr"
+    do not work.  Instead, I did:
+
+    - Test on Point (EL6, 64-bit).
+
+    - Configure PCRE (no arguments, just ./configure), then build it (make).
+
+    - Configure httpd from the top:
+
+      ./configure --prefix=/usr/notaprefix \
+                  --enable-ssl --enable-headers --enable-rewrite \
+                  --disable-cgid --disable-charset-lite --disable-imap \
+                  --disable-negotiation --disable-userdir \
+                  --enable-info --enable-deflate --disable-v4-mapped \
+                  --enable-proxy --enable-proxy-http \
+                  --with-included-apr
+
+    - Build httpd from the top.
+
+  * Although the build fails partway through (some remaining unsolved
+    aspect of the black magic discussed earlier), the complete configure
+    and partial build still manages to produce almost every file we had
+    gotten out of configuring and building before.  And every one that it
+    does produce has no changes at all vs. the Apache import from 2012/01:
+
+    APR:
+       ext-srclib/apr/include/apr.h
+       ext-srclib/apr/include/arch/unix/apr_private.h
+       ext-srclib/apr/exports.c
+
+    APR-UTIL:
+       ext-srclib/apr-util/include/apr_ldap.h
+       ext-srclib/apr-util/include/apu.h
+       ext-srclib/apr-util/include/apu_want.h
+       ext-srclib/apr-util/include/private/apu_config.h
+       ext-srclib/apr-util/include/private/apu_select_dbm.h
+       ext-srclib/apr-util/exports.c
+
+    PCRE:
+       ext-srclib/pcre/pcre.h
+       ext-srclib/pcre/config.h
+       ext-srclib/pcre/pcre_chartables.c
+       ext-srclib/pcre/pcre_maketables.c
+
+    HTTPD:
+       include/ap_config_auto.h
+       include/ap_config_layout.h
+       modules.c
+
+  * The following two httpd files were not produced by the build
+    (presumably they would have been if it had completed):
+
+       server/exports.c
+       server/test_char.h
+
+    These do not look like files where there is likely to have been any
+    change anyway.
+
+  * Assume the same results (i.e. no change) hold for other platforms
+    (32-bit, EL5, and PPC).
+
+6. Adaptations to base code: N/A, already done in previous import.
+
+7. Update Makefiles: not needed, no change.
+
+8. Review upgrade guide: N/A
+
+9. Test: some basic ad hoc testing was done.
+
+
+Notes on update to 2.2.15-15.el6, and subsequent modifications (2012/01)
+========================================================================
+
+This Apache httpd update differs from our previous updates in two ways:
+
+  (a) We used to take the httpd source straight from Apache.  Now we are
+      taking SRPMS from CentOS 6.2 latest.
+
+  (b) Apache httpd used to come with libapr, libapr-util, and libpcre
+      included.  All of our previous imports were done with httpd and
+      these three libraries all under a single CVS Vendor Tag, and a
+      single CVS Release Tag per version update.
+
+      At least in CentOS 6.2, these are now split into four separate RPMs.
+      We want to be able to take updates to each of these independently,
+      so they want to be under separate Vendor and Release tags.
+      To avoid trouble with CVS, we will not put the new imports of these
+      libraries in the same place (src/base_os/common/apache/src/srclib).
+      Instead we'll put them under a new peer directory, ext-srclib.
+
+      On x86, we could have just used the RPMs for these libraries,
+      and put the '-devel' variants in build_required.inc.  But this
+      wouldn't have worked for PPC, since the necessary RPMs are not
+      available.  Rather than special-case PPC (which would likely
+      have involved building it anyway), just build it for all
+      platforms.
+
+
+1. Download and Extract Sources
+-------------------------------
+
+Download the SRPMs from a CentOS mirror and install them as root.
+Find the spec files in /root/rpmbuild/SPEC, and run 'rpmbuild -bp'
+on each spec file, to produce the patched sources in ../BUILD.
+
+Each of these directories can be saved, and used for:
+  (a) Trimming out what we don't want to import (step 2)
+  (b) Running the 'configure' script, to generate config files (step 5)
+
+(An alternative approach, which allows us to avoid having to do anything
+as root, is to run 'rpmbuild --recompile -bp' on the SRPMs directly as a
+non-root user.  However, this not only extracts the sources and applies
+the patches, but also configures and builds them.  In theory, 'make clean'
+and 'make distclean' should clean this out and let us start fresh.
+While trying this, I ran into some difficulties I did not understand,
+and ultimately had better luck with the approach involving installing
+the SRPM as root.)
+
+
+2. Trim for Import
+------------------
+
+Starting from a virgin copy of the sources, without the 'configure'
+script having been run, trim out files we don't want to import.
+For each of the four RPMs, run:
+
+    find . -type f -name \*.c.\* -exec rm {} \;
+    find . -type f -name \*.h.\* -exec rm {} \;
+    find . -type f -name \*.m4.\* -exec rm {} \;
+    find . -type f -name \*.in.\* -exec rm {} \;
+    find . -type f -name Makefile -exec rm {} \;
+    find . -type f -name \*.o -exec rm {} \;
+    find . -type f -name \*.dsw -exec rm {} \;
+    find . -type f -name \*.dsp -exec rm {} \;
+    find . -type f -name NWGNU\* -exec rm {} \;
+    find . -type f -name '*.html.*' \! -name '*.html.en' \! \
+                   -name '*.var' -exec rm {} \;
+    find . -type f -name 'CHANGES' -exec rm {} \;
+    find . -type f -name '*.ps' -exec rm {} \;
+    find . -type f -name '*.zip' -exec rm {} \;
+    find . -type d \( -name win32 -o -name beos -o -name netware -o \
+                      -name os2 -o -name aix -o -name os390 \) \
+           -exec rm -rf '{}' \;
+    find . -type d \( -name bs2000 -o -name tpf -o -name winnt \) \
+           -exec rm -rf {} \;
+    rm -rf srclib
+    rm -f modules/ssl/ssl_expr_parse.y
+    rm -f modules/ssl/ssl_expr_scan.l
+
+    rm -rf autom4te.cache config.layout.layout Makefile.win \
+           prefork README-win32.txt ROADMAP
+
+(Many of these may only be applicable to the httpd RPM, but it won't
+hurt to run them everywhere, to catch whatever files they'll catch.)
+
+
+3. Import
+---------
+
+Import the directories:
+
+   # Change your current working directory to the root of the directory
+   # where the trimmed (but otherwise unpolluted) httpd sources are.
+   # Make sure this is NOT anywhere underneath $PROD_TREE_ROOT.
+   cvs import -I\! -m 'Import of Apache httpd 2.2.15-15.el6' \
+              src/base_os/common/apache/src APACHE APACHE_2_2_15_15_EL6 \
+              > ~/apache-httpd-import.txt
+
+
+   # Now change to the APR root
+   cvs import -I\! -m 'Import of APR 1.3.9-3.el6_1.2' \
+              src/base_os/common/apache/src/ext-srclib/apr \
+              APR APR_1_3_9_3_EL6_1_2 > ~/apache-apr-import.txt
+
+
+   # Now change to the APR-UTIL root
+   cvs import -I\! -m 'Import of APR-UTIL 1.3.9-3.el6_0.1' \
+              src/base_os/common/apache/src/ext-srclib/apr-util \
+              APR_UTIL APR_UTIL_1_3_9_3_EL6_0_1 > ~/apache-apr_util-import.txt
+
+
+   # Now change to the PCRE root
+   cvs import -I\! -m 'Import of PCRE 7.8-3.1.el6' \
+              src/base_os/common/apache/src/ext-srclib/pcre \
+              PCRE PCRE_7_8_3_1_EL6 > ~/apache-pcre-import.txt
+
+
+4. Merge
+--------
+
+Do the merge:
+
+   cd $PROD_TREE_ROOT
+   cvs checkout -jAPACHE_2_0_55 -jAPACHE_2_2_15_15_EL6 \
+                src/base_os/common/apache/src > ~/apache-httpd-merge.txt
+
+This time around, no merges were required for the three libraries,
+since we had no changes to them, and they were being imported fresh
+into new places.  Next time a similar merge will be required there
+as well.
+
+
+5. Update Config files
+----------------------
+
+Update the config files.  The basic steps for this are:
+  (a) Configure and build the old version of each component on the main
+      platform (64-bit EL6)
+  (b) Configure and build the new version of each component on each of
+      several platforms, including the main one.
+  (c) By comparing the output of each of these builds, and the versions
+      of the config file in the tree from the previous Apache import,
+      construct the new config files.
+
+Note that we have to do the build too, not just the configure, because
+(a) configuration of some components depends on some of the other
+components being built, and (b) some of the components generate source
+files during the build which we need to check in.
+
+For steps (a) and (b), configure+build, we want to do this on all four
+of the components (apr, apr-util, pcre, and httpd) at once.  This
+happens naturally with the old version, Apache 2.0.63, where it all
+came as a single integrated package.  As for the new version, the
+three library directories were renamed and moved under httpd/srclib
+to re-integrate them, just for purposes of configuration and building.
+Therefore, for (b), we have a directory structure looking like:
+
+  httpd          (from httpd-2.2.15.tar.gz)
+    srclib
+      apr        (from apr-1.3.9.tar.gz)
+      apr-util   (from apr-util-1.3.9.tar.gz)
+      pcre       (from pcre-7.8.tar.gz)
+    ...
+
+Once these directory structures are set up, configure and build.
+After this is done, we rename 'srclib' to 'ext-srclib' to help our
+diff process below, so we can use consistent paths to reach each file
+regardless of whether it comes from a native httpd build or the Samara
+source tree.
+
+For step (b), the four platforms we build are:
+
+    (1) EL6, 64-bit (star).  This is our baseline platform.  The
+        main version of each config file will be from this, and
+        then we'll conditionalize this to express diffs for other
+        platforms as needed.
+
+    (2) EL6, 32-bit (vstar32, a VMWare VM running on Octagon).
+        This will let us generate 32-bit vs. 64-bit diffs.
+
+    (3) EL5, 64-bit (octagon).  This will let us generate EL5 vs. EL6 diffs.
+
+    (4) PowerPC/PPC (mako).  This will let us generate PPC vs. x86 diffs.
+
+For step (b), due to interdepdendencies between httpd and the three
+libraries, a somewhat convoluted configuration and build process was
+required.  These steps were determined through trial and error.
+Although they seem more complex than necessary, none of the simpler
+sequences I tried worked properly (e.g. configuring the three
+libraries and then httpd failed because configuration of httpd
+corrupts the Makefile in the pcre directory, causing a build failure).
+The steps used were:
+
+  1. Configure and build APR.
+
+  2. Configure and build APR-UTIL.
+
+  3. Configure httpd, but do not build yet.
+
+  4. Configure pcre, but do not build yet.
+
+  5. Build httpd.  (This will descend into the pcre directory and build it)
+
+For the libraries, no special arguments were given to the 'configure'
+script (except possibly using '--with-...' directives to point it at
+where the other components were installed?)  For httpd, the following
+'configure' invocation was used:
+
+    ./configure --prefix=/usr/notaprefix \
+                --enable-ssl --enable-headers --enable-rewrite \
+                --disable-cgid --disable-charset-lite --disable-imap \
+                --disable-negotiation --disable-userdir \
+                --enable-info --enable-deflate --disable-v4-mapped \
+                --enable-proxy --enable-proxy-http \
+                --with-included-apr
+
+(The second-to-last line was added later, for bug 14629.)
+
+To compare 7 different versions of each of 19 different config files,
+some environment variables were set to refer to the paths to each
+of the versions:
+
+    Key:
+      PT:  path to current TMS version (working copy in CVS being upgraded)
+      PTO: path to old TMS version (pre-import, with 2.0.63)
+      PO:  path to old version (2.0.63 raw, EL6 64-bit)
+      PN:  path to new version (2.2.15... raw, EL6 64-bit)
+      PN5: path to new version (2.2.15... raw, EL5 64-bit)
+      PN3: path to new version (2.2.15... raw, EL6 32-bit)
+      PNP: path to new version (2.2.15... raw, PowerPC/PPC)
+
+    Environment variable setup:
+      setenv PT  $PTR/src/base_os/common/apache/src
+      setenv PTO ~et/Work/tree2/src/base_os/common/apache/src
+      setenv PO  ~et/Work/apache-upgrade-2012_01/httpd-2.0.63-EL6_64
+      setenv PN  ~et/Work/apache-upgrade-2012_01/EL6_64/httpd
+      setenv PN5 ~et/Work/apache-upgrade-2012_01/EL5_64/httpd
+      setenv PN3 ~et/Work/apache-upgrade-2012_01/EL6_32/httpd
+      setenv PNP ~et/Work/apache-upgrade-2012_01/PPC/httpd
+
+For step (c), do the following for each config file:
+
+    (1) Make sure the file exists in both PO and PN.  If it's not:
+        (a) If only exists in PN, take the new raw version (PN).
+            Outcome: "NEW" = Newly added.
+        (b) If only exists in PO, ensure that it isn't referenced by
+            any code, then remove it.  Outcome: "DEL" = Deleted.
+
+    (2) First figure out what to do for the main platform (EL6 x86_64):
+
+        (a) Compare PO and PN (old and new raw output of 'configure').
+            If they match, leave the file alone.
+            Outcome: "OK".
+
+        (b) Otherwise, compare PO and PTO (old raw output, and old TMS
+            version).  If they match, check the new raw version (PN)
+            into the tree (PT).
+            Outcome: "CNC" == Changed, but Not Customized.
+
+        (c) Otherwise, the file must be re-adapted.  Look at the diffs
+            between PO and PTO, and apply these to PN.
+            Outcome: "RE" == Redo adaptation.
+
+    (3) Look at diffs for our three variants:
+          --> EL5    (PN vs. PN5)
+          --> 32-bit (PN vs. PN3)
+          --> PPC    (PN vs. PPC)
+        Add whatever conditionalizations are necessary.  Sometimes
+        this will mean #ifdefs in the file; sometimes this will
+        mean separate files.
+
+        The following preprocessor constants were used for
+        conditionalization:
+
+          PROD_TARGET_ARCH_I386
+          PROD_TARGET_ARCH_X86_64
+          PROD_TARGET_ARCH_PPC
+          PROD_TARGET_PLATFORM_FULL_LINUX_EL_EL5 (implicitly)
+          PROD_TARGET_PLATFORM_FULL_LINUX_EL_EL6
+          PROD_TARGET_OS_LINUX
+
+    Results of config/generated file update:
+
+    APR:
+
+      CNC  ext-srclib/apr/include/apr.h
+      CNC  ext-srclib/apr/include/arch/unix/apr_private.h
+      CNC  ext-srclib/apr/exports.c
+
+    APR-UTIL:
+
+      CNC  ext-srclib/apr-util/include/apr_ldap.h
+      CNC  ext-srclib/apr-util/include/apu.h
+      CNC  ext-srclib/apr-util/include/apu_want.h
+      RE   ext-srclib/apr-util/include/private/apu_config.h       (path fixup)
+      CNC  ext-srclib/apr-util/include/private/apu_select_dbm.h
+      DEL  ext-srclib/apr-util/uri/uri_delims.h
+      CNC  ext-srclib/apr-util/exports.c
+
+    PCRE:
+
+      CNC  ext-srclib/pcre/pcre.h
+      CNC  ext-srclib/pcre/config.h
+      CNC  ext-srclib/pcre/chartables.c (renamed to pcre_chartables.c)
+      NEW  ext-srclib/pcre/maketables.c (renamed to pcre_maketables.c)
+
+    HTTPD:
+
+      RE   include/ap_config_auto.h                               (path fixup)
+      RE   include/ap_config_layout.h                             (path fixup)
+      RE   modules.c                                     (insert graft points)
+      CNC  server/exports.c
+      CNC  server/test_char.h
+
+
+6. Adaptations to base code
+---------------------------
+
+One adaptation to the base httpd code were necessary as part of the
+import, so it would build.  (This is in addition to any other fixes
+made during post-import testing.)
+
+  * server/core.c: make the selinux patch (httpd-2.2.11-selinux.patch)
+    conditional on non-PPC, as selinux is not available on PPC.
+    In step 5, we just deleted this code during the configure-and-make
+    phase; and for the Samara sources, the code from this patch was put
+    inside '#ifndef PROD_TARGET_ARCH_PPC'.
+
+
+7. Update Makefiles
+-------------------
+
+Each of our Makefiles has a list of files to build (and a list of
+vpaths in which to find them), which needs to be updated.  We have a
+separate Makefile for each of the four original SRPMS, and the
+following steps should be followed for each one.
+
+Find the list of files built by Apache's own build system, by
+searching for *.o in our test build.  Eliminate obvious undesirables,
+and use this as the new file list.  The list of vpaths may need to be
+updated too, though this is less likely.
+
+
+8. Review upgrade guide
+-----------------------
+
+Apache has a web page on upgrading from their httpd 2.0 to 2.2:
+
+    http://httpd.apache.org/docs/2.2/upgrading.html
+
+These basically did not affect us, except in ways already adapted to
+earlier (e.g. renaming of modules).  The change to the 'UseCanonicalName'
+default did not affect us because we were already setting it in the
+httpd.conf.  The new default is the value we want, so we could remove it
+from the config file, but it seems just as good to be explicit about it.
+
+
+9. Test
+-------
+
+At this point, various tests were performed, including re-verifying
+various previous httpd bug fixes, etc.  This included a review of the
+following bugs:
+
+  - Bug 2525: web error logs when user closes browser while request handler
+    is outputting text.
+  - Bug 2587: problem recovering from crashes of httpd parent process.
+  - Bug 10044: "no web http enable" causes cpu load to shoot to 100%
+  - Bug 10425: changing hostname from Web UI sometimes gives error message.
+  - Bug 11222: changing of IP addr on a secondary interface in Web UI
+    disrupts connection.
+  - Bug 11474: when adding back a web listen interface don't always get
+    web back
+  - Bug 12291: Screen goes blank (sometimes) after changing HTTPS port
+  - Bug 12334: Change in HTTP port not reliable if done multiple times
+    quickly.
+  - Bug 12461: Possible race during "no web http enable" several times,
+    then "web http enable" several times mixed together.
+  - Bug 13499: certain config changes disrupt Web UI (use SIGUSR1 to
+    reconfig Apache).
+  - Bug 13834: changing Web UI listen config: httpd unexpected exit;
+    delay before changes take effect.
+  - Bug 13956: Apache ignores SIGTERM while processing SIGHUP/SIGUSR1
+  - Bug 13965: Apache ignores second SIGHUP/SIGUSR1 while processing a
+    previous one.
+  - Bug 13966: "Bad file descriptor: apr_accept" on Apache httpd
+    SIGUSR1/reconfig.
+
+
+Notes on update to 2.0.63, and subsequent modifications (2008/04)
+=================================================================
+
+The same 'configure' parameters as before were used for the 2.0.63
+import.  Later, --enable-deflate was added to support output
+compression (see bug 13009).  Later, --disable-v4-mapped was added to
+support IPv6.  So the latest invocation used was:
+
+./configure --prefix=/usr/notaprefix \
+            --enable-ssl --enable-headers --enable-rewrite \
+            --disable-cgid --disable-charset-lite --disable-imap \
+            --disable-negotiation --disable-userdir \
+            --enable-info --enable-deflate --disable-v4-mapped
+
+
+Notes on update from 2.0.50 to 2.0.55
+==================================================
+
+cd httpd-2.0.55
+find . -type f -name '*.dsp' -exec rm {} \;
+find . -type f -name '*.dsw' -exec rm {} \;
+find . -type f -name 'NWGNU*' -exec rm {} \;
+find . -type f -name 'Makefile.win' -exec rm {} \;
+find . -type f -name '*.zip' -exec rm {} \;
+find . -type f -name 'CHANGES' -exec rm {} \;
+find . -type f -iname 'ChangeLog' -exec rm {} \;
+find . -type f -name '*.html.*' \! -name '*.html.en' \! -name '*.var' -exec rm {} \;
+find . -type f -name '*.ps' -exec rm {} \;
+rm -rf srclib/pcre/testdata
+rm -f modules/ssl/ssl_expr_parse.y
+rm -f modules/ssl/ssl_expr_scan.l
+
+cvs import -I\! -m 'Import of Apache 2.0.55' src/base_os/common/apache/src APACHE APACHE_2_0_55
+
+cd ${PROD_TREE_ROOT}
+cvs checkout -jAPACHE_2_0_50_SOURCE -jAPACHE_2_0_55 src/base_os/common/apache/src
+# Fix up changes, commit
+
+./configure --prefix=/usr/notaprefix \
+            --enable-ssl --enable-headers --enable-rewrite \
+            --disable-cgid --disable-charset-lite --disable-imap \
+            --disable-negotiation --disable-userdir \
+            --enable-info
+
+find . -type f -name 'config.log' -exec rm {} \;
+find . -type f -name 'config.status' -exec rm {} \;
+
+
+---- Build what we configured above
+make
+
+
+----  Then do:
+
+find . -newer config.nice -type f -name '*.[ch]'
+
+
+Now, some of these files need to be modified.
+
+- ./include/ap_config_layout.h
+  We need to fixup all the ..._EXP_... defines to be relative to
+  PROD_ROOT_PREFIX.  At the top do:
+
+#ifndef PROD_ROOT_PREFIX
+#define PROD_ROOT_PREFIX ""
+#endif
+#define DEFAULT_PREFIX PROD_ROOT_PREFIX "/opt/tms"
+
+  Then search and replace (this fixes up the ..._EXP_...'s):
+       "/usr/notaprefix
+with:
+       DEFAULT_PREFIX "
+
+
+- ./include/ap_config_auto.h
+
+  Fix HTTPD_ROOT to be:
+
+#ifndef PROD_ROOT_PREFIX
+#define PROD_ROOT_PREFIX ""
+#endif
+#define HTTPD_ROOT PROD_ROOT_PREFIX "/opt/tms"
+
+
+- ./srclib/apr-util/include/apu.h
+  Set APU_HAVE_GDBM and APU_HAVE_DB to 0
+
+--- Now 32/64 and OS platform fixups
+
+    XXX doc this: the two config pass, one per arch, etc.
+
+    include/ap_config_auto.h
+        include/ap_config_auto.h.linux
+        include/ap_config_auto.h.freebsd
+
+    srclib/apr/include/apr.h
+        srclib/apr/include/apr.h.i386
+        srclib/apr/include/apr.h.x86_64
+    srclib/apr/include/arch/unix/apr_private.h
+        srclib/apr/include/arch/unix/apr_private.h.i386
+        srclib/apr/include/arch/unix/apr_private.h.x86_64
+
+    srclib/apr-util/include/apu_want.h
+        srclib/apr-util/include/apu_want.h.linux
+        srclib/apr-util/include/apu_want.h.freebsd
+
+    srclib/apr-util/include/private/apu_config.h
+        srclib/apr-util/include/private/apu_config.h.linux
+        srclib/apr-util/include/private/apu_config.h.freebsd
+
+
+--- Search all the files in the apache directory for the path to
+    your home directory, which the configure script likes to put
+    in comments.  Remove these.  The last time we did this, the files
+    affected were:
+
+       src/base_os/common/apache/src/server/exports.c
+       src/base_os/common/apache/src/srclib/apr-util/exports.c
+       src/base_os/common/apache/src/srclib/apr/exports.c
+
+--- Finally, add any missing .c files to the makefiles
+
+    XXX doc the
+
+
+Notes on update to 2.0.50 from 2.0.47
+=====================================
+
+This method imports more files than the more detailed approach below, but it
+is easier to do.  Untar the dist in a directory, and cd to it.  Then do:
+
+rm -rf docs
+rm -rf support
+rm -rf test
+rm -rf build
+rm -rf modules/arch
+rm -rf modules/cache
+rm -rf modules/dav
+rm -rf modules/echo
+rm -rf modules/experimental
+rm -rf modules/test
+find . -type f \! \( -name '*.[ch]' -o -name LICENSE -o -name README -o -name NOTICE \) -exec rm {} \;
+find . -type d \( -name win32 -o -name beos -o -name netware -o -name os2 -o -name aix -o -name os390 \) -exec rm -rf {} \;
+find . -type d \( -name bs2000 -o -name tpf -o -name winnt \) -exec rm -rf {} \;
+find . -type d \( -name docs -o -name doc -o -name test -o -name build \) -exec rm -rf {} \;
+
+
+
+cvs import -I\! -m 'Import of Apache 2.0.50' src/base_os/common/apache/src APACHE APACHE_2_0_50_SOURCE
+
+cd ~/Work/tree
+
+cvs checkout -jAPACHE_2_0_47_SOURCE -jAPACHE_2_0_50_SOURCE src/base_os/common/apache/src
+
+
+Now, in an unmodified 2.0.50 tree do:
+
+./configure --prefix=/usr/notaprefix --enable-ssl --disable-asis \
+        --disable-cgid --disable-charset-lite --disable-imap \
+        --disable-include --disable-negotiation --disable-setenvif \
+        --disable-status --disable-userdir --enable-headers \
+
+
+Note: to get 2.0.50 to build on hexagon, -I/usr/kerberos/include
+    was added to the EXTRA_INCLUDES variable in build/config_vars.mk before
+    this:
+
+
+make
+
+
+Then do:
+
+
+find . -newer config.nice -type f -name '*.[ch]'
+
+
+This will list all the files we may need to add.  Here's what the list was
+in this case:
+
+./include/ap_config_layout.h
+./include/ap_config_auto.h
+./server/test_char.h
+./server/exports.c
+./server/export_vars.h
+./srclib/pcre/pcre.h
+./srclib/pcre/config.h
+./srclib/pcre/chartables.c
+./srclib/apr/include/arch/unix/apr_private.h
+./srclib/apr/include/apr.h
+./srclib/apr/export_vars.c
+./srclib/apr/exports.c
+./srclib/apr-util/include/private/apu_select_dbm.h
+./srclib/apr-util/include/private/apu_config.h
+./srclib/apr-util/include/apr_ldap.h
+./srclib/apr-util/include/apu.h
+./srclib/apr-util/include/apu_want.h
+./srclib/apr-util/uri/uri_delims.h
+./srclib/apr-util/exports.c
+./srclib/apr-util/export_vars.h
+./modules.c
+
+
+Now, some of these files need to be modified.
+
+- ./include/ap_config_layout.h
+  We need to fixup all the ..._EXP_... defines to be relative to
+  PROD_ROOT_PREFIX.  At the top do:
+
+#ifndef PROD_ROOT_PREFIX
+#define PROD_ROOT_PREFIX ""
+#endif
+#define DEFAULT_PREFIX PROD_ROOT_PREFIX "/opt/tms"
+
+  Then search and replace (this fixes up the ..._EXP_...'s):
+       "/usr/notaprefix
+with:
+       DEFAULT_PREFIX "
+
+
+- ./include/ap_config_auto.h
+
+  Fix HTTPD_ROOT to be:
+
+#ifndef PROD_ROOT_PREFIX
+#define PROD_ROOT_PREFIX ""
+#endif
+#define HTTPD_ROOT PROD_ROOT_PREFIX "/opt/tms"
+
+
+- ./srclib/apr-util/include/apu.h
+  Set APU_HAVE_GDBM and APU_HAVE_DB to 0
+
+
+
+Copy over the changed list of files, cvs add them, and commit them.
+
+Finally, update the makefile to contain any .c files added in the new
+version.  For a minore release, this is easiest to do just by trying to
+build and seeing what symbols are missing, and then adding the files
+manually.
+
+
+Notes on import of Apache
+=========================
+
+Apache version 2.0.47 was used.  This was the latest stable version in
+the 2.0 family as of 9/9/2003.
+
+
+Import process
+--------------
+
+A subset of the Apache distribution's files were imported.  The set
+to import was determined by the following steps:
+
+  - Configure Apache using its own build configuration system
+    to have only the features desired (see below).
+
+  - Wait 5 minutes.  (This assumes that the build takes significantly
+    less than 5 minutes)
+
+  - Build it using its own build system.
+    (Note: to get 2.0.47 to build on hexagon, -I/usr/kerberos/include
+    was added to the EXTRA_INCLUDES variable in build/config_vars.mk)
+
+  - Find the files which have not been accessed within the last
+    5 minutes, using 'find . -type f -amin +5', and delete them.
+
+  - Note that this must be done on a local filesystem (/tmp on hexagon
+    was used) because the access time stats on files in NFS are not
+    reliable.
+
+
+Modules imported
+----------------
+
+Apache comes with a certain subset of its available modules enabled by
+default.  Some of these were disabled, and others added.
+
+Note: modules with a '*' are required for the product to function
+correctly, while modules with a '-' are included because they are
+useful for debugging, potentially needed in future releases, or
+unknown whether or not they will be needed for this release.
+
+Non-default modules to use:
+  * ssl (HTTPS/SSL support)
+  * headers (controlling caching of static content)
+
+Default modules to keep:
+  - access (access control based on hostname or other request characteristics)
+  * actions (associate certain file extensions with certain CGIs)
+  * alias (to allow CGIs to be in a directory other than cgi-bin)
+  - auth (basic auth by text files)
+  - autoindex (auto-generation of dir listings)
+  * cgi (execution of CGI scripts)
+  * dir (issue redirects to add trailing slash to request where required)
+  - env (allows control over env vars passed to CGI; either pass-thru from
+    environment httpd was launched in, or set according to config)
+  - log-config (access logging)
+  * mime (associate file extensions with MIME types)
+
+Default modules to disable:
+  - asis (send files which contain HTTP headers in them already, without
+    adding any of its own)
+  - cgid (separate CGI daemon to reduce fork overhead on multithreaded systems)
+  - charset-lite (experimental module)
+  - imap (server-side image maps)
+  - include (server-side includes)
+  - negotiation (selection of different content based on client)
+  - setenvif (conditional setting of env vars based on request characteristics)
+  - status (server performance / status page)
+  - userdir (serve documents out of public_html user directories)
+
+
+Build configuration
+-------------------
+
+For the test build, and to generate any auto-generated files to
+overlay onto the import, the Apache build system was configured using
+the 'configure' script.  The only real options passed were ones to
+enable or disable the modules listed above, although a path prefix was
+also specified with a searchable keyword to make it easier to find
+path dependencies.  It was invoked as follows:
+
+./configure --prefix=/usr/home/et/xyzzy --enable-ssl --disable-asis --disable-cgid --disable-charset-lite --disable-imap --disable-include --disable-negotiation --disable-setenvif --disable-status --disable-userdir
+
+
+Overlay files generated by 'configure'
+--------------------------------------
+
+Running the 'configure' script produced the following source files
+needed for the build.  Files marked with a '*' needed to be changed
+before being checked in, and are discussed below.
+  * include/ap_config_auto.h
+  * include/ap_config_layout.h
+  - modules.c
+  - srclib/apr/include/apr.h
+  - srclib/apr/include/arch/unix/apr_private.h
+  - srclib/apr-util/include/apr_ldap.h
+  * srclib/apr-util/include/apu.h
+  - srclib/apr-util/include/private/apu_config.h
+  - srclib/apr-util/include/private/apu_select_dbm.h
+  - srclib/pcre/config.h
+  - srclib/pcre/pcre.h
+
+ap_config_auto.h and ap_config_layout.h in the include directory
+contained absolute paths of various files which had to be hand-edited
+for use in the TMS environment.  No other files had path
+dependencies, aside from ones that the configure script generated for
+Apache's own build process, which was thrown out.
+
+apu.h contained APU_HAVE_DB and APU_HAVE_GDBM set to 1, which caused
+libdb-4.0 and libgdbm to be linked in.  The former is way too large,
+and we don't want to include the latter unless it was necessary.
+To avoid these libraries:
+
+  - APU_HAVE_DB and APU_HAVE_GDBM were changed to 0.  This should
+    not affect Apache's operation because apu_select_dbm.h already
+    defined APU_USE_GDBM and APU_USE_DB to 0.
+
+  - src/srclib/apr-util/dbm/apr_dbm_berkeleydb.c was removed from
+    the build and the import.  It is the only file used during
+    Apache's build that was not imported and built.
+
+
+Overlay files generated by the Apache build
+-------------------------------------------
+
+The following files were generated during Apache's build process.
+Those marked with a '*' were imported, while those marked with
+a '-' were not, because nothing in the build needed them.
+  * server/test_char.h
+  - server/export_vars.h
+  * server/exports.c
+  - srclib/apr/export_vars.h
+  - srclib/apr/exports.c
+  - srclib/apr-util/export_vars.h
+  - srclib/apr-util/exports.c
+  * srclib/apr-util/uri/uri_delims.h
+  * srclib/pcre/chartables.c
+
+
+Component division
+------------------
+
+The original Apache build created several libraries in the process of
+building httpd.  Two of them were dynamically-linked libraries, and
+were made into statically-linked libraries for the TMS build system.
+These are:
+  - libapr
+  - libaprutil
+
+The remainder of the libraries were statically linked into httpd in
+the original Apache build system.  httpd was built from the objects
+listed below.  The markings next to each item show how each object was
+brought into the TMS build.  '-' means all of the source files in the
+item were built directly into httpd for the TMS build.  '*' means the
+item was left as a separate statically-linked library:
+  - modules.c
+  * One library per optional module, plus mod_http (a mandatory module):
+    combined into a single statically-linked library for the TMS build
+  - libprefork (server/mpm/prefork/prefork.c)
+  - libmain (various files in the server directory)
+  - libos (os/unix/unixd.c)
+  * libpcre (various files in the srclib/pcre directory)
+
+Note: mod_so was built by the Apache build, but excluded from the
+TMS build because nothing needed it.
+
+Note: libpcre appeared not to be needed for the TMS build, because
+httpd built fine without it, but then it segfaulted during
+initialization.  Thus libpcre was included in the TMS build.
+
+
+Directory structure
+-------------------
+
+The original directory structure of the Apache distribution was
+preserved in src/base_os/common/apache/src.  The four libraries and one
+binary to be build from these sources are represented as Makefiles
+in bin and lib directories that are peers of src.
+
+
+Second-pass file culling
+------------------------
+
+The following files made it through the first pass because they were
+used by the Apache build system, but were deleted anyway because they
+were not used by the TMS build system.  In some cases
+(e.g. gen_test_char.c), they were used to generate source files during
+the build, the products of which were checked in as overlays.  In some
+cases (e.g. htpasswd.c) they were for other tools which we do not
+need.  And in some cases (e.g. apr_dbm_berkeleydb.c) they were removed
+because they brought in libraries we did not want to support (see
+above).
+
+  src/server/gen_test_char.c
+  src/srclib/pcre/dftables.c
+  src/srclib/apr-util/dbm/apr_dbm_berkeleydb.c
+  src/srclib/apr-util/uri/gen_uri_delims.c
+  src/support/ab.c
+  src/support/htdigest.c
+  src/support/htpasswd.c
+  src/support/rotatelogs.c
+  src/support/checkgid.c
+  src/support/logresolve.c
+  src/support/htdbm.c
+
+
+Overlay files
+-------------
+
+This section presents a summary listing of all of the files that were
+checked in as overlays to the Apache distribution.  This lists all
+Apache-related files in our repository that were not part of the
+stock Apache distribution, excluding the documentation directory.
+The paths shown are relative to src/base_os/common/apache.
+
+Generated by 'configure' script and used verbatim:
+  src/modules.c
+  src/srclib/apr/include/apr.h
+  src/srclib/apr/include/arch/unix/apr_private.h
+  src/srclib/apr-util/include/apr_ldap.h
+  src/srclib/apr-util/include/private/apu_config.h
+  src/srclib/apr-util/include/private/apu_select_dbm.h
+  src/srclib/pcre/config.h
+  src/srclib/pcre/pcre.h
+
+Generated by 'configure' script and modified:
+  src/include/ap_config_auto.h
+  src/include/ap_config_layout.h
+  src/srclib/apr-util/include/apu.h
+
+Generated by Apache build and used verbatim:
+  src/server/exports.c
+  src/server/test_char.h
+  src/srclib/apr-util/uri/uri_delims.h
+  src/srclib/pcre/chartables.c
+
+Written from scratch:
+  Makefile
+  bin/Makefile
+  bin/httpd/Makefile
+  lib/Makefile
+  lib/libapr/Makefile
+  lib/libaprutil/Makefile
+  lib/libmodules/Makefile
+  lib/libpcre/Makefile
+
+
+Rationale
+---------
+
+Apache was originally imported and built from source because the
+binary distributions of it included many optional components that
+we didn't need, and were huge.  Over the years we have also fixed
+various bugs in it, as you can see in the CVS revision history.
+
+Apache 2.0 was chosen over 1.3 because integrating 1.3 with mod_ssl is
+very messy.  mod_ssl comes as a separate package which patches 21
+source files in the base Apache distribution with about 1200 lines of
+diff, which would make importing updates to the Apache or mod_ssl code
+difficult.  In contrast, mod_ssl is part of the base 2.0 distribution.
+
+Some of the files mod_ssl patches are part of the build system, and
+would not have been imported anyway.  The following are source files
+it patches, which probably would have had to be imported:
+
+src/include/ap_alloc.h
+src/include/ap_mmn.h
+src/include/buff.h
+src/include/http_conf_globals.h
+src/include/http_config.h
+src/include/httpd.h
+src/main/alloc.c
+src/main/buff.c
+src/main/http_config.c
+src/main/http_main.c
+src/main/http_protocol.c
+src/main/http_request.c
+src/modules/proxy/mod_proxy.c
+src/modules/proxy/proxy_http.c
+src/modules/standard/mod_log_config.c
+src/modules/standard/mod_rewrite.c
+src/modules/standard/mod_so.c
+src/modules/standard/mod_status.c
+src/support/apachectl
+src/support/apxs.pl
+src/support/suexec.c
+
+
+Open Issues
+-----------
+
+XXX: I had to remove the following lines from the config file,
+because they required the setenvif module, which I excluded.
+Are they needed for correctness with targetted browsers?
+Could import setenvif module if needed.
+
+#
+# The following directives modify normal HTTP response behavior to
+# handle known problems with browser implementations.
+#
+BrowserMatch "Mozilla/2" nokeepalive
+BrowserMatch "MSIE 4\.0b2;" nokeepalive downgrade-1.0 force-response-1.0
+BrowserMatch "RealPlayer 4\.0" force-response-1.0
+BrowserMatch "Java/1\.0" force-response-1.0
+BrowserMatch "JDK/1\.0" force-response-1.0

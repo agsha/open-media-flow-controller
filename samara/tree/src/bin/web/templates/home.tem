@@ -1,0 +1,22 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<?
+  global home_template
+  if {[string length [tms-utils::get-user]] > 0} {
+     if {![info exists home_template]} {
+          set home_template "mon-summary"
+     }
+     tms::redirect-url [tms::url-builder-paired -n -a "template" $home_template]
+     return
+  } 
+?>
+
+<meta http-equiv="Refresh"
+      content="0; URL=/admin/launch?script=rh&amp;template=mon-summary">

@@ -1,0 +1,25 @@
+Notes on import of pam_unix
+===========================
+
+Modified files:
+
+    src/modules/pam_unix/pam_unix_sess.c
+    src/modules/pam_unix/support.c
+    src/modules/pam_unix/support.h
+
+Description of changes:
+
+- Add "last_module" PAM option and use it in _unix_verify_password()
+  when there is an auth failure, so we say nothing about unknown users
+  if we're not the last module (since it may just be a remote username
+  for RADIUS/TACACS+/LDAP).  md_aaa.c sets this option as appropriate.
+
+- When opening or closing a session, and LOGIN_USER is not the same as
+  username, log both, so we know who the remote (unmapped) user is as
+  well.
+
+- Fix a warning about write() return being ignored, and return
+  PAM_AUTH_ERR if we don't write what we expect.
+
+- Link with our libpam_common library, and use it to set
+  TRUSTED_AUTH_INFO.

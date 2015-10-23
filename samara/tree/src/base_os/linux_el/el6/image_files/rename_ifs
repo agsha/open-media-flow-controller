@@ -1,0 +1,422 @@
+#! /bin/bash
+#
+# rename_ifs          Rename interfaces based on manufacturing settings
+#
+# chkconfig: 3 15 85
+# description: rename interfaces based on manufacturing settings
+
+#
+# (C) Copyright 2013-2015 Juniper Networks, Inc. All Rights reserved.
+# (C) Copyright 2002-2011 Tall Maple Systems, Inc.
+# All rights reserved.
+# The contents of this file are subject to the terms of the MIT License.
+# You may not use this file except in compliance with the License.
+# See the file License.txt at the top of this source tree.
+# You can obtain a copy of the license at https://opensource.org/licenses/MIT
+#
+
+# Source function library.
+. /etc/init.d/functions
+
+MFG_DB_DIR=/config/mfg
+MFG_DB_PATH=${MFG_DB_DIR}/mfdb
+
+MDDBREQ=/opt/tms/bin/mddbreq
+NAMEIF=/sbin/nameif
+IFCONFIG=/sbin/ifconfig
+
+# XXXXXXXX  testing
+# MDDBREQ=./mddbreq
+# MFG_DB_DIR=./mfd
+# MFG_DB_PATH=${MFG_DB_DIR}/mfdb
+# #NAMEIF=echo
+# #IFCONFIG=echo
+
+RETVAL=0
+VERBOSE=1
+
+MAC_ADDR_RETURN=
+
+# ==================================================
+# Echo or not based on VERBOSE setting
+# ==================================================
+vecho()
+{
+    level=$1
+    shift
+
+    if [ ${VERBOSE} -gt ${level} ]; then
+        echo "$*"
+    fi
+}
+
+#
+# get_mac_addr_str(ifname)
+#
+# Look up the MAC address of the specified interface name, substitute
+# the '_' character for instances of ':', and assign the result to the
+# global MAC_ADDR_RETURN.
+#
+get_mac_addr_str()
+{
+    IFNAME=$1
+    MAC_ADDR_RETURN=`ifconfig ${IFNAME} | grep 'Ethernet.*HWaddr' | sed 's/^\([^ ]*\) .*HWaddr \(.*\)/\2/' | tr ':' '_' |  tr -d '[:space:]'`
+}
+
+# 
+# save_if_state(ifname list)
+#
+# Save the "upness" of each interface, so we can restore this later.
+# We just look for the "UP" flag in ifconfig output.  Why look for this
+# and not "RUNNING"?  Probably we could have done either, but the real
+# question here is whether the interface *wanted* to be up.  And UP
+# represents "admin up", while RUNNING represents "link up".
+#
+# We store this information in variables named 'if_is_down_<MACADDR>',
+# where the <MACADDR> is the MAC address using '_' to separate each byte
+# (instead of ':', which we don't trust in variable names).
+#
+save_if_state() {
+    NAMES="$1"
+    for NAME in ${NAMES}; do
+        ifconfig ${NAME} | grep -w "UP" > /dev/null 2>&1
+        IS_DOWN=$?
+        get_mac_addr_str ${NAME}
+        eval 'if_is_down_'${MAC_ADDR_RETURN}'="${IS_DOWN}"'
+        vecho 2 "Save: interface ${NAME} MAC ${MAC_ADDR_RETURN} is_down: ${IS_DOWN}"
+    done
+}
+
+#
+# restore_if_state(ifname list)
+#
+# Restore the "upness" of each interface, as saved in save_if_state().
+# Note that the names of the interfaces may be different than when they
+# were sent to save_if_state(), but that's OK, as we have saved them
+# in variables named according to their MAC addrs.
+#
+restore_if_state() {
+    NAMES="$1"
+    for NAME in ${NAMES}; do
+        get_mac_addr_str ${NAME}
+        eval 'IS_DOWN="${if_is_down_'${MAC_ADDR_RETURN}'}"'
+        vecho 2 "Restore: interface ${NAME} MAC ${MAC_ADDR_RETURN} is_down: ${IS_DOWN}"
+        if [ "${IS_DOWN}" = "0" ]; then
+            vecho 2 "Bringing interface ${NAME} up..."
+            ifconfig ${NAME} up
+        fi
+    done
+}
+
+do_rename_ifs() {
+    if [ ! -d ${MFG_DB_DIR} ]; then
+        return
+    fi
+
+    rename_type=`${MDDBREQ} -v ${MFG_DB_PATH} query get "" /mfg/mfdb/interface/rename_type`
+    if [ -z "${rename_type}" ]; then
+        rename_type=mac-map
+    fi
+
+    enabled=false
+    mac_map_enabled=false
+    if [ "${rename_type}" = "mac-map" ]; then 
+        mac_map_enabled=`${MDDBREQ} -v ${MFG_DB_PATH} query get "" /mfg/mfdb/interface/map/enable`
+        enabled="${mac_map_enabled}"
+    elif [ "${rename_type}" != "none" ]; then 
+        enabled=true;
+    fi
+
+    if [ "${enabled}" = "false" ]; then
+        return
+    fi
+
+    vecho 1 "Mapping type: ${rename_type}"
+
+    # ==================================================
+    # Get the naming of all the interfaces
+    # ==================================================
+
+    IF_CHECK_PHYSICAL=1
+
+    # NOTE: the code below is lifted from manufacture.sh 
+
+    # We make sure that there is a device given in
+    # /sys/class/net/IFNAME/device , as otherwise this may
+    # not be a physical interface.
+    #
+    # Note that we take out any alias interfaces, like eth0:1 , as they are 
+    # likely not a 'real' interface.
+
+    IF_ACCEPTED_PATTERN='.*'
+    if [ "${IF_CHECK_PHYSICAL}" = "1" ]; then
+        IF_CANDIDATES=`ifconfig -a | egrep '^[^ \t]' | grep 'Ethernet.*HWaddr' | awk '{print $1}' | tr '\n' ' '`
+
+        # Now, walk the candidates, and make sure there's a device file for each
+        IF_ACCEPTED=
+        IF_ACCEPTED_PATTERN=
+        for ifn in ${IF_CANDIDATES}; do
+            DN="/sys/class/net/${ifn}/device"
+            if [ -e "${DN}" ]; then
+                IF_ACCEPTED="${IF_ACCEPTED} ${ifn}"
+                if [ ! -z "${IF_ACCEPTED_PATTERN}" ]; then
+                    IF_ACCEPTED_PATTERN="${IF_ACCEPTED_PATTERN}|${ifn}"
+                else
+                    IF_ACCEPTED_PATTERN="${ifn}"
+                fi
+            fi
+        done
+    fi
+
+    IF_NAME_MAC_RAW=`ifconfig -a | grep 'Ethernet.*HWaddr' | sed 's/^\([^ ]*\) .*HWaddr \(.*\)/\2 \1/' | tr -s ' ' | egrep -v '^.* [^:]*:.*$' | grep -v '^00:00:00:00:00:00' | egrep ' ('${IF_ACCEPTED_PATTERN}')$'`
+    IF_KERNNAMES_LIST=`echo "${IF_NAME_MAC_RAW}" | awk '{print $2}' | tr '\n' ' '`
+    IF_MACS_LIST=`echo "${IF_NAME_MAC_RAW}" | awk '{print $1}' | tr '\n' ' '`
+
+    if_num=1
+    for mac in ${IF_MACS_LIST}; do
+        temp_mac_nums=`echo ${mac} | tr -d ':' | sed 's/\(..\)/ 0x\1/g'`
+        dec_mac=`printf "%03d%03d%03d%03d%03d%03d" ${temp_mac_nums}`
+
+        kernname=`echo ${IF_KERNNAMES_LIST} | awk '{print $'${if_num}'}'`
+        targetname=${kernname}
+        ifindex=`cat /sys/class/net/${kernname}/ifindex`
+
+        eval 'IF_MAC_'${dec_mac}'_MAC="'${mac}'"'
+        eval 'IF_MAC_'${dec_mac}'_IFINDEX="'${ifindex}'"'
+        eval 'IF_MAC_'${dec_mac}'_KERNNAME="'${kernname}'"'
+        eval 'IF_MAC_'${dec_mac}'_TARGETNAME="'${targetname}'"'
+
+        if_num=$((${if_num} + 1))
+    done
+
+    if_nums=`${MDDBREQ} -v ${MFG_DB_PATH} query iterate "" \
+        /mfg/mfdb/interface/name | tr '\n' ' '`
+    for in in ${if_nums}; do
+        name=`${MDDBREQ} -v ${MFG_DB_PATH} query get "" \
+            /mfg/mfdb/interface/name/${in}/name`
+        IF_TARGET_NAMES="${IF_TARGET_NAMES} ${name}"
+    done
+    vecho 1 "Target interface names: ${IF_TARGET_NAMES}"
+
+    # ==================================================
+    # When all this is done, any of the below blocks should set:
+    #
+    #     - IF_MACS_LIST : will be the list of MACs whose interfaces
+    #         will get remapped.  If a MAC isn't in here, no renaming
+    #         for it will happen, no matter the other settings.  Starts
+    #         out with the list of candidate interface MACs.
+    #
+    #     -  IF_MAC_decmac_KERNNAME : current (kernel) ifname
+    #
+    #     -  IF_MAC_decmac_TARGETNAME : new, desired ifname
+    #
+    # Also, some informational variables: (don't change these)
+    #
+    #     - IF_TARGET_NAMES : configured list of interface names that
+    #         the model has, in order.  All IF_MAC_decmac_TARGETNAME's
+    #         should be one of the names in this list.  This is not
+    #         enforced.
+    #
+    #     - IF_MAC_decmac_MAC : the hex (normal) MAC
+    # 
+    #     - IF_MAC_decmac_IFINDEX : the kernel's interface index.  This
+    #         does not change for a boot / interface once assigned.
+    #
+    # No block below should change any interface state or names directly.
+
+    if [ "${rename_type}" = "mac-map" ]; then 
+        # Do the desired rename
+        map_nums=`${MDDBREQ} -v ${MFG_DB_PATH} query iterate "" \
+            /mfg/mfdb/interface/map/macifname | tr '\n' ' '`
+
+        for mn in ${map_nums}; do
+            name=`${MDDBREQ} -v ${MFG_DB_PATH} query get "" \
+                /mfg/mfdb/interface/map/macifname/${mn}/name`
+            macaddr=`${MDDBREQ} -v ${MFG_DB_PATH} query get "" \
+                /mfg/mfdb/interface/map/macifname/${mn}/macaddr`
+            temp_mac_nums=`echo ${macaddr} | tr -d ':' | sed 's/\(..\)/ 0x\1/g'`
+            dec_mac=`printf "%03d%03d%03d%03d%03d%03d" ${temp_mac_nums}`
+
+            eval 'IF_MAC_'${dec_mac}'_MAC="'${macaddr}'"'
+            eval 'IF_MAC_'${dec_mac}'_TARGETNAME="'${name}'"'
+
+            vecho 2 "Add MAC mapping: ${macaddr} to interface name: ${name}"
+        done
+    elif [ "${rename_type}" = "dyn-mac-sorted" ]; then 
+
+        # Build ordered list of decimal mac addresses from the mac list
+        # We do this because 'sort -n' does not work for hex numbers.
+        for mac in ${IF_MACS_LIST}; do
+            temp_mac_nums=`echo ${mac} | tr -d ':' | sed 's/\(..\)/ 0x\1/g'`
+            dec_mac=`printf "%03d%03d%03d%03d%03d%03d" ${temp_mac_nums}`
+
+            dec_macs="${dec_macs} ${dec_mac}"
+        done
+        ORDERED_DEC_MACS=`echo ${dec_macs} | tr ' ' '\n' | sort -n | tr '\n' ' '`
+
+        if_num=1
+        for dec_mac in ${ORDERED_DEC_MACS}; do
+            eval 'kernname="${IF_MAC_'${dec_mac}'_KERNNAME}"'
+            targetname=`echo ${IF_TARGET_NAMES} | awk '{print $'${if_num}'}'`
+            eval 'hex_mac="${IF_MAC_'${dec_mac}'_MAC}"'
+
+            vecho 2 "Add MAC mapping: ${hex_mac} from: ${kernname} to: ${targetname}"
+            eval 'IF_MAC_'${dec_mac}'_TARGETNAME="'${targetname}'"'
+
+            if_num=$((${if_num} + 1))
+        done
+        
+    elif [ "${rename_type}" = "dyn-ifindex-sorted" ]; then 
+        if_num=1
+        isml=""
+        for mac in ${IF_MACS_LIST}; do
+            temp_mac_nums=`echo ${mac} | tr -d ':' | sed 's/\(..\)/ 0x\1/g'`
+            dec_mac=`printf "%03d%03d%03d%03d%03d%03d" ${temp_mac_nums}`
+
+            eval 'ifindex="${IF_MAC_'${dec_mac}'_IFINDEX}"'
+            eval 'hex_mac="${IF_MAC_'${dec_mac}'_MAC}"'
+
+            nl=$(printf "${ifindex}-${dec_mac}")
+            isml="${isml} ${nl}"
+        done
+        IFINDEX_ORDERED_DECMACS=`echo "${isml}" | tr ' ' '\n' | sort -n | awk -F- '{print $2}' | tr '\n' ' '`
+        ## echo "IOM: ${IFINDEX_ORDERED_DECMACS}"
+
+        for dec_mac in ${IFINDEX_ORDERED_DECMACS}; do
+
+            eval 'kernname="${IF_MAC_'${dec_mac}'_KERNNAME}"'
+            targetname=`echo ${IF_TARGET_NAMES} | awk '{print $'${if_num}'}'`
+            eval 'hex_mac="${IF_MAC_'${dec_mac}'_MAC}"'
+
+            vecho 2 "Add MAC mapping: ${hex_mac} from: ${kernname} to: ${targetname}"
+            eval 'IF_MAC_'${dec_mac}'_TARGETNAME="'${targetname}'"'
+
+            if_num=$((${if_num} + 1))
+        done
+    fi
+
+
+    # ==================================================
+    # Apply the desired interface naming
+
+
+    # First, check if there will need to be any renaming
+    change_count=0
+    for mn in ${IF_MACS_LIST}; do
+        temp_mac_nums=`echo ${mn} | tr -d ':' | sed 's/\(..\)/ 0x\1/g'`
+        dec_mac=`printf "%03d%03d%03d%03d%03d%03d" ${temp_mac_nums}`
+        eval 'kernname="${IF_MAC_'${dec_mac}'_KERNNAME}"'
+        eval 'targetname="${IF_MAC_'${dec_mac}'_TARGETNAME}"'
+        eval 'ifindex="${IF_MAC_'${dec_mac}'_IFINDEX}"'
+        
+        if [ "${kernname}" = "${targetname}" ]; then
+            vecho 1 "Naming: unchanged: MAC: ${mn} ifindex: ${ifindex} name: ${targetname}"
+            continue
+        fi
+        vecho 1 "Naming: MAC: ${mn} ifindex: ${ifindex} name: ${targetname}"
+        change_count=$((${change_count} + 1))
+    done
+
+    if [ "${change_count}" = "0" ]; then
+        vecho 0 "Renaming: no changes required"
+        return
+    fi
+
+    # Remember which interfaces were up, so we can restore this
+    # state when we're done.
+    save_if_state "${IF_KERNNAMES_LIST}"
+
+    # Bring down all interfaces, as otherwise we cannot rename them
+    vecho 1 "Bringing down all interfaces to do renaming"
+    for kifn in ${IF_KERNNAMES_LIST}; do
+        ${IFCONFIG} ${kifn} down
+    done
+
+    # Rename each to something unique, to avoid name swap conflicts
+    uniqueprefix=`/usr/bin/printf "p%04xn" ${$}`
+    if_num=1
+    for mn in ${IF_MACS_LIST}; do
+        temp_mac_nums=`echo ${mn} | tr -d ':' | sed 's/\(..\)/ 0x\1/g'`
+        dec_mac=`printf "%03d%03d%03d%03d%03d%03d" ${temp_mac_nums}`
+        eval 'kernname="${IF_MAC_'${dec_mac}'_KERNNAME}"'
+        eval 'targetname="${IF_MAC_'${dec_mac}'_TARGETNAME}"'
+        
+        if [ "${kernname}" = "${targetname}" ]; then
+            continue
+        fi
+        vecho 1 "Pre-renaming: MAC: ${mn} to ${uniqueprefix}${if_num} for interface name: ${targetname}"
+        ${NAMEIF} -s "${uniqueprefix}${if_num}" ${mn} || echo "Failed pre-rename for ${mn} / ${targetname}"
+        if_num=$((${if_num} + 1))
+    done
+
+    # Do the rename from the unique temporary name to the final desired name
+    for mn in ${IF_MACS_LIST}; do
+        temp_mac_nums=`echo ${mn} | tr -d ':' | sed 's/\(..\)/ 0x\1/g'`
+        dec_mac=`printf "%03d%03d%03d%03d%03d%03d" ${temp_mac_nums}`
+        eval 'kernname="${IF_MAC_'${dec_mac}'_KERNNAME}"'
+        eval 'targetname="${IF_MAC_'${dec_mac}'_TARGETNAME}"'
+        eval 'ifindex="${IF_MAC_'${dec_mac}'_IFINDEX}"'
+        
+        if [ "${kernname}" = "${targetname}" ]; then
+            vecho 0 "Renaming: no changes for: MAC: ${mn} ifindex: ${ifindex} name: ${targetname}"
+            continue
+        fi
+        vecho 0 "Renaming: MAC: ${mn} ifindex: ${ifindex} name: ${targetname}"
+        ${NAMEIF} -s "${targetname}" ${mn} || echo "Failed rename for ${mn} / ${targetname}"
+    done
+    
+    IF_NAME_MAC_RAW=`ifconfig -a | grep 'Ethernet.*HWaddr' | sed 's/^\([^ ]*\) .*HWaddr \(.*\)/\2 \1/'`
+    IF_KERNNAMES_LIST=`echo "${IF_NAME_MAC_RAW}" | awk '{print $2}' | tr '\n' ' '`
+    IF_MACS_LIST=`echo "${IF_NAME_MAC_RAW}" | awk '{print $1}' | tr '\n' ' '`
+
+    # Bring back up whichever interfaces were up before.
+    vecho 1 "Restoring interface state after renaming"
+    restore_if_state "${IF_KERNNAMES_LIST}"
+}
+
+start() {
+        echo $"Running renaming interfaces"
+
+        do_rename_ifs
+
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/rename_ifs
+        return $RETVAL
+}
+
+stop() {
+        rm -f /var/lock/subsys/rename_ifs
+        RETVAL=$?
+        return $RETVAL
+}
+
+restart() {
+        stop
+        start
+}
+
+reload() {
+        start
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        stop
+        start
+        ;;
+  reload)
+        reload
+        ;;
+  status)
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|reload|restart}"
+        exit 1
+esac
+
+exit $?

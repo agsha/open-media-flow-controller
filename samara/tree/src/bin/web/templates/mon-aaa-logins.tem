@@ -1,0 +1,354 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Login Attempts">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "aaa-logins"></TMS-MON-MENU></TMS-SIDEBAR>
+<?
+  global auth_acl
+  global auth_acl_lo
+  global auth_acl_hi
+?>
+<TMS-PAGE-CONTENT "Login Attempts">
+
+<IF {[tms::check-authorization "query_basic" $auth_acl_lo {query}]}>
+
+  <h2>Authentication Failure Tracking: Status</h2>
+
+<?
+  # ---------------------------------------------------------------------------
+  # Overall page setup
+  # ---------------------------------------------------------------------------
+?>
+
+  <IF {[string equal [tms::get-config "/aaa/tally/config/enable"] "false"]}>
+    Note: failure data below may be out of date because tracking is disabled.
+    <p>
+  <ELSEIF {[string equal [tms::get-config "/aaa/tally/config/lockout/enable"] "false"]}>
+    Note: lockouts listed below are not enforced because lockouts are
+    disabled.
+    <p>
+  </IF>
+
+<?
+  set token [tms::get-binding-children "/aaa/tally/state/user" "false" "true"]
+
+  #
+  # Sort the bindings for better performance.
+  #
+  # This orders solely by username.  We actually want to have a primary sort
+  # by class of entry (local, then unknown non-hashed, then unknown hashed),
+  # so we make three passes to get that.  Within each pass, we just print
+  # the users in the order in which they appear, since alphabetical by
+  # username is what we want at that point.
+  #
+  tms::sort-bindings $token
+
+  set user_bnames [tms::get-binding-children-names $token "/aaa/tally/state/user/*"]
+
+  set mapped_username ""
+
+  if {[tms::check-authorization "query_privileged" $auth_acl_hi {query}]} {
+    set curr_search_username [tms::get-param "query" "username"]
+  } else {
+    set curr_search_username ""
+  }
+
+  set curr_search_username_esc [tms::html-escape $curr_search_username "escape_by_default"]
+
+  if {[string length $curr_search_username] > 0} {
+    set results [tms::call-action-ex "/aaa/tally/actions/map_username" [list "username" "string" $curr_search_username] [list "mapping" "uint32" "1"]]
+    set bname_check [lindex $results 2 0 0]
+    if {[string equal $bname_check "mapped_username"]} {
+      set mapped_username [lindex $results 2 0 2]
+    } else {
+      tms::log "Got unexpected binding back from map_username action: '$bname_check'"
+    }
+  }
+?>
+
+<?
+  # ---------------------------------------------------------------------------
+  # Routine to print one group of users into the table
+  # ---------------------------------------------------------------------------
+?>
+
+<TAG TALLY-USER-ROW token user_bnames want_known want_hashed>
+  <?
+    global cur_line
+    global explain_obfu
+    global explain_trunc
+    global explain_hash
+    global auth_acl
+    global auth_acl_lo
+    global auth_acl_hi
+    global curr_search_username
+    global curr_search_username_esc
+    global mapped_username
+  ?>
+    <FOREACH user_bname $user_bnames>
+      <SET username [tms::binding-name-last-part $user_bname]>
+      <?
+       # XXX/SML: We'll take the fully paranoid approach of escaping by default
+       # any characters in the username that are not on the proven safe list
+       # for HTML context, since this value might originate from a nefarious,
+       # unuathenticated source.  The tradeoff here is HTML source debug
+       # readability in the browser in exchange for higher security.
+       ?>
+      <SET username_esc [tms::html-escape $username "escape_by_default"]>
+      <SET known [tms::get-child-value-by-name $token "$user_bname/known" "yes"]>
+      <IF {[tms::get-child-value-by-name $token "$user_bname/username_mapped"] == 0}>
+        <SET hashed "no">
+      <ELSE>
+        <SET hashed "yes">
+      </IF>
+      <IF {[tms::get-child-value-by-name $token "$user_bname/username_truncated"] == "false"}>
+        <SET truncated "no">
+      <ELSE>
+        <SET truncated "yes">
+      </IF>
+
+      <SET do_row "no">
+      <IF {[string equal $want_hashed "yes"] && [string equal $hashed "yes"]}>
+        <SET do_row "yes">
+      </IF>
+      <IF {[string equal $hashed "no"] && [string equal $want_hashed "no"] && [string equal $want_known $known]}>
+        <SET do_row "yes">
+      </IF>
+
+      <IF {[string length $curr_search_username] != 0 && ([string equal $curr_search_username $username] || [string equal $mapped_username $username])}>
+        <SET highlight "yes">
+      <ELSE>
+        <SET highlight "no">
+      </IF>
+
+      <IF {[string equal $do_row "yes"]}>
+        <IF {[tms::check-authorization "query_privileged" $auth_acl_hi {query}] == 0 && [string equal $known "no"] && [string equal $hashed "no"]}>
+          <SET username_esc "XXXXXXXX (X)">
+          <SET username_reset "junk">
+          <SET explain_obfu "true">
+        <ELSE>
+          <?
+           # XXX/SML: We're hex-encoding the username here both for guaranteed
+           # HTML4 corectness for identifiers, and to protect against any
+           # unknown character vulnerabilities in our internal infrastructure,
+           # and since the username could (nefariously or accidentally) contain
+           # something harmful.  The value is decoded again by the
+           # web_config_form_aaa.c module for submission to mgmtd.
+           ?>
+          <SET username_reset [tms::hex-encode $username]>
+          <IF {[string equal $truncated "yes"]}>
+            <SET username_esc "$username_esc (+)">
+            <SET explain_trunc "true">
+          <ELSEIF {[string equal $hashed "yes"]}>
+            <SET username_esc "$username_esc (*)">
+            <SET explain_hash "true">
+          </IF>
+        </IF>
+
+        <SET locked [tms::get-child-value-by-name $token "$user_bname/locked_db" "yes"]>
+        <SET numfail [tms::get-child-value-by-name $token "$user_bname/num_failures"]>
+        <SET lastfailtime [tms::get-child-value-by-name $token "$user_bname/last_failure_time"]>
+        <SET lastfailhost [tms::get-child-value-by-name $token "$user_bname/last_failure_remote_host"]>
+        <SET lastfailtty [tms::get-child-value-by-name $token "$user_bname/last_failure_tty"]>
+        <IF {[string length $lastfailhost] == 0}>
+          <SET lastfailfrom $lastfailtty>
+        <ELSE>
+          <SET lastfailfrom $lastfailhost>
+        </IF>
+        <tr class="<?
+        if {[string equal $highlight "yes"]} {
+            tms::puts "listing_highlight"
+        } elseif {[expr {$cur_line % 2}] == 0} {
+            tms::puts "listing_even"
+        } else {
+            tms::puts "listing_odd"
+        }
+        ?>">
+          <td>
+            <CFG-CHECKBOX -id "del_user_$username_reset"
+                          -caps "action_privileged"
+                          -acl $auth_acl_lo -acl_oper {action}
+                          -span_id "aft_reset_user_1">
+          </td>
+          <td></td>
+          <td><?=$username_esc?></td>
+          <td></td>
+          <td><?^=$known?></td>
+          <td></td>
+          <td><?^=$locked?></td>
+          <td></td>
+          <td><?^=$numfail?></td>
+          <td></td>
+          <td><?^=$lastfailtime?></td>
+          <td></td>
+          <td><?^=$lastfailfrom?></td>
+        </tr>
+        <? incr cur_line ?>
+      </IF>
+    </FOREACH>
+</TAG>
+
+<?
+  # ---------------------------------------------------------------------------
+  # Table of user records, with reset form
+  # ---------------------------------------------------------------------------
+?>
+
+  <CFG-FORM -div_id "aaa_4" -action "aaa-tracking-reset">
+
+  <?
+    # First, if we were searching by username, pre-scan the list of
+    # results for two reasons:
+    #   1. See if there were any search results at all, to choose
+    #      the explanatory text we put at the top.
+    #   2. If there was a match, see if it was a hashed form of the
+    #      username being searched for.  If so, add a new column so
+    #      we can show the original username alongside it, to make it
+    #      more clear this goes with what you were looking for.
+  ?>
+  <IF {[string length $curr_search_username] != 0}>
+    <SET got_match "no">
+    <SET got_mapped_match "no">
+    <FOREACH user_bname $user_bnames>
+      <SET username [tms::binding-name-last-part $user_bname]>
+      <IF {[string equal $curr_search_username $username]}>
+        <SET got_match "yes">
+      <ELSEIF {[string equal $mapped_username $username]}>
+        <SET got_match "yes">
+        <SET got_mapped_match "yes">
+      </IF>
+    </FOREACH>
+
+    <IF {[string equal $got_match "yes"]}>
+      Matches for user '<?=$curr_search_username_esc?>' are highlighted in
+      red below.
+    <ELSE>
+      No matches found for user '<?=$curr_search_username_esc?>'.
+    </IF>
+    <p>
+  </IF>
+
+  <table border="0" cellpadding="3" cellspacing="0" class="listing">
+    <tr class="listing_head">
+      <td width="10"></td>
+      <td width="20"></td>
+      <td>Username</td>
+      <td width="20"></td>
+      <td>Known</td>
+      <td width="20"></td>
+      <td>Locked</td>
+      <td width="20"></td>
+      <td>Failures</td>
+      <td width="20"></td>
+      <td>Last failure time</td>
+      <td width="20"></td>
+      <td>Last failure from</td>
+    </tr>
+
+    <?
+      # XXXX/EMT: would be nice to offer no-clear-history and no-unlock
+      # options.  Also, Select All and Unselect All.
+    ?>
+    <SET cur_line 0>
+    <SET explain_obfu  "false">
+    <SET explain_trunc "false">
+    <SET explain_hash  "false">
+
+    <TALLY-USER-ROW $token $user_bnames "yes" "no">
+    <TALLY-USER-ROW $token $user_bnames "no"  "no">
+    <TALLY-USER-ROW $token $user_bnames ""    "yes">
+
+    <TMS-TABLE-SPACE>
+
+    <IF {[string equal $explain_obfu "true"]}>
+      <tr>
+        <td colspan=99>(X) Obfuscated for security reasons</td>
+      </tr>
+    </IF>
+
+    <IF {[string equal $explain_trunc "true"]}>
+      <tr>
+        <td colspan=99>(+) Truncated to maximum length</td>
+      </tr>
+    </IF>
+
+    <IF {[string equal $explain_hash "true"]}>
+      <tr>
+        <td colspan=99>(*) Hashed for security reasons</td>
+      </tr>
+    </IF>
+
+    <IF {[string equal $explain_obfu "true"] || [string equal $explain_trunc "true"] || [string equal $explain_hash "true"]}>
+      <TMS-TABLE-SPACE>
+    </IF>
+
+  </table>
+
+  <CFG-BUTTON -type "reset_user" -text "Reset Selected Users"
+              -caps "set_privileged"
+              -acl $auth_acl_lo -acl_oper {action}
+              -span_id "aft_reset_1">
+
+  <CFG-BUTTON -type "cancel" -text "Refresh"
+              -caps "query_privileged"
+              -acl $auth_acl_lo -acl_oper {query}
+              -span_id "aft_refresh_1">
+
+  </CFG-FORM>
+
+<p>
+
+<?
+  # ---------------------------------------------------------------------------
+  # Search form.
+  #
+  # This is only offered to admin users,, lest a lesser user be able to
+  # glean some information they shouldn't.  (XXX/EMT: we could let them
+  # search the plaintext known users, but that isn't so interesting)
+  # ---------------------------------------------------------------------------
+?>
+
+<IF {[tms::check-authorization "query_privileged" $auth_acl_hi {query}] == 1}>
+  <CFG-FORM -div_id "aaa_5" -action "aaa-tracking-search">
+    Search by username:
+
+    <CFG-TEXTBOX -id "search_username" -cols 16
+                 -value "$curr_search_username_esc"
+                 -caps "query_privileged"
+                 -acl $auth_acl_lo -acl_oper {query}
+                 -span_id "aft_search_username_1">
+
+    <CFG-BUTTON -type "search_apply" -text "Run Search"
+                -caps "query_privileged"
+                -acl $auth_acl_lo -acl_oper {query}
+                -span_id "aft_search_apply_1">
+
+    <CFG-BUTTON -type "search_reset" -text "Clear Search"
+                -caps "query_privileged"
+                -acl $auth_acl_lo -acl_oper {query}
+                -span_id "aft_search_reset_1">
+  </CFG-FORM>
+</IF>
+
+<p>
+
+View or change <a href="/admin/launch?script=rh&amp;template=setup-aaa">configuration</a> for authentication failure tracking.
+
+<ELSE>
+
+<br>
+Insufficient authorization to view login attempts.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

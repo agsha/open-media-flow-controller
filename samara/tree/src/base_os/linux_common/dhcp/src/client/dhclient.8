@@ -1,0 +1,567 @@
+.\"	$Id: dhclient.8,v 1.1.1.1 2012/02/10 03:37:49 et Exp $
+.\"
+.\" Copyright (c) 2004,2007-2009 by Internet Systems Consortium, Inc. ("ISC")
+.\" Copyright (c) 1996-2003 by Internet Software Consortium
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS.  IN NO EVENT SHALL ISC BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+.\" OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.\"   Internet Systems Consortium, Inc.
+.\"   950 Charter Street
+.\"   Redwood City, CA 94063
+.\"   <info@isc.org>
+.\"   https://www.isc.org/
+.\"
+.\" Support and other services are available for ISC products - see
+.\" https://www.isc.org for more information.
+.\"
+.TH dhclient 8
+.SH NAME
+dhclient - Dynamic Host Configuration Protocol Client
+.SH SYNOPSIS
+.B dhclient
+[
+.B -4
+|
+.B -6
+]
+[
+.B -S
+]
+[
+.B -N
+[
+.B -N...
+]
+]
+[
+.B -T
+[
+.B -T...
+]
+]
+[
+.B -P
+[
+.B -P...
+]
+]
+[
+.B -p
+.I port
+]
+[
+.B -d
+]
+[
+.B -e
+.I VAR=value
+]
+[
+.B -q
+]
+[
+.B -1
+]
+[
+.B -r
+|
+.B -x
+]
+[
+.B -lf
+.I lease-file
+]
+[
+.B -pf
+.I pid-file
+]
+[
+.B -cf
+.I config-file
+]
+[
+.B -sf
+.I script-file
+]
+[
+.B -s
+server
+]
+[
+.B -g
+relay
+]
+[
+.B -n
+]
+[
+.B -nc
+]
+[
+.B -nw
+]
+[
+.B -w
+]
+[
+.B -B
+]
+[
+.B -I
+.I dhcp-client-identifier
+]
+[
+.B -H
+.I host-name
+]
+[
+.B -F
+.I fqdn.fqdn
+]
+[
+.B -V
+.I vendor-class-identifier
+]
+[
+.B -R
+.I request-option-list
+]
+[
+.B -timeout
+.I timeout
+]
+[
+.B -v
+]
+[
+.B --version
+]
+[
+.I if0
+[
+.I ...ifN
+]
+]
+.SH DESCRIPTION
+The Internet Systems Consortium DHCP Client, dhclient, provides a
+means for configuring one or more network interfaces using the Dynamic
+Host Configuration Protocol, BOOTP protocol, or if these protocols
+fail, by statically assigning an address.
+.SH OPERATION
+.PP
+The DHCP protocol allows a host to contact a central server which
+maintains a list of IP addresses which may be assigned on one or more
+subnets.   A DHCP client may request an address from this pool, and
+then use it on a temporary basis for communication on network.   The
+DHCP protocol also provides a mechanism whereby a client can learn
+important details about the network to which it is attached, such as
+the location of a default router, the location of a name server, and
+so on.
+.PP
+On startup, dhclient reads the
+.IR dhclient.conf
+for configuration instructions.   It then gets a list of all the
+network interfaces that are configured in the current system.   For
+each interface, it attempts to configure the interface using the DHCP
+protocol.
+.PP
+In order to keep track of leases across system reboots and server
+restarts, dhclient keeps a list of leases it has been assigned in the
+dhclient.leases(5) file.   On startup, after reading the dhclient.conf
+file, dhclient reads the dhclient.leases file to refresh its memory
+about what leases it has been assigned.
+.PP
+When a new lease is acquired, it is appended to the end of the
+dhclient.leases file.   In order to prevent the file from becoming
+arbitrarily large, from time to time dhclient creates a new
+dhclient.leases file from its in-core lease database.  The old version
+of the dhclient.leases file is retained under the name
+.IR dhclient.leases~
+until the next time dhclient rewrites the database.
+.PP
+Old leases are kept around in case the DHCP server is unavailable when
+dhclient is first invoked (generally during the initial system boot
+process).   In that event, old leases from the dhclient.leases file
+which have not yet expired are tested, and if they are determined to
+be valid, they are used until either they expire or the DHCP server
+becomes available.
+.PP
+A mobile host which may sometimes need to access a network on which no
+DHCP server exists may be preloaded with a lease for a fixed
+address on that network.   When all attempts to contact a DHCP server
+have failed, dhclient will try to validate the static lease, and if it
+succeeds, will use that lease until it is restarted.
+.PP
+A mobile host may also travel to some networks on which DHCP is not
+available but BOOTP is.   In that case, it may be advantageous to
+arrange with the network administrator for an entry on the BOOTP
+database, so that the host can boot quickly on that network rather
+than cycling through the list of old leases.
+.SH COMMAND LINE
+.PP
+The names of the network interfaces that dhclient should attempt to
+configure may be specified on the command line.  If no interface names
+are specified on the command line dhclient will normally identify all
+network interfaces, eliminating non-broadcast interfaces if
+possible, and attempt to configure each interface.
+.PP
+It is also possible to specify interfaces by name in the
+.B dhclient.conf(5)
+file.   If interfaces are specified in this way, then the client will
+only configure interfaces that are either specified in the
+configuration file or on the command line, and will ignore all other
+interfaces.
+.SH OPTIONS
+.TP
+.BI \-4
+Use the DHCPv4 protocol to obtain an IPv4 address and configuration
+parameters (default).
+
+.TP
+.BI \-6
+Use the DHCPv6 protocol to obtain whatever IPv6 addresses are available
+along with configuration parameters.  The functionality of DHCPv6 mode
+may be modified with the
+.BI \-S
+,
+.BI \-T
+, and
+.BI \-N
+options.
+
+.TP
+.BI \-S
+Perform an information-only request over DHCPv6 to get stateless
+configuration parameters.  It is not recommended to combine this option
+with the
+.BI \-N
+,
+.BI \-P
+, or
+.BI \-T
+options or to share lease files between different modes of operation.  Only
+valid with the
+.BI \-6
+option.
+
+.TP
+.BI \-N
+Perform a normal (IA_NA) address query over DHCPv6.  It is not recommended
+to combine this option with the
+.BI \-P
+,
+.BI \-S
+, or
+.BI \-T
+options or to share lease files between different modes of operation.  Only
+valid with the
+.BI \-6
+option.
+
+.TP
+.BI \-T
+Perform a temporary (IA_TA) address query over DHCPv6 (disables normal address
+query).  It is not recommended to combine this option with the
+.BI \-N
+,
+.BI \-P
+, or
+.BI \-S
+options or to share lease files between different modes of operation.  Only
+valid with the
+.BI \-6
+option.
+
+.TP
+.BI \-P
+Enable IPv6 prefix delegation (disables normal address query).  It is not
+not recommended to combine this option with the
+.BI \-N
+,
+.BI \-S
+, or
+.BI \-T
+options or to share lease files between different modes of operation.  Only
+valid with the
+.BI \-6
+option.
+
+.TP
+.BI \-p\ <port\ number>
+The UDP port number the DHCP client should listen and transmit on.  If
+unspecified,
+.B dhclient
+uses the default port 68.  This option is mostly useful for debugging
+purposes.  If a different port is specified for the client to listen and
+transmit on, the client will also use a different destination port - one
+less than the specified port.
+
+.TP
+.BI \-d
+Force
+.B dhclient
+to run as a foreground process.  This is useful when running the client
+under a debugger, or when running it out of inittab on System V systems.
+
+.TP
+.BI \-e\ VAR=value
+Define additional environment variables for the environment where
+dhclient-script executes.  You may specify multiplate
+.B \-e
+options on the command line.  For example:
+.B \-e IF_METRIC=1
+
+.TP
+.BI \-q
+Suppress all terminal and log output except error messages.
+
+.TP
+.BI \-1
+Try once to get a lease.  One failure, exit with code 2.
+
+.TP
+.BI \-r
+Tell
+.B dhclient
+to release the current lease it has from the server.  This is not required
+by the DHCP protocol, but some ISPs require their clients to notify the
+server if they wish to release an assigned IP address.
+
+.TP
+.BI \-lf\ <lease-file>
+Path to the lease database file.  If unspecified, the default
+.B /var/lib/dhclient/dhclient.leases
+is used.
+
+.TP
+.BI \-pf\ <pid-file>
+Path to the process ID file.  If unspecified, the default
+.B /var/run/dhclient.pid
+is used.
+
+.TP
+.BI \-cf\ <config-file>
+Path to the client configuration file.  If unspecified, the default
+.B /etc/dhcp/dhclient.conf
+is used.
+
+.TP
+.BI \-sf\ <script-file>
+Path to the network configuration script invoked by
+.B dhclient
+when it gets a lease.  If unspecified, the default
+.B /sbin/dhclient-script
+is used.
+
+.TP
+.BI \-s\ <server>
+Specifiy the server IP address or fully qualified domain name to transmit
+DHCP protocol messages to.  Normally,
+.B dhclient
+transmits these messages to 255.255.255.255 (the IP limited broadcast
+address).  Overriding this is mostly useful for debugging purposes.
+
+.TP
+.BI \-g\ <relay>
+Only for debugging.  Set the giaddr field of all packets the client
+sends to the IP address specified.  This should not be expected to work
+in any consistent or useful way.
+
+.TP
+.BI \-n
+Do not configure any interfaces.  Most useful combined with the
+.B -w
+option.
+
+.TP
+.BI \-nc
+Do not drop capabilities.
+
+Normally, if
+.B dhclient
+was compiled with libcap-ng support,
+.B dhclient
+drops most capabilities immediately upon startup.  While more secure,
+this greatly restricts the additional actions that hooks in
+.B dhclient-script (8)
+can take.  (For example, any daemons that 
+.B dhclient-script (8)
+starts or restarts will inherit the restricted capabilities as well,
+which may interfere with their correct operation.)  Thus, the
+.BI \-nc
+option can be used to prevent
+.B dhclient
+from dropping capabilities.
+
+The
+.BI \-nc
+option is ignored if
+.B dhclient
+was not compiled with libcap-ng support.
+
+.TP
+.BI \-nw
+Become a daemon process immediately (nowait) rather than waiting until an IP
+address has been acquired.
+
+.TP
+.BI \-w
+Keep running even if no network interfaces are found.  The
+.B omshell
+program can be used to notify the client when a network interface has been
+added or removed so it can attempt to configure an IP address on that
+interface.
+
+.TP
+.BI \-B
+Set the BOOTP broadcast flag in request packets so servers will always
+broadcast replies.
+
+.TP
+.BI \-I\ <dhcp-client-identifier>
+Specify the dhcp-client-identifier option to send to the DHCP server.
+
+.TP
+.BI \-H\ <host-name>
+Specify the host-name option to send to the DHCP server.  The host-name
+string only contains the client's hostname prefix, to which the server will
+append the ddns-domainname or domain-name options, if any, to derive the
+fully qualified domain name of the client.  The
+.B -H
+option cannot be used with the
+.B -F
+option.
+
+.TP
+.BI \-F\ <fqdn.fqdn>
+Specify the fqdn.fqdn option to send to the DHCP server.  This option cannot
+be used with the
+.B -H
+option.  The fqdn.fqdn option must specify the complete domain name of the
+client host, which the server may use for dynamic DNS updates.
+
+.TP
+.BI \-V\ <vendor-class-identifier>
+Specify the vendor-class-identifier option to send to the DHCP server.
+
+.TP
+.BI \-R\ <option>[,<option>...]
+Specify the list of options the client is to request from the server.  The
+option list must be a single string consisting of option names separated
+by at least one command and optional space characters.  The default option
+list is:
+
+.BR
+    subnet-mask, broadcast-address, time-offset, routers,
+.BR
+    domain-name, domain-name-servers, host-name, 
+.BR
+    nis-domain, nis-servers, ntp-servers, interface-mtu
+
+The
+.B -R
+option does not append options to the default request, it overrides the
+default request list.  Keep this in mind if you want to request an
+additional option besides the default request list.  You will have to
+specify all option names for the
+.B -R
+parameter.
+
+.TP
+.BI \-timeout\ <timeout>
+Specify the time after which
+.B dhclient
+will decide that no DHCP servers can be contacted when no responses have been
+received.
+
+.TP
+.BI \-v
+Enable verbose log messages.
+
+.PP
+If the client is killed by a signale (for example at shutdown or reboot), it
+will not execute the
+.B dhclient-script (8)
+at exit.  However, if you shut the client down gracefully with
+.BI \-r
+or
+.BI \-x
+it will execute
+.B dhclient-script (8)
+at shutdown with the specific reason for calling the script set in the
+environment table.
+.SH CONFIGURATION
+The syntax of the dhclient.conf(5) file is discussed separately.
+.SH OMAPI
+The DHCP client provides some ability to control it while it is
+running, without stopping it.  This capability is provided using OMAPI,
+an API for manipulating remote objects.  OMAPI clients connect to the
+client using TCP/IP, authenticate, and can then examine the client's
+current status and make changes to it. 
+.PP
+Rather than implementing the underlying OMAPI protocol directly, user
+programs should use the dhcpctl API or OMAPI itself.   Dhcpctl is a
+wrapper that handles some of the housekeeping chores that OMAPI does
+not do automatically.   Dhcpctl and OMAPI are documented in \fBdhcpctl(3)\fR
+and \fBomapi(3)\fR.   Most things you'd want to do with the client can
+be done directly using the \fBomshell(1)\fR command, rather than
+having to write a special program.
+.SH THE CONTROL OBJECT
+The control object allows you to shut the client down, releasing all
+leases that it holds and deleting any DNS records it may have added.
+It also allows you to pause the client - this unconfigures any
+interfaces the client is using.   You can then restart it, which
+causes it to reconfigure those interfaces.   You would normally pause
+the client prior to going into hibernation or sleep on a laptop
+computer.   You would then resume it after the power comes back.
+This allows PC cards to be shut down while the computer is hibernating
+or sleeping, and then reinitialized to their previous state once the
+computer comes out of hibernation or sleep.
+.PP
+The control object has one attribute - the state attribute.   To shut
+the client down, set its state attribute to 2.   It will automatically
+do a DHCPRELEASE.   To pause it, set its state attribute to 3.   To
+resume it, set its state attribute to 4.
+.PP
+.SH FILES
+.B /sbin/dhclient-script,
+.B /etc/dhcp/dhclient.conf, /var/lib/dhclient/dhclient.leases, /var/run/dhclient.pid,
+.B /var/lib/dhclient/dhclient.leases~.
+.SH SEE ALSO
+dhcpd(8), dhcrelay(8), dhclient-script(8), dhclient.conf(5),
+dhclient.leases(5), dhcp-eval(5).
+.SH AUTHOR
+.B dhclient(8)
+has been written for Internet Systems Consortium
+by Ted Lemon in cooperation with Vixie
+Enterprises.  To learn more about Internet Systems Consortium,
+see
+.B https://www.isc.org
+To learn more about Vixie
+Enterprises, see
+.B http://www.vix.com.
+.PP
+This client was substantially modified and enhanced by Elliot Poger
+for use on Linux while he was working on the MosquitoNet project at
+Stanford.
+.PP
+The current version owes much to Elliot's Linux enhancements, but
+was substantially reorganized and partially rewritten by Ted Lemon
+so as to use the same networking framework that the Internet Systems
+Consortium DHCP server uses.   Much system-specific configuration code
+was moved into a shell script so that as support for more operating
+systems is added, it will not be necessary to port and maintain
+system-specific configuration code to these operating systems - instead,
+the shell script can invoke the native tools to accomplish the same
+purpose.
+.PP

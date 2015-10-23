@@ -1,0 +1,426 @@
+#!/bin/bash
+
+#
+# (C) Copyright 2013-2015 Juniper Networks, Inc. All Rights reserved.
+# (C) Copyright 2002-2012 Tall Maple Systems, Inc.
+# All rights reserved.
+# The contents of this file are subject to the terms of the MIT License.
+# You may not use this file except in compliance with the License.
+# See the file License.txt at the top of this source tree.
+# You can obtain a copy of the license at https://opensource.org/licenses/MIT
+#
+
+#
+# Based on:
+#   netbsd script supplied with dhcp-970306.
+#   dhclient-script for Linux. Dan Halbert, March, 1997.
+#   Updated for Linux 2.[12] by Brian J. Murrell, January 1999.
+#   Ret Hat 9 adaptations (partially or entirely removed).
+#
+# Notes:
+#
+# 1. ifconfig down apparently deletes all relevant routes and flushes
+#    the arp cache, so this doesn't need to be done explicitly.
+#
+
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export PATH
+
+umask 0022
+
+MDREQ=/opt/tms/bin/mdreq
+
+# From mdmod_common:
+# static const char md_net_overlay_tag_dhcpv4[] = "DHCP";
+MD_NET_OVERLAY_TAG_DHCPV4=DHCP
+
+# XXX/EMT: It would be nice if this, and all other calls to 'logger', could
+# be done with lc_log_internal(), e.g. to get subsecond precision.
+logger -p local6.info -t "dhclient-script[$$]" "[dhcp.INFO]: starting with reason '$reason' and interface name '$interface'"
+
+#
+# DEBUG: dump all of our variables, to see what we got.
+#
+# env > /var/tmp/dhclient-script-env.$$
+
+#
+# Do this first so everyone knows which reason we're in, even if we take
+# some time to deal with it.  We don't pass the client_id along until
+# our set_overlay_valid action, since otherwise it might not be accepted.
+#
+${MDREQ} -qq action \
+    /net/general/actions/update_dhcp_status \
+    ifname string "$interface" \
+    dhclient_script_reason string "$reason"
+
+# Must be used on exit.   Invokes the local dhcp client exit hooks, if any.
+function exit_with_hooks() {
+  exit_status=$1
+  if [ -f /etc/dhclient-exit-hooks ]; then
+    . /etc/dhclient-exit-hooks
+  fi
+
+  # probably should do something with exit status of the local script
+
+  if [ $exit_status -ne 0 ]; then
+      logger -p local6.notice -t "dhclient-script[$$]" "[dhcp.NOTICE]: exiting with code $exit_status"
+  else
+      logger -p local6.info -t "dhclient-script[$$]" "[dhcp.INFO]: exiting with code $exit_status"
+  fi
+  exit $exit_status
+}
+
+#
+# Make sure $interface is defined, and exit if not.  We do this right
+# before the variable is accessed, rather than unconditionally at the
+# beginning, to be sure we don't break any cases where it might not
+# have been either passed or needed.
+#
+function check_interface() {
+    if [ -z "$interface" ]; then
+        logger -p local6.warning -t "dhclient-script[$$]" "[dhcp.WARNING]: dhclient-script was not passed an interface name"
+        exit_with_hooks 1
+    fi
+}
+
+#
+# Clear the addresses on an interface (which wipes out any related routes
+# and ARP cache entries), but leave the interface up so it can still be
+# used for later DHCP retries (see bug 13008).  Also remove any resolver
+# and route overlays we may have added in the past for this interface.
+#
+# XXX/EMT: should we do the two interface overrides together as a single
+# action, on the off chance that something bad happens between them
+# (such as mgmtd getting busy) and it leaves the interface down for a
+# while?
+#
+function clear_dhcp_results() {
+
+    #
+    # Declare the interface as no longer having valid DHCP override config.
+    # Do this before removing the non-interface (i.e. resolver and routing)
+    # overrides, so we can switch over to those of another eligible interface,
+    # if there are any.
+    #
+    ${MDREQ} -qq action \
+        /net/general/actions/set_overlay_valid \
+        ifname string "$interface" \
+        valid bool false \
+        reason string "DHCP $reason"
+
+    ${MDREQ} -qq action \
+        /resolver/actions/overlay/clear \
+        tag string "$MD_NET_OVERLAY_TAG_DHCPV4" \
+        ifname string "$interface"
+
+    ${MDREQ} -qq action \
+        /net/routes/actions/overlay/clear \
+        ifname string "$interface"
+
+    ${MDREQ} -qq action \
+        /net/interface/actions/override/set \
+        ifname string "$interface" \
+        ip ipv4addr "0.0.0.0" \
+        netmask ipv4addr "0.0.0.0" \
+        enabled bool true
+}
+
+function make_resolv_conf() {
+  if [ -n "$new_domain_name" ] || [ -n "$new_domain_name_servers" ]; then
+    if [ -n "$new_domain_name" ]; then
+      check_interface
+      for ndn in $new_domain_name; do
+          ${MDREQ} -qq action \
+              /resolver/actions/overlay/add/domain_search \
+              tag string "$MD_NET_OVERLAY_TAG_DHCPV4" \
+              ifname string "$interface" \
+              domainname hostname "$ndn"
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ]; then
+              exit_with_hooks $EXIT_CODE
+          fi
+      done
+    fi
+    for nameserver in $new_domain_name_servers; do
+      check_interface
+      ${MDREQ} -qq action \
+          /resolver/actions/overlay/add/nameserver \
+          tag string "$MD_NET_OVERLAY_TAG_DHCPV4" \
+          ifname string "$interface" \
+          inetz_address inetaddrz "$nameserver"
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -ne 0 ]; then
+          exit_with_hooks $EXIT_CODE
+      fi
+    done
+  fi
+}
+
+#
+# Invoke the local dhcp client enter hooks, if they exist.
+#
+if [ -f /etc/dhclient-enter-hooks ]; then
+  exit_status=0
+  . /etc/dhclient-enter-hooks
+  # allow the local script to abort processing of this state
+  # local script must set exit_status variable to nonzero.
+  if [ $exit_status -ne 0 ]; then
+    exit $exit_status
+  fi
+fi
+
+if [ x$reason = xMEDIUM ]; then
+  # Linux doesn't do mediums (ok, ok, media).
+  exit_with_hooks 0
+fi
+
+if [ x$reason = xPREINIT ]; then
+  check_interface
+  ${MDREQ} -qq action \
+      /net/interface/actions/override/set \
+      ifname string "$interface" \
+      enabled bool true
+  EXIT_CODE=$?
+
+  #
+  # The stock dhclient-script used to have a 'sleep 1' in here, which
+  # we had kept.  But this is no longer thought to be necessary, and the
+  # stock script has now replaced it with the following, which is simply
+  # a hook to allow someone (possibly through an "enter hook"?) to set
+  # a delay to be honored.
+  #
+  if [ -n "$DHCLIENT_DELAY" ] && [ "$DHCLIENT_DELAY" -gt 0 ] ; then
+      sleep $DHCLIENT_DELAY;
+  fi;
+
+  #
+  # But the best approach is to simply wait until the link comes up.
+  # See comments in dhclient6-script's PREINIT6.  We don't wait quite
+  # as long, since there is no DAD we expect this to be quick.  Still,
+  # on a test box it took ~3 seconds, and who knows what might happen,
+  # so we wait 10.  Note that the check count is 21 instead of 20 because
+  # the first check happens immediately.
+  #
+    check_interval_us=500000
+    check_count=21
+    i=$check_count
+    waited=0
+    while [ $i -gt 0 ]; do
+        ready=`${MDREQ} -v query get - "/net/interface/state/${interface}/flags/link_up"`
+        if [ "$ready" = "true" ]; then
+            break;
+        fi
+        i=$((i - 1))
+        if [ $i -gt 0 ]; then
+            logger -p local6.info -t "dhclient-script[$$]" "[dhcp.INFO]: preinit: interface ${interface} does not have link up yet, ${i} tries left..."
+            usleep $check_interval_us
+            waited=$((waited + 1))
+        fi
+    done
+
+    seconds=$((check_interval_us * waited / 1000000))
+    if [ "$ready" = "true" ]; then
+        logger -p local6.info -t "dhclient-script[$$]" "[dhcp.INFO]: preinit: interface ${interface} has link up after ${seconds} second(s), good"
+    else
+        logger -p local6.notice -t "dhclient-script[$$]" "[dhcp.NOTICE]: preinit: no link up on interface ${interface} after ${seconds} second(s)... something wrong?"
+    fi
+
+  exit_with_hooks $EXIT_CODE
+fi
+
+if [ x$reason = xARPCHECK ] || [ x$reason = xARPSEND ]; then
+  exit_with_hooks 0
+fi
+
+if [ x$reason = xBOUND ] || [ x$reason = xRENEW ] || \
+   [ x$reason = xREBIND ] || [ x$reason = xREBOOT ]; then
+
+# XXX/EMT: we do not support getting a hostname from DHCP: see bug 10714.
+#
+#  if [ -n "$new_host_name" ] && need_hostname; then
+#      check_interface
+#      ${MDREQ} -qq action \
+#          /system/actions/override/hostname \
+#          ifname string "$interface" \
+#          hostname hostname "$new_host_name"
+#  fi
+
+  if [ x$old_ip_address != x ] && [ x$old_ip_address != x$new_ip_address ]; then
+    # IP address changed. Bringing down the interface will delete all routes,
+    # and clear the ARP cache.
+    check_interface
+    ${MDREQ} -qq action \
+        /net/interface/actions/override/set \
+        ifname string "$interface" \
+        ip ipv4addr "0.0.0.0" \
+        netmask ipv4addr "0.0.0.0" \
+        enabled bool true
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        exit_with_hooks $EXIT_CODE
+    fi
+
+  fi
+  if [ x$old_ip_address = x ] || [ x$old_ip_address != x$new_ip_address ] || \
+     [ x$reason = xBOUND ] || [ x$reason = xREBOOT ]; then
+
+# XXX: do we need to do anything with $new_broadcast_address?
+# Can't the broadcast address always be inferred from the subnet mask?
+
+    check_interface
+    ${MDREQ} -qq action \
+        /net/interface/actions/override/set \
+        ifname string "$interface" \
+        ip ipv4addr "$new_ip_address" \
+        netmask ipv4addr "$new_subnet_mask" \
+        enabled bool true
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        exit_with_hooks $EXIT_CODE
+    fi
+
+    # Add a network route to the computed network address.
+    for router in $new_routers; do
+      check_interface
+      ${MDREQ} -qq action \
+          /net/routes/actions/overlay/add/ipv4/default \
+          ifname string "$interface" \
+          gw ipv4addr "$router"
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -ne 0 ]; then
+          exit_with_hooks $EXIT_CODE
+      fi
+    done
+
+    # Check if any routes are now reachable
+    ${MDREQ} -qq action \
+          /net/routes/actions/recheck
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        exit_with_hooks $EXIT_CODE
+    fi
+  fi
+
+  if [ "${PEERDNS}" != "no" ]; then
+    make_resolv_conf
+  fi
+
+  #
+  # Now that we've applied all of our non-interface config (resolver and
+  # routing overrides), we can make this interface eligible to be acting
+  # DHCP primary interface.  Whether or not it actually gets adopted, of
+  # course, depends on what other interfaces there are, what state they're
+  # in, and which is the configured primary.
+  #
+  # XXX/EMT: I have never seen a client ID passed to the DHCPv4 client
+  # script.  But if there were one, it would hopefully be called
+  # 'new_dhcp_client_id', since the DHCPv6 client script gets one called
+  # 'new_dhcp6_client_id'.  We conditionalize lest we erase a client ID
+  # we got on a previous call, in case it only passes it to us sometimes.
+  #
+  if [ -n "$new_dhcp_client_id" ]; then
+      ${MDREQ} -qq action \
+          /net/general/actions/set_overlay_valid \
+          ifname string "$interface" \
+          valid bool true \
+          client_id string "$new_dhcp_client_id" \
+          reason string "DHCP $reason"
+  else
+      ${MDREQ} -qq action \
+          /net/general/actions/set_overlay_valid \
+          ifname string "$interface" \
+          valid bool true \
+          reason string "DHCP $reason"
+  fi
+
+  exit_with_hooks 0
+fi
+
+if [ x$reason = xEXPIRE ] || [ x$reason = xFAIL ] || [ x$reason = xSTOP ]; then
+
+  if [ x$old_ip_address != x ]; then
+    # Shut down interface, which will delete routes and clear arp cache.
+    check_interface
+    clear_dhcp_results
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        exit_with_hooks $EXIT_CODE
+    fi
+  fi
+
+  exit_with_hooks 0
+fi
+
+# See dhclient6-script comments for explanation.
+if [ x$reason = xRELEASE6 ]; then
+    exit_with_hooks 0
+fi
+
+if [ x$reason = xTIMEOUT ]; then
+
+  check_interface
+  ${MDREQ} -qq action \
+      /net/interface/actions/override/set \
+      ifname string "$interface" \
+      ip ipv4addr "$new_ip_address" \
+      netmask ipv4addr "$new_subnet_mask" \
+      enabled bool true
+  EXIT_CODE=$?
+  if [ $EXIT_CODE -ne 0 ]; then
+      exit_with_hooks $EXIT_CODE
+  fi
+
+  set $new_routers
+  if ping -q -c 1 -w 10 $1 > /dev/null 2>&1 ; then
+    for router in $new_routers; do
+      check_interface
+      ${MDREQ} -qq action \
+          /net/routes/actions/overlay/add/ipv4/default \
+          ifname string "$interface" \
+          gw ipv4addr "$router"
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -ne 0 ]; then
+          exit_with_hooks $EXIT_CODE
+      fi
+    done
+
+    # Check if any routes are now reachable
+    ${MDREQ} -qq action \
+          /net/routes/actions/recheck
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        exit_with_hooks $EXIT_CODE
+    fi
+
+    if [ "${PEERDNS}" != "no" ]; then
+      make_resolv_conf
+    fi
+
+    if [ -n "$new_dhcp_client_id" ]; then
+        ${MDREQ} -qq action \
+            /net/general/actions/set_overlay_valid \
+            ifname string "$interface" \
+            valid bool true \
+            client_id string "$new_dhcp_client_id" \
+            reason string "DHCP $reason"
+    else
+        ${MDREQ} -qq action \
+            /net/general/actions/set_overlay_valid \
+            ifname string "$interface" \
+            valid bool true \
+            reason string "DHCP $reason"
+    fi
+    exit_with_hooks 0
+  fi
+
+  check_interface
+  clear_dhcp_results
+  EXIT_CODE=$?
+  if [ $EXIT_CODE -ne 0 ]; then
+      exit_with_hooks $EXIT_CODE
+  else
+      exit_with_hooks 1
+  fi
+fi
+
+exit_with_hooks 0

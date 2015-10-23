@@ -1,0 +1,101 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: Upgrade">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"]
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "upgrade" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "Upgrades CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_image "image **"
+    set cmdpat_reload "reload"
+    set cmd_start_index 2600
+    set cmd_end_index 2799
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "Upgrade" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_image $cmdpat_reload]>
+
+  <?
+    # ==================================================
+    # Install new image
+    #
+    # (includes commands to fetch and install an image on the
+    # partition after the one currently booted, and then switch to
+    # make that partition the next one to boot by default)
+    # ==================================================
+  ?>
+
+  <h2>Install new image for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-cmc-upgrade">
+
+  <TMS-TABLE>
+    <TMS-TABLE-ENTRY "Install from URL">
+      <CFG-TEXTBOX -id "image_url" -errname "Image URL" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "50">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "add" -text "Install Image" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+  <?
+    # ==================================================
+    # Reboot system
+    # ==================================================
+  ?>
+
+  <h2>Reboot system for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-cmc-reboot">
+
+  <TMS-TABLE>
+    Press the button below to add a command to this profile that
+    will reboot the system when it is applied.
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "add" -text "Reboot System" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}>
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

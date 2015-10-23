@@ -1,0 +1,355 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Logging Setup">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "logging"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Logging">
+
+<?
+  global log_cfg_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $log_cfg_acl {query}]}>
+
+<?
+  set local_log_level_node "/logging/syslog/action/file/\\/var\\/log\\/messages/facility/all/min_priority"
+  set log_format_node "/logging/syslog/format/type"
+  set log_format_welf_fw_node "/logging/syslog/format/welf/fw_name"
+?>
+
+<!-- ==================================================
+     = Local Log Filtering
+     ================================================== -->
+
+  <h2>Local Log Filtering</h2>
+
+<CFG-FORM -div_id "logging_1">
+  <TMS-TABLE -div_id "logging_table_1">
+    <TMS-TABLE-ENTRY "Minimum severity level">
+        <CFG-DROPDOWN -id "lseverity" -caps "set_basic"
+                      -acl $log_cfg_acl -acl_oper {set}
+                      -name "$local_log_level_node" -type "string" -options {
+          {"None" "none"}
+          {"Emergency" "emerg"}
+          {"Alert" "alert"}
+          {"Critical" "crit"}
+          {"Error" "err"} 
+          {"Warning" "warning"}
+          {"Notice" "notice"} 
+          {"Info" "info"}
+          {"Debug" "debug"}
+        } -span_id "logging_lseverity">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -acl $log_cfg_acl -acl_oper {set}
+              -span_id "logging_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $log_cfg_acl -acl_oper {set}
+              -span_id "logging_cancel_1">
+
+</CFG-FORM>
+
+
+<!-- ==================================================
+     = Local Log Rotation
+     ================================================== -->
+
+  <h2>Local Log Rotation</h2>
+
+<CFG-FORM -action "rotate" -div_id "logging_2">
+  <CFG-RADIO-GROUP -id "criteria"
+                   -setname "/logging/rotation/global/criteria/type"
+                   -type "string">
+
+  <TMS-TABLE>
+    <tr class="listing_even">
+      <td width="5">
+      <td>
+        <CFG-RADIO -id "criteria" -caps "set_basic"
+                   -acl $log_cfg_acl -acl_oper {set}
+                   -name "/logging/rotation/global/criteria/type"
+                   -value "interval" -span_id "logging_criteria">
+        Rotate every &nbsp;
+        <CFG-DROPDOWN -id "frequency" -caps "set_basic"
+                   -acl $log_cfg_acl -acl_oper {set}
+                   -name "/logging/rotation/global/criteria/threshold_interval"
+                   -type "duration_sec" -options {
+          {"Day" "86400"}
+          {"Week" "604800"}
+          {"Month" "2592000"}
+        } -span_id "logging_freq">
+
+    <tr class="listing_even">
+      <td>
+      <td>
+        <CFG-RADIO -id "criteria" -caps "set_basic"
+                   -acl $log_cfg_acl -acl_oper {set}
+                   -name "/logging/rotation/global/criteria/type"
+                   -value "size" -span_id "logging_gcriteria">
+        Rotate when log reaches &nbsp;
+
+        <SET bytes_per_mb [expr {1024.0 * 1024.0}]>
+        <CFG-TEXTBOX -id "size" -errname "max size" -caps "set_basic"
+                     -acl $log_cfg_acl -acl_oper {set}
+                     -name
+                     "/logging/rotation/global/criteria/threshold_size"
+                     -type "uint64" -cols "11" -span_id "logging_size"
+                     -multiplier $bytes_per_mb -precision "2">&nbsp;MB
+
+<?
+  set var_bytes [tms::get-config /system/fs/mount/\\/var/bytes-total]
+  set var_gb [expr {$var_bytes / 1024.0 / 1024.0 / 1024.0}]
+?>
+
+    <tr class="listing_even">
+      <td>
+      <td>
+        <CFG-RADIO -id "criteria" -caps "set_basic"
+                   -acl $log_cfg_acl -acl_oper {set}
+                   -name "/logging/rotation/global/criteria/type"
+                   -value "size_pct" -span_id "logging_gcriteria">
+        Rotate when log reaches &nbsp;
+        <CFG-TEXTBOX -id "size_pct" -errname "max size percentage"
+                     -caps "set_basic" 
+                     -acl $log_cfg_acl -acl_oper {set}
+                    -name
+                    "/logging/rotation/global/criteria/threshold_size_thou_pct"
+                     -type "uint32" -cols "8" -span_id "logging_size_pct" 
+                     -multiplier "1000.0" -precision "3">&nbsp;percent of /var size (<?^= [format "%.1f" $var_gb] ?> GB total)
+
+    <tr class="listing_even">
+      <td>
+      <td>
+        Keep at most &nbsp;
+        <CFG-TEXTBOX -id "files" -errname "number of log files to keep"
+                     -caps "set_basic"
+                     -acl $log_cfg_acl -acl_oper {set}
+                     -name
+                     "/logging/rotation/global/keep_number"
+                     -type "uint32" -cols "3" -span_id "logging_files">
+        &nbsp;log file(s)
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -acl $log_cfg_acl -acl_oper {set}
+              -span_id "logging_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $log_cfg_acl -acl_oper {set}
+              -span_id "logging_cancel_1">
+  <CFG-BUTTON -type "rotate_logs" -text "Force Rotation" 
+              -caps "action_privileged"
+              -acl $log_cfg_acl -acl_oper {action}
+              -span_id "logging_ok_1">
+
+</CFG-FORM>
+
+
+<!-- ==================================================
+     = Remote Log Sinks
+     ================================================== -->
+
+  <h2>Remote Log Sinks</h2>
+
+  <?
+  set cur_line 0
+  set prefix "/logging/syslog/action/host"
+  set server_ids [tms::iterate-config $prefix]
+  ?>
+
+  <CFG-FORM -action "config-form-remote-logging" -div_id "logging_3">
+
+  <table border="0" cellpadding="3" cellspacing="0" class="listing">
+    <tr>
+      <td height="8">
+    <tr class="listing_head"> 
+      <td width="8">
+      <td>
+        Remote Sink
+      <td width="20">
+      <td>
+        Minimum Severity
+      <td width="30">
+    </tr>
+
+    <FOREACH server_id $server_ids>
+    <?
+      set prefix_len [string length "$prefix/"]
+      set server [string range $server_id $prefix_len end]
+      set severity [tms::get-config "$server_id/facility/all/min_priority"]
+
+      set severity_str ""
+      if {[string compare $severity "emerg"] == 0} {
+          set severity_str "Emergency"
+      } elseif {[string compare $severity "alert"] == 0} {
+          set severity_str "Alert"
+      } elseif {[string compare $severity "crit"] == 0} {
+          set severity_str "Critical"
+      } elseif {[string compare $severity "err"] == 0} {
+          set severity_str "Error"
+      } elseif {[string compare $severity "warning"] == 0} {
+          set severity_str "Warning"
+      } elseif {[string compare $severity "notice"] == 0} {
+          set severity_str "Notice"
+      } elseif {[string compare $severity "info"] == 0} {
+          set severity_str "Info"
+      } elseif {[string compare $severity "debug"] == 0} {
+          set severity_str "Debug"
+      } elseif {[string compare $severity "none"] == 0} {
+          set severity_str "None"
+      } else {
+          set severity_str "Unknown"
+      }
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <CFG-CHECKBOX -id "del_$cur_line" -caps "set_basic"
+                      -acl $log_cfg_acl -acl_oper {set}
+                      -value "$server_id" -span_id "logging_cbox_1">
+      <td>
+        <?^=$server?>
+      <td>
+      <td>
+        <?^=$severity_str?>
+      <td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No remote syslog servers.
+    </IF>
+
+    <tr>
+      <td height="12">
+
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove" -caps "set_basic"
+              -acl $log_cfg_acl -acl_oper {set}
+              -span_id "logging_remove_1">
+
+</CFG-FORM>
+
+<!-- ==================================================
+     = Add New Remote Sink
+     ================================================== -->
+
+  <h2>Add New Remote Sink</h2>
+
+<CFG-FORM -action "config-form-remote-logging" -div_id "logging_4">
+
+  <TMS-TABLE>
+    <TMS-TABLE-ENTRY "IP address">
+      <CFG-IPV4 -id "server_ip" -errname "IP address" -caps "set_basic"
+                -acl $log_cfg_acl -acl_oper {set}
+                -type "server_ip" -span_id "logging_ip">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Minimum Severity">
+      <CFG-DROPDOWN -id "severity" -caps "set_basic" 
+                    -acl $log_cfg_acl -acl_oper {set}
+                    -type "string" -options {
+        {"None" "none"}
+        {"Emergency" "emerg"}
+        {"Alert" "alert"}
+        {"Critical" "crit"}
+        {"Error" "err"} 
+        {"Warning" "warning"}
+        {"Notice" "notice"} 
+        {"Info" "info"}
+        {"Debug" "debug"}
+      } -span_id "logging_severity">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "add" -text "Add Server" -caps "set_basic"
+              -acl $log_cfg_acl -acl_oper {set}
+              -span_id "logging_add_1">
+</CFG-FORM>
+
+
+<!-- ==================================================
+     = Log Format
+     ================================================== -->
+
+  <h2>Log Format</h2>
+
+<CFG-FORM -div_id "logging_1">
+  <TMS-TABLE>
+    <TMS-TABLE-ENTRY "Log format">
+        <CFG-DROPDOWN -id "lformat" -caps "set_basic"
+                      -acl $log_cfg_acl -acl_oper {set}
+                      -name "$log_format_node" -type "string" -options {
+          {"Standard" "standard"}
+          {"WELF" "welf"}
+        } -span_id "logging_format">
+    </TMS-TABLE-ENTRY>
+
+<?
+  # ==================================================        
+  # Only show the WELF firewall name option if WELF is enabled.
+  # This is a bit unfortunate, but we were concerned that users using
+  # standard log format would be confused by this option
+  # ==================================================        
+?>
+
+<?
+      set log_format [tms::get-config "$log_format_node"]
+      if {[string compare $log_format "welf"] == 0} {
+?>
+    <TMS-TABLE-ENTRY "WELF firewall name">
+      <CFG-TEXTBOX -id "size" -errname "firewall name" -caps "set_basic"
+                   -acl $log_cfg_acl -acl_oper {set}
+                     -name "$log_format_welf_fw_node"
+                     -type "hostname" -cols "20" -span_id "logging_size">
+      (leave blank to use hostname)
+<?
+      }
+?>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -acl $log_cfg_acl -acl_oper {set}
+              -span_id "logging_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $log_cfg_acl -acl_oper {set}
+              -span_id "logging_cancel_1">
+
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view logging configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

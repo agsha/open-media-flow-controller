@@ -1,0 +1,3 @@
+@IMAGE_DISK@ -H -m <nomailer> -M daily -M exec /sbin/smartev.sh @ADDL_OPTS@
+
+# Add '-M test' for initial event

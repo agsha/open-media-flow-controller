@@ -1,0 +1,49 @@
+--- grub-0.97.orig/SPECS/grub.spec	2009-06-30 10:32:19.000000000 -0700
++++ grub-0.97/SPECS/grub.spec.tms	2011-09-19 18:08:22.000000000 -0700
+@@ -1,6 +1,6 @@
+ Name: grub
+ Version: 0.97
+-Release: 13.5
++Release: 13.5.tms.2
+ Summary: GRUB - the Grand Unified Boot Loader.
+ Group: System Environment/Base
+ License: GPL
+@@ -120,10 +120,15 @@ Patch1153: grub-install_virtio_blk_suppo
+ Patch1154: grub-0.97-xfs-writable-strings.patch
+ 
+ 
++# TMS: patches for quietness, etc.
++Patch2001: grub-0.97-tms-quiet.patch
++
++%define _default_patch_fuzz -1
++
+ ExclusiveArch: i386 x86_64
+ BuildRequires: binutils >= 2.9.1.0.23, ncurses-devel, texinfo
+ BuildRequires: automake /usr/lib/crt1.o
+-PreReq: /sbin/install-info
++Requires: /sbin/install-info
+ Requires: mktemp
+ Requires: /usr/bin/cmp
+ Requires: system-logos
+@@ -207,6 +212,8 @@ systems.
+ %patch1153 -p1 -b .virtio
+ %patch1154 -p1 -b .xfs-writable-strings
+ 
++%patch2001 -p1 -b .tmsquiet
++
+ %build
+ autoreconf --install --force
+ GCCVERS=$(gcc --version | head -1 | cut -d\  -f3 | cut -d. -f1)
+@@ -258,6 +265,12 @@ fi
+ %{_datadir}/grub
+ 
+ %changelog
++* Mon Sep 19 2011 Greg Snyder <gregs@tallmaple.com> 0.97-13.5.tms.2
++- Do not specify any fuzz options, to at least prep on EL6, though not build.
++
++* Wed Dec  8 2009 Greg Snyder <gregs@tallmaple.com> 0.97-13.5.tms.1
++- Re-apply TMS quiet fixes
++
+ * Tue Jun 30 2009 Peter Jones <pjones@redhat.com> - 0.97-13.5
+ - Don't assume that gcc provides us with writable strings in the xfs driver
+   Resolves: rhbz#496949

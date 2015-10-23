@@ -1,0 +1,218 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: LDAP">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"]
+
+  # Conditional on PROD_FEATURE_IPV6
+  set have_ipv6 [tms::have-prod-feature ipv6]
+  set ip_field_width 16
+  if {[string compare $have_ipv6 "true"] == 0} {
+      set ip_field_width 46
+  }
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "ldap" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "LDAP CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_ldap "ldap **"
+    set cmd_start_index 2800
+    set cmd_end_index 2999
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "LDAP" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_ldap]>
+
+  <?
+    # ==================================================
+    # Global LDAP settings
+    # ==================================================
+  ?>
+
+  <h2>LDAP settings for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_ldap_2">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_ldap_table_1">
+
+    <TMS-TABLE-ENTRY "User base DN">
+      <CFG-TEXTBOX -id "userbasedn" -errname "User Base DN"
+                   -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string"
+                   -required "false" 
+                   -cols "40" -span_id "cmc_ldap_ubdn">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "User search scope">
+      <CFG-DROPDOWN -id "scope" -errname "User Search Scope"
+                    -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "string" -options {{"-" ""}
+                                             {"Subtree" "subtree"}
+                                             {"One level" "one-level"}
+                                             {"No search" "base"}}
+                    -required "false" 
+                    -span_id "cmc_ldap_uss">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Login attribute">
+      <CFG-TEXTBOX -id "loginattrib" -errname "Login attribute"
+                    -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "string" -cols "20"
+                    -required "false" 
+                    -span_id "cmc_ldap_la">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Bind DN">
+      <CFG-TEXTBOX -id "binddn" -errname "Bind DN"
+                    -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "string" -cols "40"
+                    -required "false" 
+                    -span_id "cmc_ldap_bdn">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Bind password">
+      <CFG-TEXTBOX -id "bindpw" -errname "Bind password"
+                    -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "string" -cols "20"
+                    -required "false" 
+                    -span_id "cmc_ldap_bpw">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Timeout">
+      <CFG-TEXTBOX -id "timeout" -errname "Timeout" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "duration_sec"
+                   -required "false" 
+                   -cols "8" -span_id "cmc_ldap_gtimeout">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "LDAP Version">
+      <CFG-DROPDOWN -id "version" -errname "LDAP version"
+                    -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "uint32" -options {{"-" ""}
+                                            {"2" "2"}
+                                             {"3" "3"}}
+                    -required "false" 
+                    -span_id "cmc_ldap_version">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Server port">
+      <CFG-TEXTBOX -id "port" -errname "Server port" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "uint16" -cols "8"
+                   -required "false" 
+                   -span_id "cmc_ldap_gport">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+# ,binddn,bindpw,timeout,version,port"
+      "commands"                   "userbasedn,scope,loginattrib,binddn,bindpw,timeout,version,port"
+      "cmd_userbasedn_fields"      "userbasedn"
+      "cmd_userbasedn_pat_1"       "ldap base-dn *"
+      "cmd_userbasedn_fields_1"    "userbasedn"
+      "cmd_scope_fields"           "scope"
+      "cmd_scope_pat_1"            "ldap scope *"
+      "cmd_scope_fields_1"         "scope"
+      "cmd_loginattrib_fields"     "loginattrib"
+      "cmd_loginattrib_pat_1"      "ldap login-attribute *"
+      "cmd_loginattrib_fields_1"   "loginattrib"
+      "cmd_binddn_fields"          "binddn"
+      "cmd_binddn_pat_1"           "ldap bind-dn *"
+      "cmd_binddn_fields_1"        "binddn"
+      "cmd_bindpw_fields"          "bindpw"
+      "cmd_bindpw_pat_1"           "ldap bind-password *"
+      "cmd_bindpw_fields_1"        "bindpw"
+      "cmd_timeout_fields"         "timeout"
+      "cmd_timeout_pat_1"          "ldap timeout *"
+      "cmd_timeout_fields_1"       "timeout"
+      "cmd_version_fields"         "version"
+      "cmd_version_pat_1"          "ldap version *"
+      "cmd_version_fields_1"       "version"
+      "cmd_port_fields"            "port"
+      "cmd_port_pat_1"             "ldap port *"
+      "cmd_port_fields_1"          "port"
+      >
+
+  <CFG-BUTTON -type "add" -text "Add Commands" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_ldap_add_1">
+
+  </CFG-FORM>
+
+
+  <?
+    # ==================================================
+    # New LDAP server
+    # ==================================================
+  ?>
+
+  <h2>New LDAP server for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_ldap_3">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_ldap_table_2">
+    <TMS-TABLE-ENTRY "Server IP">
+      <CFG-TEXTBOX -id "address" -errname "IP address" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "ipv4addr" -cols "$ip_field_width"
+                   -span_id "cmc_ldap_addr">
+    </TMS-TABLE-ENTRY>
+
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"          "ldapserver"
+      "cmd_ldapserver_fields"    "address"
+      "cmd_ldapserver_pat_1"     "ldap host *"
+      "cmd_ldapserver_fields_1"  "address">
+
+  <CFG-BUTTON -type "add" -text "Add Server" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_ldap_add_2">
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

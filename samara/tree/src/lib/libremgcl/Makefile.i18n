@@ -1,0 +1,11 @@
+#
+# 
+#
+#
+
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+PO_OUTPUT_DIR=${PROD_BASE_I18N_ROOT}/src/lib/libremgcl
+MO_OUTPUT_DIR=${LIB_DIR}/libremgcl/mo
+
+include ${PROD_TREE_ROOT}/src/mk/po.mk

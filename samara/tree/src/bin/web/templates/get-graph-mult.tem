@@ -1,0 +1,123 @@
+<?
+#
+#
+#
+#
+?>
+
+<?
+  # ---------------------------------------------------------------------------
+  # get-graph-mult.tem: referenced automatically from tms-graph-utils.tem 
+  #                     when TMS-AJAX-GRAPH-MULT et al. are used.
+  #                     Not to be used directly by a developer.
+?>
+
+<INCLUDE "tms-defines">
+<INCLUDE "tms-utils">
+
+<?
+ set now [clock seconds]
+ set imgFilename ""
+ set name [tms::get-url-param "name"]
+ set action [tms::get-url-param "action"]
+ set width [tms::get-url-param "width"]
+ set graph_ver [tms::get-url-param "graphver"]
+ set grp [tms::get-url-param "group"]
+ set idx [tms::get-url-param "index"]
+ set user [tms-utils::get-user]
+
+ #
+ # First, clean up any old graphs so they don't build up.
+ #
+ # XXX/EMT: it's somewhat inefficient to do this every time we
+ # render a graph, particularly on a page with many auto-refreshed
+ # graphs.  But there are no other templates repeatedly rendered
+ # in that scenario, so we have no other hooks to call an action.
+ # Perhaps this could be done periodically by mgmtd?
+ #
+ if {[catch {tms::call-action /tms/graphs/cleanup \
+     [list "max_age" "duration_sec" "60"] \
+     [list "filename_prefix" "string" "graph-"]}]} {
+     set couldNotCleanup "true"
+ }
+
+ set imgs {}
+
+ # Look for a recent matching graph
+ global graph_ext
+ catch {set imgs [glob /var/opt/tms/web/graphs/graph-${name}-w-${width}-u-${user}-*.$graph_ext]}
+ foreach i $imgs {  
+     # is there a timestamp in this filename?
+     set res [regexp ".*-ts-(\[0-9\]+).$graph_ext" [file tail $i] match time]
+     if {$res} {
+         # Don't check if the file is owned by us, because it won't be.
+         # It will be owned by Apache.  If we can read it, and it has
+         # our username in the filename (checked above), it's fine.
+
+         # Reuse, if <= 5 seconds
+         if {[expr {($now - $time) <= 5}]} {
+             # less than  5 seconds old, reuse it.
+             set imgFilename [file tail $i]
+         }
+     }
+ }
+
+ # did we find a recent image to use?  if not, generate it
+ if {$imgFilename == "" } {
+     # did not find a recent image, make a new one
+     global graph_ext
+     set imgFilename graph-$name-w-$width-u-${user}-ts-$now.$graph_ext
+     if {[string match "/*" ${action}] == 0} {
+         set graph_action_path "/tms/graphs/$action"
+     } else {
+         set graph_action_path "$action"
+     }
+
+     if {$graph_ver == 2} {
+         if {[catch {tms::call-action "$graph_action_path" \
+             [list "bgcolor"     "string"  $color_main_pane] \
+             [list "filename"    "string"  "$imgFilename"] \
+             [list "image_width" "uint32"  "$width"] \
+             [list "image_height" "uint32" "$graph_height"] \
+             [list "graphver"    "uint32"  $graph_ver]}]} {
+             set imgFilename ""
+         }
+     } else {
+         if {[catch {tms::call-action "$graph_action_path" \
+             [list "bgcolor"     "string"  $color_main_pane] \
+             [list "gif_name"    "string"  "$imgFilename"] \
+             [list "width"       "string"  "$width"] \
+             [list "graphver"    "uint32"  $graph_ver]}]} {
+             set imgFilename ""
+         }
+     }
+ }
+
+## tms::log "For name: $name w: $width u: $user have file: $imgFilename"
+
+# imgFilename is set if we there's an image available, otherwise it is ""
+# Spit out the HTML for the image tag if we have it.
+?>
+
+<?
+ # Note: the curly braces around the group numbers below are necessary,
+ # since otherwise the variable reference runs together with the
+ # following underscore.  They are not needed for the index numbers, 
+ # but we do those too for consistency.
+ ?>
+
+<IF {0 < [string length $imgFilename] }>
+    <img id="stagedImage<?^=${grp}?>_<?^=${idx}?>"
+         name="stagedImage<?^=${grp}?>_<?^=${idx}?>" 
+         border=0 src="/graphs/<?=[tms::html-escape ${imgFilename}]?>" 
+         onload="newGraphLoaded(this, <?^=${grp}?>, <?^=${idx}?>);">
+    <div id="timeStamp<?^=${grp}?>_<?^=${idx}?>"><?^=[clock format $now]?></div>
+<ELSE>
+    <img id="stagedImage<?^=${grp}?>_<?^=${idx}?>"
+         name="stagedImage<?^=${grp}?>_<?^=${idx}?>" 
+         border=0 src="/images/em.gif"
+         onload="newGraphLoadedFailed(this, <?^=${grp}?>, <?^=${idx}?>);"
+         style="display: none">
+    <div id="timeStamp<?^=${grp}?>_<?^=${idx}?>"><?^=[clock format $now]?></div>
+    <div id="loadGraphError<?^=${grp}?>_<?^=${idx}?>"></div>
+</IF>

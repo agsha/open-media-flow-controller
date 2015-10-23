@@ -1,0 +1,2207 @@
+<?
+# ============================================================================
+#
+#
+#
+#
+
+# ==================================================
+#
+# Contains utilities for form processing. Should be used in conjunction with
+# the web_config_form module (action='config-form').
+#
+# XXXX/SML: Event handler attributes (e.g. onmouseover, onclick, ...) require
+# javascript escaping, and style attributes require CSS escaping
+#
+?>
+
+
+
+<INCLUDE "tms-utils">
+<?
+#
+# If the node type and display (conversion) type are not the same,
+# perform a conversion.
+# type      - the node type
+# ctype     - conversion type
+# value     - the display value
+#
+proc check_display_value {type ctype value} {
+    set result $value
+
+    if {[string compare $value "-"] != 0 &&
+        [string compare $type "-"] != 0 &&
+        [string compare $ctype "-"] != 0} {
+
+        if {[string compare $type "uint8"] == 0 &&
+            [string compare $ctype "ipv4addr"] == 0} {
+            set result [tms::masklen-to-mask $value]
+        }
+        if {[string compare $type "uint8"] == 0 &&
+            [string compare $ctype "ipv6addr"] == 0} {
+            set result [tms::masklen-to-mask $value]
+        }
+    }
+    return $result
+}
+?>
+
+<?
+
+# XXX/SML:  Most of the escaping in this template is performed unconditionally.
+# This is because most of the values emitted here are for attributes, and most
+# attributes here are either identifier attributes, such as name, id or class,
+# which do not allow characters other than alphanumeric, '-', '_', ':', and
+# '.', numeric attributes like -size, -rows and -cols, or other attributes
+# with contrainted values that should never contain characters that require
+# escaping.  Escaping of these attributes is done pro forma to protect against
+# unintended injection of bad data.
+#
+# An exception is made for the 'value' attribute, where it is possible that
+# templates may have their own pre-escaping of strings that are passed into
+# tag variables used to construct unconstrained 'value' attribute values.  Tag
+# functions that set the 'value' attribute all have a local variable
+# 'value_escape_disable', which if passed as "true" will prevent the relevant
+# input value from being escaped, and leave pre-escaping to the caller.
+#
+# Note that the escaped set is minimal.  Only known problematic HTML characters
+# are escaped:   '<', '>', '&', '"', and '\'', the most important of which for
+# attribute values is '"' since we always quote attributes, and this prevents
+# escaping out of quoted attribute context.  The '&' character is also
+# very important since, even inside a quoted attribute, the client will convert
+# what follows the '&' into an HTML entity (e.g. &copy for the unicode copyright
+# symbol).
+#
+# If you already have your own escaping functions that preform pre-escaping of
+# values throughout your templates, you may change the default escaping behavior
+# by setting cfg_form_default_value_escape_disable to "true", but you should
+# then take care to ensure that all instances of calls to these tags have taken
+# care of value escaping as needed.
+
+set cfg_form_default_value_escape_disable "false"
+
+# =============================================================================
+# === Check if value escaping has been disabled globally, or by the passed arg
+# =============================================================================
+proc check_value_escape_disable {local_value_escape_disable} {
+    global cfg_form_default_value_escape_disable
+    # local override
+    if {[string equal $local_value_escape_disable "true"]} {
+        return 1
+    } elseif {[string equal $local_value_escape_disable "false"]} {
+        return 0
+    }
+    # global default
+    if {[string equal $cfg_form_default_value_escape_disable "true"]} {
+        return 1
+    }
+    return 0
+}
+
+?>
+
+<?
+#
+# Make the hidden fields.
+# id          - the id of the configuration field
+# errname     - the display name
+# name        - the node name inside the db
+# delname     - the node name to remove on a remove request
+# value       - force a value for this field
+# type        - the node type inside the db
+# ctype       - the type of the value displayed in the field
+# typeflags   - type flags to be used when setting this node
+# required    - whether or not the field is required
+# multiplier  - optional multipler for this field
+# obfuscated  - bool: was the value for this field obfuscated?
+# disabled    - bool: was this field disabled?
+# value_escape_disable - whether to supress html-escaping of hidden variable values
+#
+# XXX/SML:  Note that while it seems highly unlikely that these variables would
+# be pre-escaped, we're supporting value_escape_disable for errname and value
+# here for consistency.  All other arguments are unconditionally escaped since
+# they are either ID strings, or they have constrained values that should never
+# have needed to be pre-escaped by the caller.
+#
+proc make_hidden_fields {id errname name delname value type ctype {typeflags "-"} {required "true"} {multiplier "-"} {obfuscated "false"} {disabled "false"} {value_escape_disable "false"}} {
+    if {[string compare $errname "-"] != 0} {
+        if {[check_value_escape_disable $value_escape_disable]} {
+            tms::puts "<input type=\"hidden\" name=\"[tms::html-escape d_$id]\" value=\"$errname\">"
+        } else {
+            tms::puts "<input type=\"hidden\" name=\"[tms::html-escape d_$id]\" value=\"[tms::html-escape $errname]\">"
+        }
+    } else {
+        tms::puts "<input type=\"hidden\" name=\"[tms::html-escape d_$id]\" value=\"[tms::html-escape $id]\">"
+    }
+    if {[string compare $name "-"] != 0} {
+        tms::puts "<input type=\"hidden\" name=\"[tms::html-escape n_$id]\" value=\"[tms::html-escape $name]\">"
+    }
+    if {[string compare $delname "-"] != 0} {
+        tms::puts "<input type=\"hidden\" name=\"[tms::html-escape r_$id]\" value=\"[tms::html-escape $delname]\">"
+    }
+    if {[string compare $value "-"] != 0} {
+        if {[check_value_escape_disable $value_escape_disable]} {
+            tms::puts "<input type=\"hidden\" name=\"[tms::html-escape v_$id]\" value=\"$value\">"
+        } else {
+            tms::puts "<input type=\"hidden\" name=\"[tms::html-escape v_$id]\" value=\"[tms::html-escape $value]\">"
+        }
+    }
+    if {[string compare $type "-"] != 0} {
+        tms::puts "<input type=\"hidden\" name=\"[tms::html-escape t_$id]\" value=\"[tms::html-escape $type]\">"
+    }
+    if {[string compare $ctype "-"] != 0} {
+        tms::puts "<input type=\"hidden\" name=\"[tms::html-escape c_$id]\" value=\"[tms::html-escape $ctype]\">"
+    } else {
+        tms::puts "<input type=\"hidden\" name=\"[tms::html-escape c_$id]\" value=\"[tms::html-escape $type]\">"
+    }
+    if {[string compare $typeflags "-"] != 0} {
+        tms::puts "<input type=\"hidden\" name=\"[tms::html-escape g_$id]\" value=\"[tms::html-escape $typeflags]\">"
+    }
+    if {[string compare $multiplier "-"] != 0} {
+        tms::puts "<input type=\"hidden\" name=\"[tms::html-escape m_$id]\" value=\"[tms::html-escape $multiplier]\">"
+    }
+    tms::puts "<input type=\"hidden\" name=\"[tms::html-escape e_$id]\" value=\"[tms::html-escape $required]\">"
+    if {[string compare $obfuscated "true"] == 0} {
+        tms::puts "<input type=\"hidden\" name=\"[tms::html-escape o_$id]\" value=\"true\">"
+    }
+    if {[string compare $disabled "true"] == 0} {
+        tms::puts "<input type=\"hidden\" name=\"[tms::html-escape x_$id]\" value=\"true\">"
+    }
+}
+?>
+
+
+<?
+# Check to see if a form element should be disabled.
+# Returns "false" if it should not be disabled; "true" if it should.
+#
+proc check_disabled {disabled enabled} {
+  set result "false"
+  if {[string compare $disabled "-"] != 0 &&
+      [string compare $disabled "false"] != 0 &&
+      [string compare $disabled "no"] != 0 &&
+      [string compare $disabled "0"] != 0} {
+      set result "true"
+   }
+  if {[string compare $enabled "false"] == 0 ||
+      [string compare $enabled "no"] == 0 ||
+      [string compare $enabled "0"] == 0} {
+      set result "true"
+   }
+   return $result
+}
+?>
+
+
+<?
+# ==================================================
+#
+# <CFG-ACTION args>
+#
+# used to have a special action called when this form is submitted.
+?>
+
+<TAG CFG-ACTION args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-name "-" -priority "" -value_escape_disable "-"}
+
+  if {[string compare $(-name) "-"] == 0} {
+      error "No action specified in CFG-ACTION"
+  }
+?>
+
+<input type="hidden" name="action<?^= $(-priority) ?>" value="<?
+    if {[check_value_escape_disable $(-value_escape_disable)]} {
+      tms::puts "$(-name)"
+    } else {
+      tms::puts "[tms::html-escape $(-name)]"
+    }
+  ?>"
+>
+</TAG>
+
+
+<?
+# ==================================================
+# check_acl <acl> <opers> <tag name> <identifier>
+#
+# Check to see if an ACL and operation mapping has been specified.
+# Only checks anything if PROD_FEATURE_ACLS is enabled; otherwise,
+# returns immediately.  Both <acl> and <opers> are mandatory parameters,
+# so if either is "-" (meaning nothing was provided by the caller), we
+# log at WARNING.  The <tag name> and <identifier> are used to construct
+# the log message, to help the developer find the offending code.
+# The <identifier> may be whatever makes this invocation of the tag unique
+# from others, e.g. the text on a button, or the name of a node that a
+# field is bound to.
+
+proc check_acl {acl opers tag id} {
+  # Conditional on PROD_FEATURE_ACLS
+  if {[string compare [tms::have-prod-feature acls] "true"] == 0} {
+    if {[string compare $acl "-"] == 0} {
+      tms::log-basic "warning" "Missing '-acl' parameter on ${tag} tag: '${id}'"
+    }
+    if {[string compare $opers "-"] == 0} {
+      tms::log-basic "warning" "Missing '-acl_oper' parameter on ${tag} tag: '${id}'"
+    }
+  }
+}
+?>
+
+
+<?
+# ==================================================
+#
+# <CFG-BUTTON args>
+#
+# where the -type argument is one of:
+#
+#     apply
+#     save
+#     ok
+#     cancel
+#     reset
+#     custom
+#
+# used to create a form button.
+?>
+
+<TAG CFG-BUTTON args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-type "-" -text "-" -caps "-"
+    -acl "-" -acl_oper "-"
+    -destination "-" -div_id "-" -span_id "-" -class "-" 
+    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+    -onmouseout "-" -onmouseover "-" -onselect "-" 
+    -disabled "-" -enabled "-" -id "-"
+    -value_escape_disable "-" -uri_html_escape "-"}
+
+  check_acl $(-acl) $(-acl_oper) "CFG-BUTTON" $(-text)
+
+  if {[string compare $(-type) "-"] == 0} {
+      error "No type specified in CFG-BUTTON"
+  }
+?>
+
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="button<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<input name="<?^= $(-type) ?>" type="<?
+set (-label) ""
+switch -exact $(-type) {
+  apply {
+    set (-label) "Apply"
+    tms::puts "submit"
+  }
+  save {
+    set (-label) "Save"
+    tms::puts "submit"
+  }
+  ok {
+    set (-label) "OK"
+    tms::puts "submit"
+  }
+  cancel {
+    set (-label) "Cancel"
+    tms::puts "submit"
+  }
+  reset {
+    set (-label) "Reset"
+    tms::puts "submit"
+  }
+  default {
+    set (-label) "Custom"
+    tms::puts "submit"
+  }
+}
+?>" value="<?
+if { [string compare $(-text) "-"] != 0 } {
+  if {[check_value_escape_disable $(-value_escape_disable)]} {
+    tms::puts "$(-text)"
+  } else {
+    tms::puts "[tms::html-escape $(-text)]"
+  }
+} else {
+  # label is defined locally, so no escape override
+  tms::puts "[tms::html-escape $(-label)]"
+}
+?>"
+<?
+if {[string compare $(-class) "-"]} {
+    tms::puts " class=\"[tms::html-escape $(-class)]\""
+}
+if {[string compare $(-id) "-"]} {
+    tms::puts " id=\"[tms::html-escape $(-id)]\""
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+set db_dirty [tms::get-config "/mgmtd/db/info/running/unsaved_changes"]
+if {[string compare $db_dirty "true"] != 0 &&
+    [string compare $(-type) "save"] == 0} {
+    tms::puts " disabled"
+} elseif {
+  [tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    tms::puts " disabled"
+} elseif {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+
+?>>
+<IF {[string compare $(-destination) "-"] != 0}>
+  <input type="hidden" name="btn_dest" value="<?
+      if {[string equal $(-uri_html_escape) "true"]} {
+          tms::puts "[tms::html-escape $(-destination)]"
+      } else {
+          tms::puts "$(-destination)"
+      }
+    ?>"
+  >
+</IF>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-BUTTON-HIDDEN-DEFAULT args>
+#
+# Used to create a hidden dummy button whose purpose is to control which
+# of the other buttons on this form is considered to be pressed when the
+# user hits Enter in a text edit (or perhaps other kind of) field within
+# this form.
+#
+# This is like CFG-BUTTON, except:
+#   - You cannot specify -class, because it uses the 'tms_invisible' class
+#     to hide the button.
+#   - You cannot specify the Javascript -on... parameters, because the
+#     button is hidden and not expected to be interacted with.
+#   - You cannot set the -span_id or the -div_id
+#   - "save" is not supported for the -type parameter.
+#
+# This button should be a near-clone of another button on the form,
+# whichever one you want to be pressed.  Thus all of the fields, other
+# than those mentioned above, should match this other button.  Note that
+# in rare cases of a browser without CSS (e.g. lynx), the button will be
+# visible, so certain things which might not appear to matter (such as
+# text, capabilities, and ACL settings) should still be set the same.
+?>
+
+<TAG CFG-BUTTON-HIDDEN-DEFAULT args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-type "-" -text "-" -caps "-"
+    -acl "-" -acl_oper "-" -destination "-"  
+    -disabled "-" -enabled "-" -id "-"
+    -value_escape_disable "-" -uri_html_escape "-"}
+
+  check_acl $(-acl) $(-acl_oper) "CFG-BUTTON-HIDDEN-DEFAULT" $(-text)
+
+  if {[string compare $(-type) "-"] == 0} {
+      error "No type specified in CFG-BUTTON-HIDDEN-DEFAULT"
+  }
+?>
+
+<input name="<?^= $(-type) ?>" class="tms_invisible" type="<?
+set (-label) ""
+switch -exact $(-type) {
+  apply {
+    set (-label) "Apply"
+    tms::puts "submit"
+  }
+  ok {
+    set (-label) "OK"
+    tms::puts "submit"
+  }
+  cancel {
+    set (-label) "Cancel"
+    tms::puts "submit"
+  }
+  reset {
+    set (-label) "Reset"
+    tms::puts "submit"
+  }
+  default {
+    set (-label) "Custom"
+    tms::puts "submit"
+  }
+}
+?>" value="<?
+if { [string compare $(-text) "-"] != 0 } {
+  if {[check_value_escape_disable $(-value_escape_disable)]} {
+    tms::puts "$(-text)"
+  } else {
+    tms::puts "[tms::html-escape $(-text)]"
+  }
+} else {
+  # label is defined locally, so no escape override
+  tms::puts "[tms::html-escape $(-label)]"
+}
+?>"
+<?
+if {[string compare $(-id) "-"]} {
+    tms::puts " id=\"[tms::html-escape $(-id)]\""
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    tms::puts " disabled"
+} elseif {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+
+?>>
+<IF {[string compare $(-destination) "-"] != 0}>
+  <input type="hidden" name="btn_dest" value="<?
+      if {[string equal $(-uri_html_escape) "true"]} {
+          tms::puts "[tms::html-escape $(-destination)]"
+      } else {
+          tms::puts "$(-destination)"
+      }
+    ?>"
+  >
+</IF>
+
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-TEXTBOX args>
+#
+# used to create a form text box.
+#
+# XXX/EMT: is there any reason this is completely separate from
+# CFG-PASSWORDBOX, rather than just having a parameter to say which
+# you want, since the only apparent difference in HTML to be emitted
+# is 'type="password"' vs 'type="text"'?  If we could figure out how
+# to pass on all of the other args unmodified, but tack something
+# else onto the end, we could have a new hybrid that did either,
+# and have CFG-TEXTBOX and CFG-PASSWORDBOX just be wrappers around it.
+#
+# In the mean time, this will actually behave like a PASSWORDBOX if
+# the field it's tied to returns an obfuscated value.  We partially
+# sanity check this, and only do it if either PROD_FEATURE_SECURE_NODES
+# of PROD_FEATURE_OBFUSCATE_NONADMIN is enabled.  Technically, if only
+# PROD_FEATURE_OBFUSCATE_NONADMIN is enabled, we should also check that
+# the user lacks both action_privileged and query_privileged capabilities;
+# but this is tricky to check for (it may require a mgmtd request, and
+# we may not be authenticated).  And this is all just a sanity check
+# anyway.  We should not be getting obfuscated values anyway unless this
+# check would succeed, so it's OK.
+# ==================================================
+?>
+
+<TAG CFG-TEXTBOX args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -caps "-" -name "-"
+                     -acl "-" -acl_oper "-" -acl_oper_display {query_get}
+                     -setname "-" -delname "-" -type "-" -ctype "-" -value "-"
+                     -cols "-" -required "true" -multiplier "-" -precision "-"
+                     -div_id "-" -span_id "-" -hidden "" -class "-" 
+                     -span_id_noread "-"
+                     -disabled "-" -enabled "-" -type_flags "-"
+                     -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                     -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                     -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-" 
+                     -value_escape_disable "-"}
+
+check_acl $(-acl) $(-acl_oper) "CFG-TEXTBOX" $(-id)
+
+if {[string compare $(-id) "-"] == 0} {
+    set (-id) [tms::get-unique-id]
+}
+
+if {[string compare $(-setname) "-"] == 0} {
+    set (-setname) $(-name)
+}
+
+set query_ok [tms::check-authorization "-" $(-acl) $(-acl_oper_display)]
+if {$query_ok == 0 && [string compare $(-span_id_noread) "-"] != 0} {
+  set (-span_id) $(-span_id_noread)
+}
+
+set obfuscated [tms::get-param post "o_$(-id)"]
+set disp_value [tms::get-param post "f_$(-id)"]
+if {[string length $disp_value] == 0} {
+    set disp_value "-"
+    if {$query_ok == 1} {
+        if {[string compare $(-value) "-"] != 0} {
+            set disp_value $(-value)
+        } elseif {[string compare $(-name) "-"] != 0} {
+            set disp_value [tms::get-config $(-name)]
+            set obfu_attrib [tms::get-attrib $(-name) "obfuscation"]
+            if {[llength $obfu_attrib] == 3 && [string compare [lindex $obfu_attrib 2] "true"] == 0} {
+                set obfuscated "true"
+            }
+        }
+    }
+}
+if {[string compare $disp_value "-"] != 0 &&
+    [string compare $(-multiplier) "-"] != 0} {
+    if { $(-multiplier) == 0} {
+       set disp_value "NaN"
+    } else {
+       set fmt "%."
+       if {[string compare $(-precision) "-"] != 0} {
+         append fmt $(-precision)
+       }
+       append fmt "f"
+       set disp_value [format $fmt [expr {$disp_value / $(-multiplier)}]]
+    }
+}
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="textbox<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<?
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    set (-disabled) "true"
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) $(-required) $(-multiplier) $obfuscated $(-disabled) $(-value_escape_disable)
+?>
+<?
+# Conditional on PROD_FEATURE_SECURE_NODES...
+set secure_nodes [tms::have-prod-feature secure_nodes]
+# Conditional on PROD_FEATURE_OBFUSCATE_NONADMIN...
+set obfu_nonadmin [tms::have-prod-feature obfuscate_nonadmin]
+
+if {[string compare $(-hidden) "yes"] == 0} {
+?>
+<input type="hidden" name="f_<?^= $(-id) ?>" id="<?^= $(-id) ?>"
+<? } elseif {[string compare $obfuscated "true"] == 0 && ([string compare $secure_nodes "true"] == 0 || [string compare $obfu_nonadmin "true"] == 0)} { ?>
+<input type="password" name="f_<?^= $(-id) ?>" id="<?^= $(-id) ?>"
+<? } else { ?>
+<input type="text" name="f_<?^= $(-id) ?>" id="<?^= $(-id) ?>"
+<? } ?>
+
+<?
+if {[string compare $(-class) "-"] != 0} {
+    tms::puts "class=\"[tms::html-escape $(-class)]\""
+}
+if {[string compare $disp_value "-"] != 0} {
+  if {[check_value_escape_disable $(-value_escape_disable)]} {
+    tms::puts " value=\"$disp_value\""
+  } else {
+    tms::puts " value=\"[tms::html-escape $disp_value]\""
+  }
+}
+if {[string compare $(-cols) "-"] != 0} {
+    tms::puts " size=\"[tms::html-escape $(-cols)]\""
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+if {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+?>
+>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-PASSWORDBOX args>
+#
+# used to create a form password box.
+# ==================================================
+?>
+
+<TAG CFG-PASSWORDBOX args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -caps "-" -name "-"
+                    -acl "-" -acl_oper "-" -acl_oper_display {query_get}
+                    -setname "-" -delname "-" -type "-" -ctype "-" -value "-"
+                    -cols "-" -required "true" -div_id "-" -span_id "-" -class "-"
+                    -span_id_noread "-"
+                    -disabled "-" -enabled "-" -type_flags "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-" 
+                    -value_escape_disable "-"}
+
+check_acl $(-acl) $(-acl_oper) "CFG-PASSWORDBOX" $(-id)
+
+if {[string compare $(-id) "-"] == 0} {
+    set (-id) [tms::get-unique-id]
+}
+
+if {[string compare $(-setname) "-"] == 0} {
+    set (-setname) $(-name)
+}
+
+set query_ok [tms::check-authorization "-" $(-acl) $(-acl_oper_display)]
+if {$query_ok == 0 && [string compare $(-span_id_noread) "-"] != 0} {
+  set (-span_id) $(-span_id_noread)
+}
+
+set obfuscated [tms::get-param post "o_$(-id)"]
+set disp_value [tms::get-param post "f_$(-id)"]
+if {[string length $disp_value] == 0} {
+    set disp_value "-"
+    if {$query_ok == 1} {
+        if {[string compare $(-value) "-"] != 0} {
+            set disp_value $(-value)
+        } elseif {[string compare $(-name) "-"] != 0} {
+            set disp_value [tms::get-config $(-name)]
+            set obfu_attrib [tms::get-attrib $(-name) "obfuscation"]
+            if {[llength $obfu_attrib] == 3 && [string compare [lindex $obfu_attrib 2] "true"] == 0} {
+                set obfuscated "true"
+            }
+        }
+    }
+}
+
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    set (-disabled) "true"
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) $(-required) "-" $obfuscated $(-disabled) $(-value_escape_disable)
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="passwordbox<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<input type="password" name="f_<?^= $(-id) ?>" id="<?^= $(-id) ?>"
+<?
+if {[string compare $disp_value "-"] != 0} {
+  if {[check_value_escape_disable $(-value_escape_disable)]} {
+    tms::puts " value=\"$disp_value\""
+  } else {
+    tms::puts " value=\"[tms::html-escape $disp_value]\""
+  }
+}
+if {[string compare $(-cols) "-"] != 0} {
+    tms::puts " size=\"[tms::html-escape $(-cols)]\""
+}
+if {[string compare $(-class) "-"] != 0} {
+    tms::puts " class=\"[tms::html-escape $(-class)]\""
+}
+if {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+?>
+>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-TEXTAREA args>
+#
+# used to create a form text area.
+?>
+
+<TAG CFG-TEXTAREA args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -caps "-" -name "-"
+                    -acl "-" -acl_oper "-" -acl_oper_display {query_get}
+                    -setname "-" -delname "-" -type "-" -ctype "-" -value "-"
+                    -rows "-" -cols "-" -required "false" -div_id "-" -span_id "-"
+                    -span_id_noread "-"
+                    -class "-" -disabled "-" -enabled "true" -type_flags "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-"
+                    -value_escape_disable "-"}
+
+check_acl $(-acl) $(-acl_oper) "CFG-TEXTAREA" $(-id)
+
+if {[string compare $(-id) "-"] == 0} {
+    set (-id) [tms::get-unique-id]
+}
+
+if {[string compare $(-setname) "-"] == 0} {
+    set (-setname) $(-name)
+}
+
+set query_ok [tms::check-authorization "-" $(-acl) $(-acl_oper_display)]
+if {$query_ok == 0 && [string compare $(-span_id_noread) "-"] != 0} {
+  set (-span_id) $(-span_id_noread)
+}
+
+set disp_value [tms::get-param post "f_$(-id)"]
+if {[string length $disp_value] == 0} {
+    set disp_value "-"
+    if {$query_ok == 1} {
+        if {[string compare $(-value) "-"] != 0} {
+            set disp_value $(-value)
+        } elseif {[string compare $(-name) "-"] != 0} {
+            set disp_value [tms::get-config $(-name)]
+        }
+    }
+}
+
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    set (-disabled) "true"
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) $(-required) "-" "false" $(-disabled) $(-value_escape_disable)
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="textarea<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<textarea name="f_<?^= $(-id) ?>" rows="<?^= $(-rows) ?>" cols="<?^= $(-cols) ?>" <?
+
+if {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+
+?>>
+<?
+if {[string compare $disp_value "-"] != 0} {
+  if {[check_value_escape_disable $(-value_escape_disable)]} {
+    tms::puts "$disp_value"
+  } else {
+    tms::puts "[tms::html-escape $disp_value]"
+  }
+}
+?></textarea>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-CHECKBOX id errname caps def name delname type ctype value>
+#
+# used to create a form checkbox.
+?>
+
+<TAG CFG-CHECKBOX args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -caps "-" -name "-"
+                    -acl "-" -acl_oper "-" -acl_oper_display {query_get}
+                    -setname "-" -delname "-" -type "-" -ctype "-" -value "-"
+                    -div_id "-" -span_id "-" -class "-" -disabled "-"
+                    -span_id_noread "-"
+                    -enabled "-" -type_flags "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-"
+                    -value_escape_disable "-"}
+
+check_acl $(-acl) $(-acl_oper) "CFG-CHECKBOX" $(-id)
+
+if {[string compare $(-id) "-"] == 0} {
+    set (-id) [tms::get-unique-id]
+}
+
+if {[string compare $(-setname) "-"] == 0} {
+    set (-setname) $(-name)
+}
+
+set query_ok [tms::check-authorization "-" $(-acl) $(-acl_oper_display)]
+if {$query_ok == 0 && [string compare $(-span_id_noread) "-"] != 0} {
+  set (-span_id) $(-span_id_noread)
+}
+
+set disp_value [tms::get-param post "f_$(-id)"]
+if {[string length $disp_value] == 0} {
+    set disp_value "false"
+    if {$query_ok == 1} {
+        if {[string compare $(-value) "-"] != 0} {
+            set disp_value $(-value)
+        } elseif {[string compare $(-name) "-"] != 0} {
+            set disp_value [tms::get-config $(-name)]
+        }
+    }
+}
+
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    set (-disabled) "true"
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) "false" "-" "false" $(-disabled) $(-value_escape_disable)
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="checkbox<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<input type="checkbox" name="f_<?^= $(-id) ?>" id="<?^= $(-id) ?>"
+<?
+if {[string compare $disp_value "true"] == 0} {
+    tms::puts " checked"
+}
+# The "on" can come if disp_value was found in the POST parameters
+# from a prior form submission (see bug 11706).
+if {[string compare $disp_value "on"] == 0} {
+    tms::puts " checked"
+}
+
+if {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+?>
+>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-DROPDOWN args>
+#
+# used to create a form dropdown.
+#
+# XXXX: the -hidden parameter does not work, and causes non-compliant and
+# useless HTML to be emitted.
+?>
+
+<TAG CFG-DROPDOWN args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -caps "-" -name "-"
+                    -acl "-" -acl_oper "-" -acl_oper_display {query_get}
+                    -setname "-" -delname "-" -type "-" -ctype "-" -value "-"
+                    -options "-" -required "true" -div_id "-" -span_id "-" -hidden "" -style ""
+                    -span_id_noread "-"
+                    -class "-" -disabled "-" -enabled "-" -type_flags "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onchange "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-"
+                    -value_escape_disable "-"}
+
+check_acl $(-acl) $(-acl_oper) "CFG-DROPDOWN" $(-id)
+
+if {[string compare $(-id) "-"] == 0} {
+    set (-id) [tms::get-unique-id]
+}
+
+if {[string compare $(-setname) "-"] == 0} {
+    set (-setname) $(-name)
+}
+
+set query_ok [tms::check-authorization "-" $(-acl) $(-acl_oper_display)]
+if {$query_ok == 0 && [string compare $(-span_id_noread) "-"] != 0} {
+  set (-span_id) $(-span_id_noread)
+}
+
+set disp_value [tms::get-param post "f_$(-id)"]
+if {[string length $disp_value] == 0} {
+    set disp_value "-"
+    if {$query_ok == 1} {
+        if {[string compare $(-value) "-"] != 0} {
+            set disp_value $(-value)
+        } elseif {[string compare $(-name) "-"] != 0} {
+            set disp_value [tms::get-config $(-name)]
+        } else {
+            # No value or name, just accept the default.
+        }
+    } else {
+        if {[string compare $(-value) "-"] != 0} {
+            # See bug 13802
+            set (-options) [linsert $(-options) 0 {"" "-"}]
+        } elseif {[string compare $(-name) "-"] != 0} {
+            # See bug 13802
+            set (-options) [linsert $(-options) 0 {"" "-"}]
+        } else {
+            # No value or name, just accept the default.
+        }
+    }
+}
+
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    set (-disabled) "true"
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) $(-required) "-" "false" $(-disabled) $(-value_escape_disable)
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="select<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<select class="cfg-select" name="f_<?^= $(-id) ?>" id="sel_<?^=$(-id)?>" size="1" <?
+
+# We'll always have at least this, and append whatever the caller might
+# specify.
+set select_base_style "z-index: 1;"
+
+if {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-hidden) "yes"] == 0} {
+    tms::puts " type=\"hidden\" "
+}
+if {[string compare $(-style) "-"] != 0} {
+    tms::puts " style=\"$select_base_style $(-style)\" "
+} else {
+    tms::puts " style=\"$select_base_style\" "
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+if {[string compare $(-onchange) "-"]} {
+    tms::puts " onchange=\"$(-onchange)\""
+}
+
+?>><?
+foreach option $(-options) {
+    tms::puts "<option value=\"[tms::html-escape [lindex $option 1]]\""
+    if {[string compare $disp_value [lindex $option 1]] == 0} {
+        tms::puts " selected"
+    }
+    if {[check_value_escape_disable $(-value_escape_disable)]} {
+      tms::puts ">[lindex $option 0]</option>"
+    } else {
+      tms::puts ">[tms::html-escape [lindex $option 0]]</option>"
+    }
+}
+?></select>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-LISTBOX args>
+#
+# used to create a form list.
+?>
+
+<TAG CFG-LISTBOX args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -caps "-" -name "-"
+                    -acl "-" -acl_oper "-" -acl_oper_display {query_get}
+                    -setname "-" -delname "-" -type "-" -ctype "-" -value "-"
+                    -rows "-" -options "-" -flags "-" -div_id "-" -span_id "-"
+                    -span_id_noread "-"
+                    -class "-" -disabled "-" -enabled "-" -type_flags "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-"
+                    -value_escape_disable "-"}
+
+
+check_acl $(-acl) $(-acl_oper) "CFG-LISTBOX" $(-id)
+
+if {[string compare $(-id) "-"] == 0} {
+    set (-id) [tms::get-unique-id]
+}
+
+if {[string compare $(-setname) "-"] == 0} {
+    set (-setname) $(-name)
+}
+
+set query_ok [tms::check-authorization "-" $(-acl) $(-acl_oper_display)]
+if {$query_ok == 0 && [string compare $(-span_id_noread) "-"] != 0} {
+  set (-span_id) $(-span_id_noread)
+}
+
+set disp_value [tms::get-param post "f_$(-id)"]
+if {[string length $disp_value] == 0} {
+    set disp_value "-"
+    if {$query_ok == 1} {
+        if {[string compare $(-value) "-"] != 0} {
+            set disp_value $(-value)
+        } elseif {[string compare $(-name) "-"] != 0} {
+            set disp_value [tms::get-config $(-name)]
+        }
+    }
+}
+
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    set (-disabled) "true"
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) "false" "-" "false" $(-disabled) $(-value_escape_disable)
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="listbox<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<select name="f_<?^= $(-id) ?>" size="<?^= $(-rows) ?>"<?
+foreach flag $(-flags) {
+    if {[string compare $flag "multiple"] == 0} {
+        tms::puts " multiple"
+    }
+}
+
+if {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+?>><?
+foreach option $(-options) {
+    tms::puts "<option value=\"[tms::html-escape [lindex $option 1]]\""
+    if {[string compare $disp_value [lindex $option 1]] == 0} {
+        tms::puts " selected"
+    }
+    if {[check_value_escape_disable $(-value_escape_disable)]} {
+      tms::puts ">[lindex $option 0]</option>"
+    } else {
+      tms::puts ">[tms::html-escape [lindex $option 0]]</option>"
+    }
+}
+?></select>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-RADIO-GROUP args>
+#
+# used to create a form radio group.
+# ==================================================
+?>
+
+<TAG CFG-RADIO-GROUP args>
+<?
+#
+# Named argument list and default values
+#
+#XXX/SML: any reason we shouldn't support the parameter "-disabled"?
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -setname "-" -delname "-"
+                    -type "-" -ctype "-" -value "-" -type_flags "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-"
+                    -value_escape_disable "-"}
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) "false" "-" "false" "false" $(-value_escape_disable)
+?>
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-RADIO args>
+#
+# used to create a form radio button.
+# ==================================================
+?>
+
+<TAG CFG-RADIO args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -caps "-" -name "-" -value "-"
+                    -acl "-" -acl_oper "-" -acl_oper_display {query_get}
+                    -checked "false" -div_id "-" -span_id "-"
+                    -span_id_noread "-"
+                    -class "-" -disabled "-" -enabled "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-"
+                    -value_escape_disable "-"}
+
+check_acl $(-acl) $(-acl_oper) "CFG-RADIO" $(-id)
+
+set query_ok [tms::check-authorization "-" $(-acl) $(-acl_oper_display)]
+if {$query_ok == 0 && [string compare $(-span_id_noread) "-"] != 0} {
+  set (-span_id) $(-span_id_noread)
+}
+
+set disp_value [tms::get-param post "f_$(-id)"]
+if {[string length $disp_value] == 0} {
+    set disp_value "-"
+    if {[string compare $(-name) "-"] != 0 &&
+        $query_ok == 1} {
+        set disp_value [tms::get-config $(-name)]
+    }
+}
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="radio<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<?
+if {[check_value_escape_disable $(-value_escape_disable)]} {
+  tms::puts "<input type=\"radio\" name=\"f_[tms::html-escape $(-id)]\" value=\"$(-value)\""
+} else {
+  tms::puts "<input type=\"radio\" name=\"f_[tms::html-escape $(-id)]\" value=\"[tms::html-escape $(-value)]\""
+}
+if {[string compare $disp_value $(-value)] == 0 ||
+    [string compare $(-checked) "true"] == 0} {
+    tms::puts " checked"
+}
+if {[string compare $(-disabled) "true"] == 0 || ([tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0)} {
+    tms::puts " disabled"
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+if {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+tms::puts ">"
+?>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-IPV4 args>
+#
+# used to create a form text field for ipv4 entry.
+# ==================================================
+?>
+
+<TAG CFG-IPV4 args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -caps "-" -name "-"
+                    -acl "-" -acl_oper "-" -acl_oper_display {query_get}
+                    -setname "-" -delname "-" -type "-" -ctype "-" -value "-"
+                    -blank_zeros "true" -div_id "-" -span_id "-" -class "-"
+                    -span_id_noread "-"
+                    -disabled "-" -enabled "-" -type_flags "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-"
+                    -value_escape_disable "-"}
+
+
+check_acl $(-acl) $(-acl_oper) "CFG-IPV4" $(-id)
+
+if {[string compare $(-id) "-"] == 0} {
+    set (-id) [tms::get-unique-id]
+}
+
+if {[string compare $(-setname) "-"] == 0} {
+    set (-setname) $(-name)
+}
+
+set query_ok [tms::check-authorization "-" $(-acl) $(-acl_oper_display)]
+if {$query_ok == 0 && [string compare $(-span_id_noread) "-"] != 0} {
+  set (-span_id) $(-span_id_noread)
+}
+
+set disp_value [tms::get-param post "f_$(-id)"]
+if {[string length $disp_value] == 0} {
+    set disp_value "-"
+    if {$query_ok == 1} {
+        if {[string compare $(-value) "-"] != 0} {
+            set disp_value $(-value)
+        } elseif {[string compare $(-name) "-"] != 0} {
+            set disp_value [tms::get-config $(-name)]
+        }
+    }
+}
+
+if {[string compare $disp_value "-"] == 0} {
+    set disp_value "0.0.0.0"
+}
+
+set disp_value [check_display_value $(-type) $(-ctype) $disp_value]
+if {[string compare $disp_value "0.0.0.0"] == 0 &&
+    [string compare $(-blank_zeros) "true"] == 0} {
+    set disp_value ""
+}
+
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    set (-disabled) "true"
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) "false" "-" "false" $(-disabled)  $(-value_escape_disable)
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="ipv4<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<input type="text" name="f_<?^= $(-id) ?>" size="16"
+<?
+if {[string compare $disp_value "-"] != 0} {
+  if {[check_value_escape_disable $(-value_escape_disable)]} {
+    tms::puts " value=\"$disp_value\""
+  } else {
+    tms::puts " value=\"[tms::html-escape $disp_value]\""
+  }
+}
+
+if {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-class) "-"] != 0} {
+    tms::puts " -class=\"[tms::html-escape $(-class)]\""
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+?>
+>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-IPV4ENTRY args>
+#
+# used to create a form ipv4 entry field.
+?>
+
+<TAG CFG-IPV4ENTRY args>
+<?
+#
+# Named argument list and default values
+#
+#XXX/SML: any reason we shouldn't support the parameter "-disabled"?
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -caps "-" -name "-"
+                    -acl "-" -acl_oper "-" -acl_oper_display {query_get}
+                    -setname "-" -delname "-" -type "-" -ctype "-" -value "-"
+                    -div_id "-" -span_id "-" -class "-" -type_flags "-"
+                    -span_id_noread "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-"
+                    -value_escape_disable "-"}
+
+check_acl $(-acl) $(-acl_oper) "CFG-IPV4ENTRY" $(-id)
+
+if {[string compare $(-id) "-"] == 0} {
+    set (-id) [tms::get-unique-id]
+}
+
+if {[string compare $(-setname) "-"] == 0} {
+    set (-setname) $(-name)
+}
+
+if {[string compare $(-value) "-"] == 0} {
+    set (-value) "%$(-id).1%.%$(-id).2%.%$(-id).3%.%$(-id).4%"
+}
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) "false" "-" "false" "false" $(-value_escape_disable)
+
+set query_ok [tms::check-authorization "-" $(-acl) $(-acl_oper_display)]
+if {$query_ok == 0 && [string compare $(-span_id_noread) "-"] != 0} {
+  set (-span_id) $(-span_id_noread)
+}
+
+set ip_1 "0"
+set ip_2 "0"
+set ip_3 "0"
+set ip_4 "0"
+if {[string compare $(-name) "-"] != 0 &&
+    $query_ok == 1} {
+    set curr_ip [tms::get-config $(-name)]
+    regsub -all "\\." $curr_ip " " list_ip
+    set ip_1 [lindex $list_ip 0]
+    set ip_2 [lindex $list_ip 1]
+    set ip_3 [lindex $list_ip 2]
+    set ip_4 [lindex $list_ip 3]
+}
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="ipv4entry<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<input type="text" name="f_<?^= $(-id) ?>.1" size="3" value="<?
+
+if {[check_value_escape_disable $(-value_escape_disable)]} {
+   tms::puts "$ip_1\""
+} else {
+   tms::puts "[tms::html-escape $ip_1]\""
+}
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+?>> .
+
+<input type="text" name="f_<?^= $(-id) ?>.2" size="3" value="<?
+
+if {[check_value_escape_disable $(-value_escape_disable)]} {
+   tms::puts "$ip_2\""
+} else {
+   tms::puts "[tms::html-escape $ip_2]\""
+}
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+?>> .
+
+<input type="text" name="f_<?^= $(-id) ?>.3" size="3" value="<?
+
+if {[check_value_escape_disable $(-value_escape_disable)]} {
+   tms::puts "$ip_3\""
+} else {
+   tms::puts "[tms::html-escape $ip_3]\""
+}
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+?>> .
+
+<input type="text" name="f_<?^= $(-id) ?>.4" size="3" value="<?
+
+if {[check_value_escape_disable $(-value_escape_disable)]} {
+   tms::puts "$ip_4\""
+} else {
+   tms::puts "[tms::html-escape $ip_4]\""
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+?>>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+</TAG>
+
+
+<?
+# ==================================================
+#
+# <CFG-IPV6 args>
+#
+# used to create a form text field for IPv6 address entry.
+# ==================================================
+?>
+
+<TAG CFG-IPV6 args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -caps "-" -name "-"
+                    -acl "-" -acl_oper "-" -acl_oper_display {query_get}
+                    -setname "-" -delname "-" -type "-" -ctype "-" -value "-"
+                    -blank_zeros "true" -div_id "-" -span_id "-" -class "-"
+                    -span_id_noread "-"
+                    -disabled "-" -enabled "-" -type_flags "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-"
+                    -value_escape_disable "-"}
+
+
+check_acl $(-acl) $(-acl_oper) "CFG-IPV6" $(-id)
+
+if {[string compare $(-id) "-"] == 0} {
+    set (-id) [tms::get-unique-id]
+}
+
+if {[string compare $(-setname) "-"] == 0} {
+    set (-setname) $(-name)
+}
+
+set query_ok [tms::check-authorization "-" $(-acl) $(-acl_oper_display)]
+if {$query_ok == 0 && [string compare $(-span_id_noread) "-"] != 0} {
+  set (-span_id) $(-span_id_noread)
+}
+
+set disp_value [tms::get-param post "f_$(-id)"]
+if {[string length $disp_value] == 0} {
+    set disp_value "-"
+    if {$query_ok == 1} {
+        if {[string compare $(-value) "-"] != 0} {
+            set disp_value $(-value)
+        } elseif {[string compare $(-name) "-"] != 0} {
+            set disp_value [tms::get-config $(-name)]
+        }   
+    }
+}
+
+if {[string compare $disp_value "-"] == 0} {
+    set disp_value "::"
+}
+
+set disp_value [check_display_value $(-type) $(-ctype) $disp_value]
+if {[string compare $disp_value "::"] == 0 &&
+    [string compare $(-blank_zeros) "true"] == 0} {
+    set disp_value ""
+}
+
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    set (-disabled) "true"
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) "false" "-" "false" $(-disabled) $(-value_escape_disable)
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="ipv6addr<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+</IF>
+
+<input type="text" name="f_<?^= $(-id) ?>" size="46"
+<?
+if {[string compare $disp_value "-"] != 0} {
+  if {[check_value_escape_disable $(-value_escape_disable)]} {
+    tms::puts " value=\"$disp_value\""
+  } else {
+    tms::puts " value=\"[tms::html-escape $disp_value]\""
+  }
+}
+
+if {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+if {[string compare $(-class) "-"] != 0} {
+    tms::puts " -class=\"[tms::html-escape $(-class)]\""
+}
+if {[string compare $(-onclick) "-"]} {
+    tms::puts " onclick=\"$(-onclick)\""
+}
+if {[string compare $(-onfocus) "-"]} {
+    tms::puts " onfocus=\"$(-onfocus)\""
+}
+if {[string compare $(-onblur) "-"]} {
+    tms::puts " onblur=\"$(-onblur)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeyup) "-"]} {
+    tms::puts " onkeyup=\"$(-onkeyup)\""
+}
+if {[string compare $(-onkeydown) "-"]} {
+    tms::puts " onkeydown=\"$(-onkeydown)\""
+}
+if {[string compare $(-onkeypress) "-"]} {
+    tms::puts " onkeypress=\"$(-onkeypress)\""
+}
+if {[string compare $(-onmousedown) "-"]} {
+    tms::puts " onmousedown=\"$(-onmousedown)\""
+}
+if {[string compare $(-onmousemove) "-"]} {
+    tms::puts " onmousemove=\"$(-onmousemove)\""
+}
+if {[string compare $(-onmouseout) "-"]} {
+    tms::puts " onmouseout=\"$(-onmouseout)\""
+}
+if {[string compare $(-onmouseover) "-"]} {
+    tms::puts " onmouseover=\"$(-onmouseover)\""
+}
+if {[string compare $(-onselect) "-"]} {
+    tms::puts " onselect=\"$(-onselect)\""
+}
+?>
+>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+
+</TAG>
+
+
+<?
+# ==================================================
+#
+# <CFG-SET args>
+#
+# used to set a config value without a visible field.
+?>
+
+<TAG CFG-SET args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -setname "-" -delname "-" -type "-"
+                    -ctype "-" -value "-" -div_id "-" -span_id "-" -class "-"
+                    -type_flags "-"
+                    -onclick "-" -onfocus "-" -onblur "-" -onkeydown  "-" -onkeyup "-"
+                    -onkeydown "-" -onkeypress "-" -onmousedown "-" -onmousemove "-"
+                    -onmouseout "-" -onmouseover "-" -onselect "-" -onsubmit "-"
+                    -value_escape_disable "-"}
+
+make_hidden_fields $(-id) "-" $(-setname) $(-delname) $(-value) $(-type) $(-ctype) $(-type_flags) "true" "-" "false" "false" $(-value_escape_disable)
+?>
+
+<IF {[string compare $(-div_id) "-"] != 0}>
+  <div id="<?^= $(-div_id) ?>" class="inline">
+</IF>
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>">
+</IF>
+
+<IF {[check_value_escape_disable $(-value_escape_disable)]}>
+  <input type="hidden" name="f_<?^=$(-id)?>" value="<?=$(-value)?>">
+<ELSE>
+  <input type="hidden" name="f_<?^=$(-id)?>" value="<?^=$(-value)?>">
+</IF>
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+<IF {[string compare $(-div_id) "-"] != 0}>
+  </div>
+</IF>
+
+</TAG>
+
+<?
+# ==================================================
+#
+# <CFG-FORM>...</CFG-FORM>
+#
+# used to create a special configuration form in which the rest of the
+# tags inside this template may be used.
+?>
+
+<TAG CFG-FORM args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-action "config-form" -onsubmit "" -enctype ""
+                    -name "" -div_id "-" -onsubmit "-" -url "-" -class "-"
+                    -value_escape_disable "-" -uri_html_escape "-"}
+
+  if {[string compare $(-url) "-"] == 0} {
+    set form_url [tms::get-cgi-var "REQUEST_URI"]
+    set (-uri_html_escape) "true"
+  } else {
+    set form_url $(-url)
+  }
+
+  if {[string compare $(-div_id) "-"] == 0} {
+      set id [tms::get-unique-id]
+      set (-div_id) "cfg_form_div_$id"
+  }
+?>
+
+<div id="<?^= $(-div_id) ?>" class="form<? if { $(-class) != "-"} {tms::puts " [tms::html-escape $(-class)]"}?>">
+<?
+if {[string equal $(-uri_html_escape) "true"]} {
+  tms::puts "<form action=\"[tms::html-escape $form_url]\""
+} else {
+  tms::puts "<form action=\"$form_url\""
+}
+tms::puts " method=\"post\""
+if {[string length $(-name)] > 0} {
+   tms::puts " name=\"[tms::html-escape $(-name)]\""
+}
+if {[string length $(-enctype)] > 0} {
+  tms::puts " enctype=\"[tms::html-escape $(-enctype)]\""
+}
+if {[string length $(-onsubmit)] > 0 && [string compare $(-onsubmit) "-"] != 0} {
+   tms::puts " onsubmit=\"$(-onsubmit)\""
+}
+?>>
+
+<CFG-ACTION -name "$(-action)" -priority 10>
+</TAG>
+
+<TAGEND CFG-FORM>
+</form>
+</div>
+</TAGEND>
+

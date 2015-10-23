@@ -1,0 +1,279 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "mon-cmc-common">
+
+<?
+  global cmc_acl
+  global ssh_acl
+  set appl [tms::get-param query "appl"]
+?>
+
+<TMS-PAGE "CMC status detail: appliance $appl">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR>
+   <TMS-MON-MENU "cmc-detail" "appl" $appl></TMS-MON-MENU>
+</TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "CMC Status Detail: Appliance $appl">
+
+<CMC-COMMON-ONETIME-SETUP>
+
+<!-- ==================================================
+     = View Appliance Status Detail
+     ================================================== -->
+
+<h2>CMC appliance <?^=$appl?></h2>
+
+<IF {[tms::check-authorization "query_basic" $cmc_acl {query}] == 1}>
+
+<CMC-COMMON-PER-APPL $appl>
+
+<?
+    set failure_reason [tms::get-config "/cmc/state/appliance/$appl/connection/failure_reason_str"]
+    set broken_reason [tms::get-config "/cmc/state/appliance/$appl/connection/broken_reason_str"]
+    set serv_uname [tms::get-config "/cmc/state/appliance/$appl/capabilities/ours"]
+    set client_uname [tms::get-config "/cmc/state/appliance/$appl/capabilities/theirs"]
+
+?>
+
+<CFG-FORM -action "cmc-mon-detail">
+
+  <CFG-BUTTON -type "prev" -text "&lt;-- Prev" -caps "query_basic"
+              -acl $cmc_acl -acl_oper {query}
+              -span_id "cmc_appl_ok_2"
+              -value_escape_disable "true">
+
+&nbsp;
+
+  <CFG-BUTTON -type "next" -text "Next --&gt;" -caps "query_basic"
+              -acl $cmc_acl -acl_oper {query}
+              -span_id "cmc_appl_ok_2"
+              -value_escape_disable "true">
+
+<p>
+
+  <table cellpadding="3" cellspacing="0">
+    <tr class="listing_even">
+      <td height="10" colspan="99">
+    <tr class="listing_even">
+      <td colspan="99">
+        <b>&nbsp;Connection Status</b>
+    <TMS-TABLE-ENTRY "Appliance ID">
+      <?^= $appl ?>
+      <td width="10">
+      <td>
+      <td width="10">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enabled">
+      <?^= $enabled_text ?>
+      <td width="10">
+      <td>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Connected">
+      <?^= $connected_text_long ?>
+      <td width="10">
+      <td>
+      <?
+      # XXX/SML:  This contains an html <img> directive, so it cannot be escaped
+      ?>
+      <?= $connected_image ?>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Connection failure reason">
+      <?^= $failure_reason ?>
+      <td width="10">
+      <td>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Connection broken reason">
+      <?^= $broken_reason ?>
+      <td width="10">
+      <td>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Connection duration">
+      <?^= $cxn_dur ?>
+      <td width="10">
+      <td>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Server username on client">
+      <?^= $serv_uname ?>
+      <td width="10">
+      <td>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Client username on server">
+      <?^= $client_uname ?>
+      <td width="10">
+      <td>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <tr class="listing_even">
+      <td height="10" colspan="99">
+
+    <tr class="listing_even">
+      <td colspan="99">
+        <b>&nbsp;Health Status</b>
+
+    <TMS-TABLE-ENTRY "Alive">
+      <?^=$alive_text?>
+      <td width="10">
+      <td>
+      <?
+      # XXX/SML:  This contains an html <img> directive, so it cannot be escaped
+      ?>
+      <?=$alive_image?>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Disk space">
+      <?^=$disk_text?>
+      <td width="10">
+      <td>
+      <?
+      # XXX/SML:  This contains an html <img> directive, so it cannot be escaped
+      ?>
+      <?=$disk_image?>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "CPU usage">
+      <?^=$cpu_text?>
+      <td width="10">
+      <td>
+      <?
+      # XXX/SML:  This contains an html <img> directive, so it cannot be escaped
+      ?>
+      <?=$cpu_image?>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Last check">
+      <?^=$last_check?>
+      <td width="10">
+      <td>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <tr class="listing_even">
+      <td height="10" colspan="99">
+
+    <tr class="listing_even">
+      <td colspan="99">
+        <b>&nbsp;Version Status</b>
+
+    <TMS-TABLE-ENTRY "Software version">
+      <?^=$client_version?>
+      <td width="10">
+      <td>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Version match">
+      <?^=$client_version_match?>
+      <td width="10">
+      <td>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Version compatible">
+      <?^=$client_version_compatible?>
+      <td width="10">
+      <td>
+      <?
+      # XXX/SML:  This contains an html <img> directive, so it cannot be escaped
+      ?>
+      <?=$version_image?>
+      <td>
+    </TMS-TABLE-ENTRY>
+
+    <tr class="listing_even">
+      <td height="10" colspan="99">
+    <TMS-TABLE-SPACE>
+  </table>
+
+<?
+  set return [tms::get-param query "return"]
+  if {[string length $return] > 0} {
+    set tmpl $return
+  } else {
+    set tmpl "mon-cmc"
+  }
+?>
+
+<p>
+Last updated <?^=[tms::get-config "/time/now/datetime"]?>.
+</p>
+
+  <CFG-BUTTON -type "ok" -text "OK" -caps "query_basic"
+              -acl $cmc_acl -acl_oper {query}
+              -span_id "cmc_appl_ok_2"
+              -destination "/admin/launch?script=rh&amp;template=[tms::uri-component-escape $tmpl]">
+
+&nbsp;
+
+  <CFG-BUTTON -type "Refresh" -text "Refresh" -caps "query_basic"
+              -acl $cmc_acl -acl_oper {query}
+              -span_id "cmc_appl_ok_2">
+
+<p>
+
+  <table border="0" cellpadding="0" cellspacing="10">
+  <tr>
+    <td>
+      <CFG-BUTTON -type "reconnect" -text "Reconnect" 
+                  -acl $cmc_acl -acl_oper {action}
+                  -caps "action_cmc">
+    <td>
+      Disconnect if connected, and then
+      attempt to (re-)establish a connection.
+
+  <tr>
+    <td>
+      <CFG-BUTTON -type "interrupt" -text "Interrupt"
+                  -acl $cmc_acl -acl_oper {action}
+                  -caps "action_privileged" -span_id "cmc_appl_interrupt_1"> 
+    <td>
+      Cancel the profile or block of CLI commands currently being
+      run (if any).
+
+  <tr>
+    <td>
+      <CFG-BUTTON -type "remove-key" -text "Remove Key"
+                  -acl $cmc_acl -acl_oper {action}
+                  -caps "action_privileged"
+                  -span_id "cmc_appl_removekey_1"> 
+    <td>
+      Remove the known host key for this appliance, so we can reconnect
+      if its host key has changed since our last connection.
+
+  </table>
+
+</CFG-FORM>
+
+<ELSE>
+
+Insufficient authorization to view CMC appliance detail.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

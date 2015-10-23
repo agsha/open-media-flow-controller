@@ -1,0 +1,227 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Edit CMC Profile: TACACS+">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set view_ok [tms::check-authorization "query_basic" $cmc_acl {query}]
+  set profile_param [tms::get-param query "profile"] 
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "tacacs" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "TACACS+ CMC Profile">
+  <TMS-CMC-MSG>
+
+<?
+  if {[string length $profile_param] == 0} {
+    NO_PROFILE_SELECTED
+  } elseif {$view_ok == 0} {
+    tms::puts "<br>Insufficient authorization to view CMC profile configuration."
+  } else {
+    set cmdpat_tacacs "tacacs-server **"
+    set cmd_start_index 1400
+    set cmd_end_index 1599
+    # The rest of the page belongs in this case, so the curly brace
+    # will be closed below.
+?>
+
+<TMS-CMC-COMMAND-SUBLISTING "TACACS+" $cmd_start_index $cmd_end_index 
+                            $profile_param prof_priv
+                            [list $cmdpat_tacacs]>
+
+  <?
+    # ==================================================
+    # Global TACACS settings
+    # ==================================================
+  ?>
+
+  <h2>TACACS+ settings for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_tac_2">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_tac_table_1">
+    <TMS-TABLE-ENTRY "Key">
+      <CFG-TEXTBOX -id "globkey" -errname "Key" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "20" -required "false"
+                   -span_id "cmc_tac_gkey">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Timeout">
+      <CFG-TEXTBOX -id "globtimeout" -errname "Timeout" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "duration_sec" -cols "4" -required "false"
+                   -span_id "cmc_tac_gtimeout">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Retransmit">
+      <CFG-TEXTBOX -id "globretransmit" -errname "Retransmit" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "int32" -cols "4" -required "false"
+                   -span_id "cmc_tac_gretrans">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"                  "globkey,globtimeout,globretrans"
+      "cmd_globkey_fields"        "globkey"
+      "cmd_globkey_pat_1"         "tacacs-server key *"
+      "cmd_globkey_fields_1"      "globkey"
+      "cmd_globtimeout_fields"    "globtimeout"
+      "cmd_globtimeout_pat_1"     "tacacs-server timeout *"
+      "cmd_globtimeout_fields_1"  "globtimeout"
+      "cmd_globretrans_fields"    "globretransmit"
+      "cmd_globretrans_pat_1"     "tacacs-server retransmit *"
+      "cmd_globretrans_fields_1"  "globretransmit">
+
+  <CFG-BUTTON -type "add" -text "Add Commands" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_tac_add_1">
+
+  </CFG-FORM>
+
+
+  <?
+    # ==================================================
+    # New TACACS+ server
+    # ==================================================
+  ?>
+
+  <h2>New TACACS+ server for profile "<?^=$profile_param?>"</h2>
+
+  <CFG-FORM -action "config-form-profile" -div_id "cmc_tac_3">
+
+  <CMC-PROFILE-FORM -profile_id       "$profile_param"
+                    -cmd_start_index  "$cmd_start_index"
+                    -cmd_end_index    "$cmd_end_index">
+
+  <TMS-TABLE -div_id "cmc_tac_table_2">
+    <TMS-TABLE-ENTRY "Server IP">
+      <CFG-TEXTBOX -id "address" -errname "IP address" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "ipv4addr" -cols "20" -span_id "cmc_tac_addr">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Auth Port">
+      <CFG-TEXTBOX -id "aport" -errname "Auth Port" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "uint16" -cols "6" -required "false"
+                   -span_id "cmc_tac_aport">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Auth Type">
+      <CFG-DROPDOWN -id "atype" -errname "Auth Type" -caps $prof_priv
+                    -acl $cmc_acl -acl_oper {set_create}
+                    -type "string" -options {{"pap" "pap"}
+                                             {"ascii" "ascii"}}
+                    -span_id "cmc_tac_atype">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Key">
+      <CFG-TEXTBOX -id "key" -errname "Key" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "string" -cols "20" -required "false"
+                   -span_id "cmc_tac_key">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Retransmit">
+      <CFG-TEXTBOX -id "retrans" -errname "Retransmit" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "int32" -cols "4" -required "false"
+                   -span_id "cmc_tac_retrans">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Timeout">
+      <CFG-TEXTBOX -id "timeout" -errname "Timeout" -caps $prof_priv
+                   -acl $cmc_acl -acl_oper {set_create}
+                   -type "duration_sec" -cols "4" -required "false"
+                   -span_id "cmc_tac_timeout">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CMC-PROFILE-CMDS
+      "commands"           "tac"
+      "cmd_tac_numpats"    "16"
+      "cmd_tac_fields"     "address,aport,atype,key,retrans,timeout"
+
+      "cmd_tac_pat_1"      "tacacs-server host * auth-type *"
+      "cmd_tac_fields_1"   "address,atype"
+
+      "cmd_tac_pat_2"      "tacacs-server host * auth-port * auth-type *"
+      "cmd_tac_fields_2"   "address,aport,atype"
+
+      "cmd_tac_pat_3"      "tacacs-server host * auth-port * auth-type * key *"
+      "cmd_tac_fields_3"   "address,aport,atype,key"
+
+      "cmd_tac_pat_4"      "tacacs-server host * auth-port * auth-type * key * 
+                            retransmit * "
+      "cmd_tac_fields_4"   "address,aport,atype,key,retrans"
+
+      "cmd_tac_pat_5"      "tacacs-server host * auth-port * auth-type * key * timeout * "
+      "cmd_tac_fields_5"   "address,aport,atype,key,timeout"
+
+      "cmd_tac_pat_6"      "tacacs-server host * auth-port * auth-type * key * 
+                            retransmit * timeout * "
+      "cmd_tac_fields_6"   "address,aport,atype,key,retrans,timeout"
+
+      "cmd_tac_pat_7"      "tacacs-server host * auth-port * auth-type * retransmit *"
+      "cmd_tac_fields_7"   "address,aport,atype,retrans"
+
+      "cmd_tac_pat_8"      "tacacs-server host * auth-port * auth-type * retransmit *
+                            timeout * "
+      "cmd_tac_fields_8"   "address,aport,atype,retrans,timeout"
+
+      "cmd_tac_pat_9"      "tacacs-server host * auth-port * auth-type * timeout *"
+      "cmd_tac_fields_9"   "address,aport,atype,timeout"
+
+      "cmd_tac_pat_10"      "tacacs-server host * auth-type * key *"
+      "cmd_tac_fields_10"   "address,atype,key"
+
+      "cmd_tac_pat_11"      "tacacs-server host * auth-type * key * timeout * "
+      "cmd_tac_fields_11"   "address,atype,key,timeout"
+
+      "cmd_tac_pat_12"      "tacacs-server host * auth-type * key * retransmit * "
+      "cmd_tac_fields_12"   "address,atype,key,retrans"
+
+      "cmd_tac_pat_13"      "tacacs-server host * auth-type * key * retransmit *
+                             timeout * "
+      "cmd_tac_fields_13"   "address,atype,key,retrans,timeout"
+
+      "cmd_tac_pat_14"      "tacacs-server host * auth-type * retransmit *"
+      "cmd_tac_fields_14"   "address,atype,retrans"
+
+      "cmd_tac_pat_15"      "tacacs-server host * auth-type * retransmit * timeout * "
+      "cmd_tac_fields_15"   "address,atype,retrans,timeout"
+
+      "cmd_tac_pat_16"      "tacacs-server host * auth-type * timeout *"
+      "cmd_tac_fields_16"   "address,atype,timeout">
+  <CFG-BUTTON -type "add" -text "Add Server" -caps $prof_priv
+              -acl $cmc_acl -acl_oper {set_create}
+              -span_id "cmc_tac_add_1">
+
+  </CFG-FORM>
+
+<?
+  # End of test for empty profile name at beginning of template
+  }
+?>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

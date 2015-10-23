@@ -1,0 +1,243 @@
+<?
+#
+#
+#
+#
+# XXX /cmc/config/group/<GROUP_ID>/member/appliance/* // wc-rw-config // string
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "CMC Groups">
+<TMS-MENU "cmc_setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-CMC-SETUP-MENU "groups"></TMS-SIDEBAR>
+
+<?
+  global cmc_acl
+?>
+
+<TMS-PAGE-CONTENT "CMC Group Setup">
+
+<IF {[tms::check-authorization "query_basic" $cmc_acl {query}]}>
+
+  <TMS-CMC-MSG>
+
+<?
+# ==================================================
+# Custom checkbox tag
+# (Adapted from CFG-CHECKBOX.  XXX/EMT: should probably just add 
+# parameters to it and re-use it, since this is so similar)
+# ==================================================
+?>
+
+<TAG CFG-CMC-CHECKBOX args>
+<?
+#
+# Named argument list and default values
+#
+  tms-utils::named-args $args {-id "-" -errname "-" -caps "-" -name "-"
+                    -acl "-" -acl_oper "-" -disabled "-" -enabled "-"
+                    -setname "-" -delname "-" -type "-" -ctype "-" -value "-"
+                    -span_id "-"}
+
+check_acl $(-acl) $(-acl_oper) "CFG-CMC-CHECKBOX" $(-id)
+
+if {[string compare $(-id) "-"] == 0} {
+    set (-id) [tms::get-unique-id]
+}
+
+if {[string compare $(-setname) "-"] == 0} {
+    set (-setname) $(-name)
+}
+
+set disp_value [tms::get-param post "f_$(-id)"]
+if {[string length $disp_value] == 0} {
+    set disp_value "false"
+    if {[string compare $(-value) "-"] != 0} {
+        set disp_value $(-value)
+    } elseif {[string compare $(-name) "-"] != 0 &&
+              [tms::check-authorization "-" $(-acl) {query_get}] == 1} {
+        set disp_value [tms::get-config $(-name)]
+    }
+}
+
+make_hidden_fields $(-id) $(-errname) $(-setname) $(-delname) $(-value) $(-type) $(-ctype) "false"
+?>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  <span id="<?^= $(-span_id) ?>" class="inline">
+</IF>
+
+<?
+if {[tms::check-authorization $(-caps) $(-acl) $(-acl_oper)] == 0} {
+    set (-disabled) "true"
+}
+
+set (-disabled) [check_disabled $(-disabled) $(-enabled)]
+?>
+
+<input type="checkbox" name="f_<?^= $(-id) ?>" value="true"
+<?
+if {[string length $disp_value] != 0 &&
+    [string compare $disp_value "false"] != 0} {
+    tms::puts " checked"
+}
+if {[string compare $(-disabled) "true"] == 0} {
+    tms::puts " disabled"
+}
+?>
+>
+
+<IF {[string compare $(-span_id) "-"] != 0}>
+  </span>
+</IF>
+</TAG>
+
+
+<?
+# ==================================================
+# Add new groups
+# ==================================================
+?>
+
+  <h2>Add New CMC Groups</h2>
+
+<CFG-FORM -action "config-form-list" -div_id "cmc_groups_2">
+  <TMS-TABLE -div_id "cmc_groups_table_1">
+    <TMS-TABLE-ENTRY "Group Name">
+      <CFG-TEXTBOX -id "group" -errname "Group Name" -caps "set_restricted"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "string" -cols "20" -span_id "cmc_groups_group">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Comment">
+      <CFG-TEXTBOX -id "comment" -errname "Comment" -caps "set_restricted"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "string" -cols "20" -required "false"
+                   -span_id "cmc_groups_comment">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/cmc/config/group">
+  <input type="hidden" name="f_list_index" value="group">
+  <input type="hidden" name="f_list_children" value="comment">
+
+  <CFG-BUTTON -type "add" -text "Add Group" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}
+              -span_id "cmc_groups_add_1">
+</CFG-FORM>
+
+
+<?
+# ==================================================
+# Group listings
+# ==================================================
+?>
+
+  <?
+    set group_prefix "/cmc/config/group"
+    set group_ids [tms::iterate-config $group_prefix]
+  ?>
+
+  <FOREACH group_id $group_ids>
+
+  <?
+    set prefix_len [string length "$group_prefix/"]
+    set group_name [string range $group_id $prefix_len end]
+    set group_comment [tms::get-config "$group_id/comment"]
+  ?>
+
+  <h2>Group <?^=$group_name?></h2>
+
+  <CFG-FORM -action "cmc-group-members">
+
+  <TMS-TABLE>
+    <tr>
+    <td width="15">
+    <td>
+      Comment: 
+
+        <CFG-TEXTBOX -id "comment_$group_name"
+                     -caps "set_restricted"
+                     -acl $cmc_acl -acl_oper {set}
+                     -name "$group_id/comment" -type "string">
+    <tr>
+    <td>
+    <td>
+
+    <?
+      set appl_prefix "/cmc/config/appliance"
+      set appl_ids [tms::iterate-config $appl_prefix]
+      set cell_num 0
+    ?>
+
+    <TMS-TABLE>
+      <FOREACH appl_id $appl_ids>
+
+  <?
+    set appl_prefix_len [string length "$appl_prefix/"]
+    set appl_name [string range $appl_id $appl_prefix_len end]
+    if {[string compare $group_name "all"] == 0} {
+      set disabled "true"
+    } else {
+      set disabled "false"
+    }
+  ?>
+
+        <IF {[expr {$cell_num % 3 == 0}]}>
+          <tr>
+        <ELSE>
+          <td width="20">
+        </IF>
+        <td>
+          <CFG-CMC-CHECKBOX 
+          -caps "set_restricted" -acl $cmc_acl -acl_oper {set}
+          -disabled "$disabled"
+          -name "/cmc/config/group/$group_name/member/appliance/$appl_name"
+          -type "string">
+          &nbsp;
+          <?^=$appl_name?>
+
+  <?
+    incr cell_num
+  ?>
+      </FOREACH>
+      <TMS-TABLE-SPACE>
+    </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}>
+  <img src="/images/em.gif" width="10" height="1" alt="">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}>
+  <img src="/images/em.gif" width="10" height="1" alt="">
+  <input name="remove" type="submit" value="Remove group"
+  <?
+    if {[string compare $group_name "all"] == 0} {
+      tms::puts "disabled"
+    } elseif {[tms::check-authorization "set_cmc" $cmc_acl {set}] == 0} {
+      tms::puts "disabled"
+    }
+  ?>
+  >
+  <input type="hidden" name="group_name" value="<?^=$group_name?>">
+
+  </TMS-TABLE>
+  </CFG-FORM>
+
+  </FOREACH>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view CMC group configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

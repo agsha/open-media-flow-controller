@@ -1,0 +1,271 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+<INCLUDE "mon-virt-common">
+
+<?
+  global virt_acl
+  set vm_name [tms::get-param query "vm"]
+?>
+
+<TMS-PAGE "Virtual Machine detail: $vm_name">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR>
+   <TMS-MON-MENU "virt-detail" "vm" $vm_name></TMS-MON-MENU>
+</TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Virtual Machine detail: $vm_name">
+
+<IF {[tms::check-authorization "query_basic" $virt_acl {query}] == 1}>
+
+<MON-VIRT-CHECK-USABLE>
+<?
+    global virt_lic_ok
+    global virt_enabled
+    if {([string compare $virt_lic_ok "true"] == 0) && ([string compare $virt_enabled "true"] == 0)} {
+?>
+
+<?
+  set vm_comment [tms::get-config "/virt/config/vm/$vm_name/comment"]
+
+  set vsr "/virt/state/vm/$vm_name"
+  set token [tms::get-binding-children "$vsr" "false" "true"]
+  tms::sort-bindings $token
+  set vm_state [tms::get-child-value-by-name $token "$vsr/state_friendly"]
+  set vcpu_util [tms::get-child-value-by-name $token "$vsr/vcpus/cpu_used"]
+  if {[string length $vcpu_util] == 0 ||
+      [string compare $vcpu_util "0"] == 0} {
+      set vcpu_util_str "N/A"
+  } else {
+      set vcpu_util_str [tms::time-to-counter-ex $vcpu_util]
+  }
+  set vm_arch [tms::get-child-value-by-name $token "$vsr/arch"]
+  set vm_nvcpu [tms::get-child-value-by-name $token "$vsr/vcpus/num_vcpus"]
+  if {[string compare $vm_nvcpu "1"] == 0} {
+    set vm_nvcpu_str "1 VCPU"
+  } else {
+    set vm_nvcpu_str "$vm_nvcpu VCPUs"
+  }
+  set vm_mem [tms::get-child-value-by-name $token "$vsr/memory_max"]
+  set hw_str "$vm_arch, $vm_nvcpu_str, $vm_mem MB RAM"
+?>
+
+<IF {[string length $vm_comment] == 0}>
+  <h2>Virtual Machine <?^=$vm_name?></h2>
+<ELSE>
+  <h2>Virtual Machine <?^=$vm_name?>: <?^=$vm_comment?></h2>
+</IF>
+
+<CFG-FORM -action "virt-mon-detail">
+
+  <CFG-BUTTON -type "prev" -text "&lt;-- Prev" -caps "query_basic"
+              -acl $virt_acl -acl_oper {query}
+              -span_id "virt_detail_prev"
+              -value_escape_disable "true">
+
+&nbsp;
+
+  <CFG-BUTTON -type "next" -text "Next --&gt;" -caps "query_basic"
+              -acl $virt_acl -acl_oper {query}
+              -span_id "virt_detail_next"
+              -value_escape_disable "true">
+
+<p>
+
+  <table cellpadding="3" cellspacing="0">
+    <tr class="listing_even">
+      <td height="10" colspan="99">
+
+<!-- ********************************************************************** -->
+
+    <tr class="listing_even">
+      <td colspan="99">
+        <b>&nbsp;Basic status</b>
+    <TMS-TABLE-ENTRY "State">
+      <?^=$vm_state?>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td width="10"></td>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "VCPU time used">
+      <?^=$vcpu_util_str?>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Hardware">
+      <?^=$hw_str?>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </TMS-TABLE-ENTRY>
+
+    <tr class="listing_even">
+      <td height="10" colspan="99">
+
+<!-- ********************************************************************** -->
+
+    <tr class="listing_even">
+      <td colspan="99">
+        <b>&nbsp;Storage</b>
+
+<?
+  set pools [tms::iterate-config "/virt/internal_state/pools/pool"]
+  if {[llength $pools] > 1} {
+    set mult_pools 1
+  } else {
+    set mult_pools 0
+  }
+
+  set buses [tms::iterate-config-last "$vsr/storage/bus"]
+  foreach bus $buses {
+    set busroot "$vsr/storage/bus/$bus"
+    set bus_name [tms::get-child-value-by-name $token "$busroot/name"]
+    set devids [tms::iterate-config-last "$busroot/dev"]
+    foreach devid $devids {
+      set devroot "$busroot/dev/$devid"
+      set src [tms::get-child-value-by-name $token "$devroot/source/vol_filename"]
+      set pool [tms::get-child-value-by-name $token "$devroot/source/vol_pool_name"]
+      set capac [tms::get-config "/virt/state/volume/pool/$pool/file/$src/capacity"]
+?>
+
+    <TMS-TABLE-ENTRY-SPAN "$bus_name bus, drive $devid" 20 "listing_even" 5>
+      <IF {$mult_pools == 1}>
+        <?^=$pool?>/<?^=$src?>
+      <ELSE>
+        <?^=$src?>
+      </IF>
+      <IF {[string length "$capac"] == 0}>
+        (not found)
+      <ELSE>
+        (<?^=$capac?> MB capacity)
+      </IF>
+      <td></td>
+    </TMS-TABLE-ENTRY-SPAN>
+
+<?
+    }
+  }
+?>
+
+    <tr class="listing_even">
+      <td height="10" colspan="99">
+
+<!-- ********************************************************************** -->
+
+    <tr class="listing_even">
+      <td colspan="99">
+        <b>&nbsp;Network interfaces</b>
+
+<?
+  set intfs [tms::iterate-config "$vsr/interface"]
+  foreach intf_root "$intfs" {
+    set intf_prefix_len [string length "$vsr/interface/"]
+    set intf [string range $intf_root $intf_prefix_len end]
+    set intf_type [tms::get-child-value-by-name $token "$intf_root/type"]
+    set intf_addr [tms::get-child-value-by-name $token "$intf_root/ip/address"]
+    set intf_mac [tms::get-child-value-by-name $token "$intf_root/macaddr"]
+    if {[string compare $intf_type "bridge"] == 0} {
+      set intf_id [tms::get-child-value-by-name $token "$intf_root/bridge"]
+      set intf_descr "$intf_type '$intf_id'"
+      if {[string length $intf_addr] == 0} {
+        set intf_addr "address unknown"
+      }
+    } elseif {[string compare $intf_type "vnet"] == 0} {
+      set intf_id [tms::get-child-value-by-name $token "$intf_root/vnet"]
+      set intf_descr "$intf_type '$intf_id'"
+      if {[string length $intf_addr] == 0} {
+        set intf_addr "no IP address"
+      }
+    } else {
+      set intf_id "(unknown)"
+      set intf_descr "$intf_type $intf_id"
+    }
+?>
+
+    <TMS-TABLE-ENTRY "Interface $intf">
+      <?^=$intf_descr?>
+      <td width="5"></td>
+      <td><?^=$intf_addr?>
+      <td width="5"></td>
+      <td>MAC <?^=$intf_mac?>
+      <td></td>
+    </TMS-TABLE-ENTRY>
+
+<?
+  }
+?>
+
+<!-- ********************************************************************** -->
+
+    <tr class="listing_even">
+      <td height="10" colspan="99">
+
+  </table>
+
+<?
+  set return [tms::get-param query "return"]
+  if {[string length $return] > 0} {
+    set tmpl $return
+  } else {
+    set tmpl "mon-virt"
+  }
+?>
+
+<p>
+Last updated <?^=[tms::get-config "/time/now/datetime"]?>.
+</p>
+
+  <CFG-BUTTON -type "ok" -text "OK" -caps "query_basic"
+              -acl $virt_acl -acl_oper {query}
+              -span_id "virt_detail_ok"
+              -destination "/admin/launch?script=rh&amp;template=[tms::uri-component-escape $tmpl]">
+
+&nbsp;
+
+  <CFG-BUTTON -type "Refresh" -text "Refresh" -caps "query_basic"
+              -acl $virt_acl -acl_oper {query}
+              -span_id "virt_detail_refresh">
+
+</CFG-FORM>
+
+<?
+    } else {
+?>
+
+<p>
+Virtualization license: NONE
+<p>
+You need a license to use virtualization.  Either you have no license
+installed, or your license is invalid or inactive.
+<p>
+Please 
+<a href="/admin/launch?script=rh&amp;template=setup-license">install a new
+license</a> to use virtualization.
+
+<?
+    }
+?>
+
+<ELSE>
+
+<br>
+Virtual Machine detail information not available.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

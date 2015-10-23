@@ -1,0 +1,240 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Hosts">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "hosts"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Static Hosts">
+
+<?
+  global net_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $net_acl {query}]}>
+
+<?
+  # Conditional on PROD_FEATURE_IPV6
+  set have_ipv6 [tms::have-prod-feature ipv6]
+  set ipv6_prohibited [tms::get-config "/net/general/config/ipv6/prohibit_ipv6_config"]
+  set ip_field_width 16
+  if {[string compare $have_ipv6 "true"] == 0} {
+      set ip_field_width 46
+  }
+
+  set cur_line 0
+  set entries ""
+  set host_ids [tms::iterate-config "/hosts/ipv4"]
+  foreach host_id $host_ids {
+      set host_ip [string range $host_id 12 end]
+      set name_ids [tms::iterate-config "/hosts/ipv4/$host_ip\/host"]
+      foreach name_id $name_ids {
+          set prefix_len [string length "/hosts/ipv4/$host_ip\/host/"]
+          set host_name [string range $name_id $prefix_len end]
+          set entries "$entries /hosts/ipv4/$host_ip\/host/$host_name"
+      }
+  }
+
+  if {[string compare $have_ipv6 "true"] == 0} {
+      set host_ids [tms::iterate-config "/hosts/ipv6"]
+      foreach host_id $host_ids {
+          set host_ip [string range $host_id 12 end]
+          set name_ids [tms::iterate-config "/hosts/ipv6/$host_ip\/host"]
+          foreach name_id $name_ids {
+              set prefix_len [string length "/hosts/ipv6/$host_ip\/host/"]
+              set host_name [string range $name_id $prefix_len end]
+              set entries "$entries /hosts/ipv6/$host_ip\/host/$host_name"
+          }
+      }
+  }
+?>
+
+  <h2>Static Host Entries</h2>
+
+  <CFG-FORM -action "config-form-hosts" -div_id "hosts_1">
+
+  <table width="35%" border="0" cellpadding="0" cellspacing="5">
+  <tr>
+    <td>
+      <table width="100%" border="0" cellspacing="0" cellpadding="3" class="listing">
+ 
+    <tr class="listing_head"> 
+      <td width="1%">
+      <td>
+        IP address
+      <td width="10">
+  <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+      <td>
+        Type
+      <td width="10">
+  <? } ?>
+      <td>
+        Hostname
+      <td width="30">
+
+    <? set button_disabled "true" ?>
+    
+    <FOREACH entry $entries>
+    <?
+    # Note that we're using the fact that "/ipv4" and "/ipv6" are the
+    # same length!
+    set prefix_len [string length "/hosts/ipvX/"]
+    set host_ip [string range $entry $prefix_len end]
+    set slash_idx [expr {[string first "/" $host_ip] - 1}]
+    set host_ip [string range $host_ip 0 $slash_idx]
+    set prefix_len [expr {$prefix_len + [string length $host_ip]}]
+    set prefix_len [expr {$prefix_len + [string length "/host/"]}]
+    set host_name [string range $entry $prefix_len end]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <IF {([string compare $host_ip "127.0.0.1"] != 0) && ([string compare $host_ip "::1"] != 0)}>
+          <CFG-CHECKBOX -id "del_$host_ip $host_name" -caps "set_basic"
+                        -acl $net_acl -acl_oper {set}
+                        -value "$host_ip $host_name" -span_id "hosts_cbox_1">
+          <? set button_disabled "false" ?>
+        </IF>
+      <td>
+        <?^=$host_ip?>
+      <td>
+  <? if {[string compare $have_ipv6 "true"] == 0} { ?>
+      <td>
+          <?^= [tms::inetaddr-to-family -inetip $host_ip] ?>
+      <td>
+  <? } ?>
+      <td>
+        <?^=$host_name?>
+      <td>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+    <tr><td colspan="5"><p class="nodata">No hosts.</p></td></tr>
+    </IF>
+
+    <tr>
+      <td height="8">
+
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected" -caps "set_basic"
+              -acl $net_acl -acl_oper {set} -disabled $button_disabled
+              -span_id "hosts_remove_1">
+
+  </table>
+  </CFG-FORM>
+
+
+<CFG-FORM -action "config-form-list" -div_id "hosts_2">
+  <h2>Add New Host</h2>
+  <TMS-TABLE -div_id "hosts_table_1">
+    <TMS-TABLE-ENTRY "IP address">
+      <CFG-TEXTBOX -id "ip" -errname "host IP" -caps "set_basic"
+                -acl $net_acl -acl_oper {set}
+                -type "inetaddr" -cols "$ip_field_width"
+                -span_id "hosts_ip">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Hostname">
+      <CFG-TEXTBOX -id "hostname" -errname "host name" -caps "set_basic"
+                   -acl $net_acl -acl_oper {set}
+                   -type "hostname" -cols "46" -span_id "hosts_name">
+    </TMS-TABLE-ENTRY>
+    <tr>
+      <td height="8">
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_index" value="ip">
+  <input type="hidden" name="f_list_match_1_root" value="/hosts/ipv4">
+  <input type="hidden" name="f_list_match_1_index_type" value="ipv4addr">
+
+<?
+  # XXX/EMT: the IPv6-prohibit thing here only works properly if the flag
+  # doesn't change between when the page is rendered and when the form
+  # is submitted.  If it does change, the change is not honored.  This is
+  # also the case everywhere else, where we disable form elements based on
+  # the prohibition, so in a way this is not worse than anywhere else.
+  # But the way in which it's a bit worse here is that there, the problem
+  # is obvious on the client side, since you don't expect the fields to
+  # change their enable/disable status dynamically.  Here, the difference
+  # is invisible, leading you to think the decision is being made on the
+  # server, when it's really not.
+?>
+
+  <? if {[string compare $have_ipv6 "true"] != 0 || [string compare $ipv6_prohibited "true"] == 0} { ?>
+      <input type="hidden" name="f_list_match_1_force" value="true">
+  <? } ?>
+  <input type="hidden" name="f_list_match_2_root" value="/hosts/ipv6">
+  <input type="hidden" name="f_list_match_2_index_type" value="ipv6addr">
+  <input type="hidden" name="f_list_match_default_error_msg" value="New
+  IP address must be an IPv4 or IPv6 address">
+  <input type="hidden" name="f_list_children" value="host">
+  <input type="hidden" name="f_list_child_host_list" value="hostname">
+
+  <CFG-BUTTON -type "add" -text "Add Entry" -caps "set_basic"
+              -acl $net_acl -acl_oper {set}
+              -span_id "hosts_add_1">
+
+</CFG-FORM>
+
+  <h2>Hostname Mappings</h2>
+
+<CFG-FORM -div_id "hosts_3">
+  <SET hostname [tms::get-config "/system/hostname"]>
+  <IF {[string compare $have_ipv6 "true"] == 0}>
+    <SET ipv4_maybe "IPv4 ">
+  <ELSE>
+    <SET ipv4_maybe "">
+  </IF>
+  <TMS-TABLE -div_id "hosts_table_3">
+    <TMS-TABLE-ENTRY "Ensure static ${ipv4_maybe}host entry for hostname ($hostname)">
+        <CFG-CHECKBOX -id "hostmap_ipv4" -caps "set_basic"
+                      -acl $net_acl -acl_oper {set}
+                      -name "/hosts/ensure_hostname_mapping" -type "bool"
+                      -span_id "hosts_ensure_mapping_ipv4">
+    </TMS-TABLE-ENTRY>
+
+    <IF {[string compare $have_ipv6 "true"] == 0}>
+      <TMS-TABLE-ENTRY "Ensure static IPv6 host entry for hostname ($hostname)">
+          <CFG-CHECKBOX -id "hostmap_ipv6" -caps "set_basic"
+                        -acl $net_acl -acl_oper {set}
+                        -name "/hosts/ensure_hostname_mapping_ipv6" -type "bool"
+                        -span_id "hosts_ensure_mapping_ipv6">
+      </TMS-TABLE-ENTRY>
+    </IF>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -acl $net_acl -acl_oper {set}
+              -span_id "hosts_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $net_acl -acl_oper {set}
+              -span_id "hosts_cancel_1">
+
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view static host configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

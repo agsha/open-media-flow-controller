@@ -1,0 +1,7 @@
+#
+# snmptrapd configuration file
+#
+
+authcommunity log public
+snmpTrapdAddr udp:162
+snmpTrapdAddr udp6:162

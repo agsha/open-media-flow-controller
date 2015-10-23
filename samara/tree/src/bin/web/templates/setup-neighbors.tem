@@ -1,0 +1,309 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "IPv6 Neighbors">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "neighbors"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "IPv6 Neighbor Discovery Protocol">
+
+<?
+#    ==================================================
+#      Gather and match config and dynamic NDP entries
+#    ==================================================
+?>
+
+<?
+  global net_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $net_acl {query}]}>
+
+<?
+  set cur_line 0
+  set dyn_entries ""
+  set cfg_entries ""
+  set dyn_entry_prefix "/net/neighbors/state/ipv6"
+  set cfg_entry_prefix "/net/neighbors/config/ipv6"
+  set ipv6_prohibited [tms::get-config "/net/general/config/ipv6/prohibit_ipv6_config"]
+
+  proc get_entries {entry_prefix} {
+    global dyn_entry_prefix
+    set entries ""
+    set ip_entries [tms::iterate-config $entry_prefix]
+    foreach ip_entry $ip_entries {
+      set entry_ids [tms::iterate-config "$ip_entry/ifname"]
+      foreach entry_id $entry_ids {
+        regexp (/*)/(.*)/(.*)/(.*)/(.*)/(.*)/(.*) $entry_id ematch j1 j2 j3 j4 ipaddr j5 ifname
+        set macaddr [tms::get-config "$entry_id/macaddr"]
+        if {[string compare $entry_prefix $dyn_entry_prefix] == 0} {
+            set nud_state [tms::get-config "$entry_id/nud_state"]
+            set last_confirmed [tms::get-config "$entry_id/last_confirmed"]
+            set entries "$entries $ipaddr/$macaddr/$ifname/$nud_state/$last_confirmed"
+        } else {
+            set entries "$entries $ipaddr/$macaddr/$ifname/(none)/(none)"
+        }
+      }
+    }
+    return $entries
+  }
+
+  set dyn_entries [get_entries $dyn_entry_prefix]
+  set cfg_entries [get_entries $cfg_entry_prefix]
+  set entries ""
+
+  # XXX/SML:  This implementation parallels setup-arp.tem.  It may have
+  # scaling issues since it's O(N^2).  Optimize later if needed.  Note that
+  # rather than matching static and dynamic tables, we could trust that
+  # commit_apply doesn't fail under normal circumstances (i.e. drop the "active"
+  # flag), and rely on nud_state "permanent" to differentiate static entries in
+  # the state table, but we'd lose a degree of assurance, as well as
+  # parallelism.
+
+  foreach dyn_entry $dyn_entries {
+      set found 0
+      foreach cfg_entry $cfg_entries {
+          regexp (\[^/\]*)/(\[^/\]*)/(\[^/\]*) $dyn_entry ematch dyn_ipaddr dyn_macaddr dyn_ifname
+          regexp (\[^/\]*)/(\[^/\]*)/(\[^/\]*) $cfg_entry ematch cfg_ipaddr cfg_macaddr cfg_ifname
+          if {[string compare $cfg_ipaddr $dyn_ipaddr] == 0 &&
+              [string compare $cfg_ifname $dyn_ifname] == 0 &&
+              [string compare $cfg_macaddr $dyn_macaddr] == 0} {
+              set found 1
+              break
+          }
+      }
+
+      if {$found == 0} {
+          set entries "$entries $dyn_entry/yes/no"
+      } else {
+          set entries "$entries $dyn_entry/yes/yes"
+      }
+  }
+
+  foreach cfg_entry $cfg_entries {
+      set found 0
+      foreach dyn_entry $dyn_entries {
+          regexp (\[^/\]*)/(\[^/\]*)/(\[^/\]*) $dyn_entry ematch dyn_ipaddr dyn_macaddr dyn_ifname
+          regexp (\[^/\]*)/(\[^/\]*)/(\[^/\]*) $cfg_entry ematch cfg_ipaddr cfg_macaddr cfg_ifname
+          if {[string compare $cfg_ipaddr $dyn_ipaddr] == 0 &&
+              [string compare $cfg_ifname $dyn_ifname] == 0 &&
+              [string compare $cfg_macaddr $dyn_macaddr] == 0} {
+              set found 1
+              break
+          }
+      }
+
+      if {$found == 0} {
+          # If this happens, there's been a failure applying config
+          set entries "$entries $cfg_entry/no/yes"
+      }
+  }
+
+?>
+
+<?
+#    ==================================================
+#      Display the NDP table
+#    ==================================================
+  
+# XXX/SML:  swap order macaddr / ifname?  Currently we match CLI / Cisco.
+?>
+
+<h2>Static and Dynamic NDP Entries</h2>
+
+<CFG-FORM -action "config-form-neighbors" -div_id "ndp_1">
+
+  <table border="0" cellpadding="3" cellspacing="0" class="listing">
+    <tr class="listing_head">
+      <td>
+      <td width="8">
+      <td>
+        IPv6 address
+      <td width="20">
+      <td>
+        MAC address
+      <td width="20">
+      <td>
+        Interface
+      <td width="20">
+      <td>
+        Age (sec)
+      <td width="20">
+      <td>
+        NUD State
+      <td width="20">
+      <td>
+        Active
+      <td width="20">
+      <td>
+        Static
+      <td width="20">
+    </tr>
+
+    <SET button_disable "true">
+
+    <FOREACH entry $entries>
+    <?
+    set rdest_display ""
+    regexp (.*)/(.*)/(.*)/(.*)/(.*)/(.*)/(.*) $entry ematch ipaddr macaddr ifname nud_state last_confirmed active static
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <IF {$static == "yes"}>
+          <CFG-CHECKBOX -id "row_$cur_line" -caps "set_restricted"
+                        -acl $net_acl -acl_oper {set}
+                        -value "/net/neighbors/config/ipv6/$ipaddr/ifname/$ifname"
+                        -span_id "ndp_cbox_1">
+          <SET button_disable "false">
+        </IF>
+      <td>
+      <td>
+        <?^=$ipaddr?>
+      <td>
+      <td>
+        <?^=$macaddr?>
+      <td>
+      <td>
+        <?^=$ifname?>
+      <td>
+      <td>
+        <?^=$last_confirmed?>
+      <td>
+      <td>
+        <?^=$nud_state?>
+      <td>
+      <td>
+        <?^=$active?>
+      <td>
+      <td>
+        <?^=$static?>
+      <td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          <p class="nodata">
+            No entries.
+          </p>
+        </td>
+      </tr>
+    </IF>
+    <TMS-TABLE-SPACE>
+  </table>
+
+<CFG-BUTTON -type "remove" -text "Remove Selected" -caps "set_restricted" 
+            -acl $net_acl -acl_oper {set} -disabled $button_disable
+            -span_id "ndp_remove_1">
+
+</CFG-FORM>
+
+
+<?
+#    ==================================================
+#      Add a new entry
+#    ==================================================
+?>
+
+<h2>Add Static Entry</h2>
+
+<CFG-FORM -action "config-form-neighbors" -div_id "ndp_2">
+
+  <TMS-TABLE -div_id "ndp_table_1">
+    <TMS-TABLE-ENTRY "IPv6 address">
+      <CFG-IPV6 -id "ipv6addr" -errname "IPv6 address" -caps "set_restricted"
+                -acl $net_acl -acl_oper {set}
+                -disabled $ipv6_prohibited
+                -type "ipv6addr" -span_id "ndp_ipv6addr">
+    </TMS-TABLE-ENTRY>
+
+    <?
+        set if_bns [tms::iterate-config "/net/interface/config"]
+        set if_names { {"" ""} }
+        foreach if_bn $if_bns {
+            set if_bn_len [string length "/net/interface/config/"]
+            set if [string range $if_bn $if_bn_len end]
+            if {[string compare $if "lo"] == 0} {
+                continue
+            }
+            set alias_index [tms::get-config "/net/interface/config/$if/alias/index"]
+            if {[string length $alias_index] > 0 } {
+                continue;
+            }
+            set if_name [list $if $if]
+            lappend if_names $if_name
+        }
+    ?>
+
+    <TMS-TABLE-ENTRY "Interface">
+      <CFG-DROPDOWN -id "interface" -errname "interface"
+                    -caps "set_privileged"
+                    -acl $net_acl -acl_oper {set}
+                    -disabled $ipv6_prohibited
+                    -type "string" -options $if_names
+                    -span_id "ndp_interface">
+    </TMS-TABLE-ENTRY>
+
+    <?
+    # XXX/SML:  is CFG-IPV6 appropriate for the future?  setup-arp.tem does
+    # this for the MAC field. The tag implementation does nothing special right
+    # now that would be a problem, but maybe we should have a CFG-MAC tag?
+    ?>
+    <TMS-TABLE-ENTRY "MAC address">
+      <CFG-IPV4 -id "macaddr" -errname "MAC address" -caps "set_restricted"
+                -acl $net_acl -acl_oper {set}
+                -disabled $ipv6_prohibited
+                -type "macaddr802" -span_id "ndp_macaddr">
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+ <CFG-BUTTON -type "add" -text "Add Entry" -caps "set_restricted"
+             -acl $net_acl -acl_oper {set}
+             -disabled $ipv6_prohibited
+             -span_id "ndp_add_1">
+
+</CFG-FORM>
+
+<h2>Clear Dynamic Neighbor Discovery Cache</h2>
+
+<table border="0" cellspacing="0" cellpadding="10">
+  <tr>
+    <td align="right">
+      <CFG-FORM -action "clear-neighbors" -div_id "ndp_3">
+        <CFG-BUTTON -type "ok" -text "Clear" -caps "action_privileged"
+                    -acl $net_acl -acl_oper {action}
+                    -span_id "ndp_ok_1">
+      </CFG-FORM>
+    <td>
+      Clear the IPv6 Dynamic NDP cache.
+</table>
+
+<br>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view neighbor configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

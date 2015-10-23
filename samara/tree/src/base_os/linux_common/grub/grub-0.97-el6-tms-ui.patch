@@ -1,0 +1,251 @@
+diff -rpu grub-0.97-75.el6/efi/ia32/loader/linux.c grub-0.97-75.el6.tms/efi/ia32/loader/linux.c
+--- grub-0.97-75.el6/efi/ia32/loader/linux.c	2012-01-18 21:37:32.000000000 -0800
++++ grub-0.97-75.el6.tms/efi/ia32/loader/linux.c	2012-04-09 10:31:18.701071000 -0700
+@@ -447,7 +447,7 @@ grub_load_linux (char *kernel, char *arg
+   params->edd_mbr_sig_buf_entries = 0;
+ 
+   /* XXX there is no way to know if the kernel really supports EFI.  */
+-  grub_printf ("[Linux-EFI, setup=0x%x, size=0x%x]\n", (unsigned int)real_size,
++  grub_verbose_printf ("[Linux-EFI, setup=0x%x, size=0x%x]\n", (unsigned int)real_size,
+ 	       (unsigned int)prot_size);
+ 
+   /* Check the mem= option to limit memory used for initrd.  */
+@@ -635,7 +635,7 @@ grub_load_initrd (char *initrd)
+       goto fail;
+     }
+ 
+-  grub_printf ("   [Initrd, addr=0x%x, size=0x%x]\n", (unsigned int) addr,
++  grub_verbose_printf ("   [Initrd, addr=0x%x, size=0x%x]\n", (unsigned int) addr,
+ 	       (unsigned int) size);
+ 
+   params->hdr.ramdisk_image = addr;
+diff -rpu grub-0.97-75.el6/efi/x86_64/loader/linux.c grub-0.97-75.el6.tms/efi/x86_64/loader/linux.c
+--- grub-0.97-75.el6/efi/x86_64/loader/linux.c	2012-01-18 21:37:32.000000000 -0800
++++ grub-0.97-75.el6.tms/efi/x86_64/loader/linux.c	2012-04-09 10:29:28.940631000 -0700
+@@ -395,7 +395,7 @@ grub_load_linux (char *kernel, char *arg
+   params->edd_mbr_sig_buf_entries = 0;
+ 
+   /* XXX there is no way to know if the kernel really supports EFI.  */
+-  grub_printf ("[Linux-EFI, setup=0x%x, size=0x%x]\n", (unsigned int)real_size,
++  grub_verbose_printf ("[Linux-EFI, setup=0x%x, size=0x%x]\n", (unsigned int)real_size,
+ 	       (unsigned int)prot_size);
+ 
+   /* Check the mem= option to limit memory used for initrd.  */
+diff -rpu grub-0.97-75.el6/stage1/stage1.S grub-0.97-75.el6.tms/stage1/stage1.S
+--- grub-0.97-75.el6/stage1/stage1.S	2012-01-18 21:37:32.000000000 -0800
++++ grub-0.97-75.el6.tms/stage1/stage1.S	2012-04-09 10:28:05.518488000 -0700
+@@ -402,7 +402,7 @@ general_error:
+ /* go here when you need to stop the machine hard after an error condition */
+ stop:	jmp	stop
+ 
+-notification_string:	.string "GRUB "
++notification_string:	.string "Boot "
+ geometry_error_string:	.string "Geom"
+ hd_probe_error_string:	.string "Hard Disk"
+ read_error_string:	.string "Read"
+diff -rpu grub-0.97-75.el6/stage2/builtins.c grub-0.97-75.el6.tms/stage2/builtins.c
+--- grub-0.97-75.el6/stage2/builtins.c	2012-01-18 21:37:32.000000000 -0800
++++ grub-0.97-75.el6.tms/stage2/builtins.c	2012-04-09 10:50:29.904743000 -0700
+@@ -4615,7 +4615,14 @@ terminal_func (char *arg, int flags)
+ 		    if (term_bitmap & (1 << i))
+ 		      {
+ 			current_term = term_table + i;
+-			grub_printf ("\rPress any key to continue.\n");
++                        if (grub_verbose)
++                          {
++                            grub_printf ("\rPress any key to continue.\n");
++                          }
++                        else
++                          {
++                            grub_printf (".");
++                          }
+ 		      }
+ 		  
+ 		  /* Restore CURRENT_TERM.  */
+@@ -4630,6 +4637,25 @@ terminal_func (char *arg, int flags)
+     }
+ 
+  end:
++  /* Tell the other terminals they have lost */
++  if (! no_message)
++    {
++      int i;
++
++      /* Need to set CURRENT_TERM to each of selected
++         terminals.  */
++      for (i = 0; term_table[i].name; i++)
++        if ((term_bitmap & (1 << i)) && i != default_term)
++          {
++            current_term = term_table + i;
++            grub_printf ("\r\nThis terminal is not active for input or output while booting.\n");
++          }
++        else
++          {
++            grub_printf ("\r\n");
++          }
++    }
++
+   current_term = term_table + default_term;
+   current_term->flags = term_flags;
+ 
+diff -rpu grub-0.97-75.el6/stage2/char_io.c grub-0.97-75.el6.tms/stage2/char_io.c
+--- grub-0.97-75.el6/stage2/char_io.c	2012-01-18 21:37:32.000000000 -0800
++++ grub-0.97-75.el6.tms/stage2/char_io.c	2012-04-09 10:38:44.062625000 -0700
+@@ -447,8 +447,7 @@ init_page (void)
+ {
+   cls ();
+ 
+-  grub_printf ("\n    GNU GRUB  version %s  (%dK lower / %dK upper memory)\n\n",
+-	  version_string, mbi.mem_lower, mbi.mem_upper);
++  grub_printf ("\n    Boot Menu\n\n");
+ }
+ 
+ /* The number of the history entries.  */
+diff -rpu grub-0.97-75.el6/stage2/stage1_5.c grub-0.97-75.el6.tms/stage2/stage1_5.c
+--- grub-0.97-75.el6/stage2/stage1_5.c	2012-01-18 21:37:32.000000000 -0800
++++ grub-0.97-75.el6.tms/stage2/stage1_5.c	2012-04-09 10:54:27.790988000 -0700
+@@ -30,8 +30,7 @@ disk_read_savesect_func (int sector, int
+ void
+ cmain (void)
+ {
+-  if (0)
+-    grub_printf ("\n\nGRUB loading, please wait...\n");
++  grub_printf ("\n\nBooting, please wait...\n");
+ 
+   /*
+    *  Here load the true second-stage boot-loader.
+diff -rpu orig/stage2.c updated/stage2.c
+--- orig/stage2/stage2.c	2015-06-26 19:13:08.064898000 -0700
++++ updated/stage2/stage2.c	2015-06-26 19:16:18.556733000 -0700
+@@ -276,7 +276,14 @@ restart:
+ 	;
+ 
+       if (print_message)
+-	grub_printf("\rPress any key to enter the menu\n\n\n");
++        {
++          grub_printf ("\rDefault image: \'%s\'\n",
++                       get_entry(menu_entries, first_entry + entryno, 0),
++                       grub_timeout);
++          grub_printf("\rPress enter to boot this image, or any other key for boot menu\n\n");
++          grub_printf ("\rBooting default image in %d seconds.",
++                       grub_timeout);
++        }
+ 
+       while (1)
+ 	{
+@@ -284,9 +291,19 @@ restart:
+ 	  if (checkkey () != -1)
+ 	    {
+ 	      grub_timeout = -1;
+-	      show_menu = 1;
+-	      getkey ();
+-	      break;
++
++              c = ASCII_CHAR (getkey ());
++
++              /* If they hit enter, boot it now */
++              if ((c == '\n') || (c == '\r') || (c == 6))
++                {
++                  goto boot_entry;
++                }
++              else
++                {
++                  show_menu = 1;
++                  break;
++                }
+ 	    }
+ 
+ 	  /* See if a modifier key is held down.  */
+@@ -313,21 +330,7 @@ restart:
+ 	      
+ 	      /* Print a message.  */
+ 	      if (print_message) {
+-                int max_len = 53; /* 26 ('Booting  in 000 seconds...') + 53 (title) + 1 (cursor) = 80 */
+-                char *title = get_entry(menu_entries, first_entry + entryno, 0);
+-
+-                /* If title + "Booting " exceedes 80 characters, print the timeout to the next line */
+-                if (grub_strlen(title) > max_len) {
+-                        if (!title_printed) {
+-                                grub_printf("Booting %s\n", title);
+-                                title_printed = 1;
+-                        }
+-
+-                        grub_printf("\rin %d seconds...", grub_timeout);
+-                } else
+-			grub_printf ("\rBooting %s in %d seconds...",
+-			                title,
+-		                        grub_timeout);
++ 	        grub_printf ("\rBooting default image in %d seconds.  ", grub_timeout);
+               }
+             }
+ 	}
+@@ -351,14 +354,14 @@ restart:
+       if (! auth && password)
+ 	{
+ 	  printf ("\
+-      Press enter to boot the selected OS or \'p\' to enter a\n\
++      Press enter to boot the selected image or \'p\' to enter a\n\
+       password to unlock the next set of features.");
+ 	}
+       else
+ 	{
+ 	  if (config_entries)
+ 	    printf ("\
+-      Press enter to boot the selected OS, \'e\' to edit the\n\
++      Press enter to boot the selected image, \'e\' to edit the\n\
+       commands before booting, \'a\' to modify the kernel arguments\n\
+       before booting, or \'c\' for a command-line.");
+ 	  else
+@@ -866,10 +869,10 @@ restart:
+   while (1)
+     {
+       if (config_entries)
+-	verbose_printf ("  Booting \'%s\'\n\n",
++	printf ("\nBooting: \'%s\'\n\n",
+ 		get_entry (menu_entries, first_entry + entryno, 0));
+       else
+-	verbose_printf ("  Booting command-list\n\n");
++	printf ("  Booting command-list\n\n");
+ 
+       if (! cur_entry)
+ 	cur_entry = get_entry (config_entries, first_entry + entryno, 1);
+diff -rpu grub-0.97-75.el6/util/grub-install.in grub-0.97-75.el6.tms/util/grub-install.in
+--- grub-0.97-75.el6/util/grub-install.in	2012-01-18 21:37:32.000000000 -0800
++++ grub-0.97-75.el6.tms/util/grub-install.in	2012-04-09 10:56:00.761005000 -0700
+@@ -288,11 +288,15 @@ find_mapper_device() {
+ 	echo "Could not find device for $1" 1>&2
+ 	exit 1
+     fi
++
++    if [ ! -e /dev/mapper ]; then
++        return 1
++    fi
+ 	
+     majmin=`stat_device $dev`
+     for x in /dev/mapper/* ; do
+ 	devmajmin=`stat_device "$x"`
+-	if [ "$majmin" == "$devmajmin" ]; then
++	if [ "$majmin" = "$devmajmin" ]; then
+ 	    echo "$x"
+ 	    return 0
+ 	fi
+@@ -418,7 +422,7 @@ esac
+ grubdir=${bootdir}/grub
+ device_map=${grubdir}/device.map
+ 
+-if [ "$recheck" == "yes" ]; then
++if [ "$recheck" = "yes" ]; then
+     if grep 'mapper' ${device_map} >/dev/null; then
+ 	echo 'grub-install does not support reprobing of device.map when' 1>&2
+ 	echo 'using a device-mapper based boot device.' 1>&2
+@@ -646,9 +650,7 @@ rm -f $log_file
+ 
+ # Prompt the user to check if the device map is correct.
+ echo "Installation finished. No error reported."
+-echo "This is the contents of the device map $device_map."
+-echo "Check if this is correct or not. If any of the lines is incorrect,"
+-echo "fix it and re-run the script \`grub-install'."
++echo "This is the contents of the device map $device_map :"
+ echo
+ 
+ cat $device_map

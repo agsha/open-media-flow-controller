@@ -1,0 +1,12 @@
+#
+# 
+#
+#
+
+include ${PROD_TREE_ROOT}/src/mk/common.mk
+
+PO_OUTPUT_DIR=${PROD_BASE_I18N_ROOT}/src/lib/libtexpr
+MO_OUTPUT_DIR=${LIB_DIR}/libtexpr/mo
+
+include ${PROD_TREE_ROOT}/src/mk/po.mk
+

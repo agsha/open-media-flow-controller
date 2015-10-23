@@ -1,0 +1,373 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+
+<TMS-PAGE "Users">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "users"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Users">
+
+<?
+  global auth_acl_lo
+?>
+
+<IF {[tms::check-authorization "query_basic" $auth_acl_lo {query}]}>
+
+<?
+# -----------------------------------------------------------------------------
+# Definitions which are specific to capabilities vs. ACLs:
+#
+#   - $access_label: variable containing string, for use in header of 
+#     user table, for the column showing access control information.
+#
+#   - SETUP-USERS-GET-ACCESS-INFO tag: set $access_info variable,
+#     to be displayed in column headed by $access_label.
+#
+#   - SETUP-USERS-SET-NEW-PRIVS tag: display fields in form to set 
+#     privilege config on a new user.
+#
+#   - SETUP-USERS-EDIT-PRIVS tag: display fields in form to set 
+#     privilege config on a new user.
+# -----------------------------------------------------------------------------
+?>
+
+<?
+  global access_label
+  global access_info
+  set user_caps "set_privileged"
+?>
+
+<!-- Conditional on PROD_FEATURE_CAPABS -->
+<IF {[string compare [tms::have-prod-feature capabs] "true"] == 0}>
+  <INCLUDE "setup-users-capabs">
+</IF>
+
+<!-- Conditional on PROD_FEATURE_ACLS -->
+<IF {[string compare [tms::have-prod-feature acls] "true"] == 0}>
+  <INCLUDE "setup-users-acls">
+</IF>
+
+
+<?
+# -----------------------------------------------------------------------------
+# Active user list
+# -----------------------------------------------------------------------------
+?>
+
+  <?
+  set cur_line 0
+  set user_prefix "/auth/passwd/user"
+  set user_ids [tms::iterate-config $user_prefix]
+
+  set curr_user_prefix "/system/logins/current/user"
+  set curr_users [tms::iterate-config $curr_user_prefix]
+  ?>
+
+  <h2>Active Users</h2>
+  <table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head">
+      <td>
+      <td>
+        Username</td>
+      <td>
+        Full Name</td>
+      <td>
+        Remote Username</td>
+      <td>
+        Authentication Method</td>
+      <IF {[string compare [tms::have-prod-feature acls] "true"] == 0}>
+      <td>
+        Roles</td>
+      </IF>
+      <td>
+        Line</td>
+      <td>
+        Host</td>
+      <td>
+        Idle</td>
+    </tr>
+
+    <?
+      set sess_token [tms::get-binding-children "/mgmtd/session" false true]
+      set sessions [tms::get-binding-children-names $sess_token "/mgmtd/session/id/*"]
+    ?>
+
+    <FOREACH curr_user_id $curr_users>
+    <?
+      set user_name [tms::get-config "$curr_user_id/username"]
+      set full_name [tms::get-config "/auth/passwd/user/$user_name/gecos"]
+      set line [tms::get-config "$curr_user_id/tty"]
+      set curr_line [tms::get-config "/mgmtd/session/current/line"]
+      set host [tms::get-config "$curr_user_id/remote_host"]
+
+      if {[string equal $line $curr_line]} {
+          set is_curr_session "*"
+      } else {
+          set is_curr_session ""
+      }
+
+      set remote_user_name ""
+      global access_info
+      set access_info ""
+      set sess_id ""
+      foreach session $sessions {
+          set bname "${session}/line"
+          set this_line [tms::get-child-value-by-name $sess_token $bname]
+          if {[string equal $this_line $line]} {
+              set sess_id [tms::binding-name-last-part $session]
+              set bname "${session}/username"
+              set remote_user_name [tms::get-child-value-by-name $sess_token $bname]
+              if {[string equal $user_name $remote_user_name]} {
+                  set remote_user_name ""
+              }
+              TAG_SETUP-USERS-GET-ACCESS-INFO-DYNAMIC $sess_id
+              break
+          }
+      }
+      if {[string length $access_info] == 0} {
+          TAG_SETUP-USERS-GET-ACCESS-INFO $user_name
+      }
+
+      set auth_method [tms::get-config "/mgmtd/session/id/$sess_id/auth_method"]
+
+      set idle_sec ""
+      if {[string match "web/*" $line] == 1} {
+        set line_id [string trimleft $line "web/" ]
+        set idle_sec [tms::get-config "/wsm/state/session/$line_id/idle_time"]
+      } else {
+        set idle_sec [tms::get-config "$curr_user_id/idle_time"]
+      }
+
+      if {[string length $idle_sec] == 0} {
+        set idle_sec "0"
+      }
+
+      set idle [expr {$idle_sec * 1000}]
+      set idle_str [tms::time-to-counter-ex "$idle" "fixed"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td>
+        <?=$is_curr_session?>
+      <td>
+        <?^=$user_name?>
+      </td>
+      <td>
+        <?^=$full_name?>
+      </td>
+      <td>
+        <?^=$remote_user_name?>
+      </td>
+      <td>
+        <?^=$auth_method?>
+      </td>
+      <IF {[string compare [tms::have-prod-feature acls] "true"] == 0}>
+      <td>
+         <?=[tms::html-body-escape-transcode-ws $access_info]?>
+      </td>
+      </IF>
+      <td>
+        <?^=$line?>
+      </td>
+      <td>
+        <?^=$host?>
+      </td>
+      <td>
+        <?^=$idle_str?>
+      </td>
+    </tr>
+
+    <?
+      incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No Active Users.
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+
+<?
+# -----------------------------------------------------------------------------
+# User account list
+# -----------------------------------------------------------------------------
+?>
+
+  <h2>User Accounts</h2>
+
+  <CFG-FORM -action "config-form-list" -div_id "users_1">
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="5" class="listing">
+  <tr>
+    <td>
+      <table width="100%" border="0" cellspacing="0" cellpadding="3">
+ 
+    <tr class="listing_head">
+      <td width="1%"></td>
+      <td>
+        Username</td>
+      <td width="10"></td>
+      <td>
+        Full Name</td>
+      <td width="10"></td>
+      <td>
+        <?^=$access_label?></td>
+      <td width="10"></td>
+      <td>
+        Account Status</td>
+      <td>
+        Enabled</td>
+      <td width="10"></td>
+      <td></td>
+      <td width="10"></td>
+    </tr>
+
+    <FOREACH user_id $user_ids>
+    <?
+    set prefix_len [string length "$user_prefix/"]
+    set user_name [string range $user_id $prefix_len end]
+    set full_name [tms::get-config "$user_id/gecos"]
+
+    if {[tms-utils::is-invis-user $user_name false]} {
+      continue
+    }
+
+    # XXX/EMT: would be nice to tell them if ssh authorized keys
+    # are installed...
+
+    set user_enable [tms::get-config "$user_id/enable" "yes"]
+    set user_password [tms::get-config "$user_id/password"]
+    if {[string compare $user_enable "no"] == 0} {
+      # (We have a separate "Enabled" column)
+      set user_status "-"
+    } elseif {[string compare $user_password "*"] == 0} {
+      set user_status "Local password login disabled"
+    } elseif {[string compare $user_password "!!"] == 0} {
+      set user_status "Locked out"
+    } elseif {[string length $user_password] == 0} {
+      set user_status "No password (unsecured)"
+    } else {
+      set user_status "Password set"
+    }
+    ?>
+
+    <SETUP-USERS-GET-ACCESS-INFO $user_name>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td valign=top>
+        <IF {![tms-utils::is-system-user $user_name] || [string equal $user_name "monitor"]}>
+          <CFG-CHECKBOX -id "row_$user_name" -caps $user_caps
+                        -acl $auth_acl_lo -acl_oper {set_delete}
+                        -value "$user_id" -span_id "users_cbox_1_$user_name">
+        </IF>
+      </td>
+      <td valign=top>
+        <?^=$user_name?>
+      </td>
+      <td></td>
+      <td valign=top>
+        <?^=$full_name?>
+      </td>
+      <td></td>
+      <td valign=top>
+        <?=[tms::html-body-escape-transcode-ws $access_info]?>
+      </td>
+      <td></td>
+      <td valign=top>
+        <?^=$user_status?>
+      </td>
+      <td valign=top>
+        <?^=$user_enable?>
+      </td>
+      <td></td>
+      <td valign=top>
+        <a href="<?=[tms::url-builder template=setup-users-edit user=$user_name]?>">Edit</a>
+      </td>
+      <td>
+      </td>
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+    </tr>
+    <IF {$cur_line == 0}>
+    <tr><td colspan="5"><span class="nodata">No Users.</span></td></tr>
+    </IF>
+
+    <tr>
+      <td height="8"></td>
+    </tr>
+
+  </table>
+  <input type="hidden" name="f_list_custom_buttons" value="enable,disable">
+  <input type="hidden" name="f_list_button_enable_action" value="set">
+  <input type="hidden" name="f_list_button_enable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_enable_child_value" value="true">
+  <input type="hidden" name="f_list_button_disable_action" value="set">
+  <input type="hidden" name="f_list_button_disable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_disable_child_value" value="false">
+
+  <table>
+  <tr>
+  <td>
+  <div>
+  <CFG-BUTTON -type "ok" -text "Add New User"
+              -destination "/admin/launch?script=rh&amp;template=setup-users-add"
+              -acl $auth_acl_lo -acl_oper {set_create}
+              -caps $user_caps -span_id "users_add_1">
+
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected"
+              -acl $auth_acl_lo -acl_oper {set_delete}
+              -caps $user_caps -span_id "users_remove_1">
+
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "enable" -text "Enable Selected" -caps $user_caps
+              -acl $auth_acl_lo -acl_oper {set}
+              -span_id "users_enable_1"> 
+
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "disable" -text "Disable Selected" -caps $user_caps
+              -acl $auth_acl_lo -acl_oper {set}
+              -span_id "users_disable_1"> 
+  </div>
+  </td>
+  </tr>
+  </table>
+  </table>
+  </CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view user configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

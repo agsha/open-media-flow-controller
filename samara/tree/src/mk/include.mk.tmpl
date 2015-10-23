@@ -1,0 +1,47 @@
+#
+#
+
+# This is a template for include.mk, which is intended to hold
+# developer-specific build settings.  As such, include.mk should 
+# never be checked into a revision control system.
+#
+# Product-wide build settings should go in
+# customer/<PRODUCT>/src/mk/customer.mk
+# Some of the settings below you will more likely want to set on a 
+# product-wide basis, but who knows.
+
+# Define what architecture to build for.
+PROD_TARGET_ARCH=X86_64
+
+# Define which product you want to build.
+# The available products are the subdirectories of 'customer'.
+PROD_PRODUCT=DEMO
+
+# Define which PROD_ID to build.  This determines which PROD_FEATUREs
+# are enabled and disabled.  See customer.mk for list of options.
+PROD_ID=SAMARA_DEMO_ALL
+
+# This will cause the full command line of each program invoked during
+# the build process (cc, ld, etc.) to be echoed, rather than just 
+# single-line summaries.
+##PROD_BUILD_VERBOSE=1
+
+# To run under Purify
+##PURIFY=1
+
+# To build all modules as libraries to be statically linked with their
+# infrastructures, rather than as shared objects to be dynamically
+# linked.  Useful for running with Purify.
+##STATIC_MODULES=1
+
+# If you are doing internationalization, this is where you would
+# declare what locales you are supporting.
+##PROD_LOCALES=en_US es_MX ja_JP
+
+# You could also enable or disable product features here, by
+# setting the PROD_FEATURE_... variables to 1 or 0.
+# Please see customer/demo/src/mk/customer.mk for a list of 
+# available products, and their default settings.
+# For example, to enable Internationalization, you would 
+# uncomment this line, and change the 0 to a 1:
+## PROD_FEATURE_I18N_SUPPORT=0

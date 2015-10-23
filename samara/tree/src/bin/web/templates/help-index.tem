@@ -1,0 +1,20 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+
+<TMS-PAGE "Help">
+<TMS-MENU "help">
+<TMS-BODY>
+
+<h2>Help</h2>
+
+(Not yet implemented)
+
+</TMS-BODY>
+</TMS-PAGE>

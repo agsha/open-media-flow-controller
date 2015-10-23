@@ -1,0 +1,101 @@
+#  Makefile
+#
+#
+
+This file is an addendum to the libtecla documentation.  It documents
+the changes that were made to the libtecla API for use in Tall Maple's
+product.
+
+
+Rationale for import
+====================
+
+We imported libtecla initially so the CLI could maintain control of its
+own event loop.  Libtecla's original design had it managing the event
+loop: callers would register their own fd callbacks, etc., then call
+libtecla, which would return only when a full line had been entered.
+We wanted to use libevent and control the event loop ourselves, and call
+libtecla only when we saw activity on stdin.
+
+Various other bug fixes were made, as well as tweaks to the APIs to
+better suit our purposes.  See below, and the CVS revision history
+under src/lib/libtecla, for further details.
+
+
+Changes to Libtecla
+===================
+
+Previously, after initializing libtecla, you just called gl_get_line()
+every time you wanted to get a line of text, and it returned when a
+full line had been fetched.  Now there are three steps:
+
+  1. Call gl_replace_prompt() before trying to get a line, and again
+     every time you want to change the prompt.  This used to be only
+     when you wanted to change the prompt, but now must also be called
+     during initialization because gl_get_line() no longer takes a
+     prompt as an argument.
+
+     Note that gl_replace_prompt() no longer requires that the prompt
+     passed in be a string constant.  Libtecla now makes its own copy
+     of the string, and frees it when the prompt is replaced or the
+     library is deinitialized, so a dynamically allocated or stack
+     variable is okay too.
+
+     void gl_replace_prompt(GetLine *gl, const char *prompt);
+
+  2. Call gl_prepare_to_get_line() once to initiate the process of
+     getting a line from the user.  This prints the prompt and
+     otherwise initializes libtecla to read the line.  As with the old
+     gl_get_line(), you can specify a string to prepopulate the line
+     buffer with, as well as an initial cursor position.  Normally
+     these should be NULL and 0 if you want to start with a fresh line.
+
+     int gl_prepare_to_get_line(GetLine *gl, char *start_line, int start_pos);
+
+  3. Call gl_get_line() whenever there is activity on stdin.  It will
+     read whatever input is pending and return without blocking.  If
+     Enter is pressed, the library does not continue reading from
+     stdin after that.  If the user just pressed Enter, the whole
+     command line entered is returned in the 'line' parameter;
+     otherwise, NULL is returned.
+
+     Note that it no longer takes a prompt, start line, or start
+     position, as these are specified before the line is begun by the
+     two API functions above.
+
+     int gl_get_line(GetLine *gl, char **line);
+
+Additionally, the following functions have been exposed externally:
+
+  int gl_register_key_binding(GetLine *gl, const char *keyseq, KtKeyFn *keyfn);
+
+     Call the specified function when the specified key sequence is
+     entered on the command line.
+
+  int gl_raw_terminal_mode(GetLine *gl);
+
+     Put the terminal into the state libtecla needs.
+
+  int gl_restore_terminal_attributes(GetLine *gl);
+
+     Put the terminal back the way libtecla found it.
+
+  int gl_redisplay(GetLine *gl, int count);
+
+     Redisplay the prompt.
+
+  int gl_delete_line(GetLine *gl, int count);
+
+     Clear the command line currently being entered.
+
+  int gl_add_char_to_line(GetLine *gl, char c);
+
+     Add the specified character to the command line at the
+     current cursor position.
+
+Additionally, the following functions have been added:
+
+  int gl_get_line_state(GetLine *gl, char **ret_cmd_line, int *ret_curpos);
+
+     Get the current contents of the input buffer and cursor position.
+     Generally to be used by custom key bindings.

@@ -1,0 +1,343 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-defines">
+<INCLUDE "tms-utils">
+<INCLUDE "tms-layout">
+
+<?
+# ==================================================
+# = If the CMC server is disabled, say so, to lessen confusion when
+# = things don't seem to work.
+# ==================================================
+?>
+
+<TAG TMS-CMC-MSG>
+  <?
+    set cmc_server_enabled [tms::get-config "/cmc/config/enable"]
+  ?>
+    <IF {[string compare $cmc_server_enabled "false"] == 0}>
+        <div id="tms_cmc_msg"><p>
+           <? global color_error_text ?>
+           <font color="<?^=$color_error_text?>">
+              (CMC server is disabled)
+           </font>
+        </p></div> <!-- tms_cmc_msg -->
+    </IF>       
+
+</TAG>
+
+
+<?
+# ==================================================
+# = Sidebar for CMC Profiles
+# ==================================================
+?>
+
+<TAG TMS-CMC-PROFILE-MENU selected profile_name>
+  <?
+    # The following functionality currently cannot be specified
+    # in a profile: interfaces, routes, hostname, hosts, arp,
+    #               users, logging, snmp, conf, lic, date & time
+
+    global cmc_acl
+    set cmc_avail [tms::check-authorization "-" $cmc_acl {query set}]
+    global color_sidebar_text
+    global color_error_text
+    set options {}
+
+    # Conditional on PROD_FEATURE_NTP_CLIENT
+    set have_ntp_client [tms::have-prod-feature ntp_client]
+    # Conditional on PROD_FEATURE_AAA
+    set have_aaa [tms::have-prod-feature aaa]
+    # Conditional on PROD_FEATURE_RADIUS
+    set have_radius [tms::have-prod-feature radius]
+    # Conditional on PROD_FEATURE_TACACS
+    set have_tacacs [tms::have-prod-feature tacacs]
+    # Conditional on PROD_FEATURE_LDAP
+    set have_ldap [tms::have-prod-feature ldap]
+    set profile_options [list \
+        [list "main" "Manage Profiles" "-" $cmc_avail] \
+        [list "apply" "Apply Profile" "-" $cmc_avail] \
+        [list "cmd" "Edit Profile" "-" $cmc_avail] \
+    ]
+    lappend options $profile_options
+
+    if {[string length $profile_name] != 0} {
+      set arg "profile"
+      set arg_value $profile_name
+      lappend profile_side profile
+      lappend profile_side "Profile selected:\n    $profile_name"
+      lappend profile_side noref_sel
+    } else {
+      set arg ""
+      set arg_value ""
+      lappend profile_side none
+      lappend profile_side "No Profile\nSelected"
+      lappend profile_side noref_unsel
+    }
+    lappend profile_sect $profile_side
+    lappend options $profile_sect
+
+    set network_options {}
+    global customer_cmc_sidebar
+    lappend network_options [list "dns" "DNS and Hosts" "-" $cmc_avail]
+    lappend network_options [list "banners" "Banners" "-" $cmc_avail]
+    lappend network_options [list "web" "Web" "-" $cmc_avail]
+
+    set aaa_options {}
+
+    lappend aaa_options [list "users" "Users" "-" $cmc_avail]
+    if {[string compare $have_aaa "true"] == 0} {
+      lappend aaa_options [list "aaa" "AAA" "-" $cmc_avail]
+    }
+    if {[string compare $have_radius "true"] == 0} {
+      lappend aaa_options [list "radius" "RADIUS" "-" $cmc_avail]
+    }
+    if {[string compare $have_tacacs "true"] == 0} {
+      lappend aaa_options [list "tacacs" "TACACS+" "-" $cmc_avail]
+    }
+    if {[string compare $have_ldap "true"] == 0} {
+      lappend aaa_options [list "ldap" "LDAP" "-" $cmc_avail]
+    }
+
+    set audit_options [list \
+        [list "snmp" "SNMP" "-" $cmc_avail] \
+        [list "faults" "Faults" "-" $cmc_avail] \
+        [list "logging" "Logging" "-" $cmc_avail] \
+    ]
+
+    set other_options [list \
+        [list "ntp" "NTP" "-" $cmc_avail] \
+        [list "licensing" "Licensing" "-" $cmc_avail] \
+        [list "upgrade" "Upgrade" "-" $cmc_avail] \
+    ]
+
+    lappend options $customer_cmc_sidebar
+    lappend options $network_options
+    lappend options $aaa_options
+    lappend options $audit_options
+    lappend options $other_options
+  ?>
+  <div id="tms_cmc_profile_menu">
+  <TMS-SIDEBAR-MENU $selected $options profile-cmc- $arg $arg_value>
+    </TMS-SIDEBAR-MENU>
+  </div>
+</TAG>
+
+<?
+# ==================================================
+# = Sidebar for general CMC setup
+# ==================================================
+?>
+
+<TAG TMS-CMC-SETUP-MENU selected {arg ""} {arg_value ""}>
+  <?
+    global cmc_acl
+    set cmc_avail [tms::check-authorization "-" $cmc_acl {query set}]
+
+    # Leave the 'appliances' item available because it's the default.
+    set options [list \
+        [list "server" "CMC Server" "-" $cmc_avail] \
+        [list "appliances" "Appliances" "-" $cmc_avail] \
+    ]
+
+    if {[string compare $selected "edit-appl"] == 0} {
+      lappend options [list "edit-appl" "    Edit" "-" $cmc_avail]
+    }
+
+    lappend options [list "groups" "Groups" "-" $cmc_avail]
+    lappend options [list "identities" "Identities" "-" $cmc_avail]
+    lappend options [list "status" "Status" "-" $cmc_avail]
+    lappend options [list "rendv" "Rendezvous" "-" $cmc_avail]
+
+    lappend all_options $options
+  ?>
+  <div id="tms_setup_menu">
+    <TMS-SIDEBAR-MENU $selected $all_options setup-cmc- $arg $arg_value>
+    </TMS-SIDEBAR-MENU>
+  </div>
+</TAG>
+
+
+<?
+# ==================================================
+# = Command listing for a particular feature area
+# ==================================================
+?>
+
+<TAG TMS-CMC-COMMAND-SUBLISTING area_label cmd_start_index cmd_end_index pparam prof_priv patterns>
+  <?
+    # We used to check if there was a profile name selected ($pparam was
+    # non-empty), and prepend "DISABLED_" to the capability name if not.
+    # The result was to disable all fields if no profile was selected.
+    # However, this was done before all profile editing pages check for
+    # this before calling us, and decline to display the entire page.
+    # So this check does not matter anymore, and was removed.  (Bug 13810)
+    upvar $prof_priv ppriv
+    set ppriv set_restricted
+  ?>
+
+  <h2><?^=$area_label?> commands for profile "<?^=$pparam?>"</h2>
+
+  <?
+    global cmc_acl
+    set cur_line 0
+
+    set profile_token [tms::profile-iterate $pparam]
+    set unsorted_tuples [tms::profile-get-cmds $profile_token $patterns]
+    set sorted_tuples [lsort -integer -index 0 $unsorted_tuples]
+  ?>
+
+  <CFG-FORM -action "config-form-profile">
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+ 
+    <tr class="listing_head"> 
+      <td>
+      <td width="20%">
+        <p>Seq&nbsp;#</p>
+      <td>
+        <p>Command</p>
+    </tr>
+
+    <FOREACH tuple $sorted_tuples>
+    <?
+      set cmd_num [lindex $tuple 0]
+      set cmd_text [lindex $tuple 1]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cmd_num" -caps "set_restricted"
+                      -acl $cmc_acl -acl_oper {set}
+                      -value "$pparam">
+        </td>
+      <td width="20%">
+        <p><?^=$cmd_num?></p></td>
+      <td>
+        <p><?=[tms::cmc-command-transcode $cmd_text]?></p></td>
+        </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No <?^=$area_label?> commands.
+      <SET button_disable "true">
+    <ELSE>
+      <SET button_disable "false">
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <?
+   # Tell the 'compact' button what range of commands to compact
+   ?>
+  <input type="hidden" name="cmd_start_index" value="<?^=$cmd_start_index?>">
+  <input type="hidden" name="cmd_end_index" value="<?^=$cmd_end_index?>">
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set} 
+              -disabled $button_disable>
+  <img src="/images/em.gif" width="10" height="1" alt="">
+  <CFG-BUTTON -type "compact" -text "Compact" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}
+              -disabled $button_disable>
+  <img src="/images/em.gif" width="10" height="1" alt="">
+  </p></td></tr></table>
+
+  </CFG-FORM>
+</TAG>
+
+<?
+# ==================================================
+# = "No profile selected" tab
+# ==================================================
+?>
+
+<?
+  proc NO_PROFILE_SELECTED {} {
+    tms::puts "
+    <p>
+      <b>No profile selected</b>
+    <p>
+      Please go to the 
+      <a href=\"/admin/launch?script=rh&amp;template=profile-cmc-cmd\">
+      Edit Profile
+      </a> page and select a profile first.
+    "
+  }
+?>
+
+
+<?
+# ==================================================
+# = Custom tags to emit hidden fields for profile editing page
+# ==================================================
+?>
+
+<?
+# ==================================================
+# = CMC-PROFILE-FORM: use one of these per form on your profile editing
+# = page.  All three parameters are mandatory:
+# =
+# =   (a) -profile_id: the ID of the profile being edited
+# =   (b) -cmd_start_index: the lower bound of command indices to use
+# =       for new commands that we add to this profile.
+# =   (c) -cmd_end_index: the upper bound of command indices to use
+# =       for new commands that we add to this profile.
+# ==================================================
+?>
+
+<TAG CMC-PROFILE-FORM args>
+  <?
+    tms-utils::named-args $args {-profile_id "-" -cmd_start_index "0" -cmd_end_index "999999"}
+  
+    if {[string compare $(-profile_id) "-"] == 0} {
+        error "No profile ID specified for CMC-PROFILE-CMDS"
+    }
+  ?>
+
+  <input type="hidden" name="f_profile_index" value="<?^=$(-profile_id)?>">
+  <input type="hidden" name="f_profile_cmd_start_index" value="<?^=$(-cmd_start_index)?>">
+  <input type="hidden" name="f_profile_cmd_end_index" value="<?^=$(-cmd_end_index)?>">
+</TAG>
+
+<?
+# ==================================================
+# = CMC-PROFILE-CMDS: use one of these per form on your profile editing
+# = page.  The parameters are a variable-length list of name/value pairs
+# = which convey information about how the values submitted in the 
+# = form fields should be used to form commands.  See the Samara 
+# = Technical Guide section on the CMC for instructions.
+# ==================================================
+?>
+
+<TAG CMC-PROFILE-CMDS args>
+  <?
+    foreach {key value} $args {
+  ?>
+
+  <input type="hidden" 
+         name="f_profile_<?^=$key?>" value="<?^=$value?>">
+
+  <?
+    }
+  ?>
+
+</TAG>

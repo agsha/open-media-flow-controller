@@ -1,0 +1,11 @@
+# .cshrc
+
+# User specific aliases and functions
+
+alias rm 'rm -i'
+alias cp 'cp -i'
+alias mv 'mv -i'
+
+setenv PATH "/usr/local/sbin:/usr/sbin:/sbin:${PATH}:${HOME}/bin"
+
+set prompt=\[`id -nu`@`hostname -s`\]\#\ 

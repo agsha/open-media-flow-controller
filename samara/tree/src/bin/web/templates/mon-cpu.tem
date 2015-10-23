@@ -1,0 +1,93 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-utils">
+
+<TMS-PAGE "CPU Load" "mon_cpu">
+<TMS-MENU "mon">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-MON-MENU "cpu"></TMS-MON-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "CPU Load (Last Hour)">
+
+<?
+  global ref_ui_graph_ver
+  global graph_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $graph_acl {action}]}>
+
+<?
+# .........................................................................
+# - Dropdown list to let the user choose between two graph types.
+# -
+# - It's unfortunate that we need the two hidden fields, but otherwise they
+# - are not carried foward into our next page.
+?>
+
+<?
+    set gtype [tms::get-param "query" "gtype"]
+    if {[string length $gtype] == 0} {
+        set gtype $cpu_graph_type_default
+    }
+
+    set graph_types {
+        {"Aggregated"         "aggregated"      "cpuutil"}
+        {"Per CPU"            "percpu"          "cpuutil_indiv_line"}
+        {"Per CPU, stacked"   "percpustacked"   "cpuutil_indiv_stacked"}
+    }
+?>
+
+<br>
+<form method="get">
+
+  <input type="hidden" name="script" value="rh">
+  <input type="hidden" name="template" value="mon-cpu">
+
+  Graph type:
+
+  <select name="gtype" onchange="this.form.submit();">
+
+  <FOREACH graph_type $graph_types>
+      <SET tname [lindex $graph_type 0]>
+      <SET tvalue [lindex $graph_type 1]>
+      <IF {[string equal $gtype $tvalue] == 1}>
+          <SET selected "selected">
+          <SET graph_action [lindex $graph_type 2]>
+      <ELSE>
+          <SET selected "">
+      </IF>
+
+      <option value="<?^=$tvalue?>" <?^=$selected?>><?^=$tname?></option>
+  </FOREACH>
+  </select>
+
+  <noscript>
+    <img src="/images/em.gif" width="5" height="1" alt="">
+    <input type="submit" id="gsubmit" value="Submit">
+  </noscript>
+</form>
+
+<?
+# .........................................................................
+# Figure out which graph type they wanted, and draw it.
+?>
+
+<SET clear_data_url "/admin/launch?script=rh&template=mon-cpu&action=clear_stats_data&stats_obj_type=chd&stats_obj_name=cpu_util">
+
+<TMS-AJAX-GRAPH $graph_action $graph_action 15 auto $ref_ui_graph_ver "$clear_data_url">
+
+<ELSE>
+
+<br>
+Insufficient authorization to view CPU statistics.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

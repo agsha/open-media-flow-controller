@@ -1,0 +1,207 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+<INCLUDE "tms-cmc-layout">
+
+<TMS-PAGE "Manage CMC Profiles">
+<TMS-MENU "cmc_profile">
+<TMS-BODY>
+
+<?
+  global cmc_acl
+  set profile_param [tms::get-param query "profile"]
+?>
+
+<TMS-SIDEBAR><TMS-CMC-PROFILE-MENU "main" $profile_param></TMS-SIDEBAR>
+
+<TMS-PAGE-CONTENT "Manage CMC Profiles">
+
+<IF {[tms::check-authorization "query_basic" $cmc_acl {query}]}>
+
+  <TMS-CMC-MSG>
+
+  <h2>CMC Profiles</h2>
+
+<?
+    set cur_line 0
+    set profile_prefix "/cmc/config/profile"
+    set profile_ids [tms::iterate-config $profile_prefix]
+    set appl_prefix "/cmc/config/appliance"
+    set appl_bnames [tms::iterate-config $appl_prefix]
+
+    set prefix_len [string length "$appl_prefix/"]
+    set appl_list {}
+    lappend appl_list "(none) (none)"
+    foreach appl_bname $appl_bnames {
+      set appl_id [string range $appl_bname $prefix_len end]
+      lappend appl_list "$appl_id $appl_id"
+    }
+
+    set prefix_len [string length "$profile_prefix/"]
+    set profile_list {}
+    lappend profile_list "(none) (none)"
+    foreach profile_bname $profile_ids {
+      set profile_id [string range $profile_bname $prefix_len end]
+      lappend profile_list "$profile_id $profile_id"
+    }
+?>
+
+  <CFG-FORM -action "config-form-list" -div_id "cmc_main_3">
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5" class="listing">
+ 
+    <tr class="listing_head"> 
+      <td width="5%">
+      <td>
+        <p>Name</p>
+      <td>
+        <p>Comment</p>
+    </tr>
+
+    <FOREACH profile_id $profile_ids>
+    <?
+      set prefix_len [string length "$profile_prefix/"]
+      set profile_name [string range $profile_id $prefix_len end]
+      set profile_comment [tms::get-config "$profile_id/comment"]
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <td width="1%" nowrap align="left" valign="middle">
+        <CFG-CHECKBOX -id "row_$cur_line" -caps "set_restricted"
+                      -acl $cmc_acl -acl_oper {set}
+                         -value "$profile_id" -span_id "cmc_main_cbox_1">
+        </td>
+      <td>
+        <p>
+        <a href="/admin/launch?script=rh&amp;template=profile-cmc-cmd&amp;profile=<?=[tms::uri-component-escape $profile_name]?>"><?^=$profile_name?></a>
+        </p>
+      </td>
+      <td>
+        <p><?^=$profile_comment?></p></td>
+        </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No CMC profiles defined.
+      <SET remove_disabled "true">
+    <ELSE>
+      <SET remove_disabled "false">
+    </IF>
+    <tr>
+      <td height="6">
+    <TMS-TABLE-SPACE>
+  </table>
+
+  <CFG-BUTTON -type "remove" -text "Remove Selected" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}
+              -disabled $remove_disabled
+              -span_id "cmc_main_remove_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+  </p></td></tr></table>
+
+</CFG-FORM>
+
+  <h2>Add New CMC Profile</h2>
+
+  <CFG-FORM -action "config-form-profile-new" -div_id "cmc_main_4">
+  <TMS-TABLE -div_id "cmc_main_table_4">
+
+    <TMS-TABLE-ENTRY "Name">
+      <CFG-TEXTBOX -id "profile" -errname "Name" -caps "set_restricted"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "string" -cols "30" -span_id "cmc_main_profile"
+                   -required "true">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Comment">
+      <CFG-TEXTBOX -id "comment" -errname "Comment" -caps "set_restricted"
+                   -acl $cmc_acl -acl_oper {set}
+                   -type "string" -cols "30" -required "false"
+                   -span_id "cmc_main_comment">
+    </TMS-TABLE-ENTRY>
+
+<TAG TMS-TABLE-ENTRY label {padding 20}>
+  <tr bgcolor="<?^=$color_main_pane?>">
+    <td width=<?^=$padding?>></td>
+    <td valign="middle"><?^=$label?></td>
+    <td></td>
+    <td>
+</TAG>
+
+<?
+# Not using TMS-TABLE-ENTRY since it has valign="middle"
+?>
+  <tr bgcolor="<?^=$color_main_pane?>">
+    <td width=20></td>
+    <td valign="top">Source Appliance</td>
+    <td>
+    <td>
+      <CFG-DROPDOWN -id "source_appl" -caps "set_restricted" -type "string"
+                    -acl $cmc_acl -acl_oper {set}
+                    -options $appl_list>
+      <br>
+      <?
+       # XXX/EMT: this help text should only be shown if requested
+      ?>
+      To populate your new profile with commands extracted from the saved
+      active configuration on one of your managed appliances, select its
+      name here.  To start with a blank profile, leave "(none)" selected
+      here.
+   </tr>
+
+  <tr bgcolor="<?^=$color_main_pane?>">
+    <td width=20></td>
+    <td valign="top">Source Profile</td>
+    <td>
+    <td>
+      <CFG-DROPDOWN -id "source_profile" -caps "set_restricted" -type "string"
+                    -acl $cmc_acl -acl_oper {set}
+                   -options $profile_list>
+      <br>
+      <? 
+       # XXX/EMT: this help text should only be shown if requested
+      ?>
+      To create a new profile by duplicating an existing one,
+      select the name of the source profile here.  Otherwise, 
+      leave "(none)" selected here.
+   </tr>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/cmc/config/profile">
+  <input type="hidden" name="f_list_index" value="profile">
+  <input type="hidden" name="f_list_children" value="comment">
+
+  <CFG-BUTTON -type "add" -text "Add Profile" -caps "set_restricted"
+              -acl $cmc_acl -acl_oper {set}
+              -span_id "cmc_main_add_1">
+
+  </CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view CMC profile configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

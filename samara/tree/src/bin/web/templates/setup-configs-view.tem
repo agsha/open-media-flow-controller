@@ -1,0 +1,42 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<?
+set db_name [tms::get-param query "db"]
+set config ""
+if {[string length $db_name] == 0} {
+   set config [tms::show-config]
+   set config_name {Running Configuration}
+} else {
+   set config [tms::show-config $db_name]
+   set config_name "Saved Configuration \"$db_name\""
+}
+if {[string length $config] == 0} {
+   set config "# No changes from default configuration."
+}
+set hostname [tms-utils::get-hostname]
+?>
+
+
+<html>
+  <head>
+    <title>
+      <?^=$hostname?> - <?^=$config_name?>
+    </title>
+  </head>
+  <body>
+
+<?
+# config data is already html-entity escaped by tms::show-config and contains
+# HTML output formatting.
+?>
+    <pre><?=$config?></pre>
+
+</body>
+</html>

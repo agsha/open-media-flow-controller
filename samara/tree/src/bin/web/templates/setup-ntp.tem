@@ -1,0 +1,386 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "NTP">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "ntp"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "NTP">
+
+<?
+  global ntp_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $ntp_acl {query}]}>
+
+<?
+  # Conditional on PROD_FEATURE_IPV6
+  set have_ipv6 [tms::have-prod-feature ipv6]
+  set ip_field_width 16
+  if {[string compare $have_ipv6 "true"] == 0} {
+    set ip_field_width 46
+  }
+?>
+
+  <h2>NTP Setup</h2>
+
+  <CFG-FORM -div_id "ntp_1">
+
+  <TMS-TABLE -div_id "ntp_table_2">
+    <TMS-TABLE-ENTRY "Enable NTP Time Synchronization">
+        <CFG-CHECKBOX -id "enable_ntp" -caps "set_basic"
+                      -acl $ntp_acl -acl_oper {set}
+                      -name "/ntp/enable" -type "bool"
+                      -span_id "ntp_cbox_1">
+    </TMS-TABLE-ENTRY>
+  <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+<?
+  set sys_peer_addr [tms::get-config "/ntp/state/system_peer/inetz_address"]
+  if {[string length $sys_peer_addr] == 0} {
+    tms::puts "Clock is unsynchronized."
+  } else {
+    set sys_peer_offset_us [tms::get-config "/ntp/state/system_peer/offset"]
+    if {[string length $sys_peer_offset_us] != 0} {
+      set sys_peer_offset [format "%.3f" [expr {$sys_peer_offset_us / 1000.0}]]
+      tms::puts "Clock is synchronized.  Reference: [tms::html-escape ${sys_peer_addr}].  "
+      tms::puts "Offset: [tms::html-escape ${sys_peer_offset}] ms"
+    }
+  }
+?>
+<p>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -acl $ntp_acl -acl_oper {set}
+              -span_id "ntp_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $ntp_acl -acl_oper {set}
+              -span_id "ntp_cancel_1">
+
+  </CFG-FORM>
+
+  <h2>NTP Server and Peer Associations</h2>
+
+  <CFG-FORM -action "config-form-list" -div_id "ntp_2">
+
+  <?
+
+    proc get_cfg_entry {cfg_id_node  config_type} {
+        set address [tms::get-config $cfg_id_node]
+        set enabled [tms::get-config $cfg_id_node/enable "yes"]
+        set version [tms::get-config $cfg_id_node/version]
+        # configuration of /prefer is not presently supported in the UIs
+        set cfg_entry "$address,$config_type,$enabled,$version"
+        return $cfg_entry
+    }
+
+    # XXX/SML: this would all be nicer if node design were changed to make
+    # peer vs. server an attribute of a single configured association list.
+
+    set cur_line 0
+    set cfg_entries ""
+    set server_cfg_prefix "/ntp/server/address"
+    set server_cfg_ids [tms::iterate-config $server_cfg_prefix]
+    set peer_cfg_prefix "/ntp/peer/address"
+    set peer_cfg_ids [tms::iterate-config $peer_cfg_prefix]
+
+    # Gather server and peer configuration into a single list
+    foreach server_cfg_id $server_cfg_ids {
+        set cfg_entry [get_cfg_entry $server_cfg_id "server"]
+        set cfg_entries "$cfg_entries $cfg_entry"
+    }
+    foreach peer_cfg_id $peer_cfg_ids {
+        set cfg_entry  [get_cfg_entry $peer_cfg_id "peer"]
+        set cfg_entries "$cfg_entries $cfg_entry"
+    }
+
+    set assoc_state_prefix "/ntp/state/peer/inetz_address"
+    set prefix_len [string length "$assoc_state_prefix/"]
+    set assoc_state_token [tms::get-binding-children "$assoc_state_prefix" "false" "true"]
+    tms::sort-bindings $assoc_state_token
+    set assoc_state_nodes [tms::get-binding-children-names $assoc_state_token "$assoc_state_prefix/*"]
+
+    # Generate the union of config and state, and flag intersection status
+    # (config-only, state-only, both).
+
+    # Note per bug 14815 that a configured address could appear twice, both as
+    # server and as a peer, and if so both will report the same state, although
+    # one will be mismatched.  The plan of record is to disallow this config,
+    # although it would be technically possible to match on hmode if mgmtd
+    # supplied it.
+    set cfg_entries_sorted [lsort -dictionary $cfg_entries]
+
+    # For configured associations, merge in matching states
+    set ntp_entries ""
+    foreach cfg_entry $cfg_entries_sorted {
+        set found 0
+        regexp (\[^,\]*),(\[^,\]*),(\[^,\]*),(\[^,\]*) $cfg_entry ematch cfg_address config_type enabled version
+        foreach assoc_state_node $assoc_state_nodes {
+            set state_address [tms::get-child-value-by-name $assoc_state_token $assoc_state_node]
+            if {[string compare $state_address $cfg_address] == 0} {
+                set found 1
+                break
+            }
+        }
+        if {$found == 1} {
+            set ntp_entry "$cfg_entry,$assoc_state_node"
+        } else {
+            set ntp_entry "$cfg_entry,"
+        }
+        lappend ntp_entries $ntp_entry
+    }
+
+    set version [tms::get-param post "f_version"]
+    if {[string length $version] == 0} {
+        tms::set-param post replace "f_version" "4"
+    }
+
+    # For associations without configuration, merge in states
+    foreach assoc_state_node $assoc_state_nodes {
+        set state_address [tms::get-child-value-by-name $assoc_state_token $assoc_state_node]
+        set found 0
+        foreach ntp_entry $ntp_entries {
+            regexp (\[^,\]*),(\[^,\]*),(\[^,\]*),(\[^,\]*),(\[^,\]*) $ntp_entry ematch cfg_address config_type enabled version node
+            if {[string compare $state_address $cfg_address] == 0} {
+                set found 1
+                break;
+            }
+        }
+        if {$found == 0} {
+            # It's in the association table, but mgmtd doesn't know about it.
+            lappend ntp_entries "$state_address,(N/A),(N/A),(N/A),$assoc_state_node"
+        }
+    }
+    set ntp_entries_sorted [lsort -dictionary $ntp_entries]
+
+  ?>
+
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="listing"><tr>
+  <td><table width="100%" border="0" cellspacing="0" cellpadding="5">
+
+    <tr class="listing_head"> 
+      <td></td>
+      <td>
+        Address</td>
+      <td>
+        Enabled</td>
+      <td>
+        Config Type</td>
+      <td>
+        NTP version</td>
+      <td>
+        Status</td>
+      <td>
+        Stratum</td>
+      <td>
+        Offset (ms)</td>
+      <td>
+        Reference Clock</td>
+      <td>
+        Poll Interval (sec.)</td>
+      <td>
+        Last response (sec.)</td>
+    </tr>
+
+    <FOREACH ntp_entry $ntp_entries_sorted>
+    <?
+        regexp (\[^,\]*),(\[^,\]*),(\[^,\]*),(\[^,\]*),(\[^,\]*) $ntp_entry ematch ntp_address ntp_config_type ntp_enabled ntp_version assoc_state_node
+        if {[string length $assoc_state_node] != 0} {
+            set assoc_status [tms::get-child-value-by-name $assoc_state_token "$assoc_state_node/tally_descr"]
+            set assoc_stratum [tms::get-child-value-by-name $assoc_state_token "$assoc_state_node/stratum"]
+            set assoc_offset_us [tms::get-child-value-by-name $assoc_state_token "$assoc_state_node/offset"]
+            set assoc_offset [format "%.3f" [expr {$assoc_offset_us / 1000.0}]]
+            set assoc_refclock [tms::get-child-value-by-name $assoc_state_token "$assoc_state_node/refid"]
+            set assoc_poll_interval [tms::get-child-value-by-name $assoc_state_token "$assoc_state_node/poll_interval"]
+            set assoc_last_response [tms::get-child-value-by-name $assoc_state_token "$assoc_state_node/when_last_packet"]
+            if {[string length $assoc_last_response] == 0} {
+                set assoc_last_response "N/A"
+            }
+        } else {
+            set assoc_status "(none)"
+            set assoc_stratum ""
+            set assoc_offset ""
+            set assoc_refclock ""
+            set assoc_poll_interval ""
+            set assoc_last_response ""
+        }
+    ?>
+
+    <tr class="<? if {[expr {$cur_line % 2}] == 0} {
+        tms::puts "listing_even"
+    } else {
+        tms::puts "listing_odd"
+    }?>">
+      <IF {[string equal $ntp_config_type "server"]}>
+        <? set ntp_cfg_disabled "false" ?>
+        <? set ntp_cfg_prefix "$server_cfg_prefix" ?>
+      <ELSE>
+        <IF {[string equal $ntp_config_type "peer"]}>
+          <? set ntp_cfg_disabled "false" ?>
+          <? set ntp_cfg_prefix "$peer_cfg_prefix" ?>
+        <ELSE>
+          <? set ntp_cfg_disabled "true" ?>
+          <? set ntp_cfg_prefix "" ?>
+        </IF>
+      </IF>
+      <td width="1%" nowrap align="left" valign="middle">
+      <CFG-CHECKBOX -id "row_$cur_line" -caps "set_basic"
+                    -disabled $ntp_cfg_disabled
+                    -acl $ntp_acl -acl_oper {set}
+                    -value "$ntp_cfg_prefix/$ntp_address" -span_id "ntp_cbox_2"></td>
+      <td>
+        <?^=$ntp_address?></td>
+      <td>
+        <?^=$ntp_enabled?></td>
+      <td>
+        <?^=$ntp_config_type?></td>
+      <td>
+        <?^=$ntp_version?></td>
+      <td>
+        <?^=$assoc_status?></td>
+      <td>
+        <?^=$assoc_stratum?></td>
+      <td>
+        <?^=$assoc_offset?></td>
+      <td>
+        <?^=$assoc_refclock?></td>
+      <td>
+        <?^=$assoc_poll_interval?></td>
+      <td>
+        <?^=$assoc_last_response?></td>
+    </tr>
+
+    <?
+    incr cur_line
+    ?>
+    </FOREACH>
+
+    <IF {$cur_line == 0}>
+      <tr>
+        <td colspan="5">
+          No NTP servers.
+      <SET disab "true">
+    <ELSE>
+      <SET disab "false">
+    </IF>
+    <tr>
+      <td height="6">
+  </table>
+
+  <input type="hidden" name="f_list_custom_buttons" value="enable,disable">
+  <input type="hidden" name="f_list_button_enable_action" value="set">
+  <input type="hidden" name="f_list_button_enable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_enable_child_value" value="true">
+  <input type="hidden" name="f_list_button_disable_action" value="set">
+  <input type="hidden" name="f_list_button_disable_child_name" value="enable">
+  <input type="hidden" name="f_list_button_disable_child_value" value="false">
+
+  <CFG-BUTTON -type "remove" -text "Remove Association" 
+              -caps "set_basic"
+              -acl $ntp_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "ntp_remove_1">
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "enable" -text "Enable Association" 
+              -caps "set_basic"
+              -acl $ntp_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "ntp_enable_1"> 
+  <img src="/images/em.gif" width="10" height="1" alt="">
+
+  <CFG-BUTTON -type "disable" -text "Disable Association"
+              -caps "set_basic"
+              -acl $ntp_acl -acl_oper {set}
+              -disabled $disab
+              -span_id "ntp_disable_1"> 
+
+  </p></td></CFG-FORM></tr></table>
+
+<CFG-FORM -action "config-form-list" -div_id "ntp_3">
+  <h2>Add New NTP Server</h2>
+  <TMS-TABLE -div_id "ntp_table_server">
+    <TMS-TABLE-ENTRY "Server IP">
+      <CFG-TEXTBOX -id "address" -errname "Server IP address" -caps "set_basic"
+                   -acl $ntp_acl -acl_oper {set}
+                   -span_id "ntp_addr_server" -type "hostname"
+                   -cols "$ip_field_width">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Version">
+      <CFG-DROPDOWN -id "version" -caps "set_basic" -type "uint32"
+                    -acl $ntp_acl -acl_oper {set}
+                    -value "4" -options {{3 3} {4 4}} -span_id "ntp_vers_server">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps "set_basic"
+                    -acl $ntp_acl -acl_oper {set}
+                    -type "bool" -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "ntp_enable_server">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/ntp/server/address">
+  <input type="hidden" name="f_list_index" value="address">
+  <input type="hidden" name="f_list_children" value="version,enable">
+
+  <CFG-BUTTON -type "add" -text "Add NTP Server" -caps "set_basic"
+              -acl $ntp_acl -acl_oper {set}
+              -span_id "ntp_add_server">
+</CFG-FORM>
+
+<CFG-FORM -action "config-form-list" -div_id "ntp_4">
+  <h2>Add New NTP Peer</h2>
+  <TMS-TABLE -div_id "ntp_table_peer">
+    <TMS-TABLE-ENTRY "Peer IP">
+      <CFG-TEXTBOX -id "address" -errname "Peer IP address" -caps "set_basic"
+                   -acl $ntp_acl -acl_oper {set}
+                   -span_id "ntp_addr_peer" -type "hostname"
+                   -cols "$ip_field_width">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Version">
+      <CFG-DROPDOWN -id "version" -caps "set_basic" -type "uint32"
+                    -acl $ntp_acl -acl_oper {set}
+                    -value "4" -options {{3 3} {4 4}} -span_id "ntp_vers_peer">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-ENTRY "Enabled">
+      <CFG-DROPDOWN -id "enable" -caps "set_basic"
+                    -acl $ntp_acl -acl_oper {set}
+                    -type "bool" -options {{"Yes" "true"} {"No" "false"}}
+                    -span_id "ntp_enable_peer">
+    </TMS-TABLE-ENTRY>
+
+    <TMS-TABLE-SPACE>
+  </TMS-TABLE>
+
+  <input type="hidden" name="f_list_root" value="/ntp/peer/address">
+  <input type="hidden" name="f_list_index" value="address">
+  <input type="hidden" name="f_list_children" value="version,enable">
+
+  <CFG-BUTTON -type "add" -text "Add NTP Peer" -caps "set_basic"
+              -acl $ntp_acl -acl_oper {set}
+              -span_id "ntp_add_peer">
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view NTP configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

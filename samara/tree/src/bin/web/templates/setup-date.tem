@@ -1,0 +1,133 @@
+<?
+#
+#
+#
+#
+?>
+
+<INCLUDE "tms-layout">
+
+<TMS-PAGE "Date and Time">
+<TMS-MENU "setup">
+<TMS-BODY>
+<TMS-SIDEBAR><TMS-SETUP-MENU "date"></TMS-SETUP-MENU></TMS-SIDEBAR>
+<TMS-PAGE-CONTENT "Date and Time">
+
+<?
+  global time_acl
+?>
+
+<IF {[tms::check-authorization "query_basic" $time_acl {query}]}>
+
+<?
+  set zone_ids [tms::get-timezones]
+  set timezone [tms::get-param post "f_timezone"]
+  set ntp_url "/admin/launch?script=rh&template=setup-ntp"
+  if {[string length $timezone] == 0} {
+      set timezone_id [tms::get-config "/time/zone"]
+      set timezone [tms::get-timezone-name "$timezone_id"]
+  }
+
+  set olddate [tms::get-config "/time/now/date"]
+  set oldtime [tms::get-config "/time/now/time"]
+?>
+
+  <SET ntp_status [tms::get-config "/ntp/enable"]>
+
+  <h2>Date and Time</h2>
+
+<CFG-FORM -action "config-form-date" -div_id "date_1">
+  <input type="hidden" name="f_olddate" value="<?^=$olddate?>">
+  <input type="hidden" name="f_oldtime" value="<?^=$oldtime?>">
+
+  <TMS-TABLE>
+    <TMS-TABLE-ENTRY "Date">
+        <CFG-TEXTBOX -id "date" -errname "date" -caps "action_privileged"
+                     -acl $time_acl -acl_oper {action}
+                     -disabled $ntp_status
+                     -name "/time/now/date" -type "date" -cols "10"
+                     -span_id "date_date">
+                 <i>(YYYY/MM/DD)</i>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Time">
+        <CFG-TEXTBOX -id "time" -errname "time" -caps "action_privileged"
+                     -acl $time_acl -acl_oper {action}
+                     -disabled $ntp_status
+                     -name "/time/now/time" -type "time_sec" -cols "10"
+                     -span_id "date_time">
+                 <i>(HH:MM:SS)</i>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "Time Zone">
+        <select name="f_timezone" size="1"
+        <?
+          if {[tms::check-authorization "set_basic" $time_acl {set}] == 0} {
+              tms::puts "disabled"
+          }
+        ?>>
+          <FOREACH zone_id $zone_ids>
+            <?
+            set zone [tms::get-timezone-name "$zone_id"]
+            ?>
+            <IF {[string compare $zone $timezone] == 0}>
+              <option value="<?^=$zone_id?>" selected><?^=$zone?></option>
+            <ELSE>
+              <option value="<?^=$zone_id?>"><?^=$zone?></option>
+            </IF>
+          </FOREACH>
+        </select>
+    </TMS-TABLE-ENTRY>
+    <TMS-TABLE-ENTRY "UTC offset">
+
+<?
+  set utc_offset [tms::get-config /time/now/utc_offset]
+  if {$utc_offset < 0} {
+    set utc_offset_prefix "-"
+    set utc_offset_dir "minus"
+    set utc_offset [expr {0 - $utc_offset}]
+  } else {
+    set utc_offset_prefix "+"
+    set utc_offset_dir "plus"
+  }
+  set utc_offset_hours [format "%02d" [expr {$utc_offset / 3600}]]
+  set utc_offset_minutes [format "%02d" [expr {($utc_offset % 3600) / 60}]]
+  set utc_offset_str [tms::time-to-counter-ex [expr {$utc_offset * 1000}] long_words]
+?>
+
+    <IF {$utc_offset == 0}>
+      +0000 (same as UTC)
+    <ELSE>
+      <?^=$utc_offset_prefix?><?^=$utc_offset_hours?><?^=$utc_offset_minutes?> (UTC <?^=$utc_offset_dir?> <?^=$utc_offset_str?>)
+    </IF>
+    </TMS-TABLE-ENTRY>
+  </TMS-TABLE>
+
+  <p>
+
+  <IF {[string compare $ntp_status true] == 0}>
+    (NTP time synchronization is <a href=<?^=$ntp_url?>>enabled</a>,
+    so manual time updates are not permitted.)
+  <ELSE>
+    (NTP time synchronization is <a href=<?^=$ntp_url?>>disabled</a>.)
+  </IF>
+
+  </p>
+
+  <CFG-BUTTON -type "apply" -text "Apply" -caps "set_basic"
+              -acl $time_acl -acl_oper {set action}
+              -span_id "date_apply_1">
+  <CFG-BUTTON -type "cancel" -text "Cancel" -caps "set_basic"
+              -acl $time_acl -acl_oper {set action}
+              -span_id "date_cancel_1">
+
+</CFG-FORM>
+
+<ELSE>
+
+<br>
+Insufficient authorization to view time and date configuration.
+
+</IF>
+
+</TMS-PAGE-CONTENT>
+</TMS-BODY>
+</TMS-PAGE>

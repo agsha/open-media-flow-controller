@@ -1,0 +1,84 @@
+The file describes changes made to syslogd.
+
+Not all changes are discussed.  So far this file only covers changes
+to the syslog.conf configuration file format.
+
+Generally, lines beginning with '#' are considered comments, and are
+ignored.  We wanted to add additional configuration information
+without breaking the ability for our syslog.conf files to be read by
+stock syslogd.  The result, similar to chkconfig and the files in
+/etc/rc.d, is to embed the information in comments with a specific
+struture.  Stock syslogd will simply ignore these and no harm will
+arise.
+
+The general format for such lines is as follows.  When we refer to
+whitespace, newlines are excluded since we are talking about the
+contents of a single line.
+  - Any number of '#' characters
+  - Any amount of whitespace
+  - The name of an attribute to set
+  - A colon
+  - Any amount of whitespace
+  - The value(s) of the attribute to set.  If there are multiple values,
+    they are separated by whitespace.
+
+The attributes currently defined are:
+
+  * filesizelimit: the maximum desired size for any local file which
+    syslogd is writing to, in bytes.  This is not a hard ceiling, but
+    a threshold past which action should be taken.  Syslogd will honor
+    this request by monitoring the size of the file, and when the file 
+    surpasses the specified size, forking the following binary and 
+    arguments to take care of it:
+
+    mdreq action /logging/actions/check_rotation
+
+    Example:
+
+    ## When files reach 16 MB, try to rotate them
+    ## filesizelimit: 16777216
+
+    Separate size limits cannot be set on different files at this time.
+    The specified size limit will apply to all local files syslog is
+    writing to.
+
+    Note: once we have called mdreq, we set a flag on that particular
+    file.  All such flags are reset whenever we receive a SIGHUP.
+    This prevents us from repeatedly calling mdreq in the interim
+    before it has a chance to take effect, or if it fails to rotate
+    the logs for some reason.
+
+  * welfenable: turn on auto-WELF reformatting of log messages.
+    1 means to enable it; 0 means to disable it.  (Specifying 0 here
+    has the same effect as not specifying this option at all.)
+
+    If WELF reformatting is enabled, the date, time, and hostname at 
+    the beginning of the log messages is not disturbed, but the rest
+    of the message is rewritten as follows:
+
+        id=WELF_ID_FIELD time=LOCALTIME fw=WELFFWNAME pri=PRINUM 
+        [WELF_EXTRA_FIELDS] msg=ORIGINAL_MSG
+
+    The constants WELF_ID_FIELD and WELF_EXTRA_FIELDS should be set in
+    customer.h.  If not set they default to "firewall" and "" respectively.
+
+    LOCALTIME is set automatically to the current local time, and should
+    match the timestamp already at the beginning of the line.
+
+    PRINUM is a numeric representation of the message priority, from
+    0 for EMERG, up to 7 for DEBUG.
+
+    WELFFWNAME can be set by the 'welffwname' setting in syslog.conf;
+    see below.
+
+    Here is a sample reformatted message:    
+
+        Mar 29 03:34:58 tb4 id=firewall time="2006-03-29 03:34:58" fw="tb4fw" 
+        pri=5 msg="syslog: syslogd startup succeeded"
+
+    Note: if the original message starts with 'id="', then it is
+    passed through unchanged.
+
+  * welffwname: set WELF firewall name.  This is the string that will
+    be used for WELFFWNAME in the WELF reformatting described above.
+    If this option is not specified, the hostname will be used by default.

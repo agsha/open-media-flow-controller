@@ -1,0 +1,50 @@
+This is based on version 1.3.16 of pam_radius.  The following changes
+were made by Tall Maple:
+
+  * Add support for template user (if authenticated user doesn't exist
+    locally).  Borrowed from FreeBSD PAM module.
+
+  * Add processing for vendor specific attributes and specifically look
+    for local-user mapping attribute as the type in customer.h defines
+    for the vendor. Some small cleanup as well.
+
+  * Set some pam environment variables, as part of the openssh / login /
+    logging fix:
+    
+        LOGIN_USER : the name the user tried to authenticated
+        AUTH_USER  : the name of the user the login actual has (this user
+                     has a pwent)
+        TRUSTED_AUTH_INFO : an aggregation of several fields of useful
+                            information, with a keyed hash at the end so
+                            mgmtd will believe it.  See comment above
+                            lpc_get_trusted_auth_info in pam_common.h.
+
+  * If a RADIUS packet fails the verification, we log if the id is not
+    as expected, or if it is that the shared secret is incorrect. This
+    should be clearer to the user what's going on.
+
+  * Allow specification of a login-lat-group string to be included in
+    RADIUS requests.
+
+  * Support receipt of additional role names to grant to user,
+    specified as part of the local user name attribute
+    (ENTERPRISE_LOCAL_USER_NAME_ATTR).  The format for the attribute 
+    is "username:role1,role2,role3" where one or more roles, separated
+    by commas, may follow the colon.  Although the user can configure
+    this support to be on or off, the PAM RADIUS module always passes
+    any additional roles through (via TRUSTED_AUTH_INFO), and it is
+    up to the reader of the information to decide whether to honor it.
+
+  * Configuration file format: add new field for login-lat-group.
+
+    Previously: <host> <secret> [<timeout>]
+    Now:        <host> <secret> <timeout> [<login_lat_group>]
+
+    In each case, the entry for a single RADIUS server goes all on one
+    line.
+
+  * Fix various compiler warnings.
+
+  * Modify logging calls which logged usernames to consult
+    aaa_log_unknown_usernames_flag, and possibly log the username at 
+    a lower logging level (see bug 14599).
