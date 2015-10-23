@@ -1,0 +1,9 @@
+# Thu Oct 22 18:09:42 PDT 2015
+# md5sum values
+#
+d8baafb3f38faada1aebab3cfe2f2663  build-machine-files.tar.gz
+19374bdf19c5549fab31ffd1e1e95043  freedist-mfc-15.0.0_30681_470.tgz
+6f0bb1ace101f3b193eeffb555595d86  mfc-test-30677.tar.gz
+be6057e47bafc0633128f0b361af3856  public-mediawiki.tgz
+59ac558f4483be3d0a33da5426eebe50  scl6.6.R1.0.tar.gz
+04938778bc2630f03abda18976d668a3  setup-build-machine.txt

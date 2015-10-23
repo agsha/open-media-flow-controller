@@ -1,0 +1,42 @@
+# Thu Oct 22 18:09:42 PDT 2015
+
+Open Media Flow Controller
+  MFC version      = 30681
+  Samara version   = 470
+  MFC test version = 30677
+
+1) Download "scl6.6.R1.0.tar.gz" as follows:
+
+   https://s3-us-west-1.amazonaws.com/open-media-flow-controller/scl6.6.R1.0.tar.gz
+
+2) Download "build-machine-files.tar.gz" as follows: 
+
+  https://s3-us-west-1.amazonaws.com/open-media-flow-controller/build-machine-files.tar.gz
+
+3) Download "mfc-test-30677.tar.gz" as follows:
+
+  https://s3-us-west-1.amazonaws.com/open-media-flow-controller/mfc-test-30677.tar.gz
+
+4) Download "freedist-mfc-15.0.0_30681_470.tgz" as follows:
+
+  https://s3-us-west-1.amazonaws.com/open-media-flow-controller/freedist-mfc-15.0.0_30681_470.tgz
+
+5) Download "public-mediawiki.tgz" as follows:
+
+  https://s3-us-west-1.amazonaws.com/open-media-flow-controller/public-mediawiki.tgz
+
+6) Create "mfc-src-30681_470.tar.gz"
+
+  cd mfc
+  tar -c -f ../mfc-src-30681_470.tar .
+  cd ..
+  gzip mfc-src-30681_470.tar
+
+7) Create "samara-bin-30681_470.tar.gz"
+
+  cd samara
+  tar -c -f ../samara-bin-30681_470.tar .
+  cd ..
+  gzip samara-bin-30681_470.tar
+
+8) See "setup-build-machine.txt" for details on building MFC.
